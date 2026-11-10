@@ -50,7 +50,7 @@ export default function BioCollectionsPage() {
             <h1>Ready-Made Bio Collections</h1>
             <p>
               {BIO_COLLECTIONS.length} original, copy-ready collections — English, Hindi and Hinglish.
-              Pick a category, copy a bio, paste it anywhere. Free, private and unlimited.
+              Pick a category, copy a bio, paste it anywhere. Private and unlimited.
             </p>
           </span>
           <span className="hub-header-count" aria-label={`${BIO_COLLECTIONS.length} collections, ${TOTAL_BIOS} bios`}>

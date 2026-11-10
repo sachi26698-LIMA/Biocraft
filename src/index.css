@@ -1347,63 +1347,6 @@ h1, h2, h3, h4 { text-wrap: balance; }
 .search-result svg { color: #B9AFCB; flex: 0 0 auto; }
 .search-empty { padding: 1.25rem 1rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
 
-/* ---------- How It Works — 5-step timeline ---------- */
-
-.how-steps {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0;
-  list-style: none;
-  margin: 0 auto;
-  padding: 0;
-  max-width: 880px;
-}
-@media (min-width: 900px) {
-  .how-steps { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.5rem; }
-}
-.how-step {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  position: relative;
-  padding: 0.5rem 0.25rem 0.5rem 0;
-}
-@media (min-width: 900px) { .how-step { flex-direction: column; align-items: center; text-align: center; gap: 0.6rem; } }
-
-.how-step-index {
-  display: grid; place-items: center;
-  flex: 0 0 auto;
-  width: 46px; height: 46px;
-  border-radius: 50%;
-  background: linear-gradient(140deg, var(--lav), var(--pink));
-  border: 1.5px solid var(--line-strong);
-  color: var(--accent-hover);
-  font-weight: 850;
-  font-size: 1.02rem;
-  box-shadow: 0 6px 14px rgba(139, 75, 192, 0.22);
-  position: relative;
-  z-index: 1;
-}
-.how-step-body { display: flex; flex-direction: column; gap: 0.15rem; }
-@media (min-width: 900px) { .how-step-body { align-items: center; } }
-.how-step-title { font-weight: 800; letter-spacing: -0.01em; }
-.how-step-desc { color: var(--muted); font-size: 0.83rem; line-height: 1.45; }
-
-/* Connector line (desktop only) */
-@media (min-width: 900px) {
-  .how-step::before {
-    content: '';
-    position: absolute;
-    top: calc(0.5rem + 23px);
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--purple-soft) 18%, var(--purple-soft) 82%, transparent);
-    z-index: 0;
-  }
-  .how-step-index { margin-top: 0; }
-}
-
 /* ---------- FAQ ---------- */
 
 .faq-list {
@@ -1449,21 +1392,6 @@ h1, h2, h3, h4 { text-wrap: balance; }
   padding-top: 0.7rem;
 }
 .faq-panel a { color: var(--accent-hover); }
-
-/* ---------- Final CTA — soft lavender-pink glass card ---------- */
-
-.final-cta {
-  text-align: center;
-  padding: clamp(2rem, 5vw, 3.25rem) clamp(1.25rem, 5vw, 3.5rem);
-  border-radius: calc(var(--radius-lg) + 6px);
-  border: 1px solid var(--line-strong);
-  background:
-    radial-gradient(560px 320px at 22% 12%, rgba(217, 240, 250, 0.75), transparent 60%),
-    radial-gradient(560px 360px at 82% 88%, rgba(255, 220, 235, 0.85), transparent 62%),
-    linear-gradient(140deg, #F2EAFE 0%, #FBE9F2 100%);
-  box-shadow: var(--shadow-card);
-}
-.final-cta .section-sub { max-width: 46ch; margin-inline: auto; margin-bottom: 1.5rem; }
 
 /* ---------- Info pages (shared content routes) ---------- */
 
@@ -1758,8 +1686,7 @@ img, svg, video, canvas { max-width: 100%; }
 }
 
 .tile:hover .tile-icon,
-.category-card:hover .category-icon,
-.how-step:hover .how-step-index {
+.category-card:hover .category-icon {
   animation: icon3d-tilt 0.32s cubic-bezier(.34, 1.56, .64, 1) forwards;
   box-shadow:
     inset 0 2px 2px rgba(255, 255, 255, 0.95),
@@ -1785,35 +1712,10 @@ img, svg, video, canvas { max-width: 100%; }
   .tile-grid li:nth-child(7) .tile-icon { animation-delay: -1.3s; --shine-delay: 2.8s; }
   .tile-grid li:nth-child(8) .tile-icon { animation-delay: -2.2s; --shine-delay: 1.9s; }
   .tile-grid li:nth-child(9) .tile-icon { animation-delay: -3.2s; --shine-delay: 0.4s; }
-  .how-steps li:nth-child(2) .how-step-index { animation-delay: -1.2s; }
-  .how-steps li:nth-child(3) .how-step-index { animation-delay: -2.4s; }
-  .how-steps li:nth-child(4) .how-step-index { animation-delay: -3.6s; }
-  .how-steps li:nth-child(5) .how-step-index { animation-delay: -0.6s; }
   .tool-tab.is-active .tool-tab-icon,
   .platform-pill.is-active .platform-pill-icon { animation: icon3d-pop 0.48s cubic-bezier(.34, 1.56, .64, 1); }
 }
 
-
-/* How It Works — five glossy 3D numbered discs, each its own hue */
-.how-step-index {
-  background:
-    radial-gradient(135% 135% at 28% 20%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.4) 36%, rgba(255, 255, 255, 0) 64%),
-    linear-gradient(148deg, var(--tool-tile-from, #F4EBFF) 0%, var(--tool-tile-to, #DCC7FA) 100%);
-  border: 1px solid var(--tool-line, var(--line-strong));
-  color: var(--tool-deep, var(--accent-hover));
-  box-shadow:
-    inset 0 2px 2px rgba(255, 255, 255, 0.95),
-    inset 0 -4px 7px rgba(36, 27, 53, 0.15),
-    0 12px 22px -8px var(--tool-glow, rgba(139, 75, 192, 0.4));
-}
-@media (prefers-reduced-motion: no-preference) {
-  .how-step-index { animation: icon3d-float 6s ease-in-out infinite; }
-}
-.how-steps li:nth-child(1) .how-step-index { --tool-tile-from: #F4EBFF; --tool-tile-to: #DCC7FA; --tool-deep: #6D28A8; --tool-line: rgba(139, 75, 192, 0.38); --tool-glow: rgba(139, 75, 192, 0.42); }
-.how-steps li:nth-child(2) .how-step-index { --tool-tile-from: #FFE9F3; --tool-tile-to: #FFC9DE; --tool-deep: #B03060; --tool-line: rgba(214, 83, 143, 0.38); --tool-glow: rgba(214, 83, 143, 0.4); }
-.how-steps li:nth-child(3) .how-step-index { --tool-tile-from: #E3F5FE; --tool-tile-to: #BBE2F7; --tool-deep: #0A4A77; --tool-line: rgba(46, 134, 193, 0.38); --tool-glow: rgba(46, 134, 193, 0.4); }
-.how-steps li:nth-child(4) .how-step-index { --tool-tile-from: #E2FBEC; --tool-tile-to: #BDEEDA; --tool-deep: #0E6B4E; --tool-line: rgba(31, 157, 107, 0.38); --tool-glow: rgba(31, 157, 107, 0.4); }
-.how-steps li:nth-child(5) .how-step-index { --tool-tile-from: #FFEBDD; --tool-tile-to: #FFD0B4; --tool-deep: #9A4A0E; --tool-line: rgba(222, 107, 43, 0.38); --tool-glow: rgba(222, 107, 43, 0.4); }
 
 /* Workspace re-theme — clicking a tool tab swaps the accent soup to the tool's hue */
 .toolkit-workspace .workspace-heading {
@@ -1887,8 +1789,8 @@ img, svg, video, canvas { max-width: 100%; }
 .btn-large { min-height: 52px; font-size: 1.02rem; border-radius: var(--radius-md); }
 
 /* ============================================================
-   Platform Stage — full-screen QuickKit-style 3D glass scene.
-   The whole screen re-colours to the clicked platform; each
+   Platform Stage — photoreal laptop hero.
+   The whole machine re-tints to the clicked platform; each
    platform shows a stylised illustration of its app home.
    ============================================================ */
 
@@ -1920,229 +1822,7 @@ img, svg, video, canvas { max-width: 100%; }
   text-align: center;
   gap: 0.4rem;
 }
-.stage-masthead { display: flex; flex-direction: column; align-items: center; margin-bottom: 0.2rem; }
-
-/* Copy block */
-.stage-eyebrow { margin-bottom: 0.55rem; }
-.stage-eyebrow::before {
-  content: '';
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--stage-accent), var(--stage-deep));
-  box-shadow: 0 0 10px var(--stage-soft);
-}
-.stage-title {
-  margin: 0;
-  font-size: clamp(2.15rem, 5.6vw, 3.55rem);
-  font-weight: 850;
-  letter-spacing: -0.035em;
-  line-height: 1.02;
-  color: var(--text);
-  text-wrap: balance;
-}
-.stage-title-accent { display: block; }
-@supports ((-webkit-background-clip: text) or (background-clip: text)) {
-  .stage-title-accent {
-    background: linear-gradient(115deg, var(--stage-accent) 0%, var(--stage-deep) 55%, var(--stage-accent) 115%);
-    background-size: 220% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    transition: --stage-accent 0.7s ease, --stage-deep 0.7s ease;
-  }
-}
-.stage-sub {
-  margin: 0.8rem auto 0;
-  color: var(--muted);
-  font-size: clamp(0.98rem, 1.5vw, 1.12rem);
-  line-height: 1.6;
-  max-width: 48ch;
-}
-
-/* ---------- App home mocks (illustrative) ---------- */
-.mock {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-  font-family: var(--font-sans);
-  background: #FFFFFF;
-  color: #241B35;
-}
-.mock-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 2rem 0.7rem 0.45rem;
-  border-bottom: 1px solid rgba(36, 27, 53, 0.07);
-  flex: 0 0 auto;
-}
-.mock-header-icons { display: inline-flex; gap: 0.55rem; color: #241B35; }
-.mock-wordmark { font-weight: 900; letter-spacing: -0.02em; color: #241B35; }
-.mock-wordmark--ig {
-  font-style: italic;
-  font-weight: 800;
-  font-size: 1.18rem;
-  background: linear-gradient(115deg, #FEDA77 0%, #F58529 22%, #DD2A7B 48%, #8134AF 74%, #515BD4 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-.mock-wordmark--fb { font-weight: 800; letter-spacing: -0.03em; color: #FFFFFF; font-size: 1.05rem; font-style: italic; }
-.mock-header--fb { background: #1568D6; border-bottom: none; padding-top: 1.55rem; }
-.mock-wordmark--x { font-weight: 800; font-size: 0.98rem; }
-.mock-header-search {
-  display: inline-flex; align-items: center; gap: 0.3rem;
-  padding: 0.22rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
-  color: #FFFFFF;
-  font-size: 0.66rem;
-  font-weight: 650;
-}
-.mock-meta { font-size: 0.6rem; color: #8B87A0; }
-.mock-username { font-size: 0.72rem; font-weight: 800; color: #241B35; }
-.mock-dots { margin-left: auto; letter-spacing: 0.08em; color: #8B87A0; font-size: 0.7rem; }
-.mock-caption { margin: 0.3rem 0.7rem; font-size: 0.68rem; line-height: 1.42; color: #241B35; }
-.mock-avatar {
-  display: inline-grid; place-items: center;
-  border-radius: 50%;
-  color: #FFFFFF;
-  font-weight: 800;
-  flex: 0 0 auto;
-  border: 2px solid #FFFFFF;
-  box-shadow: 0 0 0 1px rgba(36, 27, 53, 0.08);
-}
-.mock-avatar--tiny { width: 24px; height: 24px; font-size: 0.5rem; border: none; }
-.mock-scene { display: block; width: 100%; object-fit: cover; }
-.mock-post { padding-bottom: 0.4rem; }
-.mock-post-head { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.7rem; }
-.mock-post-head-col { display: flex; flex-direction: column; line-height: 1.25; }
-.mock-post-actions { display: flex; align-items: center; gap: 0.7rem; padding: 0.35rem 0.7rem 0.1rem; }
-.mock-action {
-  display: inline-flex; align-items: center; gap: 0.32rem;
-  border: none; background: transparent;
-  color: #241B35;
-  font-size: 0.7rem; font-weight: 750;
-  cursor: pointer;
-  padding: 0.18rem 0.25rem;
-  border-radius: 8px;
-  font-family: inherit;
-  transition: transform 150ms ease, color 150ms ease, background 150ms ease;
-}
-.mock-action:hover { background: rgba(36, 27, 53, 0.05); }
-.mock-action:focus-visible { outline: 2px solid #DD2A7B; outline-offset: 1px; }
-.mock-action:active { transform: scale(0.86); }
-.mock-action.is-on { color: #E0245E; }
-.mock-action--chip {
-  border: 1px solid rgba(36, 27, 53, 0.16);
-  border-radius: 999px;
-  padding: 0.28rem 0.8rem;
-}
-.mock-action--static { color: #241B35; }
-.mock-like-bar { padding: 0.3rem 0.7rem 0; font-size: 0.62rem; color: #4E445E; border-bottom: 1px solid rgba(36, 27, 53, 0.07); padding-bottom: 0.4rem; }
-
-/* Instagram pieces */
-.mock-stories { display: flex; gap: 0.42rem; padding: 0.45rem 0.7rem 0.5rem; border-bottom: 1px solid rgba(36, 27, 53, 0.07); }
-.mock-story { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; }
-.mock-story-inner {
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  background: #FFFFFF;
-  display: grid; place-items: center;
-  font-size: 0.6rem; font-weight: 850;
-  color: #8134AF;
-}
-.mock-bottombar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0.4rem 1.1rem 0.9rem;
-  border-top: 1px solid rgba(36, 27, 53, 0.08);
-  color: #241B35;
-  margin-top: auto;
-}
-
-/* Facebook pieces */
-.mock-composer {
-  display: flex; align-items: center; gap: 0.45rem;
-  margin: 0.5rem 0.55rem 0.4rem;
-  padding: 0.42rem 0.6rem;
-  background: #F0F2F5;
-  border-radius: 999px;
-}
-.mock-composer-text { font-size: 0.68rem; color: #65676B; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* Threads pieces */
-.mock-header--threads { justify-content: flex-start; gap: 0.4rem; }
-.mock-thread-post { display: flex; gap: 0.5rem; padding: 0.5rem 0.7rem; border-bottom: 1px solid rgba(36, 27, 53, 0.07); }
-.mock-thread-body { display: flex; flex-direction: column; min-width: 0; }
-.mock-thread-body .mock-caption { margin: 0.15rem 0 0; }
-.mock-thread-body .mock-post-actions { padding-left: 0; }
-
-/* TikTok pieces (phone screen is natively dark) */
-.mock-tiktok { position: relative; background: #0F172A; }
-.mock-tiktok-scene { position: absolute; inset: 0; }
-.mock-tiktok-scene .mock-scene { width: 100%; height: 100%; }
-.mock-tiktok-rail {
-  position: absolute; right: 0.3rem; bottom: 4.2rem;
-  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
-  z-index: 1;
-}
-.mock-follow {
-  width: 24px; height: 24px;
-  border-radius: 50%;
-  border: none;
-  background: #FE2C55;
-  color: #FFFFFF;
-  font-size: 0.8rem; font-weight: 800; line-height: 1;
-  cursor: pointer;
-  display: grid; place-items: center;
-}
-.mock-follow.is-following { background: #25F4EE; color: #0F172A; }
-.mock-rail-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 0.14rem;
-  background: transparent; border: none; cursor: pointer;
-  color: #FFFFFF; font-size: 0.58rem; font-weight: 700;
-  font-family: inherit; padding: 0.15rem;
-}
-.mock-rail-btn.is-on { color: #FE2C55; }
-.mock-rail-btn--static { color: #FFFFFF; }
-.mock-tiktok-caption {
-  position: absolute; left: 0.55rem; bottom: 1.05rem; right: 3rem;
-  z-index: 1;
-  color: #FFFFFF;
-  font-size: 0.62rem;
-  line-height: 1.42;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.55);
-  display: flex; flex-direction: column; gap: 0.28rem;
-}
-.mock-tiktok-audio { font-size: 0.56rem; opacity: 0.85; }
-
-/* LinkedIn pieces */
-.mock-li-badge {
-  display: grid; place-items: center;
-  width: 26px; height: 26px;
-  border-radius: 5px;
-  background: #0A66C2;
-  color: #FFFFFF;
-  font-weight: 800;
-  font-size: 0.85rem;
-}
-.mock-header--li { padding-top: 1.6rem; }
-.mock-li-banner { height: 46px; background: linear-gradient(100deg, #0A66C2 0%, #38BDF8 60%, #A5F3FC 100%); flex: 0 0 auto; }
-.mock-post--li { padding-top: 0.1rem; }
-.mock-li-article {
-  margin: 0.25rem 0.7rem 0;
-  border: 1px solid rgba(36, 27, 53, 0.12);
-  border-radius: 10px;
-  overflow: hidden;
-  display: flex; flex-direction: column;
-}
-.mock-li-article-title { padding: 0.3rem 0.5rem 0.05rem; font-size: 0.68rem; font-weight: 700; color: #0A66C2; line-height: 1.35; }
-.mock-li-article .mock-meta { padding: 0 0.5rem 0.35rem; }
-
-/* ---------- The 3D laptop (BioCraft MacBook-class) ---------- */
+/* The photoreal chassis + live display composite */
 .stage-perspective {
   position: relative;
   z-index: 1;
@@ -2165,26 +1845,23 @@ img, svg, video, canvas { max-width: 100%; }
 }
 .laptop-float {
   position: relative;
-  width: min(250px, 68vw); /* phone — small, margins both sides */
+  width: min(330px, 84vw); /* phone — small, margins both sides */
   margin: 0 auto;
-  padding-bottom: clamp(9rem, 44vw, 11rem);
   transform-style: preserve-3d;
-  top: clamp(0.25rem, 2vw, 0.75rem);
+  top: 0.15rem;
 }
 /* tablet — intermediate */
 @media (min-width: 600px) {
   .laptop-float {
-    width: clamp(390px, 58vw, 500px);
-    padding-bottom: clamp(14rem, 36vw, 18rem);
-    top: clamp(0.5rem, 2.5vw, 1.25rem);
+    width: clamp(430px, 62vw, 560px);
+    top: clamp(0.4rem, 2vw, 0.9rem);
   }
 }
 /* desktop / laptop — uses the available width, centered */
 @media (min-width: 1100px) {
   .laptop-float {
-    width: clamp(600px, 46vw, 720px);
-    padding-bottom: clamp(19rem, 30vw, 24rem);
-    top: clamp(0.5rem, 1.5vw, 1.25rem);
+    width: clamp(620px, 50vw, 780px);
+    top: clamp(0.4rem, 1.4vw, 1rem);
   }
 }
 /* Ambient violet/cyan glow bleeding from behind the machine */
@@ -2200,355 +1877,79 @@ img, svg, video, canvas { max-width: 100%; }
   z-index: 0;
   pointer-events: none;
 }
-.laptop {
+.laptop-visual {
   position: relative;
   z-index: 1;
-  transform-style: preserve-3d;
-  transform: rotateX(10deg) rotateY(-18deg); /* 3/4 pose from the reference photo */
-}
-
-/* ===== LID — aluminium shell, black bezel, live screen ===== */
-.laptop-lid {
-  position: relative;
   width: 100%;
-  aspect-ratio: 16 / 10.2;
-  transform-style: preserve-3d;
-  transform-origin: 50% 100%;
-  transform: rotateX(-4deg);
 }
-.laptop-lid-back {
+/* Photoreal chassis cutout (transparent surround). Clicking a platform pill
+   re-tints the aluminium via filter — hue-rotate keeps the brushed texture. */
+.laptop-chassis {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: filter 450ms ease;
+}
+[data-platform='facebook'] .laptop-chassis { filter: hue-rotate(-83deg) saturate(1.06); }
+[data-platform='linkedin'] .laptop-chassis { filter: hue-rotate(-66deg) saturate(1.32); }
+[data-platform='whatsapp'] .laptop-chassis { filter: hue-rotate(-155deg) saturate(1.22); }
+[data-platform='snapchat'] .laptop-chassis { filter: hue-rotate(119deg) saturate(1.18); }
+[data-platform='tiktok'] .laptop-chassis { filter: hue-rotate(68deg) saturate(1.12); }
+[data-platform='threads'] .laptop-chassis { filter: saturate(0.16) brightness(0.99); }
+[data-platform='x'] .laptop-chassis { filter: saturate(0.13) brightness(0.96); }
+[data-platform='instagram'] .laptop-chassis { filter: none; }
+
+/* Live display — trapezoid inscribed inside the rendered screen's black area.
+   Fractions measured from laptop-hero.webp (1742×1246): screen spans
+   x 222→1499 (slight back-tilt, top edge narrower), y 55→897. */
+.laptop-screen-shell {
   position: absolute;
-  inset: 0;
-  transform: translateZ(-12px);
-  border-radius: 18px;
-  background:
-    radial-gradient(130% 90% at 18% 8%, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0) 55%),
-    radial-gradient(70% 48% at 74% 18%, color-mix(in srgb, var(--stage-accent) 26%, rgba(233, 221, 251, 0.75)) 0%, rgba(255, 255, 255, 0) 60%),
-    linear-gradient(155deg,
-      color-mix(in srgb, var(--stage-accent) 16%, #F2F2F6) 0%,
-      color-mix(in srgb, var(--stage-accent) 32%, #D9D9E0) 24%,
-      color-mix(in srgb, var(--stage-accent) 40%, #B5B5C1) 48%,
-      color-mix(in srgb, var(--stage-accent) 46%, #8C8C99) 70%,
-      color-mix(in srgb, var(--stage-accent) 52%, #5F5F6C) 88%,
-      color-mix(in srgb, var(--stage-accent) 56%, #3F3F4B) 100%);
-  border: 1px solid color-mix(in srgb, var(--stage-accent) 30%, rgba(255, 255, 255, 0.72));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.92),
-    inset 0 -2px 8px rgba(20, 20, 30, 0.35),
-    0 0 60px -18px color-mix(in srgb, var(--stage-accent) 55%, transparent);
-  display: grid;
-  place-items: center;
-}
-.laptop-lid-back svg {
-  opacity: 0.95;
-  filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 34px rgba(196, 176, 242, 0.55));
-}
-.laptop-lid-edge {
-  position: absolute;
-  top: 9px; bottom: 9px; left: -12px;
-  width: 12px;
-  transform-origin: 100% 50%;
-  transform: rotateY(-90deg);
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--stage-accent) 20%, #E9E9EE) 0%,
-    color-mix(in srgb, var(--stage-accent) 34%, #B0B0BB) 30%,
-    color-mix(in srgb, var(--stage-accent) 42%, #80808C) 65%,
-    color-mix(in srgb, var(--stage-accent) 50%, #4E4E58) 100%);
-}
-.laptop-lid-edge--right {
-  left: auto; right: -12px;
-  transform-origin: 0 50%;
-  transform: rotateY(90deg);
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--stage-accent) 14%, #F7F7FA) 0%,
-    color-mix(in srgb, var(--stage-accent) 26%, #C9C9D2) 30%,
-    color-mix(in srgb, var(--stage-accent) 34%, #92929E) 65%,
-    color-mix(in srgb, var(--stage-accent) 42%, #5F5F69) 100%);
-}
-.laptop-lid-edge--top {
-  top: -12px; bottom: auto; left: 9px; right: 9px;
-  width: auto; height: 12px;
-  transform-origin: 50% 100%;
-  transform: rotateX(90deg);
-  background: linear-gradient(90deg, color-mix(in srgb, var(--stage-accent) 18%, #F0F0F4) 0%, color-mix(in srgb, var(--stage-accent) 32%, #BCBCC6) 50%, color-mix(in srgb, var(--stage-accent) 42%, #7C7C87) 100%);
-}
-.laptop-lid-front {
-  position: absolute;
-  inset: 0;
-  border-radius: 18px;
-  background: linear-gradient(160deg,
-    color-mix(in srgb, var(--stage-accent) 12%, #F5F5F8) 0%,
-    color-mix(in srgb, var(--stage-accent) 24%, #CFCFD8) 18%,
-    color-mix(in srgb, var(--stage-accent) 32%, #A4A4B0) 45%,
-    color-mix(in srgb, var(--stage-accent) 40%, #7D7D8A) 75%,
-    color-mix(in srgb, var(--stage-accent) 46%, #575761) 100%);
-  padding: clamp(4px, 0.65vw, 7px);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.95),
-    inset 0 -2px 4px rgba(16, 16, 24, 0.45);
-}
-.laptop-bezel {
-  position: relative;
-  height: 100%;
-  border-radius: 12px;
-  background:
-    radial-gradient(900px 420px at 50% 0%, rgba(233, 221, 251, 0.55), transparent 70%),
-    var(--bg-alt);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.7),
-    inset 0 3px 12px rgba(88, 72, 130, 0.28),
-    inset 0 -2px 6px rgba(88, 72, 130, 0.18);
-  padding: 4% 3.5% 3.8%;
-  display: flex;
-  flex-direction: column;
-}
-.laptop-camera {
-  position: absolute;
-  top: 2.3%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 9px; height: 9px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 38% 35%, #7A7F8A 0%, #22242B 38%, #04050A 100%);
-  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.06), 0 0 6px rgba(160, 180, 220, 0.28), inset 0 -1px 1px rgba(0, 0, 0, 0.9);
-}
-.laptop-camera::after {
-  content: '';
-  position: absolute;
-  top: 28%; left: 28%;
-  width: 32%; height: 32%;
-  border-radius: 50%;
-  background: radial-gradient(circle at 40% 40%, #9FD8EF 0%, rgba(159, 216, 239, 0) 70%);
-  opacity: 0.9;
-}
-.laptop-bezel::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 12px;
-  box-shadow: inset 0 0 26px rgba(140, 160, 255, 0.14);
-  pointer-events: none;
-}
-/* The live screen — opaque, LIGHT, like a real display */
-.laptop-screen::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none;
-  background: linear-gradient(112deg,
-    rgba(255, 255, 255, 0) 40%,
-    rgba(255, 255, 255, 0.13) 46.5%,
-    rgba(255, 255, 255, 0.03) 52%,
-    rgba(255, 255, 255, 0) 58%);
-}
-.laptop-screen {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  border-radius: 5px;
+  left: 16.36%;
+  top: 4.98%;
+  width: 68.0%;
+  height: 66.0%;
+  z-index: 2;
   background: #FFFFFF;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+  border-radius: 2px;
 }
-
-/* ===== HINGE ===== */
-.laptop-hinge {
-  position: absolute;
-  top: 100%; left: 4%; right: 4%;
-  height: 23px;
-  margin-top: -11px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--stage-accent) 18%, #CFCFD7) 0%, color-mix(in srgb, var(--stage-accent) 28%, #8F8F9A) 28%, color-mix(in srgb, var(--stage-accent) 36%, #4F4F59) 62%, color-mix(in srgb, var(--stage-accent) 45%, #1E1E26) 100%);
-  box-shadow:
-    0 3px 7px rgba(5, 5, 10, 0.45),
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.85),
-    inset 0 -2.5px 3px rgba(0, 0, 0, 0.55);
-  transform: translateZ(-7px);
-  z-index: 2;
-}
-/* Hinge barrels — cap each end of the lid/deck junction, seated in the deck plane */
-.laptop-hinge-cap {
-  position: absolute;
-  top: -12px;
-  width: 22%;
-  height: 23px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--stage-accent) 12%, #EAEAEF) 0%, color-mix(in srgb, var(--stage-accent) 24%, #A8A8B3) 38%, color-mix(in srgb, var(--stage-accent) 34%, #4E4E58) 82%, color-mix(in srgb, var(--stage-accent) 42%, #2E2E36) 100%);
-  box-shadow:
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.95),
-    inset 0 -2px 3px rgba(0, 0, 0, 0.45),
-    0 2px 5px rgba(0, 0, 0, 0.4);
-}
-.laptop-hinge-cap--left { left: 5%; }
-.laptop-hinge-cap--right { right: 5%; }
-/* Seam shadow where the deck tucks under the barrel — removes the floating-screen gap */
-.laptop-deck-top::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 16px;
-  border-radius: 10px 10px 0 0;
-  background: linear-gradient(180deg, rgba(22, 22, 30, 0.55) 0%, rgba(22, 22, 30, 0.18) 55%, rgba(22, 22, 30, 0) 100%);
-  pointer-events: none;
-}
-
-/* ===== BASE — one continuous milled unibody ===== */
-.laptop-base {
-  position: absolute;
-  top: 100%; left: -0.4%; right: -0.4%;
-  aspect-ratio: 1 / 0.575;
-  transform-origin: 50% 0;
-  transform: rotateX(50deg);
-  transform-style: preserve-3d;
-}
-.laptop-deck-top {
+.laptop-screen-canvas {
   position: absolute;
   inset: 0;
-  border-radius: 11px 11px 18px 18px;
-  background: linear-gradient(178deg,
-    color-mix(in srgb, var(--stage-accent) 13%, #F4F4F7) 0%,
-    color-mix(in srgb, var(--stage-accent) 21%, #DCDCE2) 22%,
-    color-mix(in srgb, var(--stage-accent) 27%, #C3C3CC) 48%,
-    color-mix(in srgb, var(--stage-accent) 33%, #A9A9B4) 74%,
-    color-mix(in srgb, var(--stage-accent) 40%, #888893) 100%);
-  border: 1px solid color-mix(in srgb, var(--stage-accent) 22%, rgba(255, 255, 255, 0.6));
-  box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.9),
-    inset 0 7px 12px -7px rgba(0, 0, 0, 0.4),
-    inset 0 -2px 6px rgba(0, 0, 0, 0.4);
-  padding: 4.2% 6.2% 0;
   display: flex;
   flex-direction: column;
+  background: #FFFFFF;
+  overflow: hidden;
 }
-/* Screen light spilling across the key well — dim, so caps stay readable */
-.laptop-deck-reflection {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 46%;
-  background: radial-gradient(75% 100% at 50% 0%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 76%);
-  pointer-events: none;
-  border-radius: 11px 11px 0 0;
-}
-/* Keyboard: flush chiclet caps in their cutouts — tight real-world spacing */
-.laptop-keyboard {
+/* The live app home — full-bleed, no chrome */
+.stage-slab-screen {
   position: relative;
-  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: #FFFFFF;
   display: flex;
-  flex-direction: column;
-  gap: clamp(2px, 0.4vw, 4.5px);
+  align-items: center;
+  justify-content: center;
 }
-.laptop-key-row {
-  display: flex;
-  gap: clamp(2px, 0.4vw, 4.5px);
-}
-.laptop-key-row:first-child { align-items: center; }
-.laptop-key-row:first-child .laptop-key {
-  height: clamp(10px, 1.35vw, 16px);
-  font-size: clamp(5px, 0.65vw, 7.2px);
-  border-radius: 4px;
-}
-.laptop-key {
-  flex: 1 1 0;
-  display: grid;
-  place-items: center;
-  height: clamp(18px, 2.5vw, 30px);
-  border-radius: 5px;
-  background: linear-gradient(180deg, #3D3D45 0%, #27272E 48%, #1A1A21 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -1px 1px rgba(0, 0, 0, 0.5),
-    0 1.5px 1.5px rgba(0, 0, 0, 0.35);
-  color: #F4F4F8;
-  font-size: clamp(7px, 0.95vw, 11px);
-  font-weight: 600;
-  user-select: none;
-}
-/* Trackpad: dead-centre in the palm-rest, glassed-in */
-.laptop-trackpad {
+
+/* Contact shadow on the surface beneath the machine */
+.laptop-shadow {
   position: absolute;
-  left: 50%; bottom: 2.6%;
-  transform: translateX(-50%);
-  z-index: 1;
-  width: 33%;
-  aspect-ratio: 1.62 / 1;
-  border-radius: 10px;
-  background: linear-gradient(180deg,
-    color-mix(in srgb, var(--stage-accent) 13%, #DEDEE3) 0%,
-    color-mix(in srgb, var(--stage-accent) 24%, #C2C2CB) 100%);
-  border: 1px solid color-mix(in srgb, var(--stage-accent) 32%, rgba(70, 70, 84, 0.32));
-  box-shadow:
-    inset 0 1px 2px rgba(0, 0, 0, 0.32),
-    0 1px 0 rgba(255, 255, 255, 0.42);
-}
-.laptop-lip {
-  position: absolute;
-  bottom: 2px; left: 50%;
-  transform: translateX(-50%);
-  width: 17%; height: clamp(3px, 0.55vw, 6px);
-  border-radius: 999px;
-  background: linear-gradient(90deg,
-    transparent 0%,
-    var(--stage-accent) 18%,
-    #FFFFFF 50%,
-    var(--stage-accent) 82%,
-    transparent 100%);
-  box-shadow: 0 0 12px 1px var(--stage-soft), 0 0 26px 4px var(--stage-soft);
-}
-/* Deck thickness faces */
-.laptop-base-edge { position: absolute; }
-.laptop-base-edge--front {
-  left: 0; right: 0; bottom: 0;
-  height: 13px;
-  transform-origin: 50% 100%;
-  transform: rotateX(90deg);
-  border-radius: 0 0 16px 16px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--stage-accent) 26%, #B9B9C3) 0%, color-mix(in srgb, var(--stage-accent) 36%, #7E7E8A) 55%, color-mix(in srgb, var(--stage-accent) 45%, #4E4E58) 100%);
-}
-.laptop-base-edge--left {
-  top: 0; bottom: 0; left: 0;
-  width: 13px;
-  transform-origin: 0 50%;
-  transform: rotateY(90deg);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--stage-accent) 24%, #CFCFD7) 0%, color-mix(in srgb, var(--stage-accent) 35%, #94949F) 60%, color-mix(in srgb, var(--stage-accent) 44%, #565660) 100%);
-}
-.laptop-base-edge--left::after {
-  content: '';
-  position: absolute;
-  top: 26%; left: 3px;
-  width: 7px; height: 3.5px;
-  border-radius: 2px;
-  background: #0B0B10;
-  box-shadow: 0 24px 0 #0B0B10, 0 48px 0 #0B0B10;
-}
-.laptop-base-edge--right {
-  top: 0; bottom: 0; right: 0;
-  width: 13px;
-  transform-origin: 100% 50%;
-  transform: rotateY(-90deg);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--stage-accent) 20%, #E7E7EC) 0%, color-mix(in srgb, var(--stage-accent) 30%, #A9A9B4) 60%, color-mix(in srgb, var(--stage-accent) 38%, #63636E) 100%);
-}
-.laptop-base-edge--right::after {
-  content: '';
-  position: absolute;
-  top: 30%; right: 3px;
-  width: 7px; height: 3.5px;
-  border-radius: 2px;
-  background: #0B0B10;
-  box-shadow: 0 26px 0 #0B0B10;
-}
-.laptop-base-edge--bottom {
-  inset: 0;
-  transform: translateZ(-13px);
-  border-radius: 11px 11px 18px 18px;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--stage-accent) 35%, #5C5C66) 0%, color-mix(in srgb, var(--stage-accent) 40%, #2A2A34) 100%);
+  left: 5%; right: 5%; bottom: -14%;
+  height: 20%;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 50% 42%, rgba(24, 16, 48, 0.55) 0%, rgba(36, 24, 70, 0.32) 42%, rgba(24, 16, 48, 0) 68%),
+    radial-gradient(ellipse at 50% 55%, rgba(96, 70, 160, 0.25) 20%, rgba(96, 70, 160, 0) 80%);
+  filter: blur(22px);
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .laptop-float { animation: laptop-float 6.6s ease-in-out infinite; }
-  .laptop { animation: laptop-sway 9.5s ease-in-out infinite alternate; }
   .laptop-glow { animation: laptop-glow 5.2s ease-in-out infinite alternate; }
   .laptop-enter { animation: laptop-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) both; }
   .laptop-shadow { animation: laptop-shadow 6.6s ease-in-out infinite; }
@@ -2556,10 +1957,6 @@ img, svg, video, canvas { max-width: 100%; }
 @keyframes laptop-float {
   0%, 100% { transform: translateY(4px); }
   50% { transform: translateY(-10px); }
-}
-@keyframes laptop-sway {
-  from { transform: rotateX(12deg) rotateY(-23deg); }
-  to { transform: rotateX(8deg) rotateY(-13deg); }
 }
 @keyframes laptop-glow {
   from { opacity: 0.65; }
@@ -2574,341 +1971,550 @@ img, svg, video, canvas { max-width: 100%; }
   50% { opacity: 0.6; transform: scaleX(0.92); }
 }
 
-/* Contact shadow on the surface beneath the machine */
-.laptop-shadow {
-  position: absolute;
-  left: 5%; right: 5%; bottom: -16%;
-  height: 22%;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse at 50% 42%, rgba(24, 16, 48, 0.55) 0%, rgba(36, 24, 70, 0.32) 42%, rgba(24, 16, 48, 0) 68%),
-    radial-gradient(ellipse at 50% 55%, rgba(96, 70, 160, 0.25) 20%, rgba(96, 70, 160, 0) 80%);
-  filter: blur(22px);
-  pointer-events: none;
-}
-
-
-
 /* ===== Front footer: live clock + system icons ===== */
 .stage-slab-footer {
   display: flex;
   align-items: center;
   gap: 0.9rem;
   margin-top: 0;
-  padding: 0.44rem 0.95rem 0.2rem;
+  padding: 0.3rem 0.7rem 0.14rem;
   border-top: 1px solid rgba(36, 27, 53, 0.16);
   background: rgba(255, 255, 255, 0.96);
   color: #241B35;
-  font-size: 0.74rem;
+  font-size: 0.58rem;
   font-weight: 650;
   letter-spacing: 0.02em;
+  flex: 0 0 auto;
 }
-.stage-footer-datetime { display: inline-flex; align-items: baseline; gap: 0.55rem; min-width: 0; }
+.stage-footer-datetime { display: inline-flex; align-items: baseline; gap: 0.45rem; min-width: 0; }
 .stage-footer-date { color: #3F3F4A; font-weight: 700; white-space: nowrap; }
 .stage-footer-time { color: #241B35; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .stage-footer-time-short { display: none; }
 .stage-footer-home { flex: 1; display: flex; justify-content: center; min-width: 40px; }
-.stage-footer-home-bar { width: clamp(64px, 12vw, 96px); height: 5px; border-radius: 999px; background: rgba(36, 27, 53, 0.8); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7); }
-.stage-footer-icons { display: inline-flex; align-items: center; gap: 0.65rem; color: #241B35; }
-.stage-footer-battery { display: inline-flex; align-items: center; gap: 0.3rem; font-variant-numeric: tabular-nums; font-weight: 700; }
+.stage-footer-home-bar { width: clamp(56px, 11vw, 88px); height: 4px; border-radius: 999px; background: rgba(36, 27, 53, 0.8); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7); }
+.stage-footer-icons { display: inline-flex; align-items: center; gap: 0.5rem; color: #241B35; }
+.stage-footer-icons svg { width: 13px; height: 13px; }
+.stage-footer-icons svg:nth-child(2) { width: 13px; height: 13px; }
+.stage-footer-battery { display: inline-flex; align-items: center; gap: 0.25rem; font-variant-numeric: tabular-nums; font-weight: 700; }
+.stage-footer-battery svg { width: 18px; height: 10px; }
+.stage-footer-battery span { font-size: 0.5rem; }
 
-/* Chrome row: logo · nav · badge */
-.stage-slab-chrome {
+/* ===== PHONE (<600px) — compact live screen footer ===== */
+@media (max-width: 599px) {
+  .stage-slab-footer {
+    gap: 0.45rem;
+    padding: 0.2rem 0.45rem 0.1rem;
+    font-size: 0.44rem;
+    letter-spacing: 0.01em;
+  }
+  .stage-footer-datetime { gap: 0.3rem; min-width: max-content; }
+  .stage-footer-icons { gap: 0.3rem; }
+  .stage-footer-icons svg { width: 10px; height: 10px; }
+  .stage-footer-battery svg { width: 13px; height: 8px; }
+  .stage-footer-battery span { font-size: 0.4rem; }
+  .stage-footer-home { min-width: 32px; }
+  .stage-footer-home-bar { width: 28px; height: 3px; }
+}
+
+/* ---------- App home mocks — official app homes, BioCraft's account inside ---------- */
+.mock {
+  /* Fixed design canvas (610×419) — scaled to the laptop's screen via --mock-scale
+     (set from PlatformStage). Guarantees the app home fills the display at every breakpoint. */
+  flex: 0 0 auto;
+  width: 610px;
+  height: 419px;
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.34rem 0.58rem;
-  margin-bottom: 0.42rem;
-  border-radius: 16px;
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.4) 55%, rgba(238, 232, 250, 0.44) 100%);
-  backdrop-filter: blur(16px) saturate(1.35);
-  -webkit-backdrop-filter: blur(16px) saturate(1.35);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -1px 2px rgba(36, 27, 53, 0.12),
-    0 9px 20px -11px rgba(36, 27, 53, 0.4);
-}
-.stage-slab-logo { display: inline-flex; align-items: center; gap: 0.55rem; border-radius: 12px; }
-.stage-slab-logo:focus-visible { outline: 2px solid var(--stage-deep); outline-offset: 3px; }
-/* The BioCraft mark sits on a vivid white-glass tile, border in the logo icon's own hues */
-.stage-slab-mark {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background:
-    linear-gradient(165deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 255, 255, 0.6) 60%, rgba(238, 233, 252, 0.62) 100%) padding-box,
-    linear-gradient(150deg, #8B4BC0 0%, #D6538F 48%, #3FA7C7 100%) border-box;
-  border: 2.5px solid transparent;
-  box-shadow:
-    0 6px 18px -5px rgba(139, 75, 192, 0.55),
-    0 2px 12px -4px rgba(63, 167, 199, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 -2px 4px rgba(76, 29, 149, 0.2);
-}
-/* Wordmark next to the tile — logo icon hues (violet → rose → cyan), static */
-.stage-slab-word {
-  font-size: 1.04rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  background: linear-gradient(105deg, #8B4BC0 0%, #D6538F 48%, #3FA7C7 100%);
-  background-size: 100% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 1px 6px rgba(139, 75, 192, 0.28));
-  white-space: nowrap;
-}
-.stage-slab-word-craft { -webkit-text-fill-color: transparent; }
-.stage-slab-logo:focus-visible { outline: 2px solid var(--stage-deep); outline-offset: 2px; }
-.stage-slab-nav { display: none; gap: 0.85rem; margin-left: 0.4rem; }
-@media (min-width: 640px) { .stage-slab-nav { display: inline-flex; } }
-.stage-slab-nav a {
-  font-size: 0.68rem;
-  font-weight: 650;
-  color: var(--text-2);
-  text-decoration: none;
-  white-space: nowrap;
-  transition: color 150ms ease;
-}
-.stage-slab-nav a:hover { color: var(--stage-deep); }
-.stage-slab-nav a:focus-visible { outline: 2px solid var(--stage-deep); outline-offset: 2px; border-radius: 4px; }
-.stage-slab-badge {
-  margin-left: auto;
-  padding: 0.18rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(14, 122, 77, 0.1);
-  border: 1px solid rgba(14, 122, 77, 0.28);
-  color: #0E7A4D;
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-
-/* Working search bar */
-.stage-search {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  min-height: 46px;
-  padding: 0 0.85rem;
-  border-radius: 999px;
-  border: 1.5px solid transparent;
-  background:
-    linear-gradient(165deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.52) 45%, rgba(240, 236, 252, 0.58) 100%) padding-box,
-    linear-gradient(110deg, #C4B0F2 0%, #8B4BC0 25%, #F7B3CF 50%, #D6538F 62%, #9FD8EF 82%, #3FA7C7 100%) border-box;
-  background-size: 100% 100%, 100% 100%;
-  background-position: 0 0, 0 0;
-  backdrop-filter: blur(18px) saturate(1.4);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 1),
-    inset 0 -2px 4px rgba(36, 27, 53, 0.13),
-    0 0 0 1px rgba(255, 255, 255, 0.55),
-    0 8px 26px -8px rgba(139, 75, 192, 0.5),
-    0 2px 16px -6px rgba(63, 167, 199, 0.45),
-    0 0 40px -12px rgba(214, 83, 143, 0.4);
-  color: var(--text-2);
-  cursor: pointer;
-  font-family: inherit;
-  transition: box-shadow 200ms ease, transform 200ms ease, background 200ms ease;
-}
-.stage-search-icon { color: #8B4BC0; filter: drop-shadow(0 0 5px rgba(139, 75, 192, 0.55)); }
-.stage-search:hover { box-shadow: inset 0 1px 0 rgba(255,255,255,1), inset 0 -2px 4px rgba(36,27,53,0.13), 0 0 0 1px rgba(255,255,255,0.65), 0 12px 32px -9px rgba(139,75,192,0.4), 0 0 36px -6px rgba(63,167,199,0.35), 0 2px 14px -6px rgba(214,83,143,0.45); transform: translateY(-1px); }
-.stage-search:focus-visible { outline: 2px solid var(--stage-deep); outline-offset: 2px; }
-.stage-search-text {
-  flex: 1;
-  text-align: left;
+  flex-direction: column;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.82rem;
-  color: var(--muted);
-}
-.stage-search-kbd {
-  padding: 0.12rem 0.48rem;
-  border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  border-bottom-width: 2px;
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.75) 0%, rgba(244, 241, 252, 0.5) 100%);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  font-size: 0.7rem;
-  color: var(--text-2);
-  font-family: inherit;
-}
-
-/* Live app screen inside the laptop display */
-.stage-slab-screen {
-  position: relative;
-  margin-top: 0;
-  flex: 1 1 auto;
-  min-height: 0;
-  height: auto;
-  border-radius: 0;
-  overflow: hidden;
-  border: 1px solid rgba(36, 27, 53, 0.12);
-  box-shadow:
-    inset 0 2px 10px rgba(36, 27, 53, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    0 1px 0 rgba(255, 255, 255, 0.9);
+  font-family: var(--font-sans);
   background: #FFFFFF;
+  color: #241B35;
+  font-size: 10.5px;
+  text-align: left;
+  transform: scale(var(--mock-scale, 1));
+  transform-origin: center center;
 }
-/* ---------- Landscape app mocks inside the laptop screen ---------- */
-.mock-wide { font-size: 10.5px; }
-.mock-header--compact { padding-top: 0.5rem; }
-.mock-wide-body {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: 0;
+.mock-avatar {
+  display: inline-grid; place-items: center;
+  border-radius: 50%;
+  color: #FFFFFF;
+  font-weight: 800;
+  flex: 0 0 auto;
 }
-.mock-wide-main {
-  min-width: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  padding: 0.4rem 0.5rem 0.25rem;
-  gap: 0.2rem;
+.mock-avatar--square { border-radius: 22%; }
+.mock-scene { display: block; width: 100%; object-fit: cover; }
+.mock-meta { font-size: 0.6rem; color: #8B87A0; }
+.mock-meta--dark { color: #94A3B8; }
+.mock-caption { margin: 0.2rem 0.7rem; font-size: 0.68rem; line-height: 1.42; color: #241B35; }
+.mock-caption--feed { margin: 0.1rem 0.3rem 0.2rem; }
+.mock-dots { margin-left: auto; letter-spacing: 0.08em; color: #8B87A0; font-size: 0.7rem; }
+.mock-action {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  border: none; background: transparent;
+  color: #241B35;
+  font-size: 0.68rem; font-weight: 750;
+  cursor: pointer;
+  padding: 0.14rem 0.3rem;
+  border-radius: 8px;
+  font-family: inherit;
+  transition: transform 150ms ease, color 150ms ease, background 150ms ease;
 }
-.mock-wide-body--fb .mock-wide-main,
-.mock-wide-body--threads .mock-wide-main,
-.mock-wide-body--x .mock-wide-main { padding-top: 0.45rem; overflow-y: auto; }
-.mock-wide-body--insta .mock-wide-main { padding: 0; }
-.mock-wide-body--insta .mock-wide-main .mock-scene { border-radius: 0; height: 105px; object-fit: cover; }
-.mock-wide-side {
-  min-width: 0;
-  border-left: 1px solid rgba(36, 27, 53, 0.08);
-  padding: 0.4rem 0.45rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.22rem;
-  text-align: center;
-  overflow-y: auto;
-}
-.mock-wide-side--soft { align-items: stretch; text-align: left; }
-.mock-side-title { font-size: 0.74rem; font-weight: 800; color: #241B35; }
-.mock-side-note { margin: 0; font-size: 0.56rem; line-height: 1.4; color: #71677D; }
-.mock-side-label { margin: 0.1rem 0 0; font-size: 0.55rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; color: #8B87A0; }
-.mock-side-label--dark { color: #94A3B8; }
-.mock-side-row { display: flex; align-items: center; gap: 0.35rem; width: 100%; }
-.mock-side-row--static { align-items: center; }
-.mock-side-text { font-size: 0.6rem; line-height: 1.35; color: #3F3A56; flex: 1; }
-.mock-side-emoji { font-size: 0.72rem; }
-.mock-side-trend { font-size: 0.68rem; font-weight: 800; color: #151A21; flex: 1; }
+.mock-action:hover { background: rgba(36, 27, 53, 0.05); }
+.mock-action:focus-visible { outline: 2px solid #DD2A7B; outline-offset: 1px; }
+.mock-action:active { transform: scale(0.86); }
+.mock-action.is-on { color: #DD2A7B; }
+.mock-action--ig.is-on { color: #FF3040; }
+.mock-action--threads.is-on { color: #000000; }
+.mock-action--x.is-on { color: #F91880; }
 .mock-followbtn {
   border: 1.4px solid #C13584;
   color: #C13584;
   background: transparent;
   border-radius: 999px;
-  font-size: 0.55rem;
-  font-weight: 800;
-  padding: 0.14rem 0.5rem;
+  font-size: 0.53rem; font-weight: 800;
+  padding: 0.1rem 0.45rem;
   cursor: pointer;
   font-family: inherit;
   white-space: nowrap;
+  line-height: 1.35;
   transition: background 150ms ease, color 150ms ease;
 }
 .mock-followbtn:hover { background: rgba(193, 53, 132, 0.08); }
-.mock-followbtn.is-on { background: #C13584; color: #FFFFFF; }
-.mock-followbtn:focus-visible { outline: 2px solid #C13584; outline-offset: 2px; }
+.mock-followbtn.is-on { background: #C13584; color: #FFFFFF; border-color: #C13584; }
+.mock-followbtn:focus-visible { outline: 2px solid #DD2A7B; outline-offset: 1px; }
 .mock-followbtn--li { border-color: #0A66C2; color: #0A66C2; }
 .mock-followbtn--li:hover { background: rgba(10, 102, 194, 0.08); }
-.mock-followbtn--li.is-on { background: #0A66C2; color: #FFFFFF; }
+.mock-followbtn--li.is-on { background: #0A66C2; color: #FFFFFF; border-color: #0A66C2; }
 .mock-followbtn--li:focus-visible { outline-color: #0A66C2; }
-.mock-localcomposer { display: flex; flex-direction: column; gap: 0.35rem; }
-.mock-localcomposer-row { display: flex; align-items: center; gap: 0.35rem; }
+.mock-localcomposer { display: flex; flex-direction: column; gap: 0.3rem; }
+.mock-localcomposer-row { display: flex; align-items: center; gap: 0.4rem; }
 .mock-localcomposer-input {
-  flex: 1;
-  min-width: 0;
-  min-height: 32px;
+  flex: 1; min-width: 0; min-height: 27px;
   border-radius: 999px;
-  border: 1px solid rgba(36, 27, 53, 0.15);
-  background: #F7F7FA;
+  border: 1px solid rgba(36, 27, 53, 0.12);
+  background: #F0F2F5;
   padding: 0 0.6rem;
   font-size: 0.66rem;
   font-family: inherit;
   color: #241B35;
 }
-.mock-localcomposer-input:focus-visible { outline: 2px solid #1568D6; outline-offset: 1px; }
-.mock-localcomposer-input--dark { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.14); color: #FFFFFF; }
-.mock-localcomposer-input--dark::placeholder { color: #94A3B8; }
+.mock-localcomposer-input:focus-visible { outline: 2px solid #0866FF; outline-offset: 1px; }
+.mock-localcomposer-row--x .mock-localcomposer-input { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.12); color: #E7E9EA; }
 .mock-localcomposer-btn {
-  min-height: 32px;
-  border: none;
-  border-radius: 999px;
-  background: #1568D6;
-  color: #FFFFFF;
-  font-size: 0.64rem;
-  font-weight: 800;
-  padding: 0 0.7rem;
+  border: none; border-radius: 999px;
+  background: #0866FF; color: #FFFFFF;
+  font-size: 0.63rem; font-weight: 800;
+  padding: 0.26rem 0.7rem;
   cursor: pointer;
   font-family: inherit;
 }
-.mock-localcomposer-btn:focus-visible { outline: 2px solid #0F5CC2; outline-offset: 2px; }
-.mock-localcomposer-btn--dark { background: #FE2C55; }
-.mock-post--local { background: #FDFDFE; border: 1px solid rgba(36, 27, 53, 0.09); border-radius: 10px; padding-bottom: 0.3rem; }
-.mock-thread-post--wide { border: none; padding: 0.3rem 0.1rem; }
-.mock-caption--li { margin-top: 0.35rem; }
-.mock-li-banner--compact { height: 34px; }
-.mock-li-profilebar { display: flex; align-items: center; gap: 0.45rem; padding: 0.35rem 0.6rem; }
-.mock-li-profilebar-meta { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; flex: 1; }
-.mock-li-profilebar-meta strong { font-size: 0.72rem; }
-.mock-wide-body--li { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+.mock-localcomposer-btn--x { background: #1D9BF0; }
+.mock-post--local { border-bottom: 1px solid rgba(36, 27, 53, 0.08); padding: 0.1rem 0 0.25rem; }
+.mock-post--local .mock-caption { margin: 0; }
 
-/* TikTok wide: video hero + comments column (screen natively dark) */
-.mock-wide--tiktok {
-  display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 5fr);
-  background: #0F172A;
+/* ---------- Instagram — home feed ---------- */
+.m-ig { background: #FFFFFF; }
+.m-ig-topbar {
+  height: 33px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 0.6rem;
+  border-bottom: 1px solid rgba(36, 27, 53, 0.08);
 }
-.mock-tiktok-hero { position: relative; overflow: hidden; height: 100%; min-height: 0; }
-.mock-tiktok-hero .mock-scene { width: 100%; height: 100%; }
-.mock-tiktok-hero-overlay {
-  position: absolute; left: 0.5rem; bottom: 0.4rem; right: 0.5rem;
+.m-ig-wordmark {
+  font-style: italic; font-weight: 800; font-size: 1.02rem; letter-spacing: -0.01em;
+  background: linear-gradient(115deg, #FEDA77 0%, #F58529 22%, #DD2A7B 48%, #8134AF 74%, #515BD4 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.m-ig-icons { display: inline-flex; gap: 0.7rem; color: #241B35; }
+.m-ig-stories {
+  display: flex; gap: 0.45rem; flex: 0 0 auto;
+  padding: 0.4rem 0.6rem 0.35rem;
+  border-bottom: 1px solid rgba(36, 27, 53, 0.08);
+  overflow: hidden;
+}
+.m-story { display: flex; flex-direction: column; align-items: center; gap: 0.12rem; width: 47px; flex: 0 0 auto; }
+.m-story-ring {
+  width: 40px; height: 40px; border-radius: 50%;
+  padding: 1.6px;
+  background: conic-gradient(from 210deg, #FEDA77, #F58529, #DD2A7B, #8134AF, #515BD4, #FEDA77);
+  display: grid; place-items: center; position: relative;
+}
+.m-story-ring--mine { background: rgba(36, 27, 53, 0.16); }
+.m-story-in {
+  width: 100%; height: 100%; border-radius: 50%;
+  border: 1.6px solid #FFFFFF;
+  display: grid; place-items: center;
+  font-size: 0.53rem; font-weight: 850; color: #FFFFFF;
+}
+.m-story-plus {
+  position: absolute; right: -2px; bottom: -2px;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: #0095F6; border: 1.4px solid #FFFFFF;
+  color: #FFFFFF; font-size: 0.5rem; font-weight: 800;
+  display: grid; place-items: center; line-height: 1;
+}
+.m-story-name { font-size: 0.46rem; color: #241B35; max-width: 46px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-ig-post { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.m-ig-post-head { display: flex; align-items: center; gap: 0.35rem; padding: 0.22rem 0.55rem; flex: 0 0 auto; }
+.m-ig-user { font-size: 0.68rem; font-weight: 800; color: #241B35; }
+.m-ig-post-head .mock-followbtn { font-size: 0.48rem; padding: 0.06rem 0.4rem; }
+.m-ig-art { flex: 1 1 auto; min-height: 0; }
+.m-ig-actions { display: flex; align-items: center; gap: 0.08rem; padding: 0.14rem 0.45rem 0; flex: 0 0 auto; }
+.m-ig-action-glyph { display: inline-flex; color: #241B35; padding: 0.12rem 0.28rem; }
+.m-ig-actions-spacer { flex: 1; }
+.m-ig-likes { font-size: 0.56rem; color: #241B35; padding: 0 0.55rem; flex: 0 0 auto; }
+.m-ig-caption { margin: 0.08rem 0.55rem 0.24rem; padding: 0; font-size: 0.58rem; flex: 0 0 auto; }
+.m-ig-tabbar {
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0.26rem 0.6rem;
+  border-top: 1px solid rgba(36, 27, 53, 0.12);
+  flex: 0 0 auto; color: #241B35;
+}
+.m-ig-tabbar svg:nth-child(n+2) { color: #8B87A0; }
+.m-ig-profile-dot {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: linear-gradient(135deg, #A78BFA, #7C3AED);
+  color: #FFFFFF; font-size: 0.36rem; font-weight: 850;
+  display: grid; place-items: center;
+  border: 1.5px solid #241B35;
+}
+
+/* ---------- Facebook — the feed ---------- */
+.m-fb { background: #F0F2F5; }
+.m-fb-topbar {
+  height: 32px; flex: 0 0 auto;
+  background: #FFFFFF;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 0.6rem;
+}
+.m-fb-wordmark { color: #0866FF; font-weight: 800; font-size: 1.08rem; letter-spacing: -0.03em; font-style: italic; }
+.m-fb-icons { display: inline-flex; gap: 0.55rem; color: #241B35; }
+.m-fb-tabs {
+  height: 30px; flex: 0 0 auto;
+  background: #FFFFFF;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex; align-items: stretch; justify-content: space-around;
+  padding: 0 0.3rem;
+}
+.m-fb-tab { display: flex; align-items: center; justify-content: center; color: #65676B; padding: 0 0.9rem; border-bottom: 2.4px solid transparent; }
+.m-fb-tab.is-active { color: #0866FF; border-bottom-color: #0866FF; }
+.m-fb-feed { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 0.3rem; padding: 0.3rem 0.35rem; }
+.m-fb-card { background: #FFFFFF; border-radius: 8px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14); }
+.m-fb-composer-card { padding: 0.28rem 0.4rem; flex: 0 0 auto; }
+.m-fb-post { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.m-fb-post-head { display: flex; align-items: center; gap: 0.35rem; padding: 0.26rem 0.45rem 0.18rem; }
+.m-fb-post-meta { display: flex; flex-direction: column; line-height: 1.25; font-size: 0.57rem; color: #65676B; }
+.m-fb-post-meta strong { font-size: 0.67rem; color: #050505; }
+.m-fb-post .mock-scene { flex: 1 1 auto; min-height: 0; }
+.m-fb-reactions { display: flex; align-items: center; gap: 0.4rem; padding: 0.13rem 0.5rem; border-bottom: 1px solid rgba(0, 0, 0, 0.09); font-size: 0.55rem; color: #65676B; }
+.m-fb-reaction-stack { font-size: 0.6rem; letter-spacing: -0.06em; }
+.m-fb-reactions-right { margin-left: auto; }
+.m-fb-actions { display: flex; align-items: center; justify-content: space-around; padding: 0.13rem 0.4rem 0.18rem; }
+.m-fb-action {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  border: none; background: transparent;
+  color: #65676B; font-weight: 650; font-size: 0.6rem;
+  cursor: pointer;
+  padding: 0.18rem 0.45rem;
+  border-radius: 6px;
+  font-family: inherit;
+  transition: background 150ms ease, color 150ms ease;
+}
+.m-fb-action:hover { background: rgba(0, 0, 0, 0.05); }
+.m-fb-action.is-on { color: #0866FF; }
+.m-fb-action--static { cursor: default; }
+
+/* ---------- Threads — the home feed ---------- */
+.m-thr { background: #FFFFFF; }
+.m-thr-topbar {
+  height: 31px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 0.6rem;
+  border-bottom: 1px solid rgba(36, 27, 53, 0.08);
+  color: #000000;
+}
+.m-thr-feed { flex: 1 1 auto; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.m-thr-post { display: flex; gap: 0.4rem; padding: 0.3rem 0.55rem; border-bottom: 1px solid rgba(36, 27, 53, 0.09); flex: 1 1 0; align-items: center; }
+.m-thr-body { display: flex; flex-direction: column; min-width: 0; }
+.m-thr-head { display: flex; align-items: center; gap: 0.3rem; font-size: 0.66rem; color: #000000; }
+.m-thr-head strong { font-weight: 800; }
+.m-thr .mock-followbtn { border-color: #000000; color: #000000; font-size: 0.48rem; padding: 0.05rem 0.4rem; }
+.m-thr .mock-followbtn.is-on { background: #000000; color: #FFFFFF; border-color: #000000; }
+.m-thr-text { font-size: 0.65rem; line-height: 1.35; color: #000000; margin: 0.05rem 0 0.1rem; }
+.m-thr-actions { display: flex; align-items: center; gap: 0.55rem; color: #000000; }
+.m-thr-actions .mock-action { gap: 0.2rem; font-size: 0.58rem; padding: 0.06rem 0.15rem; color: #000000; }
+.m-thr-action-glyph { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.58rem; color: #000000; }
+.m-thr-tabbar {
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0.26rem 1rem;
+  border-top: 1px solid rgba(36, 27, 53, 0.14);
+  flex: 0 0 auto; color: #000000;
+}
+.m-thr-tabbar svg:nth-child(n+2) { color: #8B87A0; }
+
+/* ---------- TikTok — the FYP ---------- */
+.m-tt { background: #000000; }
+.m-tt-main { flex: 1 1 auto; min-height: 0; display: flex; }
+.m-tt-view { position: relative; flex: 1 1 auto; min-width: 0; overflow: hidden; }
+.m-tt-art { display: block; width: 100%; height: 100%; }
+.m-tt-tabs {
+  position: absolute; top: 0.3rem; left: 0; right: 0;
+  display: flex; justify-content: center; gap: 0.7rem;
+  font-size: 0.6rem; color: rgba(255, 255, 255, 0.62);
+}
+.m-tt-tabs strong { color: #FFFFFF; border-bottom: 2px solid #FFFFFF; padding-bottom: 0.06rem; }
+.m-tt-caption {
+  position: absolute; left: 0.45rem; right: 0.45rem; bottom: 0.35rem;
   display: flex; flex-direction: column; gap: 0.1rem;
-  color: #FFFFFF; font-size: 0.58rem; line-height: 1.35;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  color: #FFFFFF; font-size: 0.56rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.65);
 }
-.mock-tiktok-side { display: flex; flex-direction: column; min-width: 0; padding: 0.45rem 0.5rem; gap: 0.3rem; background: #0F172A; }
-.mock-tiktok-creator { display: flex; align-items: center; gap: 0.4rem; }
-.mock-tiktok-creator-meta { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; flex: 1; }
-.mock-tiktok-creator-meta strong { color: #FFFFFF; font-size: 0.7rem; }
-.mock-meta--dark { color: #94A3B8; }
-.mock-tiktok-comments { display: flex; flex-direction: column; gap: 0.28rem; flex: 1; min-height: 0; }
-.mock-tiktok-comment-list {
-  list-style: none; margin: 0; padding: 0;
-  display: flex; flex-direction: column; gap: 0.28rem;
-  overflow-y: auto; min-height: 0; flex: 1;
+.m-tt-caption strong { font-size: 0.65rem; }
+.m-tt-rail {
+  width: 50px; flex: 0 0 auto;
+  background: #000000;
+  display: flex; flex-direction: column; align-items: center; gap: 0.42rem;
+  padding: 0.45rem 0 0.3rem;
 }
-.mock-tiktok-comment-list li { color: #E2E8F0; font-size: 0.6rem; line-height: 1.4; }
-.mock-tiktok-comment-list strong { color: #FDA4AF; margin-right: 0.25rem; }
-.mock-rail-btn--light span { color: #FFFFFF; }
-.mock-localcomposer-row--dark { margin-top: auto; }
+.m-tt-avatar-wrap { position: relative; margin-bottom: 0.1rem; }
+.m-tt-follow {
+  position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%);
+  width: 15px; height: 15px; border-radius: 50%;
+  background: #FE2C55; color: #FFFFFF;
+  border: 1.4px solid #000000;
+  font-size: 0.52rem; font-weight: 800;
+  display: grid; place-items: center;
+  cursor: pointer; line-height: 1; padding: 0; font-family: inherit;
+}
+.m-tt-rail-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 0.08rem;
+  color: #FFFFFF; font-size: 0.48rem; font-weight: 650;
+  background: transparent; border: none; cursor: pointer; font-family: inherit; padding: 0;
+}
+.m-tt-rail-btn.is-on { color: #FE2C55; }
+.m-tt-rail-btn--static { cursor: default; }
+.m-tt-music {
+  width: 23px; height: 23px; border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  background: #161616; color: #FFFFFF;
+  display: grid; place-items: center;
+}
+.m-tt-tabbar {
+  height: 30px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
+}
+.m-tt-tabbar svg { color: #9CA3AF; }
+.m-tt-tabbar svg:first-child { color: #FFFFFF; }
+.m-tt-create {
+  width: 21px; height: 15px; border-radius: 4.5px;
+  background: #FFFFFF;
+  display: grid; place-items: center; color: #000000;
+  box-shadow: -2.4px 0 0 #25F4EE, 2.4px 0 0 #FE2C55;
+}
+.m-tt-create svg { color: #000000; width: 11px; height: 11px; }
 
-/* Responsive: the laptop keeps its 3/4 pose at every width — it scales down,
-   exactly like a real machine seen from farther away */
-@media (max-width: 719px) {
-  .stage-slab-chrome { gap: 0.35rem; padding: 0.3rem 0.45rem; }
-  .stage-slab-nav { display: none; }
-  .stage-slab-badge { font-size: 0.52rem; padding: 0.14rem 0.4rem; }
-  .stage-search-kbd { display: none; }
-  .mock-wide-body { grid-template-columns: minmax(0, 1fr); }
-  .mock-wide-side { border-left: none; border-top: 1px solid rgba(36, 27, 53, 0.08); }
-  .mock-wide--tiktok { grid-template-columns: minmax(0, 1fr); height: auto; }
-  .mock-tiktok-hero { min-height: 110px; }
+/* ---------- X — the For You feed ---------- */
+.m-x { background: #000000; color: #E7E9EA; }
+.m-x-topbar {
+  height: 30px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 0.6rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  color: #FFFFFF;
 }
-@media (max-width: 380px) {
-  .stage-slab-chrome { gap: 0.35rem; }
-  .stage-slab-badge { font-size: 0.54rem; padding: 0.15rem 0.4rem; }
+.m-x-tabs { flex: 0 0 auto; height: 29px; display: flex; align-items: stretch; border-bottom: 1px solid rgba(255, 255, 255, 0.14); }
+.m-x-tabs strong { flex: 1; text-align: center; color: #FFFFFF; font-size: 0.64rem; padding: 0.28rem 0; border-bottom: 2.2px solid #E7E9EA; }
+.m-x-tabs span { flex: 1; text-align: center; color: #71767B; font-size: 0.64rem; padding: 0.28rem 0; }
+.m-x-composer { flex: 0 0 auto; padding: 0.28rem 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.14); }
+.m-x-composer .mock-localcomposer-row--x { align-items: center; }
+.m-x-composer .mock-post--local { border-bottom: none; }
+.m-x-composer .mock-caption--feed { color: rgba(231, 233, 234, 0.8); }
+.m-x-post { flex: 0 0 auto; padding: 0.26rem 0.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.14); }
+.m-x-post-head { display: flex; align-items: center; gap: 0.35rem; }
+.m-x-post-id strong { color: #E7E9EA; font-size: 0.67rem; margin-right: 0.12rem; }
+.m-x-text { font-size: 0.63rem; line-height: 1.35; color: #E7E9EA; margin: 0.08rem 0 0.12rem; }
+.m-x-actions { display: flex; align-items: center; justify-content: space-between; color: #71767B; }
+.m-x-action-glyph { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.56rem; color: #71767B; }
+.m-x-actions .mock-action { color: #71767B; font-size: 0.56rem; gap: 0.25rem; padding: 0.06rem 0.12rem; }
+.m-x-actions .mock-action.is-on { color: #F91880; background: transparent; }
+.m-x-trends { flex: 0 0 auto; display: flex; flex-direction: column; padding: 0.18rem 0.5rem; }
+.m-x-trends-title { color: #E7E9EA; font-weight: 800; font-size: 0.64rem; margin: 0.05rem 0 0.08rem; }
+.m-x-trend { display: flex; align-items: baseline; gap: 0.35rem; padding: 0.05rem 0; }
+.m-x-trend strong { color: #E7E9EA; font-size: 0.6rem; }
+.m-x-trend span { color: #71767B; font-size: 0.52rem; }
+.m-x-tabbar {
+  margin-top: auto;
+  height: 28px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  color: #FFFFFF;
+}
+.m-x-tabbar svg { color: #71767B; }
+.m-x-tabbar svg:first-child { color: #FFFFFF; }
+
+/* ---------- LinkedIn — the home feed ---------- */
+.m-li { background: #F4F2EE; }
+.m-li-topbar {
+  height: 31px; flex: 0 0 auto;
+  display: flex; align-items: center; gap: 0.42rem;
+  padding: 0 0.55rem;
+  background: #FFFFFF;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.09);
+}
+.m-li-wordmark { color: #0A66C2; font-weight: 800; font-size: 0.92rem; letter-spacing: -0.02em; }
+.m-li-search {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  background: #EDF3F8; color: #5F6B7A;
+  font-size: 0.58rem; border-radius: 3px;
+  padding: 0.2rem 0.5rem; min-width: 66px;
+}
+.m-li-icons { margin-left: auto; display: inline-flex; gap: 0.5rem; color: #5F6B7A; }
+.m-li-scroll { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 0.3rem; padding: 0.3rem 0.35rem; }
+.m-li-card { background: #FFFFFF; border-radius: 6px; border: 1px solid rgba(0, 0, 0, 0.09); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06); overflow: hidden; }
+.m-li-company { flex: 0 0 auto; }
+.m-li-banner { height: 30px; background: linear-gradient(100deg, #0A66C2 0%, #378FE9 55%, #7FC7FF 100%); }
+.m-li-company-body { display: flex; align-items: center; gap: 0.4rem; padding: 0.22rem 0.45rem 0.3rem; background: #FFFFFF; }
+.m-li-company-body .mock-avatar--square { margin-top: -26px; border: 2.5px solid #FFFFFF; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18); }
+.m-li-company-meta { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.m-li-company-meta strong { font-size: 0.63rem; color: #191919; }
+.m-li-company-meta span { font-size: 0.52rem; color: #5F6B7A; }
+.m-li-company .mock-followbtn { margin-left: auto; }
+.m-li-post { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0.28rem 0.45rem 0.24rem; }
+.m-li-art { flex: 1 1 auto; min-height: 0; border-radius: 4px; margin-bottom: 0.18rem; }
+.m-li-post-head { display: flex; align-items: center; gap: 0.35rem; }
+.m-li-post-id { display: flex; flex-direction: column; line-height: 1.25; }
+.m-li-post-id strong { font-size: 0.64rem; color: #191919; }
+.m-li-text { font-size: 0.61rem; line-height: 1.38; color: #191919; margin: 0.15rem 0 0.12rem; }
+.m-li-actions { display: flex; align-items: center; gap: 0.15rem; border-top: 1px solid rgba(0, 0, 0, 0.1); padding-top: 0.12rem; }
+.m-li-action {
+  display: inline-flex; align-items: center; gap: 0.25rem;
+  border: none; background: transparent;
+  color: #5F6B7A; font-weight: 650; font-size: 0.56rem;
+  padding: 0.14rem 0.35rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 150ms ease, color 150ms ease;
+}
+.m-li-action:hover { background: rgba(10, 102, 194, 0.08); }
+.m-li-action.is-on { color: #0A66C2; font-weight: 800; }
+.m-li-action--static { cursor: default; }
+.m-li-tabbar {
+  height: 29px; flex: 0 0 auto;
+  background: #FFFFFF;
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0 1rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.09);
+  color: #5F6B7A;
+}
+.m-li-tabbar svg:first-child { color: #0A66C2; }
+
+/* ---------- WhatsApp — the chats list ---------- */
+.m-wa { background: #FFFFFF; position: relative; }
+.m-wa-topbar {
+  height: 32px; flex: 0 0 auto;
+  background: #008069;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 0.6rem;
+}
+.m-wa-wordmark { color: #FFFFFF; font-weight: 800; font-size: 0.98rem; letter-spacing: -0.01em; }
+.m-wa-icons { display: inline-flex; gap: 0.55rem; color: #FFFFFF; }
+.m-wa-tabs { height: 27px; flex: 0 0 auto; background: #008069; display: flex; align-items: stretch; gap: 1.2rem; padding: 0 0.7rem; }
+.m-wa-tabs strong, .m-wa-tabs span {
+  display: flex; align-items: center;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.58rem; font-weight: 650;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  border-bottom: 2.2px solid transparent;
+  padding: 0 0.1rem;
+}
+.m-wa-tabs strong { color: #FFFFFF; border-bottom-color: #FFFFFF; }
+.m-wa-list { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; background: #FFFFFF; }
+.m-wa-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.22rem 0.55rem; border-bottom: 1px solid rgba(0, 0, 0, 0.06); flex: 1 1 auto; min-height: 0; }
+.m-wa-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.02rem; }
+.m-wa-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.4rem; }
+.m-wa-row-top strong { font-size: 0.69rem; color: #111B21; }
+.m-wa-time { font-size: 0.52rem; color: #667781; }
+.m-wa-time.is-unread { color: #25D366; font-weight: 800; }
+.m-wa-row-bottom { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; }
+.m-wa-preview { font-size: 0.59rem; color: #667781; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-wa-badge {
+  min-width: 14px; height: 14px; border-radius: 7px;
+  background: #25D366; color: #FFFFFF;
+  font-size: 0.47rem; font-weight: 800;
+  display: inline-grid; place-items: center;
+  padding: 0 0.28rem;
+}
+.m-wa-fab {
+  position: absolute; right: 0.5rem; bottom: 0.5rem;
+  width: 35px; height: 35px; border-radius: 50%;
+  background: #25D366; color: #FFFFFF;
+  display: grid; place-items: center;
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.28);
+}
+
+/* ---------- Snapchat — the Chat tab ---------- */
+.m-snap { background: #FFFFFF; }
+.m-snap-topbar {
+  height: 33px; flex: 0 0 auto;
+  background: #FFFC00;
+  display: flex; align-items: center;
+  padding: 0 0.6rem;
+  color: #000000;
+  position: relative;
+}
+.m-snap-topbar strong { position: absolute; left: 50%; transform: translateX(-50%); font-size: 0.88rem; font-weight: 800; }
+.m-snap-me {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #000000; color: #FFFC00;
+  font-size: 0.48rem; font-weight: 850;
+  display: grid; place-items: center;
+}
+.m-snap-icons { display: inline-flex; gap: 0.55rem; color: #000000; margin-left: auto; }
+.m-snap-body { flex: 1 1 auto; min-height: 0; background: #FFFFFF; display: flex; flex-direction: column; padding: 0.15rem 0.55rem; }
+.m-snap-label {
+  font-size: 0.5rem; font-weight: 800; letter-spacing: 0.08em;
+  color: #7A7A7A; text-transform: uppercase;
+  margin: 0.16rem 0 0.05rem;
+}
+.m-snap-row {
+  display: flex; align-items: center; gap: 0.45rem;
+  padding: 0.12rem 0;
+  flex: 1 1 auto; min-height: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+}
+.m-snap-row:last-child { border-bottom: none; }
+.m-snap-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.m-snap-row-main strong { font-size: 0.66rem; color: #000000; }
+.m-snap-sub { font-size: 0.52rem; color: #8B8B8B; display: flex; align-items: center; gap: 0.2rem; }
+.m-snap-sub--new { color: #00A6FB; font-weight: 800; }
+.m-snap-add {
+  border: 1.4px solid #00BAFF; color: #00BAFF;
+  background: transparent; border-radius: 999px;
+  font-size: 0.53rem; font-weight: 800;
+  padding: 0.12rem 0.6rem;
+  cursor: pointer; font-family: inherit;
+  transition: background 150ms ease, color 150ms ease;
+}
+.m-snap-add.is-added { background: #00BAFF; color: #FFFFFF; }
+.m-snap-tabbar {
+  height: 31px; flex: 0 0 auto;
+  background: #FFFFFF;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0 0.8rem;
+  color: #000000;
+}
+.m-snap-tabbar svg { color: #4A4A4A; }
+.m-snap-tabbar svg:nth-child(2) { color: #000000; }
+.m-snap-camera {
+  width: 29px; height: 21px; border-radius: 6px;
+  background: #FFFC00; border: 1.6px solid #000000;
+  display: grid; place-items: center; color: #000000;
 }
 
 /* ============ Homepage sparkle stars — top half of the page ============ */
@@ -3167,42 +2773,6 @@ img, svg, video, canvas { max-width: 100%; }
   .profile-preview-top { gap: 0.75rem; }
   .profile-preview-stats { gap: 0.75rem; }
 }
-
-/* ========== WhatsApp + Snapchat stage mocks (scoped to stage) ========== */
-.mock-wide--whatsapp { --mock-frame: #075E54; }
-.mock-header--wa { background: #075E54; border-bottom: none; padding-top: 1.4rem; }
-.mock-wordmark--wa { color: #FFFFFF; font-weight: 800; font-size: 0.95rem; letter-spacing: -0.02em; }
-.mock-wide-body--wa {
-  display: grid; grid-template-columns: 1.15fr 1fr; gap: 0; min-width: 0;
-  background: linear-gradient(180deg, #ECE5DD 0%, #E7DED4 100%);
-}
-.mock-wide-body--wa .mock-wide-main { padding: 0.65rem 0.6rem; display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto; }
-.mock-wa-bubble {
-  max-width: 88%; padding: 0.32rem 0.55rem; border-radius: 0.75rem; font-size: 0.62rem; line-height: 1.35;
-  box-shadow: 0 1px 1px rgba(11, 29, 58, 0.12); position: relative;
-}
-.mock-wa-bubble--in { align-self: flex-start; background: #FFFFFF; color: #111B21; border-top-left-radius: 0.2rem; }
-.mock-wa-bubble--out { align-self: flex-end; background: #D9FDD3; color: #111B21; border-top-right-radius: 0.2rem; }
-
-.mock-wide--snapchat { --mock-frame: #FFFC00; }
-.mock-header--snap { background: #FFFC00; border-bottom: none; padding-top: 1.4rem; display: flex; align-items: center; justify-content: space-between; }
-.mock-wordmark--snap { color: #111410; font-weight: 800; letter-spacing: -0.02em; font-size: 0.92rem; }
-.mock-avatar-chip { width: 22px; height: 22px; border-radius: 999px; background: #111410; color: #FFFC00; font-size: 0.55rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
-.mock-wide-body--snap { display: grid; grid-template-columns: 1.1fr 1fr; min-width: 0; background: #0B0B10; }
-.mock-wide-body--snap .mock-wide-main { padding: 0.6rem; display: flex; flex-direction: column; gap: 0.45rem; overflow-y: auto; }
-.mock-snap-card { border-radius: 0.6rem; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.18); }
-.mock-snap-art {
-  height: 96px; display: flex; align-items: center; justify-content: center; font-size: 2.2rem;
-  background: radial-gradient(circle at 30% 30%, #FFFC00 0%, #F5C518 45%, #111410 100%);
-}
-.mock-snap-card .mock-caption { padding: 0.4rem 0.5rem 0.5rem; background: #141419; color: #F5F5F5; font-size: 0.6rem; margin: 0; }
-.mock-snap-card .mock-caption strong { color: #FFFC00; }
-.mock-wide--snapchat .mock-side-title { color: #F5F5F5; }
-.mock-wide--snapchat .mock-side-note { color: #B9B9C7; }
-.mock-wide--snapchat .mock-side-text { color: #D5D5DE; }
-.mock-wide--snapchat .mock-side-label { color: #8E8E9E; }
-.mock-wide--snapchat .mock-wide-side--soft { border-left: 1px solid rgba(255, 255, 255, 0.12); background: #111117; }
-.mock-wide--snapchat .mock-follow, .mock-wide--snapchat .btn { color: #111410; }
 
 .moodboard-honesty { opacity: 0.85; font-style: italic; }
 
@@ -3504,109 +3074,17 @@ img, svg, video, canvas { max-width: 100%; }
   line-height: 1.5;
 }
 
-/* ===== PHONE (<600px) — the machine scales to the viewport, and the
-   reserved deck space matches the actual 3D projection so the laptop and the
-   platform selector read as ONE composition instead of floating in a void ===== */
+/* ===== PHONE (<600px) — tablet-sized machine, compact live screen footer ===== */
 @media (max-width: 599px) {
-  .stage-perspective { perspective: 1300px; }
+  /* Extra top room so the open lid clears the sticky header pill */
+  .platform-stage { padding-top: 0.8rem; padding-bottom: 0.1rem; }
+  .laptop-parallax { max-width: min(356px, 93vw); }
 
-  .laptop-float {
-    width: min(312px, 82vw);
-    /* depth (0.66 × width) projected at rotateX(43°): × cos43° ≈ 0.731, plus the 10px front lip */
-    padding-bottom: calc(min(312px, 82vw) * 0.475 + 12px);
-    top: 0.15rem;
-  }
-
-  /* Gentler 3/4 pose — the reference render, not a fisheye crop */
-  .laptop { transform: rotateX(4deg) rotateY(-6.5deg); }
-  @keyframes laptop-sway-mobile {
-    from { transform: rotateX(5deg) rotateY(-10deg); }
-    to   { transform: rotateX(3deg) rotateY(-3.5deg); }
-  }
-
-  /* Lid — proper 16:10 display, near-upright, unburied */
-  .laptop-lid {
-    aspect-ratio: 16 / 10;
-    transform: rotateX(-1.5deg);
-  }
-  .laptop-lid-front, .laptop-lid-back { border-radius: 14px; }
-  .laptop-lid-edge--left { width: 10px; left: -10px; }
-  .laptop-lid-edge--right { width: 10px; right: -10px; }
-  .laptop-lid-edge--top { height: 10px; top: -10px; }
-  .laptop-bezel { border-radius: 10px; padding: 3.1% 3% 3%; }
-  .laptop-screen { border-radius: 4px; }
-
-  /* Base — same unibody depth, opened up so the keys read as keys;
-     deeper deck (real MacBooks are ~0.7 depth/width) so the palm-rest
-     fits the trackpad below the spacebar row without overlap */
-  .laptop-base { transform: rotateX(43deg); left: 0; right: 0; aspect-ratio: 1 / 0.66; }
-  .laptop-deck-top { padding: 3.6% 5.4% 0; border-radius: 9px 9px 15px 15px; }
-
-  /* Keyboard — chiclet proportions: key width ≈ height after foreshortening */
-  .laptop-keyboard { gap: clamp(2px, 0.7vw, 3px); }
-  .laptop-key-row { gap: clamp(2px, 0.7vw, 3px); }
-  .laptop-key {
-    height: clamp(13px, 4.4vw, 18px);
-    font-size: clamp(6.5px, 1.68vw, 8.5px);
-    border-radius: 4px;
-  }
-  .laptop-key-row:first-child .laptop-key {
-    height: clamp(9px, 3.1vw, 13px);
-    font-size: clamp(5px, 1.25vw, 6.5px);
-  }
-
-  /* Trackpad — centred, natural size, sits clear of the spacebar row */
-  .laptop-trackpad {
-    width: 34%;
-    aspect-ratio: 1.72 / 1;
-    bottom: 3.2%;
-  }
-
-  /* Hinge + deck thickness — scaled with the smaller machine */
-  .laptop-hinge { height: 17px; margin-top: -8px; }
-  .laptop-hinge-cap { height: 17px; top: -9px; }
-  .laptop-base-edge--left, .laptop-base-edge--right { width: 10px; }
-  .laptop-base-edge--front { height: 10px; border-radius: 0 0 13px 13px; }
-  .laptop-base-edge--bottom { transform: translateZ(-10px); }
-
-  /* Shadow tucked directly under the deck */
-  .laptop-shadow {
-    bottom: -8%;
-    left: 8%; right: 8%;
-    height: 17%;
-    filter: blur(17px);
-  }
-
-  /* Screen footer — the live clock no longer crashes into the battery */
-  .stage-slab-footer {
-    gap: 0.45rem;
-    padding: 0.3rem 0.55rem 0.16rem;
-    font-size: 0.6rem;
-    letter-spacing: 0.01em;
-  }
-  .stage-footer-datetime { gap: 0.3rem; min-width: max-content; }
   /* Clock variant toggle — phones get the compact form (no seconds) */
   .stage-footer-time-short { display: inline; }
   .stage-footer-time-full { display: none; }
-  .stage-footer-home { min-width: 32px; }
-  .stage-footer-home-bar { width: 32px; height: 4px; }
-  .stage-footer-icons { gap: 0.35rem; }
-  .stage-footer-icons svg { width: 13px; height: 13px; }
-  .stage-footer-battery svg { width: 18px; height: 10px; }
-  .stage-footer-battery span { font-size: 0.55rem; }
-
-  /* Hero — natural content height, selector directly under the machine.
-     Extra top room so the lid clears the sticky header pill (it visually
-     overhangs the following content by ~10px on phones). */
-  .platform-stage { padding-top: 0.8rem; padding-bottom: 0.15rem; }
 }
-
 /* Ultra-narrow phones — the date is the first thing to go; the clock stays live */
 @media (max-width: 374px) {
   .stage-footer-date { display: none; }
-}
-
-/* Sway override is no-preference only — reduced motion keeps the static pose */
-@media (max-width: 599px) and (prefers-reduced-motion: no-preference) {
-  .laptop { animation: laptop-sway-mobile 9.5s ease-in-out infinite alternate; }
 }

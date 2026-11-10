@@ -172,7 +172,7 @@ export default function MoodBoardTool<C extends string>({
           <button type="submit" className="btn btn-primary btn-large generate-button">
             {generateLabel.replace('{n}', count)}
           </button>
-          <p className="form-footnote">Free forever · No sign-up · Nothing leaves your browser</p>
+          <p className="form-footnote">$0 forever · No sign-up · Nothing leaves your browser</p>
           <p className="form-footnote moodboard-honesty">{honestyNote}</p>
         </form>
       </div>

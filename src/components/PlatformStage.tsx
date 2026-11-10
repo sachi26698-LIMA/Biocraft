@@ -1,34 +1,38 @@
 import type { CSSProperties } from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useToolkit } from '../lib/toolkit';
 import { platformById } from '../tools/platforms';
-import { LogoMark } from './icons';
 import { PLATFORM_WIDE_MOCKS } from './stageMocks';
 
-/** Decorative US-layout keyboard — six rows, keys flex-grow to real proportions. */
-const KEY_ROWS: Array<Array<{ label: string; grow?: number }>> = [
-  [{ label: 'esc', grow: 1.5 }, { label: 'F1' }, { label: 'F2' }, { label: 'F3' }, { label: 'F4' }, { label: 'F5' }, { label: 'F6' }, { label: 'F7' }, { label: 'F8' }, { label: 'F9' }, { label: 'F10' }, { label: 'F11' }, { label: 'F12' }, { label: '', grow: 1.4 }],
-  [{ label: '`' }, { label: '1' }, { label: '2' }, { label: '3' }, { label: '4' }, { label: '5' }, { label: '6' }, { label: '7' }, { label: '8' }, { label: '9' }, { label: '0' }, { label: '-' }, { label: '=' }, { label: '⌫', grow: 1.9 }],
-  [{ label: '⇥', grow: 1.6 }, { label: 'Q' }, { label: 'W' }, { label: 'E' }, { label: 'R' }, { label: 'T' }, { label: 'Y' }, { label: 'U' }, { label: 'I' }, { label: 'O' }, { label: 'P' }, { label: '[' }, { label: ']' }, { label: '\\', grow: 1.3 }],
-  [{ label: '⇪', grow: 1.9 }, { label: 'A' }, { label: 'S' }, { label: 'D' }, { label: 'F' }, { label: 'G' }, { label: 'H' }, { label: 'J' }, { label: 'K' }, { label: 'L' }, { label: ';' }, { label: "'" }, { label: '⏎', grow: 1.9 }],
-  [{ label: '⇧', grow: 2.4 }, { label: 'Z' }, { label: 'X' }, { label: 'C' }, { label: 'V' }, { label: 'B' }, { label: 'N' }, { label: 'M' }, { label: ',' }, { label: '.' }, { label: '/' }, { label: '⇧', grow: 2.4 }],
-  [{ label: 'fn', grow: 1.3 }, { label: '⌃', grow: 1.3 }, { label: '⌥', grow: 1.3 }, { label: '⌘', grow: 1.6 }, { label: '', grow: 6.2 }, { label: '⌘', grow: 1.6 }, { label: '⌥', grow: 1.3 }, { label: '←' }, { label: '↑' }, { label: '↓' }, { label: '→' }],
-];
 
 /**
- * The hero — a premium MacBook-class laptop rendered in pure CSS 3D,
- * reworked to mirror the reference render: silver aluminium unibody, black
- * keys, centred trackpad, black bezels, live platform-reactive app screen
- * with a live clock footer. Pink→cyan aurora with the luminous orbit ring,
- * floating in idle 3D sway + parallax.
+ * The hero — a premium MacBook-class laptop: photoreal asset for the
+ * aluminium unibody, black keys and centred trackpad; the display is a live,
+ * platform-reactive app screen with a live clock footer. Pink glow behind,
+ * floating in idle sway + parallax.
  */
 export default function PlatformStage() {
   const stageRef = useRef<HTMLElement>(null);
   const parallaxRef = useRef<HTMLDivElement>(null);
+  const screenRef = useRef<HTMLDivElement>(null);
   const { platform } = useToolkit();
   const config = platformById(platform);
   const Mock = PLATFORM_WIDE_MOCKS[config.id];
   const [now, setNow] = useState<Date | null>(null);
+  /* Scale the fixed 610×419 app-home canvas to fill the live display */
+  const [mockScale, setMockScale] = useState(1);
+  useLayoutEffect(() => {
+    const el = screenRef.current;
+    if (!el) return undefined;
+    const update = () => {
+      const { clientWidth, clientHeight } = el;
+      if (clientWidth > 0 && clientHeight > 0) setMockScale(Math.min(clientWidth / 610, clientHeight / 419));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   /* Mouse-follow parallax on top of the idle sway — rAF-lerped. */
   useEffect(() => {
@@ -88,7 +92,7 @@ export default function PlatformStage() {
     >
       <div className="container">
         <div className="stage-inner">
-          {/* ============ The 3D MacBook-class laptop ============ */}
+          {/* ============ The photoreal MacBook-class laptop ============ */}
           <div className="stage-perspective">
             <div className="laptop-parallax" ref={parallaxRef}>
               <div className="laptop-enter">
@@ -96,80 +100,49 @@ export default function PlatformStage() {
                   {/* Ambient glow behind the machine */}
                   <div className="laptop-glow" aria-hidden="true" />
 
-                  <div className="laptop" data-platform={config.id}>
-                    {/* ===== LID — the screen half ===== */}
-                    <div className="laptop-lid">
-                      <div className="laptop-lid-back" aria-hidden="true">
-                        <LogoMark size={54} />
-                      </div>
-                      <span className="laptop-lid-edge laptop-lid-edge--left" aria-hidden="true" />
-                      <span className="laptop-lid-edge laptop-lid-edge--right" aria-hidden="true" />
-                      <span className="laptop-lid-edge laptop-lid-edge--top" aria-hidden="true" />
+                  {/* ===== Photoreal chassis — static geometry, live screen ===== */}
+                  <div className="laptop-visual" data-platform={config.id}>
+                    {/* Premium render: real keyboard, hinge, trackpad and aluminium body.
+                        The display is pure black — our live interface renders on top of it. */}
+                    <img className="laptop-chassis" src="/laptop-hero.webp" alt="" width={1742} height={1246} decoding="async" fetchPriority="high" draggable={false} />
+                    <div className="laptop-screen-shell">
+                      <div className="laptop-screen-canvas">
+                        {/* The live app home — full-bleed, no chrome, no search */}
+                        <div
+                          className="stage-slab-screen"
+                          key={config.id}
+                          role="region"
+                          aria-label={`Illustrative ${config.name} app home`}
+                          ref={screenRef}
+                          style={{ '--mock-scale': mockScale } as CSSProperties}
+                        >
+                          <Mock />
+                        </div>
 
-                      <div className="laptop-lid-front">
-                        <div className="laptop-bezel">
-                          <span className="laptop-camera" aria-hidden="true" />
-                          {/* ===== The live BioCraft interface ===== */}
-                          <div className="laptop-screen">
-                            {/* The live app home — full-bleed, no chrome, no search */}
-                            <div className="stage-slab-screen" key={config.id} role="region" aria-label={`Illustrative ${config.name} app home`}>
-                              <Mock />
-                            </div>
-
-                            {/* Screen footer: live date/time + system icons */}
-                            <div className="stage-slab-footer">
-                              <span className="stage-footer-datetime">
-                                <span className="stage-footer-date">{now ? now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : '···'}</span>
-                                <span className="stage-footer-time">
-                                  {/* Two localized variants — the phone-sized one drops seconds; CSS toggles them by width */}
-                                  <span className="stage-footer-time-short">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '··:··'}</span>
-                                  <span className="stage-footer-time-full" aria-hidden="true">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : '··:··'}</span>
-                                </span>
-                              </span>
-                              <span className="stage-footer-home" aria-hidden="true"><span className="stage-footer-home-bar" /></span>
-                              <span className="stage-footer-icons" aria-hidden="true">
-                                {/* Wi-Fi */}
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2.5 9.5a15.5 15.5 0 0 1 19 0" /><path d="M6 13.4a10.5 10.5 0 0 1 12 0" /><path d="M9.5 17a5.2 5.2 0 0 1 5 0" /><circle cx="12" cy="20" r="1.1" fill="currentColor" stroke="none" /></svg>
-                                {/* Cellular signal */}
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="14" width="3.2" height="6" rx="1" /><rect x="8.4" y="10.5" width="3.2" height="9.5" rx="1" /><rect x="13.8" y="7" width="3.2" height="13" rx="1" /><rect x="19.2" y="3.5" width="3.2" height="16.5" rx="1" /></svg>
-                                {/* Battery */}
-                                <span className="stage-footer-battery">
-                                  <span>92%</span>
-                                  <svg width="24" height="14" viewBox="0 0 26 14" fill="none"><rect x="0.7" y="0.7" width="20" height="12.6" rx="3.4" stroke="currentColor" strokeWidth="1.4" /><rect x="3" y="3" width="13.2" height="8" rx="1.6" fill="currentColor" /><path d="M24 4.8v4.4a2.4 2.4 0 0 0 0-4.4Z" fill="currentColor" /></svg>
-                                </span>
-                              </span>
-                            </div>
-                          </div>
+                        {/* Screen footer: live date/time + system icons */}
+                        <div className="stage-slab-footer">
+                          <span className="stage-footer-datetime">
+                            <span className="stage-footer-date">{now ? now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : '···'}</span>
+                            <span className="stage-footer-time">
+                              {/* Two localized variants — the phone-sized one drops seconds; CSS toggles them by width */}
+                              <span className="stage-footer-time-short">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '··:··'}</span>
+                              <span className="stage-footer-time-full" aria-hidden="true">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : '··:··'}</span>
+                            </span>
+                          </span>
+                          <span className="stage-footer-home" aria-hidden="true"><span className="stage-footer-home-bar" /></span>
+                          <span className="stage-footer-icons" aria-hidden="true">
+                            {/* Wi-Fi */}
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2.5 9.5a15.5 15.5 0 0 1 19 0" /><path d="M6 13.4a10.5 10.5 0 0 1 12 0" /><path d="M9.5 17a5.2 5.2 0 0 1 5 0" /><circle cx="12" cy="20" r="1.1" fill="currentColor" stroke="none" /></svg>
+                            {/* Cellular signal */}
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="14" width="3.2" height="6" rx="1" /><rect x="8.4" y="10.5" width="3.2" height="9.5" rx="1" /><rect x="13.8" y="7" width="3.2" height="13" rx="1" /><rect x="19.2" y="3.5" width="3.2" height="16.5" rx="1" /></svg>
+                            {/* Battery */}
+                            <span className="stage-footer-battery">
+                              <span>92%</span>
+                              <svg width="24" height="14" viewBox="0 0 26 14" fill="none"><rect x="0.7" y="0.7" width="20" height="12.6" rx="3.4" stroke="currentColor" strokeWidth="1.4" /><rect x="3" y="3" width="13.2" height="8" rx="1.6" fill="currentColor" /><path d="M24 4.8v4.4a2.4 2.4 0 0 0 0-4.4Z" fill="currentColor" /></svg>
+                            </span>
+                          </span>
                         </div>
                       </div>
-                    </div>
-
-                    {/* ===== HINGE ===== */}
-                    <div className="laptop-hinge" aria-hidden="true" />
-
-                    {/* ===== BASE — keyboard deck lying nearly flat ===== */}
-                    <div className="laptop-base" aria-hidden="true">
-                      <div className="laptop-deck-top">
-                        <div className="laptop-deck-reflection" />
-                        <div className="laptop-keyboard">
-                          {KEY_ROWS.map((row, rowIndex) => (
-                            <div className="laptop-key-row" key={rowIndex}>
-                              {row.map((key, keyIndex) => (
-                                <span className="laptop-key" key={keyIndex} style={{ flexGrow: key.grow ?? 1 }}>{key.label}</span>
-                              ))}
-                            </div>
-                          ))}
-                        </div>
-                        <div className="laptop-trackpad" />
-                        <div className="laptop-lip" />
-                      </div>
-                      {/* Hinge barrels — one at each end of the lid junction */}
-                      <span className="laptop-hinge-cap laptop-hinge-cap--left" aria-hidden="true" />
-                      <span className="laptop-hinge-cap laptop-hinge-cap--right" aria-hidden="true" />
-                      <span className="laptop-base-edge laptop-base-edge--front" />
-                      <span className="laptop-base-edge laptop-base-edge--left" />
-                      <span className="laptop-base-edge laptop-base-edge--right" />
-                      <span className="laptop-base-edge laptop-base-edge--bottom" />
                     </div>
                   </div>
 

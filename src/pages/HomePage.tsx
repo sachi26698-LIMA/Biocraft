@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type JSX } from 'react';
+import { useState, type CSSProperties } from 'react';
 import PlatformStage from '../components/PlatformStage';
 import ToolWorkspace from '../components/ToolWorkspace';
 import ToolTile from '../components/ToolTile';
@@ -6,29 +6,11 @@ import { handleAnchorClick } from '../lib/router';
 import { TOOLS } from '../tools/registry';
 import { useFavourites } from '../lib/toolbox';
 import { BIO_COLLECTIONS, BIO_DESIGNS, COLLECTION_NAV, RECENTLY_ADDED_COLLECTIONS, TOTAL_BIOS } from '../lib/bioCollections';
-import { PLATFORMS } from '../tools/platforms';
 import CollectionIcon from '../components/CollectionIcon';
 import {
   ArrowRightIcon,
-  FacebookIcon,
-  InstagramIcon,
-  LinkedInIcon,
   PlusIcon,
-  SnapchatIcon,
-  ThreadsIcon,
-  TikTokIcon,
-  WhatsAppIcon,
-  XIcon,
 } from '../components/icons';
-import type { PlatformId } from '../tools/platforms';
-
-const STEPS = [
-  { title: 'Choose your platform', desc: 'Instagram, Facebook, Threads, TikTok, X or LinkedIn — each with its real limits.' },
-  { title: 'Pick a tool', desc: 'Bio, stylish name, fancy fonts, username, symbols, hashtags or captions.' },
-  { title: 'Add your details', desc: 'A few words about you — or just pick a niche and let BioCraft fill in the rest.' },
-  { title: 'Generate & fine-tune', desc: 'Five unique results per run. Regenerate until one feels exactly right.' },
-  { title: 'Copy & post', desc: 'One tap copies to your clipboard — paste it anywhere, done.' },
-];
 
 const POPULAR_CHIPS: Array<{ id: string; label: string }> = [
   { id: 'creator', label: 'Creator' },
@@ -45,22 +27,11 @@ const POPULAR_CHIPS: Array<{ id: string; label: string }> = [
   { id: 'business', label: 'Business' },
 ];
 
-const PLATFORM_ICONS: Record<PlatformId, (props: { size?: number }) => JSX.Element> = {
-  instagram: InstagramIcon,
-  facebook: FacebookIcon,
-  threads: ThreadsIcon,
-  tiktok: TikTokIcon,
-  x: XIcon,
-  linkedin: LinkedInIcon,
-  whatsapp: WhatsAppIcon,
-  snapchat: SnapchatIcon,
-};
-
 /** The six designer-card styles showcased in the "Recently Added Designs" rail. */
 const RECENT_DESIGN_KEYS = ['royal', 'dark', 'creative', 'devotional', 'vip', 'aesthetic'] as const;
 
 const FAQ = [
-  { q: 'Is BioCraft really free forever?', a: 'Yes. Every generator, every platform, every run — $0, forever. No tiers, no trials, no credits, no sign-up. It is a static, browser-based app with no paid backend to recoup costs from.', href: '/pricing', hrefLabel: 'See the pricing page' },
+  { q: 'Does BioCraft really cost nothing?', a: 'Yes. Every generator, every platform, every run — $0, forever. No tiers, no trials, no credits, no sign-up. It is a static, browser-based app with no paid backend to recoup costs from.', href: '/pricing', hrefLabel: 'See the pricing page' },
   { q: 'Do I need an account or login?', a: 'No. There is no sign-up, no password and no profile — and there never will be. That is deliberate: nothing to maintain, nothing to breach, nothing to lose.', href: '/login', hrefLabel: 'Why there’s no login' },
   { q: 'Does BioCraft upload or store my text?', a: 'No. Every BioCraft tool processes your input locally in your browser. There are no cookies, no web storage, no analytics and no uploads — you can verify it yourself in DevTools.', href: '/privacy', hrefLabel: 'Read the privacy policy' },
   { q: 'Which platforms are supported, and what are the limits?', a: 'BioCraft ships platform workspaces for Instagram (150 chars), Facebook (101-char intro), Threads (150), TikTok (80), X (160), LinkedIn (2,600 About / 220 headlines), WhatsApp (139 About) and Snapchat (≈150 bio). Each workspace enforces its own real limit.', href: '/features', hrefLabel: 'See all features' },
@@ -162,27 +133,6 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ============ How It Works — five steps ============ */}
-      <section className="section" aria-labelledby="how-title">
-        <div className="container">
-          <div className="section-head">
-            <p className="eyebrow">How It Works</p>
-            <h2 id="how-title" className="section-title">From Zero to Posted in Five Steps</h2>
-          </div>
-          <ol className="how-steps">
-            {STEPS.map((step, index) => (
-              <li key={step.title} className="how-step">
-                <span className="how-step-index" aria-hidden="true">{index + 1}</span>
-                <span className="how-step-body">
-                  <span className="how-step-title">{step.title}</span>
-                  <span className="how-step-desc">{step.desc}</span>
-                </span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
       {/* ============ Explore Ready-Made Bios ============ */}
       <section className="section" aria-labelledby="bio-collections-title">
         <div className="container">
@@ -258,36 +208,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ============ Explore Social Media Tools — eight platforms ============ */}
-      <section className="section" aria-labelledby="social-tools-title">
-        <div className="container">
-          <div className="section-head">
-            <p className="eyebrow">Explore Social Media Tools</p>
-            <h2 id="social-tools-title" className="section-title">One Toolkit, Every Platform</h2>
-            <p className="section-sub">Pick your platform — every workspace enforces its real limits, from Instagram&apos;s 150 characters to LinkedIn&apos;s 2,600-character About.</p>
-          </div>
-          <ul className="platform-tool-grid">
-            {PLATFORMS.map((platform) => {
-              const Icon = PLATFORM_ICONS[platform.id];
-              return (
-                <li key={platform.id}>
-                  <a className="platform-tool-card" href={`/bio-generator?platform=${platform.id}#workspace`} onClick={handleAnchorClick}>
-                    <span className="platform-tool-icon" style={{ background: `linear-gradient(145deg, ${platform.tileFrom}, ${platform.tileTo})` }} aria-hidden="true">
-                      <Icon size={26} />
-                    </span>
-                    <span className="platform-tool-body">
-                      <span className="platform-tool-name">{platform.name}</span>
-                      <span className="platform-tool-limit">Bio · {platform.bioLimit} chars</span>
-                    </span>
-                    <ArrowRightIcon size={17} aria-hidden="true" />
-                  </a>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </section>
-
       {/* ============ Popular Categories — twelve niches ============ */}
       <section className="section section-alt" aria-labelledby="popular-categories-title">
         <div className="container">
@@ -320,20 +240,6 @@ export default function HomePage() {
             {FAQ.map((item, index) => (
               <FaqItem key={item.q} q={item.q} a={item.a} href={item.href} hrefLabel={item.hrefLabel} defaultOpen={index === 0} />
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ============ Final CTA ============ */}
-      <section className="section" aria-labelledby="final-cta-title">
-        <div className="container">
-          <div className="final-cta">
-            <p className="eyebrow">Ready When You Are</p>
-            <h2 id="final-cta-title" className="section-title">Your Next Bio Is One Click Away</h2>
-            <p className="section-sub">Free, private and instant — no account required.</p>
-            <a className="btn btn-primary btn-lg" href="/resources" onClick={handleAnchorClick}>
-              Explore Tools <ArrowRightIcon size={19} aria-hidden="true" />
-            </a>
           </div>
         </div>
       </section>

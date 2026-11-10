@@ -103,7 +103,7 @@ export default function Footer() {
             </p>
             <p className="footer-badge">
               <CheckIcon size={16} aria-hidden="true" />
-              Free &amp; Easy to Use
+              Private &amp; Easy to Use
             </p>
           </div>
 
@@ -117,7 +117,7 @@ export default function Footer() {
         <div className="footer-bottom">
           <p className="footer-copy">© {year} BioCraft. All rights reserved.</p>
           <p className="footer-note">
-            Free forever — no sign-up, no ads, no tracking. Not affiliated with Instagram, Meta,
+            $0 forever — no sign-up, no ads, no tracking. Not affiliated with Instagram, Meta,
             TikTok, X Corp or Microsoft. · Built with ♥ for a simpler social presence.
           </p>
         </div>
