@@ -2606,6 +2606,7 @@ img, svg, video, canvas { max-width: 100%; }
 .stage-footer-datetime { display: inline-flex; align-items: baseline; gap: 0.55rem; min-width: 0; }
 .stage-footer-date { color: #3F3F4A; font-weight: 700; white-space: nowrap; }
 .stage-footer-time { color: #241B35; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.stage-footer-time-short { display: none; }
 .stage-footer-home { flex: 1; display: flex; justify-content: center; min-width: 40px; }
 .stage-footer-home-bar { width: clamp(64px, 12vw, 96px); height: 5px; border-radius: 999px; background: rgba(36, 27, 53, 0.8); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7); }
 .stage-footer-icons { display: inline-flex; align-items: center; gap: 0.65rem; color: #241B35; }
@@ -3501,4 +3502,111 @@ img, svg, video, canvas { max-width: 100%; }
   overflow-wrap: anywhere;
   text-align: left;
   line-height: 1.5;
+}
+
+/* ===== PHONE (<600px) — the machine scales to the viewport, and the
+   reserved deck space matches the actual 3D projection so the laptop and the
+   platform selector read as ONE composition instead of floating in a void ===== */
+@media (max-width: 599px) {
+  .stage-perspective { perspective: 1300px; }
+
+  .laptop-float {
+    width: min(312px, 82vw);
+    /* depth (0.66 × width) projected at rotateX(43°): × cos43° ≈ 0.731, plus the 10px front lip */
+    padding-bottom: calc(min(312px, 82vw) * 0.475 + 12px);
+    top: 0.15rem;
+  }
+
+  /* Gentler 3/4 pose — the reference render, not a fisheye crop */
+  .laptop { transform: rotateX(4deg) rotateY(-6.5deg); }
+  @keyframes laptop-sway-mobile {
+    from { transform: rotateX(5deg) rotateY(-10deg); }
+    to   { transform: rotateX(3deg) rotateY(-3.5deg); }
+  }
+
+  /* Lid — proper 16:10 display, near-upright, unburied */
+  .laptop-lid {
+    aspect-ratio: 16 / 10;
+    transform: rotateX(-1.5deg);
+  }
+  .laptop-lid-front, .laptop-lid-back { border-radius: 14px; }
+  .laptop-lid-edge--left { width: 10px; left: -10px; }
+  .laptop-lid-edge--right { width: 10px; right: -10px; }
+  .laptop-lid-edge--top { height: 10px; top: -10px; }
+  .laptop-bezel { border-radius: 10px; padding: 3.1% 3% 3%; }
+  .laptop-screen { border-radius: 4px; }
+
+  /* Base — same unibody depth, opened up so the keys read as keys;
+     deeper deck (real MacBooks are ~0.7 depth/width) so the palm-rest
+     fits the trackpad below the spacebar row without overlap */
+  .laptop-base { transform: rotateX(43deg); left: 0; right: 0; aspect-ratio: 1 / 0.66; }
+  .laptop-deck-top { padding: 3.6% 5.4% 0; border-radius: 9px 9px 15px 15px; }
+
+  /* Keyboard — chiclet proportions: key width ≈ height after foreshortening */
+  .laptop-keyboard { gap: clamp(2px, 0.7vw, 3px); }
+  .laptop-key-row { gap: clamp(2px, 0.7vw, 3px); }
+  .laptop-key {
+    height: clamp(13px, 4.4vw, 18px);
+    font-size: clamp(6.5px, 1.68vw, 8.5px);
+    border-radius: 4px;
+  }
+  .laptop-key-row:first-child .laptop-key {
+    height: clamp(9px, 3.1vw, 13px);
+    font-size: clamp(5px, 1.25vw, 6.5px);
+  }
+
+  /* Trackpad — centred, natural size, sits clear of the spacebar row */
+  .laptop-trackpad {
+    width: 34%;
+    aspect-ratio: 1.72 / 1;
+    bottom: 3.2%;
+  }
+
+  /* Hinge + deck thickness — scaled with the smaller machine */
+  .laptop-hinge { height: 17px; margin-top: -8px; }
+  .laptop-hinge-cap { height: 17px; top: -9px; }
+  .laptop-base-edge--left, .laptop-base-edge--right { width: 10px; }
+  .laptop-base-edge--front { height: 10px; border-radius: 0 0 13px 13px; }
+  .laptop-base-edge--bottom { transform: translateZ(-10px); }
+
+  /* Shadow tucked directly under the deck */
+  .laptop-shadow {
+    bottom: -8%;
+    left: 8%; right: 8%;
+    height: 17%;
+    filter: blur(17px);
+  }
+
+  /* Screen footer — the live clock no longer crashes into the battery */
+  .stage-slab-footer {
+    gap: 0.45rem;
+    padding: 0.3rem 0.55rem 0.16rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.01em;
+  }
+  .stage-footer-datetime { gap: 0.3rem; min-width: max-content; }
+  /* Clock variant toggle — phones get the compact form (no seconds) */
+  .stage-footer-time-short { display: inline; }
+  .stage-footer-time-full { display: none; }
+  .stage-footer-home { min-width: 32px; }
+  .stage-footer-home-bar { width: 32px; height: 4px; }
+  .stage-footer-icons { gap: 0.35rem; }
+  .stage-footer-icons svg { width: 13px; height: 13px; }
+  .stage-footer-battery svg { width: 18px; height: 10px; }
+  .stage-footer-battery span { font-size: 0.55rem; }
+
+  /* Hero — natural content height, selector directly under the machine.
+     Extra top room so the lid clears the sticky header pill (it visually
+     overhangs the following content by ~10px on phones). */
+  .platform-stage { padding-top: 0.8rem; padding-bottom: 0.15rem; }
+}
+
+/* Ultra-narrow phones — the date is the first thing to go; the clock stays live */
+@media (max-width: 374px) {
+  .stage-footer-date { display: none; }
+}
+
+/* Sway override is no-preference only — reduced motion keeps the static pose */
+@media (max-width: 599px) and (prefers-reduced-motion: no-preference) {
+  .laptop { animation: laptop-sway-mobile 9.5s ease-in-out infinite alternate; }
 }

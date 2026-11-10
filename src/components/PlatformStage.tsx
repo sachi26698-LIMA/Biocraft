@@ -120,7 +120,11 @@ export default function PlatformStage() {
                             <div className="stage-slab-footer">
                               <span className="stage-footer-datetime">
                                 <span className="stage-footer-date">{now ? now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : '···'}</span>
-                                <span className="stage-footer-time">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : '··:··:··'}</span>
+                                <span className="stage-footer-time">
+                                  {/* Two localized variants — the phone-sized one drops seconds; CSS toggles them by width */}
+                                  <span className="stage-footer-time-short">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '··:··'}</span>
+                                  <span className="stage-footer-time-full" aria-hidden="true">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : '··:··'}</span>
+                                </span>
                               </span>
                               <span className="stage-footer-home" aria-hidden="true"><span className="stage-footer-home-bar" /></span>
                               <span className="stage-footer-icons" aria-hidden="true">
