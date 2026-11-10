@@ -171,8 +171,56 @@ const SUBSCRIPT: CharMap = (() => {
   return map;
 })();
 
-const COMBINING_LOW_LINE = '\u0332';
+
+const SUPERSCRIPT: CharMap = (() => {
+  const map: Record<string, string> = {
+    '+': '⁺', '-': '⁻', '=': '⁼', '(': '⁽', ')': '⁾', 'n': 'ⁿ',
+  };
+  const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const glyphs: Record<string, string> = {
+    A: 'ᴬ', B: 'ᴮ', C: 'ᶜ', D: 'ᴰ', E: 'ᴱ', F: 'ᶠ', G: 'ᴳ', H: 'ᴴ', I: 'ᴵ',
+    J: 'ᴶ', K: 'ᴷ', L: 'ᴸ', M: 'ᴹ', N: 'ᴺ', O: 'ᴼ', P: 'ᴾ', Q: 'Q', R: 'ᴿ',
+    S: 'ˢ', T: 'ᵀ', U: 'ᵁ', V: 'ⱽ', W: 'ᵂ', X: 'ˣ', Y: 'ʸ', Z: 'ᶻ',
+  };
+  for (const ch of upper) map[ch] = glyphs[ch];
+  const lower = 'abcdefghijklmnopqrstuvwxyz';
+  const lowerGlyphs: Record<string, string> = {
+    a: 'ᵃ', b: 'ᵇ', c: 'ᶜ', d: 'ᵈ', e: 'ᵉ', f: 'ᶠ', g: 'ᵍ', h: 'ʰ', i: 'ⁱ',
+    j: 'ʲ', k: 'ᵏ', l: 'ˡ', m: 'ᵐ', n: 'ⁿ', o: 'ᵒ', p: 'ᵖ', q: '𐞥', r: 'ʳ',
+    s: 'ˢ', t: 'ᵗ', u: 'ᵘ', v: 'ᵛ', w: 'ʷ', x: 'ˣ', y: 'ʸ', z: 'ᶻ',
+  };
+  for (const ch of lower) map[ch] = lowerGlyphs[ch];
+  const digitMap: Record<string, string> = {
+    '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+  };
+  return { ...map, ...digitMap };
+})();
+
+const HAIR_SPACE = '\u200A';
+
+/** Fullwidth look with hair spaces between Latin graphemes only. */
+const aesthetic = (text: string): string => {
+  const fullwidthMap = buildMap(0xff21, 0xff41, 0xff10);
+  const clusters = graphemes(text);
+  const parts: string[] = [];
+  for (let i = 0; i < clusters.length; i += 1) {
+    const cluster = clusters[i];
+    const isLatin = /^[A-Za-z0-9.,!?'’\-–&@#%]/.test(cluster);
+    const mapped = fullwidthMap[cluster] ?? cluster;
+    parts.push(mapped);
+    const next = clusters[i + 1];
+    const nextLatin = next !== undefined && /^[A-Za-z0-9]/.test(next);
+    if (isLatin && nextLatin) parts.push(HAIR_SPACE);
+  }
+  return parts.join('');
+};
+
+const COMBINING_OVERLINE = '\u0305';
+const COMBINING_LOW_LINE_DECOR = '\u0332';
 const COMBINING_STRIKE = '\u0336';
+const COMBINING_DOUBLE_LOW_LINE = '\u0333';
+const COMBINING_TILDE_OVERLAY = '\u0334';
+const COMBINING_LONG_SOLIDUS = '\u0338';
 /**
  * Appends a combining mark to every grapheme cluster — not every code point —
  * so Indic vowel signs and ZWJ conjuncts stay attached to their base glyph
@@ -225,9 +273,18 @@ export const UNICODE_STYLES: readonly UnicodeStyle[] = [
   { id: 'negative-circled', label: 'Negative Circled', transform: applyMap(NEGATIVE_CIRCLED) },
   { id: 'negative-squared', label: 'Negative Squared', transform: applyMap(NEGATIVE_SQUARED) },
   { id: 'subscript', label: 'Subscript', transform: applyMap(SUBSCRIPT) },
-  { id: 'underline', label: 'Underline', transform: withCombining(COMBINING_LOW_LINE) },
+  { id: 'underline', label: 'Underline', transform: withCombining(COMBINING_LOW_LINE_DECOR) },
   { id: 'strikethrough', label: 'Strikethrough', transform: withCombining(COMBINING_STRIKE) },
   { id: 'upside-down', label: 'Upside Down', transform: upsideDown },
+  { id: 'cursive', label: 'Cursive', transform: applyMap(buildMap(0x1d49c, 0x1d4b6, null, { ...SCRIPT_UPPER, ...SCRIPT_LOWER })) },
+  { id: 'bubble', label: 'Bubble', transform: applyMap(NEGATIVE_CIRCLED) },
+  { id: 'superscript', label: 'Superscript', transform: applyMap(SUPERSCRIPT) },
+  { id: 'aesthetic', label: 'Aesthetic', transform: aesthetic },
+  { id: 'decorative', label: 'Decorative', transform: withCombining(COMBINING_OVERLINE + COMBINING_LOW_LINE_DECOR) },
+  { id: 'overline', label: 'Overline', transform: withCombining(COMBINING_OVERLINE) },
+  { id: 'double-underline', label: 'Double Underline', transform: withCombining(COMBINING_DOUBLE_LOW_LINE) },
+  { id: 'tilde-strike', label: 'Tilde Strike', transform: withCombining(COMBINING_TILDE_OVERLAY) },
+  { id: 'slash-through', label: 'Slash Through', transform: withCombining(COMBINING_LONG_SOLIDUS) },
 ];
 
 /** Applies one style by id; unknown ids return the input unchanged. */

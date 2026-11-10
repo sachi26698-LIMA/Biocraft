@@ -171,7 +171,78 @@ const HI: LangPools = {
   ],
 };
 
-const SOURCE: Record<Language, LangPools> = { en: EN, hi: HI };
+
+const HG: LangPools = {
+  identityPersonal: [
+    '{name}',
+    '{name} | {role}',
+    '{name} · {role}',
+    'Main {name}',
+    'Hey, main {name} hoon',
+    '{role}',
+  ],
+  identityPersonalEmoji: [
+    '{name} | {role} {e}',
+    'Hey! main {name} hoon {e}',
+    'Main {name}, {role} {e}',
+    '{role} {e}',
+    '{name} · {role} {e}',
+  ],
+  identityCategory: [
+    '{role}',
+    '{role} | {niche}',
+    '{role} · {niche}',
+    '{niche} ka page',
+    '{niche} ki baatein',
+  ],
+  identityCategoryEmoji: [
+    '{role} {e}',
+    '{role} | {niche} {e}',
+    '{role} · {niche} {e}',
+    '{niche} ki baatein {e}',
+    '{niche} ka page {e}',
+  ],
+  detail: [
+    '{niche} pe content',
+    '{niche} wali baatein',
+    '{niche} ki duniya',
+    'Roz {niche}',
+    '{niche} se related baatein',
+    'Apni kahani, apne words mein',
+  ],
+  detailEmoji: [
+    '{niche} pe content {e}',
+    '{niche} wali baatein {e}',
+    '{niche} ki duniya {e}',
+    'Roz {niche} {e}',
+    '{niche} pe regular posts {e}',
+  ],
+  detailGeneric: [
+    'Jo dil se feel ho, wohi yahan',
+    'Mera page, meri soch',
+    'Zindagi ke real moments',
+    'Apni raftar, apna andaaz',
+  ],
+  location: ['{city} se', '{city} based', 'Based in {city}'],
+  locationEmoji: ['📍 {city}', '📍 {city} se'],
+  cta: [
+    'DMs open hain',
+    'Collab ke liye DM karo',
+    'Link in bio',
+    'Naye posts har week',
+    'Follow karo aur dekho',
+  ],
+  ctaEmoji: [
+    '📩 DMs open hain',
+    '📩 Collab ke liye DM karo',
+    '👇 Link in bio',
+    '✨ Naye posts har week',
+    '🔗 Link neeche',
+    'Follow karo aur dekho {e}',
+  ],
+};
+
+const SOURCE: Record<Language, LangPools> = { en: EN, hi: HI, hg: HG };
 
 function merge(plain: string[], emoji: string[], emojis: boolean): string[] {
   return emojis ? [...plain, ...emoji] : plain;
@@ -198,4 +269,5 @@ export function getPools(language: Language, emojis: boolean, mode: Mode): LineP
 /** Emoji used to fill the {e} placeholder for personal bios. */
 export const PERSONAL_EMOJIS = ['✨', '👋', '💫', '🌟'];
 export const PERSONAL_EMOJIS_HI = ['✨', '👋', '💫', '🙏'];
+export const PERSONAL_EMOJIS_HG = ['✨', '👋', '😎', '💯'];
 export const FALLBACK_EMOJIS = ['✨', '👋'];

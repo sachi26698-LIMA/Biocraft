@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { generateCategoryBios, generatePersonalBios } from './lib/bioGenerator';
+import { generateCategoryBios, generatePersonalBios, generateSingleBio } from './lib/bioGenerator';
 import {
   firstErrorField,
   hasErrors,
@@ -35,6 +35,13 @@ const EMPTY_VALUES: PersonalFormValues = { name: '', role: '', niche: '', city: 
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
   { value: 'hi', label: 'हिन्दी', lang: 'hi' },
+  { value: 'hg', label: 'Hinglish' },
+] as const;
+
+const BIO_COUNT_OPTIONS = [
+  { value: '5', label: '5' },
+  { value: '10', label: '10' },
+  { value: '20', label: '20' },
 ] as const;
 
 export default function BioTool() {
@@ -45,6 +52,7 @@ export default function BioTool() {
   const [errors, setErrors] = useState<PersonalFormErrors>({});
   const [showSummary, setShowSummary] = useState(false);
   const [categoryId, setCategoryId] = useState('creator');
+  const [count, setCount] = useState<5 | 10 | 20>(5);
   const [bios, setBios] = useState<string[]>([]);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [announcement, setAnnouncement] = useState('');
@@ -80,7 +88,7 @@ export default function BioTool() {
       }
     }
 
-    const options = isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const } : { limit: bioLimit };
+    const options = isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const, count } : { limit: bioLimit, count };
     const next =
       mode === 'personal'
         ? generatePersonalBios(values, activeLanguage, emojis, options)
@@ -88,9 +96,9 @@ export default function BioTool() {
 
     setBios(next);
     setHasGenerated(true);
-    setAnnouncement('Five new bios generated.');
+    setAnnouncement(`${count} new bios generated.`);
     return true;
-  }, [mode, values, activeLanguage, emojis, categoryId, isLinkedIn, bioLimit]);
+  }, [mode, values, activeLanguage, emojis, categoryId, isLinkedIn, bioLimit, count]);
 
   // Switching mode invalidates the previous result set.
   const switchMode = useCallback((nextMode: Mode) => {
@@ -111,7 +119,7 @@ export default function BioTool() {
 
     const next =
       mode === 'personal'
-        ? generatePersonalBios(values, activeLanguage, emojis, isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const } : { limit: bioLimit })
+        ? generatePersonalBios(values, activeLanguage, emojis, isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const, count } : { limit: bioLimit, count })
         : generateCategoryBios(categoryId, activeLanguage, emojis, isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const } : { limit: bioLimit });
 
     setBios(next);
@@ -131,6 +139,26 @@ export default function BioTool() {
       });
     },
     [],
+  );
+
+  const regenerateOne = useCallback(
+    (index: number) => {
+      const replacement = generateSingleBio(
+        mode,
+        { values, categoryId },
+        activeLanguage,
+        emojis,
+        isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const } : { limit: bioLimit },
+        bios,
+      );
+      if (!replacement) {
+        setAnnouncement('Could not find a fresh variation — try Regenerate all.');
+        return;
+      }
+      setBios((current) => current.map((bio, i) => (i === index ? replacement : bio)));
+      setAnnouncement(`Bio ${index + 1} replaced with a fresh variation.`);
+    },
+    [mode, values, categoryId, activeLanguage, emojis, isLinkedIn, bioLimit, bios],
   );
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -260,8 +288,16 @@ export default function BioTool() {
             </p>
           </div>
 
+          <SegmentedControl
+            label="How many bios"
+            visibleLabel="How many"
+            options={BIO_COUNT_OPTIONS}
+            value={String(count) as '5' | '10' | '20'}
+            onChange={(value) => setCount(Number(value) as 5 | 10 | 20)}
+          />
+
           <button type="submit" className="btn btn-primary btn-large generate-button">
-            Generate 5 bios
+            Generate {count} bios
           </button>
           <p className="form-footnote">Free forever · No sign-up · Your text never leaves this page</p>
         </form>
@@ -271,7 +307,7 @@ export default function BioTool() {
       <div className="results-column" role="region" aria-label="Generated bios">
         <div className="results-header">
           <h2 className="results-title">
-            Your five bios <span className="results-count">{hasGenerated ? bios.length : 5}</span>
+            Your bios <span className="results-count">{hasGenerated ? bios.length : count}</span>
           </h2>
           {hasGenerated && (
             <div className="results-actions">
@@ -281,7 +317,7 @@ export default function BioTool() {
                 onClick={() => {
                   const text = bios.join('\n\n');
                   void copyText(text).then((ok) =>
-                    setAnnouncement(ok ? 'All five bios copied to clipboard.' : 'Copying failed.'),
+                    setAnnouncement(ok ? `All ${bios.length} bios copied to clipboard.` : 'Copying failed.'),
                   );
                 }}
               >
@@ -310,6 +346,7 @@ export default function BioTool() {
                     label="Bio"
                     limit={bioLimit}
                     limitDescription={`the ${platformConfig.name} limit (${bioLimit} characters)`}
+                    onRegenerate={() => regenerateOne(index)}
                   />
                 </li>
               ))}
@@ -317,7 +354,7 @@ export default function BioTool() {
           </>
         ) : (
           <div className="empty-state">
-            <p className="empty-state-title">Your five bios will appear here.</p>
+            <p className="empty-state-title">Your bios will appear here.</p>
             <p className="empty-state-text">
               Fill in the form — or switch to Category mode — and press “Generate 5 bios”.
             </p>

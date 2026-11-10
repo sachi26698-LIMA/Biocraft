@@ -6,15 +6,21 @@ const ALL_TOOLS: Array<{ label: string; href: string }> = [
   { label: 'Bio Generator', href: '/bio-generator' },
   { label: 'Stylish Name Generator', href: '/stylish-name-generator' },
   { label: 'Fancy Font Generator', href: '/fancy-font-generator' },
+  { label: 'Design Studio', href: '/design-studio' },
   { label: 'Username Generator', href: '/username-generator' },
   { label: 'Emoji & Symbol Generator', href: '/emoji-symbol-generator' },
   { label: 'Hashtag Generator', href: '/hashtag-generator' },
   { label: 'Caption Generator', href: '/caption-generator' },
   { label: 'LinkedIn Headline Generator', href: '/linkedin-headline-generator' },
   { label: 'LinkedIn Summary Generator', href: '/linkedin-summary-generator' },
+  { label: 'WhatsApp Status Generator', href: '/whatsapp-status-generator' },
+  { label: 'Snapchat Caption Generator', href: '/snapchat-caption-generator' },
+  { label: 'Bio Editor', href: '/bio-editor' },
 ];
 
 const CATEGORY_LINKS: Array<{ label: string; href: string }> = [
+  { label: 'Ready-Made Bios', href: '/bio-collections' },
+  { label: 'Bio Editor', href: '/bio-editor' },
   { label: 'Bio Generators', href: '/categories#cat-bio' },
   { label: 'Stylish Names & Fonts', href: '/categories#cat-names-fonts' },
   { label: 'Usernames', href: '/categories#cat-usernames' },

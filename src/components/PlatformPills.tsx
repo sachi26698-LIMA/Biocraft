@@ -5,8 +5,10 @@ import {
   FacebookIcon,
   InstagramIcon,
   LinkedInIcon,
+  SnapchatIcon,
   ThreadsIcon,
   TikTokIcon,
+  WhatsAppIcon,
   XIcon,
 } from './icons';
 
@@ -17,10 +19,12 @@ const PLATFORM_ICONS: Record<PlatformId, (props: { size?: number }) => JSX.Eleme
   tiktok: TikTokIcon,
   x: XIcon,
   linkedin: LinkedInIcon,
+  whatsapp: WhatsAppIcon,
+  snapchat: SnapchatIcon,
 };
 
 /**
- * The six-platform selector. Tappable pills with platform accent glows;
+ * The eight-platform selector. Tappable pills with platform accent glows;
  * scrolls horizontally on small screens. Selection drives the whole
  * workspace via the toolkit context.
  */

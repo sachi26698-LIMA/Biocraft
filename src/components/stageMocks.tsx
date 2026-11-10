@@ -4,7 +4,7 @@ import type { PlatformId } from '../tools/platforms';
 
 /**
  * Landscape "app home" mocks — BioCraft's own official accounts across the
- * six platforms, illustrative only. Every visible control is real:
+ * eight platforms, illustrative only. Every visible control is real:
  * like / bookmark / follow / post / comment toggle state locally.
  * No network, no fake interactivity.
  */
@@ -163,12 +163,81 @@ function InstagramWide() {
         <aside className="mock-wide-side">
           <Avatar initials="BC" from="#A78BFA" to="#7C3AED" size={44} />
           <strong className="mock-side-title">biocraft</strong>
-          <span className="mock-meta">1,024 followers · 9 tools
+          <span className="mock-meta">1,024 followers · 12 tools
           </span>
           <p className="mock-side-note">Free, private bio tools — built for creators.</p>
           <FollowButton />
           <p className="mock-side-label">From BioCraft</p>
-          {[['✦', '@biocraft — daily bio tips'], ['🛠', '9 free generators, zero sign-up']].map(([icon, text]) => (
+          {[['✦', '@biocraft — daily bio tips'], ['🛠', '12 free generators, zero sign-up']].map(([icon, text]) => (
+            <div key={text as string} className="mock-side-row mock-side-row--static">
+              <span className="mock-side-emoji" aria-hidden="true">{icon}</span>
+              <span className="mock-side-text">{text as string}</span>
+            </div>
+          ))}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function WhatsAppWide() {
+  return (
+    <div className="mock mock-wide mock-wide--whatsapp">
+      <div className="mock-header mock-header--compact mock-header--wa">
+        <span className="mock-wordmark mock-wordmark--wa">WhatsApp</span>
+        <span className="mock-header-search mock-header-search--static" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-4.35-4.35" /></svg> Chats</span>
+      </div>
+      <div className="mock-wide-body mock-wide-body--wa">
+        <div className="mock-wide-main">
+          <div className="mock-wa-bubble mock-wa-bubble--out">Aajao, coffee ready hai ☕</div>
+          <div className="mock-wa-bubble mock-wa-bubble--in">On my way, 5 min</div>
+          <div className="mock-wa-bubble mock-wa-bubble--out">Status daal diya — check kar lo 😄</div>
+        </div>
+        <aside className="mock-wide-side mock-wide-side--soft">
+          <Avatar initials="BC" from="#25D366" to="#075E54" size={44} />
+          <strong className="mock-side-title">BioCraft Studio</strong>
+          <span className="mock-meta">online</span>
+          <p className="mock-side-note">139 characters. One line. All vibe.</p>
+          <FollowButton />
+          <p className="mock-side-label">WhatsApp toolkit</p>
+          {[['✍️', 'About + Status generators'], ['🎨', 'Stylish About in Unicode fonts'], ['✅', '139-char counter built in']].map(([icon, text]) => (
+            <div key={text as string} className="mock-side-row mock-side-row--static">
+              <span className="mock-side-emoji" aria-hidden="true">{icon}</span>
+              <span className="mock-side-text">{text as string}</span>
+            </div>
+          ))}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+function SnapchatWide() {
+  return (
+    <div className="mock mock-wide mock-wide--snapchat">
+      <div className="mock-header mock-header--compact mock-header--snap">
+        <span className="mock-wordmark mock-wordmark--snap">Snapchat</span>
+        <span className="mock-avatar-chip">BC</span>
+      </div>
+      <div className="mock-wide-body mock-wide-body--snap">
+        <div className="mock-wide-main">
+          <div className="mock-snap-card">
+            <div className="mock-snap-art" aria-hidden="true">👻</div>
+            <p className="mock-caption"><strong>biocraft</strong> streak: 128 · new tools dropped 👻</p>
+          </div>
+          <div className="mock-post-actions">
+            <LikeButton count={96} />
+            <BookmarkButton />
+          </div>
+        </div>
+        <aside className="mock-wide-side mock-wide-side--soft">
+          <Avatar initials="BC" from="#FFFC00" to="#E8CE10" size={44} />
+          <strong className="mock-side-title">biocraft</strong>
+          <span className="mock-meta">private account · 12.4k friends</span>
+          <p className="mock-side-note">{'Snaps > words. Words > excuses.'}</p>
+          <FollowButton />
+          <p className="mock-side-label">Snapchat toolkit</p>
+          {[['📸', 'Bio + Caption generators'], ['🔥', 'Streak captions included'], ['💬', 'Hinglish supported']].map(([icon, text]) => (
             <div key={text as string} className="mock-side-row mock-side-row--static">
               <span className="mock-side-emoji" aria-hidden="true">{icon}</span>
               <span className="mock-side-text">{text as string}</span>
@@ -193,7 +262,7 @@ function FacebookWide() {
         </div>
         <aside className="mock-wide-side mock-wide-side--soft">
           <p className="mock-side-label">BioCraft updates</p>
-          {[['🚀', 'BioCraft v1.0 — all 9 tools are live'], ['🇮🇳', 'Hindi bios now supported everywhere'], ['🔒', '100% private — runs in your browser'], ['⭐', 'Free forever, no account needed']].map(([icon, text]) => (
+          {[['🚀', 'BioCraft v1.0 — all 12 tools are live'], ['🇮🇳', 'Hindi bios now supported everywhere'], ['🔒', '100% private — runs in your browser'], ['⭐', 'Free forever, no account needed']].map(([icon, text]) => (
             <div key={text as string} className="mock-side-row mock-side-row--static">
               <span className="mock-side-emoji" aria-hidden="true">{icon}</span>
               <span className="mock-side-text">{text as string}</span>
@@ -387,4 +456,6 @@ export const PLATFORM_WIDE_MOCKS: Record<PlatformId, () => JSX.Element> = {
   tiktok: TikTokWide,
   x: XWide,
   linkedin: LinkedInWide,
+  whatsapp: WhatsAppWide,
+  snapchat: SnapchatWide,
 };

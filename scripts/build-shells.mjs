@@ -22,35 +22,43 @@ const ROUTES = [
     path: '/',
     title: 'BioCraft — All-in-One Social Media Toolkit',
     description:
-      'Free social media toolkit: Instagram, Facebook, Threads, TikTok, X and LinkedIn — bios, usernames, captions, hashtags, stylish text, symbols and a 324-glyph library. EN & हिन्दी, no sign-up, fully private.',
+      'Free social media toolkit: Instagram, Facebook, Threads, TikTok, X, LinkedIn, WhatsApp and Snapchat — bios, usernames, captions, hashtags, stylish text, symbols and ready-made bio collections. EN, हिंदी & Hinglish — no sign-up, fully private.',
     ogTitle: 'BioCraft — All-in-One Social Media Toolkit',
     ogDescription:
-      'Free social media toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn. EN & हिन्दी, no sign-up, fully private.',
+      'Free social media toolkit for Instagram, Facebook, Threads, TikTok, X, LinkedIn, WhatsApp and Snapchat. EN, हिंदी & Hinglish — no sign-up, fully private.',
     runAsTemplate: true,
   },
   {
     path: '/bio-generator',
     title: 'Bio Generator — BioCraft Social Media Toolkit',
     description:
-      'Generate five unique bios in English or Hindi — Instagram, Facebook, Threads, TikTok, X and LinkedIn limits respected. Free, private, no sign-up.',
+      'Generate unique bios in English, Hindi or Hinglish — Instagram, Facebook, Threads, TikTok, X, LinkedIn, WhatsApp and Snapchat limits respected. Free, private, no sign-up.',
     ogTitle: 'Bio Generator — BioCraft',
-    ogDescription: 'Five unique bios per platform, EN & Hindi, no sign-up, private.',
+    ogDescription: 'Five unique bios per platform, EN · Hindi · Hinglish, no sign-up, private.',
   },
   {
     path: '/stylish-name-generator',
     title: 'Stylish Name Generator — BioCraft Social Media Toolkit',
     description:
-      'Turn your display name into 24 stylish Unicode text variants — bold, script, fraktur, double-struck and more. One-tap copy, free, private, no sign-up.',
+      'Turn your display name into 33 stylish Unicode text variants — bold, script, fraktur, double-struck and more, with optional name frames. One-tap copy, free, private, no sign-up.',
     ogTitle: 'Stylish Name Generator — BioCraft',
-    ogDescription: '24 stylish Unicode variants of your name, one-tap copy, free and private.',
+    ogDescription: '33 stylish Unicode variants of your name, one-tap copy, free and private.',
   },
   {
     path: '/fancy-font-generator',
     title: 'Fancy Font Generator — BioCraft Social Media Toolkit',
     description:
-      'Convert any text into 24 fancy Unicode fonts — bold, italic, script, monospace, fullwidth and more. Copy in one tap, free, private, no sign-up.',
+      'Convert any text into 33 fancy Unicode fonts — bold, italic, script, monospace, fullwidth and more. Copy in one tap, free, private, no sign-up.',
     ogTitle: 'Fancy Font Generator — BioCraft',
-    ogDescription: 'Any text in 24 fancy Unicode fonts, one-tap copy, free and private.',
+    ogDescription: 'Any text in 33 fancy Unicode fonts, one-tap copy, free and private.',
+  },
+  {
+    path: '/design-studio',
+    title: 'Design Studio — BioCraft Social Media Toolkit',
+    description:
+      'Type any sentence and get ready-made designs: 33 Unicode fonts × decorative emoji frames × 18 designer card styles. Mix yours live, or copy a curated mix. Free, private, one-tap copy.',
+    ogTitle: 'Design Studio — BioCraft',
+    ogDescription: 'Any sentence → ready-made font + emoji + card designs. Live preview, one-tap copy.',
   },
   {
     path: '/username-generator',
@@ -64,25 +72,25 @@ const ROUTES = [
     path: '/emoji-symbol-generator',
     title: 'Emoji & Symbol Generator — BioCraft Social Media Toolkit',
     description:
-      'Search and copy 300+ curated Unicode symbols and emoji — hearts, stars, arrows, shapes and more. One-tap copy, free and private.',
+      'Search and copy 531+ curated Unicode symbols and emoji — hearts, stars, arrows, royal, faith and more. One-tap copy, free and private.',
     ogTitle: 'Emoji & Symbol Generator — BioCraft',
-    ogDescription: '300+ curated Unicode symbols and emoji, searchable, one-tap copy, free and private.',
+    ogDescription: '531+ curated Unicode symbols and emoji, searchable with favourites, free and private.',
   },
   {
     path: '/hashtag-generator',
     title: 'Hashtag Generator — BioCraft Social Media Toolkit',
     description:
-      'Generate relevant, deduplicated hashtags for 12 niches in English or Hindi — broad, medium and focused mix. Free, private, no reach promises.',
+      'Generate relevant, deduplicated hashtags for 14 niches in English, Hindi or Hinglish — broad, medium and focused mix. Free, private, no reach promises.',
     ogTitle: 'Hashtag Generator — BioCraft',
-    ogDescription: 'Relevant deduplicated hashtags for 12 niches, EN & Hindi — free and private.',
+    ogDescription: 'Relevant deduplicated hashtags for 14 niches, EN · Hindi · Hinglish — free and private.',
   },
   {
     path: '/caption-generator',
     title: 'Caption Generator — BioCraft Social Media Toolkit',
     description:
-      'Five unique captions for 12 topics in seven tones — casual, professional, funny, inspirational, minimal and more — EN or Hindi. One-tap copy.',
+      'Five unique captions for 12 topics in eight tones — casual, professional, funny, inspirational, quiet luxury and more — English, Hindi or Hinglish. Optional Unicode frames, one-tap copy.',
     ogTitle: 'Caption Generator — BioCraft',
-    ogDescription: 'Five unique captions per run — 12 topics, EN & Hindi, one-tap copy.',
+    ogDescription: 'Five unique captions per run — 12 topics, eight tones, EN · Hindi · Hinglish, one-tap copy.',
   },
   {
     path: '/linkedin-headline-generator',
@@ -101,12 +109,28 @@ const ROUTES = [
     ogDescription: 'Five professional LinkedIn About drafts, rule-based, free and private.',
   },
   {
+    path: '/whatsapp-status-generator',
+    title: 'WhatsApp Status Generator — BioCraft Social Media Toolkit',
+    description:
+      'Free WhatsApp status generator — 9 hand-written categories (good morning, attitude, love, birthday, festival, funny, motivational and more) in English, Hindi and Hinglish. Rule-based, private, no sign-up.',
+    ogTitle: 'WhatsApp Status Generator — BioCraft',
+    ogDescription: 'Status lines for every mood — EN, हिंदी & Hinglish, one-tap copy, free.',
+  },
+  {
+    path: '/snapchat-caption-generator',
+    title: 'Snapchat Caption Generator — BioCraft Social Media Toolkit',
+    description:
+      'Free Snapchat caption generator — streaks, stories, attitude, cute, funny and love captions in English, Hindi and Hinglish. Rule-based, private, no sign-up.',
+    ogTitle: 'Snapchat Caption Generator — BioCraft',
+    ogDescription: 'Streak, story & vibe captions — EN, हिंदी & Hinglish, one-tap copy.',
+  },
+  {
     path: '/features',
     title: 'Features — BioCraft Social Media Toolkit',
     description:
-      'Everything BioCraft does: nine generators, six platform workspaces, Hindi + English output, private browser-side processing, zero sign-up.',
+      'Everything BioCraft does: twelve generators, eight platform workspaces, English + Hindi + Hinglish output, private browser-side processing, zero sign-up.',
     ogTitle: 'BioCraft Features',
-    ogDescription: 'Nine generators, six platforms, EN & Hindi, free and private.',
+    ogDescription: 'Twelve generators, eight platforms, EN · Hindi · Hinglish, free and private.',
   },
   {
     path: '/use-cases',
@@ -133,6 +157,182 @@ const ROUTES = [
     ogDescription: 'Honest, practical guides for better social profiles.',
   },
   {
+    path: '/bio-collections',
+    title: 'Ready-Made Bio Collections — BioCraft Social Media Toolkit',
+    description:
+      '20 ready-made bio collections — 506 original bios in English, Hindi and Hinglish for Instagram and more. Copy any bio in one tap. Free and private.',
+    ogTitle: 'Ready-Made Bio Collections — BioCraft',
+    ogDescription: '506 original bios across 20 collections — EN, हिंदी and Hinglish. Copy in one tap, free and private.',
+  },
+  {
+    path: '/instagram-bio-for-boys',
+    title: 'Instagram Bio for Boys — Ready-Made Mens Bios | BioCraft',
+    description:
+      'Original, emoji-rich Instagram bios for boys — confidence, hustle, discipline and dreams. Copy any bio in one tap, in English, Hindi and Hinglish. Free and private.',
+    ogTitle: 'Instagram Bio for Boys — BioCraft',
+    ogDescription: 'Original, emoji-rich Instagram bios for boys — confidence, hustle, discipline and dreams.',
+  },
+  {
+    path: '/instagram-bio-for-girls',
+    title: 'Instagram Bio for Girls — Ready-Made Girls Bios | BioCraft',
+    description:
+      'Fresh Instagram bios for girls — confident, funny, soft, bold and desi. One-tap copy, in English, Hindi and Hinglish. Free, private, no sign-up.',
+    ogTitle: 'Instagram Bio for Girls — BioCraft',
+    ogDescription: 'Fresh Instagram bios for girls — confident, funny, soft, bold and desi.',
+  },
+  {
+    path: '/stylish-instagram-bio',
+    title: 'Stylish Instagram Bio — Fancy Unicode Bios | BioCraft',
+    description:
+      'Stylish Instagram bios with elegant Unicode type — bold, script, mono and fullwidth lines. One-tap copy, English and Hinglish, free and private.',
+    ogTitle: 'Stylish Instagram Bio — BioCraft',
+    ogDescription: 'Stylish Instagram bios with elegant Unicode type — bold, script, mono and fullwidth lines.',
+  },
+  {
+    path: '/attitude-bio',
+    title: 'Attitude Bio — Confident Instagram Attitude Bios | BioCraft',
+    description:
+      'Attitude-packed bios: bold, confident and witty without being mean. Copy-ready for Instagram and more, one tap, free and private.',
+    ogTitle: 'Attitude Bio — BioCraft',
+    ogDescription: 'Attitude-packed bios: bold, confident and witty without being mean.',
+  },
+  {
+    path: '/vip-bio',
+    title: 'VIP Bio — Premium Instagram VIP Bios | BioCraft',
+    description:
+      'VIP-style bios: polished, premium and understated. Elegant Unicode and classy copy-ready lines, English and Hinglish. Free, private, one-tap copy.',
+    ogTitle: 'VIP Bio — BioCraft',
+    ogDescription: 'VIP-style bios: polished, premium and understated.',
+  },
+  {
+    path: '/love-bio',
+    title: 'Love Bio — Romantic Instagram Love Bios | BioCraft',
+    description:
+      'Sweet, romantic and anniversary-ready love bios — English, Hindi and Hinglish, emoji-rich, one-tap copy. Free and private.',
+    ogTitle: 'Love Bio — BioCraft',
+    ogDescription: 'Sweet, romantic and anniversary-ready love bios — English, Hindi and Hinglish, emoji-rich, one-tap copy.',
+  },
+  {
+    path: '/sad-bio',
+    title: 'Sad Bio — Emotional Sad Instagram Bios | BioCraft',
+    description:
+      'Poetic, emotional sad bios about healing, heartbreak and growing quietly. One-tap copy, EN · Hindi · Hinglish. Free and private.',
+    ogTitle: 'Sad Bio — BioCraft',
+    ogDescription: 'Poetic, emotional sad bios about healing, heartbreak and growing quietly.',
+  },
+  {
+    path: '/royal-bio',
+    title: 'Royal Bio — Kings & Queens Instagram Bios | BioCraft',
+    description:
+      'Royal-style bios for him and her — regal, classy and confident. Copy-ready in one tap, EN · Hindi · Hinglish. Free and private.',
+    ogTitle: 'Royal Bio — BioCraft',
+    ogDescription: 'Royal-style bios for him and her — regal, classy and confident.',
+  },
+  {
+    path: '/simple-bio',
+    title: 'Simple Bio — Short Simple Instagram Bios | BioCraft',
+    description:
+      'Minimal, short and honest Instagram bios — one or two lines, zero clutter. One-tap copy, free and private.',
+    ogTitle: 'Simple Bio — BioCraft',
+    ogDescription: 'Minimal, short and honest Instagram bios — one or two lines, zero clutter.',
+  },
+  {
+    path: '/cool-bio',
+    title: 'Cool Bio — Cool & Funny Instagram Bios | BioCraft',
+    description:
+      'Cool, funny and effortless bios for Instagram and beyond — witty one-liners and chill lines. One-tap copy, free and private.',
+    ogTitle: 'Cool Bio — BioCraft',
+    ogDescription: 'Cool, funny and effortless bios for Instagram and beyond — witty one-liners and chill lines.',
+  },
+  {
+    path: '/hindi-bio',
+    title: 'Hindi Bio — Best Instagram Bios in Hindi | BioCraft',
+    description:
+      'Original Instagram bios in Hindi (Devanagari) with Hinglish lines — emotional, funny and reflective. One-tap copy, free and private.',
+    ogTitle: 'Hindi Bio — BioCraft',
+    ogDescription: 'Original Instagram bios in Hindi (Devanagari) — emotional, funny and reflective.',
+  },
+  {
+    path: '/english-bio',
+    title: 'English Bio — Professional Instagram English Bios | BioCraft',
+    description:
+      'Polished English and Hinglish Instagram bios — crisp, modern and professional. One-tap copy, free and private, for creators and businesses.',
+    ogTitle: 'English Bio — BioCraft',
+    ogDescription: 'Polished English Instagram bios — crisp, modern and professional.',
+  },
+  {
+    path: '/shree-ram-bio',
+    title: 'Shree Ram Bio — Jai Shree Ram Instagram Bios | BioCraft',
+    description:
+      'Reverent Shree Ram bios in Hindi, Hinglish and English — devotional, peaceful and respectful lines. One-tap copy. Free and private.',
+    ogTitle: 'Shree Ram Bio — BioCraft',
+    ogDescription: 'Reverent Shree Ram bios in Hindi and English — devotional, peaceful and respectful lines.',
+  },
+  {
+    path: '/facebook-bio',
+    title: 'Facebook Bio — Best Facebook Bios & About Lines | BioCraft',
+    description:
+      'Facebook-ready bios for personal profiles, creators and small businesses. Trustworthy, warm and clear. One-tap copy, free.',
+    ogTitle: 'Facebook Bio — BioCraft',
+    ogDescription: 'Facebook-ready bios for personal profiles, creators and small businesses.',
+  },
+  {
+    path: '/creator-bio',
+    title: 'Creator Bio — Instagram Bios for Content Creators | BioCraft',
+    description:
+      'Creator bios for YouTubers, streamers and influencers — crisp, discoverable and real. One-tap copy. Free and private.',
+    ogTitle: 'Creator Bio — BioCraft',
+    ogDescription: 'Creator bios for YouTubers, streamers and influencers — crisp, discoverable and real.',
+  },
+  {
+    path: '/photographer-bio',
+    title: 'Photographer Bio — Instagram Bios for Photographers | BioCraft',
+    description:
+      'Photographer bios for weddings, portraits, street and travel — with booking cues. One-tap copy, free and private.',
+    ogTitle: 'Photographer Bio — BioCraft',
+    ogDescription: 'Photographer bios for weddings, portraits, street and travel — with booking cues.',
+  },
+  {
+    path: '/student-bio',
+    title: 'Student Bio — Instagram Bios for Students & College | BioCraft',
+    description:
+      'Student bios for school and college — ambitious, funny and real. Eng · Hindi · Hinglish, one-tap copy. Free and private.',
+    ogTitle: 'Student Bio — BioCraft',
+    ogDescription: 'Student bios for school and college — ambitious, funny and real.',
+  },
+  {
+    path: '/cute-bio',
+    title: 'Cute Bio — Sweet Instagram Bios for Her & Him | BioCraft',
+    description:
+      'Original cute Instagram bios — soft hearts, sparkles and playful warmth. One-tap copy, English, Hindi and Hinglish. Free and private.',
+    ogTitle: 'Cute Bio — BioCraft',
+    ogDescription: 'Original cute Instagram bios — soft hearts, sparkles and playful warmth.',
+  },
+  {
+    path: '/hinglish-bio',
+    title: 'Hinglish Bio — Desi Instagram Bios in Hinglish | BioCraft',
+    description:
+      'Original Hinglish Instagram bios — chai, hustle, heart and attitude, written the way India actually texts. One-tap copy, free and private.',
+    ogTitle: 'Hinglish Bio — BioCraft',
+    ogDescription: 'Original Hinglish Instagram bios — written the way India actually texts.',
+  },
+  {
+    path: '/gamer-bio',
+    title: 'Gamer Bio — Gaming Instagram Bios That Hit Different | BioCraft',
+    description:
+      'Original gamer Instagram bios — grind, clutch, squad and endless queue. One-tap copy, English, Hindi and Hinglish. Free and private.',
+    ogTitle: 'Gamer Bio — BioCraft',
+    ogDescription: 'Original gamer Instagram bios — grind, clutch, squad and endless queue.',
+  },
+  {
+    path: '/bio-editor',
+    title: 'Bio Editor — Style & Copy Your Instagram Bio | BioCraft',
+    description:
+      'Build your bio by hand: platform character limits, Unicode fonts, dividers, emoji and 18 designer card styles with live preview. Free, private, one-tap copy.',
+    ogTitle: 'Bio Editor — BioCraft',
+    ogDescription: 'Hand-build your bio: Unicode fonts, dividers, emoji and designer card previews.',
+  },
+  {
     path: '/categories',
     title: 'Categories — BioCraft Social Media Toolkit',
     description:
@@ -152,9 +352,9 @@ const ROUTES = [
     path: '/about',
     title: 'About BioCraft — Social Media Toolkit',
     description:
-      'What BioCraft is, why it exists and how it works: a free, private, rule-based toolkit for social profiles — EN & Hindi, no sign-up, no AI APIs.',
+      'What BioCraft is, why it exists and how it works: a free, private, rule-based toolkit for social profiles — EN · Hindi · Hinglish, no sign-up, no AI APIs.',
     ogTitle: 'About BioCraft',
-    ogDescription: 'A free, private, rule-based social toolkit. EN & Hindi, no sign-up.',
+    ogDescription: 'A free, private, rule-based social toolkit. EN · Hindi · Hinglish, no sign-up.',
   },
   {
     path: '/help',
@@ -206,6 +406,11 @@ const ROUTES = [
   },
 ];
 
+// Optional canonical/og:url generation. Omits them entirely unless the
+// production domain is known and passed in — placeholder domains must not ship.
+const SITE_URL = (process.env.SITE_URL ?? '').trim().replace(/\/+$/, '');
+const canonicalFor = (path) => (SITE_URL ? `  <link rel="canonical" href="${SITE_URL}${path === '/' ? '/' : path}" />\n` : '');
+
 const template = readFileSync(join(dist, 'index.html'), 'utf8');
 
 const escapeAttr = (value) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
@@ -218,7 +423,14 @@ const replaceOrThrow = (html, pattern, replacement, label) => {
 };
 
 for (const route of ROUTES) {
-  if (route.runAsTemplate) continue;
+  if (route.runAsTemplate) {
+    if (SITE_URL) {
+      const html = template.replace('</head>', () => `${canonicalFor(route.path)}  </head>`);
+      writeFileSync(join(dist, 'index.html'), html, 'utf8');
+      console.log('canonical injected into: dist/index.html (root)');
+    }
+    continue;
+  }
   let html = template;
   html = replaceOrThrow(
     html,
@@ -256,6 +468,10 @@ for (const route of ROUTES) {
     (_, open, close) => `${open}${escapeAttr(route.ogDescription)}${close}`,
     `${route.path} twitter:description`,
   );
+
+  if (SITE_URL) {
+    html = html.replace('</head>', () => `${canonicalFor(route.path)}  </head>`);
+  }
 
   const outDir = join(dist, route.path);
   mkdirSync(outDir, { recursive: true });

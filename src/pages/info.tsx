@@ -29,33 +29,37 @@ export const INFO_PAGES: InfoPageMeta[] = [
     path: '/features',
     title: 'Features — BioCraft Social Media Toolkit',
     description:
-      'Everything BioCraft does: nine generators, six platform workspaces, Hindi + English output, private browser-side processing, zero sign-up.',
+      'Everything BioCraft does: twelve generators, eight platform workspaces, English + Hindi + Hinglish output, private browser-side processing, zero sign-up.',
     ogTitle: 'BioCraft Features',
-    ogDescription: 'Nine generators, six platforms, EN & Hindi, free and private.',
+    ogDescription: 'Twelve generators, eight platforms, EN · Hindi · Hinglish, free and private.',
     heading: 'Features',
-    lede: 'Nine generators across six platform workspaces — everything listed here works today, in your browser, for free.',
+    lede: 'Twelve generators across eight platform workspaces — everything listed here works today, in your browser, for free.',
     sections: [
       {
         heading: 'The generators',
         body: (
           <ul>
-            <li><strong>Bio Generator</strong> — five unique bios per run. English or Hindi, personal or by category, with your platform’s real character limit (Instagram 150, Facebook 101, Threads 150, TikTok 80, X 160, LinkedIn 2,600).</li>
-            <li><strong>Stylish Name Generator</strong> — your display name in 24 Unicode text styles with one-tap copy; honest about Devanagari.</li>
-            <li><strong>Fancy Font Generator</strong> — any text in 24 fancy Unicode fonts, with copy-all.</li>
+            <li><strong>Bio Generator</strong> — five unique bios per run. English, Hindi or Hinglish, personal or by category, with your platform’s real character limit (Instagram 150, Facebook 101, Threads 150, TikTok 80, X 160, LinkedIn 2,600, WhatsApp 139, Snapchat ≈150).</li>
+            <li><strong>Stylish Name Generator</strong> — your display name in 33 Unicode text styles with one-tap copy — plus optional crown, gaming and attitude frames; honest about Devanagari.</li>
+            <li><strong>Fancy Font Generator</strong> — any text in 33 fancy Unicode fonts, with copy-all.</li>
+            <li><strong>Design Studio</strong> — type any sentence, get ready-made designs: 33 Unicode fonts × 20 emoji frames × 18 designer card styles. Live preview plus a gallery of curated mixes, one-tap copy.</li>
             <li><strong>Username Generator</strong> — twelve unique, rule-valid handles per run, four vibes, three lengths, EN/हिन्दी labels. Availability is never claimed — Instagram decides.</li>
-            <li><strong>Emoji &amp; Symbol Generator</strong> — 324 curated, deduplicated Unicode glyphs with English and Hindi search.</li>
-            <li><strong>Hashtag Generator</strong> — 10/20/30 deduplicated hashtags for 12 niches, EN or HI, broad + medium + focused mix. Never promises reach.</li>
-            <li><strong>Caption Generator</strong> — exactly five unique captions for 12 topics in seven tones, EN or HI, emoji on/off, optional CTA.</li>
+            <li><strong>Emoji &amp; Symbol Generator</strong> — 531 curated, deduplicated Unicode glyphs across 24 categories, with English and Hindi search, favourites and recents.</li>
+            <li><strong>Hashtag Generator</strong> — 10/20/30 deduplicated hashtags for 14 niches, English, Hindi or Hinglish, broad + medium + focused mix. Never promises reach.</li>
+            <li><strong>Caption Generator</strong> — exactly five unique captions for 12 topics in eight tones, English, Hindi or Hinglish, emoji on/off, optional CTA.</li>
             <li><strong>LinkedIn Headline Generator</strong> — five professional headlines ≤ 220 characters (Role · Value · Proof).</li>
             <li><strong>LinkedIn Summary Generator</strong> — five structured About-section drafts ≤ 2,600 characters, built only from your inputs.</li>
+            <li><strong>WhatsApp Status Generator</strong> — five statuses per run in English, Hindi or Hinglish, nine hand-written vibes, About-limit 139.</li>
+            <li><strong>Snapchat Caption Generator</strong> — five captions per run in English, Hindi or Hinglish.</li>
+            <li><strong>Bio Editor</strong> (<a onClick={handleAnchorClick} href="/bio-editor">/bio-editor</a>) — hand-build your bio: platform counters, 33 Unicode fonts, dividers, emoji quick-insert, 18 designer card previews, copy the exact text.</li>
           </ul>
         ),
       },
       {
-        heading: 'Six platform workspaces',
+        heading: 'Eight platform workspaces',
         body: (
           <p>
-            Instagram, Facebook, Threads, TikTok, X and LinkedIn each get a purpose-built workspace:
+            Instagram, Facebook, Threads, TikTok, X, LinkedIn, WhatsApp and Snapchat each get a purpose-built workspace:
             the tools that make sense for it, its real character limits, and its accent colour —
             while the BioCraft identity stays constant. Switch platforms from the pills row above
             any tool.
@@ -100,7 +104,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
         body: (
           <p>
             Building a presence on Instagram and TikTok? Generate a bio that fits both platforms’
-            limits, a display name that stands out in 24 styles, 12 handle ideas, and hashtags for
+            limits, a display name that stands out in 33 styles, 12 handle ideas, and hashtags for
             your niche — then keep the same voice going into captions. Hindi creators get the same
             tools in Devanagari where Unicode allows it.
           </p>
@@ -164,8 +168,8 @@ export const INFO_PAGES: InfoPageMeta[] = [
         heading: 'BioCraft — Free · $0',
         body: (
           <ul>
-            <li>All nine generators, all six platform workspaces, unlimited runs</li>
-            <li>English &amp; Hindi output where supported</li>
+            <li>All twelve generators, all eight platform workspaces, unlimited runs</li>
+            <li>English, Hindi and Hinglish output where supported</li>
             <li>No account, no email, no credit card, no trial that expires</li>
             <li>No ads, no analytics, no upsells, no “Pro” tier hiding behind this page</li>
             <li>Your text never leaves your browser — there is nothing to buy with your data</li>
@@ -212,7 +216,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
           <>
             <p>Instagram gives you 150 characters — about two short lines. The bios that earn their keep do three things in order: <strong>say what you do</strong> (one concrete phrase, not “dreamer”), <strong>name who it’s for or what makes you different</strong>, and <strong>give one action</strong> (“new work every Tuesday”, “book via DM”).</p>
             <p>What to drop: job-title soup (“Founder | CEO | Speaker | Mentor”), decorative emoji walls, and anything you wouldn’t say out loud. A useful test: read it aloud to a friend who’s never met you. If they can’t repeat what you do, rewrite.</p>
-            <p>Our Bio Generator builds drafts in exactly this shape — English or Hindi, five at a time, within the limit. Treat them as clay, not scripture: keep the skeleton, swap in your own words, and you’ll end up with a bio that sounds like you on a well-written day.</p>
+            <p>Our Bio Generator builds drafts in exactly this shape — English, Hindi or Hinglish, five at a time, within the limit. Treat them as clay, not scripture: keep the skeleton, swap in your own words, and you’ll end up with a bio that sounds like you on a well-written day.</p>
           </>
         ),
       },
@@ -222,7 +226,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
           <>
             <p>Hashtags don’t summon reach. What they do is <em>categorise</em> your post so Instagram can file it correctly — useful for niche discovery, follow-hashtag feeds and search, not virality. Anyone selling a “hashtag reach guarantee” is selling weather forecasts.</p>
             <p>A sane mix: mostly <strong>broad</strong> tags for topic-level discovery (#photography), a good chunk of <strong>medium</strong> tags for community (#streetphotographyindia), and a few <strong>focused</strong> tags where you can genuinely rank (#ahmedabadphotographer). Twenty well-chosen tags beat thirty generic ones.</p>
-            <p>Our Hashtag Generator builds exactly that mix for 12 niches in English or Hindi, deduplicated, with your own keywords blended in. Rotate sets between posts; track what brings profile visits, not likes.</p>
+            <p>Our Hashtag Generator builds exactly that mix for 14 niches in English, Hindi or Hinglish, deduplicated, with your own keywords blended in. Rotate sets between posts; track what brings profile visits, not likes.</p>
           </>
         ),
       },
@@ -232,7 +236,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
           <>
             <p>“Fancy fonts” for Instagram aren’t font files — they’re look-alike Unicode code points from the Mathematical Alphanumeric Symbols block (𝐛𝐨𝐥𝐝, 𝓈𝒸𝓇𝒾𝓅𝓉, 𝔣𝔯𝔞𝔨𝔱𝔲𝔯). Anyone can copy them; no app needs to install anything.</p>
             <p>The catches: (1) Some apps filter or down-rank these characters — they can trip link-preview and spam heuristics in extreme cases. (2) Screen readers may read them letter-by-letter (“mathematical bold small h…”), which is why we keep them out of body copy and encourage them in display contexts like display names. (3) <strong>Devanagari has no styled equivalents.</strong> Hindi text passes through unchanged, and any tool claiming “stylish Hindi fonts” is faking it with images.</p>
-            <p>BioCraft ships 24 honest Unicode styles with one-tap copy and tells you plainly when the input passes through. That’s the entire trick — no magic, no fonts to install.</p>
+            <p>BioCraft ships 33 honest Unicode styles with one-tap copy and tells you plainly when the input passes through. That’s the entire trick — no magic, no fonts to install.</p>
           </>
         ),
       },
@@ -248,7 +252,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
     path: '/resources',
     title: 'Resources — BioCraft Social Media Toolkit',
     description:
-      'Every BioCraft tool and guide in one place — bio, fonts, usernames, symbols, hashtags, captions, LinkedIn generators and our three blog guides.',
+      'Every BioCraft tool and guide in one place — bio, fonts, Design Studio, usernames, symbols, hashtags, captions, LinkedIn generators and our three blog guides.',
     ogTitle: 'BioCraft Resources',
     ogDescription: 'Every BioCraft tool and guide, one page.',
     heading: 'Resources',
@@ -258,15 +262,19 @@ export const INFO_PAGES: InfoPageMeta[] = [
         heading: 'All tools',
         body: (
           <ul>
-            <li><a onClick={handleAnchorClick} href="/bio-generator">Instagram Bio Generator</a> — bios for all six platforms, EN/हिंदी</li>
-            <li><a onClick={handleAnchorClick} href="/stylish-name-generator">Stylish Name Generator</a> — 24 Unicode styles</li>
-            <li><a onClick={handleAnchorClick} href="/fancy-font-generator">Fancy Font Generator</a> — 24 fonts, copy all</li>
+            <li><a onClick={handleAnchorClick} href="/bio-generator">Bio Generator</a> — bios for all eight platforms, EN/हिन्दी/Hinglish</li>
+            <li><a onClick={handleAnchorClick} href="/stylish-name-generator">Stylish Name Generator</a> — 33 Unicode styles + name frames</li>
+            <li><a onClick={handleAnchorClick} href="/fancy-font-generator">Fancy Font Generator</a> — 33 fonts, copy all</li>
+            <li><a onClick={handleAnchorClick} href="/design-studio">Design Studio</a> — any sentence → ready-made font + emoji + card designs</li>
             <li><a onClick={handleAnchorClick} href="/username-generator">Username Generator</a> — 12 handles, four vibes</li>
-            <li><a onClick={handleAnchorClick} href="/emoji-symbol-generator">Emoji &amp; Symbol Generator</a> — 324 searchable glyphs</li>
-            <li><a onClick={handleAnchorClick} href="/hashtag-generator">Hashtag Generator</a> — 12 niches, EN/हिंदी, copy all</li>
-            <li><a onClick={handleAnchorClick} href="/caption-generator">Caption Generator</a> — 5 captions, 7 tones, EN/हिंदी</li>
+            <li><a onClick={handleAnchorClick} href="/emoji-symbol-generator">Emoji &amp; Symbol Generator</a> — 531 searchable glyphs</li>
+            <li><a onClick={handleAnchorClick} href="/hashtag-generator">Hashtag Generator</a> — 14 niches, EN/हिन्दी/Hinglish, copy all</li>
+            <li><a onClick={handleAnchorClick} href="/caption-generator">Caption Generator</a> — 5 captions, 7 tones, EN/हिन्दी/Hinglish</li>
             <li><a onClick={handleAnchorClick} href="/linkedin-headline-generator">LinkedIn Headline Generator</a> — 5 headlines ≤ 220 chars</li>
             <li><a onClick={handleAnchorClick} href="/linkedin-summary-generator">LinkedIn Summary Generator</a> — 5 About drafts ≤ 2,600 chars</li>
+            <li><a onClick={handleAnchorClick} href="/whatsapp-status-generator">WhatsApp Status Generator</a> — statuses in EN/हिन्दी/Hinglish</li>
+            <li><a onClick={handleAnchorClick} href="/snapchat-caption-generator">Snapchat Caption Generator</a> — captions in EN/हिन्दी/Hinglish</li>
+            <li><a onClick={handleAnchorClick} href="/bio-editor">Bio Editor</a> — hand-build your bio with designer previews</li>
           </ul>
         ),
       },
@@ -307,9 +315,9 @@ export const INFO_PAGES: InfoPageMeta[] = [
     path: '/about',
     title: 'About BioCraft — Social Media Toolkit',
     description:
-      'What BioCraft is, why it exists and how it works: a free, private, rule-based toolkit for social profiles — EN & Hindi, no sign-up, no AI APIs.',
+      'What BioCraft is, why it exists and how it works: a free, private, rule-based toolkit for social profiles — EN · Hindi · Hinglish, no sign-up, no AI APIs.',
     ogTitle: 'About BioCraft',
-    ogDescription: 'A free, private, rule-based social toolkit. EN & Hindi, no sign-up.',
+    ogDescription: 'A free, private, rule-based social toolkit. EN · Hindi · Hinglish, no sign-up.',
     heading: 'About BioCraft',
     lede: 'BioCraft is a small, opinionated toolkit for one specific itch: making social profiles without handing your data to a “growth” app.',
     sections: [
@@ -333,7 +341,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
             <li><strong>Private, structurally.</strong> No accounts, no uploads, no analytics, no cookies. There is no server to leak.</li>
             <li><strong>Rule-based, not AI-washed.</strong> The generators are deterministic templates and curated pools — you can read how they work, and they never pretend otherwise.</li>
             <li><strong>Honest about limits.</strong> Unicode fonts break in some apps; Devanagari has no styled glyphs; hashtags don’t guarantee reach. We say these out loud.</li>
-            <li><strong>English and हिन्दी.</strong> Not an afterthought translation — first-class output where the writing supports it.</li>
+            <li><strong>English, हिन्दी and Hinglish.</strong> Not an afterthought translation — first-class output where the writing supports it.</li>
           </ul>
         ),
       },
@@ -399,6 +407,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
             <li>TikTok bio: 80 (tight on purpose — we use identity-only templates there)</li>
             <li>X bio: 160</li>
             <li>LinkedIn headline: 220 · LinkedIn About: 2,600</li>
+            <li>WhatsApp About: 139 · Snapchat bio: ≈150 (Snapchat does not publish it — BioCraft treats it as a reference, not a guarantee)</li>
             <li>Instagram captions: 2,200 (BioCraft keeps all generated captions far below it)</li>
           </ul>
         ),

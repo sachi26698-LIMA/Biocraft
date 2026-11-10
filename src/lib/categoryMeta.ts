@@ -18,7 +18,7 @@ export const CATEGORY_META: readonly CategoryMeta[] = [
   {
     id: 'bio',
     name: 'Bio Generators',
-    description: 'Five unique bios per platform, EN or Hindi, within each platform’s character limit.',
+    description: 'Five unique bios per platform, EN · Hindi · Hinglish, within each platform’s character limit.',
     tools: ['bio'],
     href: '/bio-generator',
     pastel: 'lav',
@@ -26,8 +26,8 @@ export const CATEGORY_META: readonly CategoryMeta[] = [
   {
     id: 'names-fonts',
     name: 'Stylish Names & Fonts',
-    description: 'Your display name in 24 Unicode styles — plus styled fonts for any text you paste.',
-    tools: ['stylish-name', 'fancy-fonts'],
+    description: 'Display names in 33 Unicode styles, styled fonts for any text — plus emoji frames and ready-made font × emoji × card-design mixes.',
+    tools: ['stylish-name', 'fancy-fonts', 'design-studio'],
     href: '/stylish-name-generator',
     pastel: 'pink',
   },

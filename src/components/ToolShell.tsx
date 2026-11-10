@@ -7,9 +7,15 @@ import { useRecentlyUsed } from '../lib/toolbox';
 import HomePage from '../pages/HomePage';
 import InfoPage from '../pages/InfoPage';
 import CategoriesPage from '../pages/CategoriesPage';
+import BioCollectionsPage from '../pages/BioCollectionsPage';
+import BioCollectionPage from '../pages/BioCollectionPage';
+import BioEditorPage from '../pages/BioEditorPage';
 import { infoPageForPath } from '../pages/info';
+import { collectionForPath } from '../lib/bioCollections';
 
 const TOOL_PATHS = new Set(TOOLS.map((tool) => tool.path));
+const COLLECTIONS_INDEX = '/bio-collections';
+const BIO_EDITOR = '/bio-editor';
 const HOME = '/';
 
 /**
@@ -33,6 +39,9 @@ export default function ToolShell() {
 
   const isHome = path === HOME;
   const isCategories = path === '/categories';
+  const isCollectionsIndex = path === COLLECTIONS_INDEX;
+  const isBioEditor = path === BIO_EDITOR;
+  const collection = collectionForPath(path);
   const tool = toolForPath(path);
   const isToolRoute = TOOL_PATHS.has(path);
   const infoPage = infoPageForPath(path);
@@ -40,10 +49,10 @@ export default function ToolShell() {
 
   // Unknown paths fall back to the homepage.
   useEffect(() => {
-    if (!isHome && !isToolRoute && !infoPage && !isCategories) {
+    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !collection) {
       navigate(HOME, { replace: true });
     }
-  }, [isHome, isToolRoute, infoPage, isCategories]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, collection]);
 
   // Remember tool visits (localStorage only) for the "Recently used" rail.
   useEffect(() => {
@@ -74,11 +83,20 @@ export default function ToolShell() {
       document.title = infoPage.title;
     } else if (isCategories) {
       document.title = 'Categories — BioCraft Social Media Toolkit';
+    } else if (isCollectionsIndex) {
+      document.title = 'Ready-Made Bio Collections — BioCraft Social Media Toolkit';
+    } else if (isBioEditor) {
+      document.title = 'Bio Editor — Style & Copy Your Instagram Bio | BioCraft';
+    } else if (collection) {
+      document.title = collection.seoTitle;
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, tool]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, collection, tool]);
 
   if (isHome) return <HomePage />;
   if (isCategories) return <CategoriesPage />;
+  if (isCollectionsIndex) return <BioCollectionsPage />;
+  if (isBioEditor) return <BioEditorPage />;
+  if (collection) return <BioCollectionPage slug={collection.slug} />;
   if (isToolRoute) {
     return (
       <section className="tool-page">

@@ -86,3 +86,77 @@ export function useRecentlyUsed() {
     },
   };
 }
+
+/* ========== Symbol favourites + recently used (biocraft:symbol-favs / -recents) ========== */
+
+const SYMBOL_FAV_KEY = 'biocraft:symbol-favs';
+const SYMBOL_RECENT_KEY = 'biocraft:symbol-recents';
+const MAX_SYMBOL_RECENTS = 18;
+
+let symbolFavs = new Set<string>();
+let symbolRecents: string[] = [];
+let symbolHydrated = false;
+const symbolListeners = new Set<() => void>();
+
+function hydrateSymbols() {
+  if (symbolHydrated || typeof window === 'undefined') return;
+  symbolHydrated = true;
+  symbolFavs = new Set(readStore<string[]>(SYMBOL_FAV_KEY, []));
+  symbolRecents = readStore<string[]>(SYMBOL_RECENT_KEY, [])
+    .filter((item) => typeof item === 'string')
+    .slice(0, MAX_SYMBOL_RECENTS);
+}
+
+function emitSymbols() {
+  for (const listener of symbolListeners) listener();
+}
+
+hydrateSymbols();
+
+function subscribeSymbols(listener: () => void) {
+  symbolListeners.add(listener);
+  return () => {
+    symbolListeners.delete(listener);
+  };
+}
+
+/** Favourite glyphs — the glyph itself is the key (stable across sessions). */
+export function useSymbolFavourites() {
+  const snapshot = useSyncExternalStore(subscribeSymbols, () => {
+    hydrateSymbols();
+    return [...symbolFavs].sort().join('\u0001');
+  });
+  const favList = snapshot ? snapshot.split('\u0001') : [];
+  return {
+    favs: new Set(favList),
+    isFav: (glyph: string) => symbolFavs.has(glyph),
+    toggle: (glyph: string) => {
+      hydrateSymbols();
+      if (symbolFavs.has(glyph)) symbolFavs.delete(glyph);
+      else symbolFavs.add(glyph);
+      persist(SYMBOL_FAV_KEY, [...symbolFavs]);
+      emitSymbols();
+    },
+    count: favList.length,
+  };
+}
+
+/** Recently used glyphs, most recent first, capped at 18. */
+export function useSymbolRecents() {
+  const snapshot = useSyncExternalStore(subscribeSymbols, () => {
+    hydrateSymbols();
+    return symbolRecents.join('\u0001');
+  });
+  return {
+    recents: snapshot ? snapshot.split('\u0001') : [],
+    record: (glyph: string) => {
+      hydrateSymbols();
+      symbolRecents = [glyph, ...symbolRecents.filter((item) => item !== glyph)].slice(
+        0,
+        MAX_SYMBOL_RECENTS,
+      );
+      persist(SYMBOL_RECENT_KEY, symbolRecents);
+      emitSymbols();
+    },
+  };
+}

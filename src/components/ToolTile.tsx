@@ -12,6 +12,9 @@ import {
   QuoteIcon,
   LayersIcon,
   GridIcon,
+  WhatsAppIcon,
+  SnapchatIcon,
+  GemIcon,
 } from './icons';
 import { TOOLS, type ToolKey } from '../tools/registry';
 import { TOOL_THEMES } from '../lib/toolThemes';
@@ -22,12 +25,15 @@ const TOOL_ICONS: Record<ToolKey, (props: { size?: number }) => JSX.Element> = {
   bio: SparkIcon,
   'stylish-name': TypeIcon,
   'fancy-fonts': WandIcon,
+  'design-studio': GemIcon,
   username: AtIcon,
   symbols: SmileIcon,
   hashtags: HashIcon,
   captions: QuoteIcon,
   'linkedin-headline': LayersIcon,
   'linkedin-summary': GridIcon,
+  'whatsapp-status': WhatsAppIcon,
+  'snapchat-caption': SnapchatIcon,
 };
 
 /**
