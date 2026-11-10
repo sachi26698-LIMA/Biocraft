@@ -1,0 +1,24 @@
+{
+  "name": "biocraft",
+  "private": true,
+  "version": "1.0.0",
+  "description": "BioCraft — All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build && node scripts/build-shells.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.8"
+  }
+}
