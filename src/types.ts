@@ -1,4 +1,4 @@
-export type Language = 'en' | 'hi';
+export type Language = 'en' | 'hi' | 'hg';
 
 export type Mode = 'personal' | 'category';
 

@@ -31,11 +31,28 @@ const platformFromSearch = (search: string): PlatformId | null => {
   return isPlatformId(value) ? value : null;
 };
 
+/**
+ * First-visit default when no ?platform= is given: studio routes land on
+ * their studio's platform. Never overrides an explicit ?platform=, and never
+ * fires after mount (it only seeds the initial state).
+ */
+const DEFAULT_BY_PATH: Array<[string, PlatformId]> = [
+  ['/whatsapp-status-generator', 'whatsapp'],
+  ['/snapchat-caption-generator', 'snapchat'],
+];
+
+const defaultForPath = (pathname: string): PlatformId => {
+  for (const [prefix, id] of DEFAULT_BY_PATH) {
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return id;
+  }
+  return 'instagram';
+};
+
 export function ToolkitProvider({ children }: { children: ReactNode }) {
   const path = usePath();
   const [platform, setPlatformState] = useState<PlatformId>(() => {
     if (typeof window === 'undefined') return 'instagram';
-    return platformFromSearch(window.location.search) ?? 'instagram';
+    return platformFromSearch(window.location.search) ?? defaultForPath(window.location.pathname);
   });
 
   // Honor ?platform=<id> when navigation introduces/removes it (footer links,

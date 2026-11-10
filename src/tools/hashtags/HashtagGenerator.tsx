@@ -13,9 +13,11 @@ import SegmentedControl from '../../components/SegmentedControl';
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
   { value: 'hi', label: 'हिन्दी', lang: 'hi' },
+  { value: 'hg', label: 'Hinglish' },
 ] as const;
 
 const SIZE_OPTIONS = [
+  { value: '5', label: '5 (IG cap)' },
   { value: '10', label: '10' },
   { value: '20', label: '20' },
   { value: '30', label: '30' },
@@ -23,7 +25,7 @@ const SIZE_OPTIONS = [
 
 /**
  * Hashtag Generator — a deduplicated, curated mix of broad, medium and
- * focused hashtags per niche, in English or Hindi, optionally blended with
+ * focused hashtags per niche, in English, Hindi or Hinglish, optionally blended with
  * variants of your own keywords. No reach or virality is ever promised.
  */
 export default function HashtagGenerator() {
@@ -75,7 +77,8 @@ export default function HashtagGenerator() {
     window.setTimeout(() => setCopiedTag(null), 1600);
   };
 
-  const nicheLabel = language === 'hi' ? activeNiche.labelHi : activeNiche.labelEn;
+  const nicheLabel =
+    language === 'hi' ? activeNiche.labelHi : language === 'hg' ? activeNiche.labelHg : activeNiche.labelEn;
 
   const copyAllText = useMemo(() => (tags ? tags.join(' ') : ''), [tags]);
 
@@ -92,7 +95,7 @@ export default function HashtagGenerator() {
               aria-pressed={niche.id === nicheId}
               onClick={() => setNicheId(niche.id)}
             >
-              {language === 'hi' ? niche.labelHi : niche.labelEn}
+              {language === 'hi' ? niche.labelHi : language === 'hg' ? niche.labelHg : niche.labelEn}
             </button>
           ))}
         </div>
@@ -189,7 +192,8 @@ export default function HashtagGenerator() {
               </button>
             </div>
             <p className="tool-note">
-              Hashtag volume changes constantly — no tool can guarantee reach or virality.
+              Instagram caps Feed posts and Reels at 5 hashtags — use the 5 option for feeds.
+              Hashtag volume changes constantly, so no tool can guarantee reach or virality.
               A blend of broad and focused tags is common practice, not a promise.
             </p>
           </>

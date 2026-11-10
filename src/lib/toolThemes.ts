@@ -39,6 +39,11 @@ export const TOOL_THEMES: Record<ToolKey, ToolTheme> = {
     accent: '#DE6B2B', accentHover: '#C2511D', deep: '#9A4A0E',
     soft: 'rgba(222, 107, 43, 0.12)', line: 'rgba(222, 107, 43, 0.38)', glow: 'rgba(222, 107, 43, 0.4)',
   },
+  'design-studio': {
+    tileFrom: '#ECEFFF', tileTo: '#CBD2FF',
+    accent: '#4F46E5', accentHover: '#4338CA', deep: '#3730A3',
+    soft: 'rgba(79, 70, 229, 0.12)', line: 'rgba(79, 70, 229, 0.38)', glow: 'rgba(79, 70, 229, 0.4)',
+  },
   username: {
     tileFrom: '#E3F5FE', tileTo: '#BBE2F7',
     accent: '#2E86C1', accentHover: '#226A9C', deep: '#0A4A77',
@@ -63,6 +68,16 @@ export const TOOL_THEMES: Record<ToolKey, ToolTheme> = {
     tileFrom: '#E0EDFF', tileTo: '#BDD8F7',
     accent: '#0A66C2', accentHover: '#084E95', deep: '#0A4A8F',
     soft: 'rgba(10, 102, 194, 0.12)', line: 'rgba(10, 102, 194, 0.38)', glow: 'rgba(10, 102, 194, 0.4)',
+  },
+  'whatsapp-status': {
+    tileFrom: '#D9F7E8', tileTo: '#A9EDCB',
+    accent: '#128C7E', accentHover: '#0E6B60', deep: '#075E54',
+    soft: 'rgba(18, 140, 126, 0.13)', line: 'rgba(18, 140, 126, 0.4)', glow: 'rgba(37, 211, 102, 0.45)',
+  },
+  'snapchat-caption': {
+    tileFrom: '#FFFDE6', tileTo: '#FBF3A6',
+    accent: '#C9A900', accentHover: '#A88900', deep: '#5F5200',
+    soft: 'rgba(252, 224, 22, 0.22)', line: 'rgba(216, 180, 0, 0.45)', glow: 'rgba(252, 224, 22, 0.5)',
   },
   'linkedin-summary': {
     tileFrom: '#D9F6F0', tileTo: '#B4E8DE',

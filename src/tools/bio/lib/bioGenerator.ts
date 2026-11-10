@@ -3,6 +3,7 @@ import {
   getPools,
   PERSONAL_EMOJIS,
   PERSONAL_EMOJIS_HI,
+  PERSONAL_EMOJIS_HG,
   type LinePools,
 } from '../data/pools';
 import { getLinkedInPools, LINKEDIN_EMOJIS } from '../data/linkedin-pools';
@@ -10,7 +11,7 @@ import { getCategory } from '../data/categories';
 import type { Language, PersonalFormValues } from '../../../types';
 import { BIO_LIMIT, bioLength, tidy, tidyMultiline } from '../../../lib/text';
 
-/** Exactly this many bios are produced on every run. */
+/** Default number of bios per run; callers may request 5, 10 or 20. */
 export const BIO_COUNT = 5;
 
 interface ComposeContext {
@@ -111,16 +112,16 @@ const isUsable = (bio: string, limit: number): boolean =>
   bio.length > 0 && !bio.includes('{') && bioLength(bio) <= limit;
 
 /**
- * Composes exactly BIO_COUNT unique bios. Random sampling gets there almost
- * always; a deterministic enumeration guarantees we still return five even
- * with the toughest constraints (e.g. no-emoji Hindi with a long name).
+ * Composes `count` unique bios. Random sampling gets there almost always;
+ * a deterministic enumeration is the backstop for the toughest constraint
+ * sets (e.g. no-emoji Hindi with a long name).
  */
-function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT): string[] {
+function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT, count: number = BIO_COUNT): string[] {
   const seen = new Set<string>();
   const results: string[] = [];
 
   let attempts = 0;
-  while (results.length < BIO_COUNT && attempts < 800) {
+  while (results.length < count && attempts < 1200) {
     attempts += 1;
     const candidate = buildCandidate(ctx, limit);
     if (isUsable(candidate, limit) && !seen.has(candidate)) {
@@ -129,9 +130,9 @@ function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT): string[] {
     }
   }
 
-  if (results.length < BIO_COUNT && limit <= 80) {
+  if (results.length < count && limit <= 80) {
     outerShort: for (const identity of ctx.pools.identity) {
-      if (results.length >= BIO_COUNT) break outerShort;
+      if (results.length >= count) break outerShort;
       const candidate = assemble([fill(identity, ctx)]);
       if (isUsable(candidate, limit) && !seen.has(candidate)) {
         seen.add(candidate);
@@ -140,7 +141,7 @@ function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT): string[] {
     }
   }
 
-  if (results.length < BIO_COUNT) {
+  if (results.length < count) {
     const detailPool = (
       ctx.hasNiche ? ctx.pools.detail : [...ctx.pools.detailGeneric, ...ctx.pools.detail]
     ).filter(Boolean);
@@ -152,7 +153,7 @@ function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT): string[] {
       for (const detail of detailPool) {
         for (const location of locationChoices) {
           for (const cta of ctx.pools.cta) {
-            if (results.length >= BIO_COUNT) break outer;
+            if (results.length >= count) break outer;
             const rawLines = [identity, detail];
             if (location) rawLines.push(location);
             if (cta) rawLines.push(cta);
@@ -167,12 +168,14 @@ function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT): string[] {
     }
   }
 
-  return results.slice(0, BIO_COUNT);
+  return results.slice(0, count);
 }
 
 export interface BioOptions {
   /** Platform bio limit (defaults to Instagram's 150). */
   limit?: number;
+  /** How many bios to compose (5, 10 or 20). Defaults to BIO_COUNT. */
+  count?: number;
   /** 'linkedin' uses the professional English pool with the LinkedIn About limit. */
   poolSet?: 'linkedin';
 }
@@ -203,15 +206,17 @@ export function generatePersonalBios(
       : emojis
         ? language === 'hi'
           ? PERSONAL_EMOJIS_HI
-          : PERSONAL_EMOJIS
+          : language === 'hg'
+            ? PERSONAL_EMOJIS_HG
+            : PERSONAL_EMOJIS
         : [],
     pools: linkedIn ? getLinkedInPools(emojis) : getPools(language, emojis, 'personal'),
   };
 
-  return composeBios(ctx, limit);
+  return composeBios(ctx, limit, options.count);
 }
 
-/** Generates five unique bios for a category (no personal details needed). */
+/** Generates unique bios for a category (no personal details needed). */
 export function generateCategoryBios(
   categoryId: string,
   language: Language,
@@ -232,5 +237,27 @@ export function generateCategoryBios(
     pools: getPools(language, emojis, 'category'),
   };
 
-  return composeBios(ctx, limit);
+  return composeBios(ctx, limit, options.count);
+}
+
+/**
+ * Produces a single fresh bio for the given settings, avoiding anything in
+ * `exclude` (case-insensitive). Used for per-result regenerate. Returns null
+ * when the pool cannot yield a fresh, usable line — callers keep the old one.
+ */
+export function generateSingleBio(
+  mode: 'personal' | 'category',
+  args: { values?: PersonalFormValues; categoryId?: string },
+  language: Language,
+  emojis: boolean,
+  options: BioOptions,
+  exclude: readonly string[],
+): string | null {
+  const excluded = new Set(exclude.map((item) => item.toLowerCase()));
+  const pool =
+    mode === 'personal'
+      ? generatePersonalBios(args.values as PersonalFormValues, language, emojis, { ...options, count: 20 })
+      : generateCategoryBios(args.categoryId ?? '', language, emojis, { ...options, count: 20 });
+  const candidate = pool.find((bio) => !excluded.has(bio.toLowerCase()));
+  return candidate ?? null;
 }

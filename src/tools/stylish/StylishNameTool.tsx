@@ -3,6 +3,7 @@ import { UNICODE_STYLES, hasDevanagari } from '../../lib/unicodeStyles';
 import { DISPLAY_NAME_LIMIT, bioLength, tidy } from '../../lib/text';
 import StyleGallery from '../../components/StyleGallery';
 import CharCounter from '../../components/CharCounter';
+import { NAME_DESIGNS, applyNameDesign } from './nameDesigns';
 
 /**
  * Stylish Name Generator — your display name in styled Unicode alphabets,
@@ -10,6 +11,7 @@ import CharCounter from '../../components/CharCounter';
  */
 export default function StylishNameTool() {
   const [name, setName] = useState('');
+  const [design, setDesign] = useState('none');
   const trimmed = tidy(name);
 
   const items = useMemo(
@@ -18,10 +20,10 @@ export default function StylishNameTool() {
         ? UNICODE_STYLES.map((style) => ({
             id: style.id,
             label: style.label,
-            text: style.transform(trimmed),
+            text: applyNameDesign(style.transform(trimmed), design),
           }))
         : [],
-    [trimmed],
+    [trimmed, design],
   );
 
   const showDevanagariNote = hasDevanagari(trimmed);
@@ -44,6 +46,26 @@ export default function StylishNameTool() {
               aria-describedby="stylish-name-hint"
               onChange={(event) => setName(event.target.value)}
             />
+            <div className="field-inline-select">
+              <label htmlFor="stylish-design-select" className="option-label">
+                Name design <span className="optional">(optional)</span>
+              </label>
+              <select
+                id="stylish-design-select"
+                className="select"
+                value={design}
+                onChange={(event) => setDesign(event.target.value)}
+              >
+                {NAME_DESIGNS.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <p className="field-hint">
+                Wraps the styled name in a ready-made frame — crown, gaming, attitude and more.
+              </p>
+            </div>
             <div className="field-meta">
               <p className="field-hint" id="stylish-name-hint">
                 Latin letters and digits get the full treatment; other characters pass through.

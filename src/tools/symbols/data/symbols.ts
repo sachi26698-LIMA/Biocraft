@@ -1,13 +1,24 @@
 /**
  * Curated Unicode symbol & emoji library for the Emoji & Symbol Generator.
  *
- * ~300 entries across 12 categories. Every entry carries short lowercase
- * search keywords (matched together with the category label), so search is
- * genuinely useful: "heart", "check", "arrow", "star", "fire".
+ * Every entry carries short lowercase keywords (matched together with the
+ * category label), so search is genuinely useful: "heart", "check",
+ * "arrow", "star", "fire".
  *
- * Entries are deduplicated by exact glyph at build time (enforced by the
- * test harness). Emoji-presentation code points carry U+FE0F where needed.
+ * Styled-alphabet rows (A–Z) are produced from the same engine as the font
+ * tools, so they never drift out of sync with the actual output. Entries are
+ * deduplicated by exact glyph at build time (enforced by the test harness).
+ * Emoji-presentation code points carry U+FE0F where needed.
  */
+
+import { applyStyle } from '../../../lib/unicodeStyles';
+
+const ABC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const abc = 'abcdefghijklmnopqrstuvwxyz';
+const row = (source: string, styleId: string, keywords: string): SymbolEntry => ({
+  glyph: applyStyle(source, styleId),
+  keywords,
+});
 
 export interface SymbolEntry {
   glyph: string;
@@ -318,8 +329,6 @@ const HINDI_ALIASES: Readonly<Record<string, string>> = {
   '♚': 'मुकुट राजा', 'ღ': 'दिल जॉर्जिया', '※': 'सज्जा निशान',
 };
 
-export const TOTAL_SYMBOLS = SYMBOL_CATEGORIES.reduce((sum, cat) => sum + cat.symbols.length, 0);
-
 /** Lowercase search across glyph, keywords and category label. */
 export function searchSymbols(
   query: string,
@@ -347,3 +356,256 @@ export function searchSymbols(
   }
   return results;
 }
+
+/* ========== Expansion set: 10 studio categories (~15 entries each) ========== */
+SYMBOL_CATEGORIES.push(
+  {
+    id: 'royal',
+    label: 'Royal & Kings',
+    hiLabel: 'शाही राजघराने',
+    symbols: [
+      s('👑', 'crown royal king queen raja'),  
+      s('♜', 'rook castle palace fort'), s('♝', 'bishop chess royal'), s('♞', 'knight chess royal'),
+      s('⚜️', 'fleur de lis royal emblem'), s('🔱', 'trident trishul strength royal'), 
+        
+      s('🏰', 'castle palace fort'), s('👸', 'princess queen girl royal'), s('🤴', 'prince king boy royal'),
+      s('🤵', 'tuxedo gentleman royal suit'),
+      s('👰', 'bride royal wedding'),
+      s('🎩', 'top hat gentleman classy'),
+      s('🪷', 'lotus sacred royal india'),
+      s('🪭', 'folding fan royal elegance'),
+    ],
+  },
+  {
+    id: 'attitude',
+    label: 'Attitude & Savage',
+    hiLabel: 'एटीट्यूड',
+    symbols: [
+        s('🦚', 'peacock swagger attitude'),
+       s('🦁', 'lion king attitude boss'), s('🐆', 'leopard fierce attitude'),
+      s('💅', 'nail polish sass attitude'), s('🃏', 'joker wild card attitude'), s('💢', 'anger symbol rage attitude'),
+       s('🦅', 'eagle free sharp attitude'), s('🗯️', 'speech bubble shout attitude'),
+        
+      s('🧊', 'ice cold calm savage'),
+      s('🐍', 'snake sly savage'),
+      s('🫵', 'you point attitude callout'),
+      s('🦂', 'scorpion sting savage'),
+      s('🦇', 'bat night dark attitude'),
+    ],
+  },
+  {
+    id: 'birthday-festive',
+    label: 'Birthday & Party',
+    hiLabel: 'जन्मदिन पार्टी',
+    symbols: [
+       s('🎈', 'balloon party birthday'), s('🎉', 'party popper confetti celebrate'),
+        s('🕯️', 'candle light birthday'),
+      s('🧁', 'cupcake dessert sweet birthday'), s('🎁', 'gift present birthday'), s('🎊', 'confetti ball celebrate'),
+      s('🪅', 'pinata party celebrate'),  
+      s('🪔', 'diya lamp festival'), s('🍬', 'candy mithai sweet'), 
+      s('🍪', 'cookie snack sweet party'),
+      s('🍫', 'chocolate sweet party'),
+      s('🥤', 'drink cup party'),
+      s('🎆', 'fireworks celebration party'),
+      s('🎇', 'sparkler fireworks party'),
+      s('🪩', 'mirror ball disco party'),
+    ],
+  },
+  {
+    id: 'religious',
+    label: 'Faith & Peace',
+    hiLabel: 'आस्था शांति',
+    symbols: [
+      s('🕉️', 'om aum hindu spiritual'), s('ॐ', 'om aum devanagari spiritual'), 
+        s('✝️', 'cross christian faith'),
+      s('☪️', 'star crescent islam'), s('☸️', 'wheel dhamma buddhism'), s('☬', 'khanda sikh faith'),
+      s('✡️', 'star of david judaism'), s('☯️', 'yin yang balance tao'), s('🕊️', 'dove peace spirit'),
+      s('📿', 'prayer beads mala faith'), s('🛕', 'hindu temple mandir'), s('🛐', 'place of worship'),
+    ],
+  },
+  {
+    id: 'friendship',
+    label: 'Friendship & Squad',
+    hiLabel: 'दोस्ती दोस्त',
+    symbols: [
+       s('🫂', 'hug people friendship'), s('👯', 'twins friends squad'),
+        s('🤜', 'fist bump bro friends'),
+      s('🤛', 'fist bump left friends'), s('👫', 'man woman holding hands friends'),
+
+      s('👬', 'two men friends duo'),
+      s('👭', 'two women friends duo'),
+      s('🍿', 'popcorn movie night friends'),
+      s('🎳', 'bowling friends game night'),
+      s('🌃', 'night city friends out'),
+      s('🧺', 'picnic blanket friends day'),
+      s('🍱', 'bento meal friends together'),
+    ],
+  },
+  {
+    id: 'cute',
+    label: 'Cute & Kawaii',
+    hiLabel: 'क्यूट',
+    symbols: [
+      s('🧸', 'teddy bear cute soft'), s('🎀', 'ribbon bow cute girl'), s('🐣', 'hatching chick cute baby'),
+       s('🐥', 'baby chick cute yellow'), 
+      s('🍮', 'pudding dessert cute sweet'),  s('🐌', 'snail cute slow'),
+        s('🩵', 'light blue heart cute'),
+      s('🐾', 'paw prints cute animal'),  s('🫧', 'bubbles cute clean'),
+      s('🐨', 'koala cute animal huggable'),
+      s('🐼', 'panda cute animal'),
+      s('🐰', 'bunny rabbit cute'),
+      s('🐻', 'bear cute animal brown'),
+      s('🐶', 'dog puppy cute pet'),
+      s('🐱', 'cat kitty cute pet'),
+      s('🦄', 'unicorn magic cute'),
+    ],
+  },
+  {
+    id: 'sad',
+    label: 'Sad & Melancholy',
+    hiLabel: 'उदासी',
+    symbols: [
+      s('💧', 'drop tear sad water'),  
+       s('😞', 'sad face disappointed'), s('😿', 'crying cat sad'),
+      s('🍂', 'fallen leaves autumn sad'), s('☔', 'umbrella rain sad'), s('🌫️', 'fog mist sad mood'),
+      s('😔', 'pensive sad thoughtful'),  s('🫥', 'dotted line face absent sad'),
+      s('💤', 'sleep boredom tired'),  
+      s('🌁', 'foggy bridge city sad moody'),
+      s('🌬️', 'wind gust melancholy'),
+      s('🫤', 'face diagonal mouth meh sad'),
+      s('😶‍🌫️', 'face in clouds absent sad'),
+    ],
+  },
+  {
+    id: 'gaming',
+    label: 'Gaming & Esports',
+    hiLabel: 'गेमिंग',
+    symbols: [
+      s('🎮', 'game controller gaming'), s('🕹️', 'joystick arcade gaming'), s('👾', 'alien invader retro game'),
+      s('🎯', 'target bullseye aim gaming'), s('🏆', 'trophy win esports'), s('⚔️', 'crossed swords battle game'),
+      s('🛡️', 'shield defence game'), s('🎲', 'dice roll game'), s('🧩', 'puzzle piece game'),
+      s('♟️', 'chess pawn strategy'), s('🐉', 'dragon fantasy game'), 
+        s('💻', 'laptop pc gaming setup'),
+    ],
+  },
+  {
+    id: 'travel',
+    label: 'Travel & Wanderlust',
+    hiLabel: 'यात्रा सफ़र',
+    symbols: [
+      s('✈️', 'airplane flight travel'), s('🌍', 'globe europe travel world'), s('🗺️', 'map wanderlust travel'),
+      s('🏔️', 'mountains adventure travel'), s('🏕️', 'camping tent travel'), s('🚂', 'train journey travel'),
+       s('🗼', 'tower paris travel'), s('🗽', 'statue of liberty new york'),
+      s('🎡', 'ferris wheel amusement travel'), s('🏝️', 'desert island beach travel'), s('🧳', 'luggage suitcase travel'),
+      s('🌅', 'sunrise beach travel dawn'), s('🛶', 'canoe boat travel'), s('🧭', 'compass direction travel'),
+    ],
+  },
+  {
+    id: 'fashion',
+    label: 'Fashion & Style',
+    hiLabel: 'फैशन स्टाइल',
+    symbols: [
+      s('👗', 'dress fashion girl'),  s('👜', 'handbag purse fashion'),
+      s('💄', 'lipstick makeup fashion'), s('🕶️', 'sunglasses shades fashion'), s('👠', 'heel shoes fashion'),
+      s('👒', 'hat straw fashion summer'), s('💍', 'ring diamond fashion'), 
+      s('🧥', 'coat jacket fashion winter'), s('🕳️', 'black hole fashion edge'), 
+        s('👘', 'kimono fashion traditional'),
+      s('🧣', 'scarf winter fashion'),
+      s('🧤', 'gloves fashion winter'),
+      s('🛍️', 'shopping bags fashion sale'),
+      s('🪞', 'mirror vanity fashion'),
+      s('🌂', 'umbrella rain fashion style'),
+    ],
+  },
+);
+
+/* ========== Expansion set 2: styled alphabets + currency ========== */
+SYMBOL_CATEGORIES.push(
+  {
+    id: 'alphabet',
+    label: 'Styled Alphabets A–Z',
+    hiLabel: 'वर्णमाला अक्षर',
+    symbols: [
+      row(ABC, 'bold', 'alphabet bold capital A to Z serif math'),
+      row(abc, 'bold', 'alphabet bold lowercase a to z serif math'),
+      row(ABC, 'italic', 'alphabet italic capital A to Z serif math'),
+      row(abc, 'italic', 'alphabet italic lowercase a to z serif math'),
+      row(ABC, 'bold-italic', 'alphabet bold italic capital A to Z serif'),
+      row(abc, 'bold-italic', 'alphabet bold italic lowercase a to z serif'),
+      row(ABC, 'script', 'alphabet script capital A to Z cursive elegant'),
+      row(abc, 'script', 'alphabet script lowercase a to z cursive elegant'),
+      row(ABC, 'bold-script', 'alphabet bold script capital A to Z cursive popular'),
+      row(abc, 'bold-script', 'alphabet bold script lowercase a to z cursive popular'),
+      row(ABC, 'fraktur', 'alphabet fraktur capital A to Z gothic blackletter old english'),
+      row(abc, 'fraktur', 'alphabet fraktur lowercase a to z gothic blackletter'),
+      row(ABC, 'bold-fraktur', 'alphabet bold fraktur capital A to Z gothic heavy'),
+      row(abc, 'bold-fraktur', 'alphabet bold fraktur lowercase a to z gothic heavy'),
+      row(ABC, 'double-struck', 'alphabet double struck capital A to Z math'),
+      row(abc, 'double-struck', 'alphabet double struck lowercase a to z math'),
+      row(ABC, 'sans', 'alphabet sans serif capital A to Z clean modern'),
+      row(abc, 'sans', 'alphabet sans serif lowercase a to z clean modern'),
+      row(ABC, 'sans-bold', 'alphabet sans bold capital A to Z clean'),
+      row(abc, 'sans-bold', 'alphabet sans bold lowercase a to z clean'),
+      row(ABC, 'sans-italic', 'alphabet sans italic capital A to Z clean'),
+      row(abc, 'sans-italic', 'alphabet sans italic lowercase a to z clean'),
+      row(ABC, 'sans-bold-italic', 'alphabet sans bold italic capital A to Z clean'),
+      row(abc, 'sans-bold-italic', 'alphabet sans bold italic lowercase a to z clean'),
+      row(ABC, 'monospace', 'alphabet monospace capital A to Z code typewriter'),
+      row(abc, 'monospace', 'alphabet monospace lowercase a to z code typewriter'),
+      row(ABC, 'fullwidth', 'alphabet fullwidth capital A to Z vaporwave wide'),
+      row(abc, 'fullwidth', 'alphabet fullwidth lowercase a to z vaporwave wide'),
+      row(abc, 'small-caps', 'alphabet small caps a to z elegant caps'),
+      row(ABC, 'superscript', 'alphabet superscript capital A to Z raised'),
+      row(abc, 'superscript', 'alphabet superscript lowercase a to z raised'),
+      row(abc, 'subscript', 'alphabet subscript lowercase a to z lowered'),
+      row(ABC, 'circled', 'alphabet circled capital A to Z hollow ring'),
+      row(abc, 'circled', 'alphabet circled lowercase a to z hollow ring'),
+      row(ABC, 'squared', 'alphabet squared capital A to Z box outline'),
+      row(ABC, 'parenthesized', 'alphabet parenthesized capital A to Z bracket'),
+      row(abc, 'parenthesized', 'alphabet parenthesized lowercase a to z bracket'),
+      row(ABC, 'negative-circled', 'alphabet negative circled capital A to Z filled bubble'),
+      row(ABC, 'negative-squared', 'alphabet negative squared capital A to Z filled box'),
+      row(ABC, 'aesthetic', 'alphabet aesthetic spaced capital A to Z hair space'),
+      row('0123456789', 'bold', 'digits numbers 0 to 9 bold'),
+      row('0123456789', 'monospace', 'digits numbers 0 to 9 monospace code'),
+      row('0123456789', 'double-struck', 'digits numbers 0 to 9 double struck math'),
+      row('0123456789', 'fullwidth', 'digits numbers 0 to 9 fullwidth vaporwave'),
+      row('0123456789', 'circled', 'digits numbers 0 to 9 circled'),
+      row('0123456789', 'superscript', 'digits numbers 0 to 9 superscript raised'),
+      row('0123456789', 'subscript', 'digits numbers 0 to 9 subscript lowered'),
+    ],
+  },
+  {
+    id: 'money',
+    label: 'Money & Currency',
+    hiLabel: 'पैसे रुपया',
+    symbols: [
+      s('₹', 'rupee india currency inr paisa'), s('$', 'dollar currency usd money'), s('€', 'euro currency eur money europe'),
+      s('£', 'pound sterling currency gbp uk money'), s('¥', 'yen yuan currency jpy cny money'), s('₩', 'won currency krw money'),
+      s('₽', 'ruble currency rub money'), s('₿', 'bitcoin crypto currency btc digital'), s('¢', 'cent currency money'),
+      s('₺', 'turkish lira currency try money'), s('₫', 'dong currency vnd money'), s('₦', 'naira currency ngn nigeria money'),
+      s('₱', 'peso currency php money'), s('₪', 'shekel currency ils money'), s('₴', 'hryvnia currency uah money'),
+      s('﷼', 'riyal currency irr sar money'), s('₡', 'colon currency crc money'), s('₵', 'cedi currency ghs ghana money'),
+      s('💰', 'money bag cash rich'), s('💸', 'money wings flying cash'), s('🪙', 'coin money change'),
+      s('💳', 'credit card payment money'), s('🏦', 'bank money finance'), s('📈', 'chart up stocks growth money'),
+    ],
+  },
+);
+
+/** Curated ready-made combinations — tap to copy the whole thing. */
+export const SYMBOL_COMBOS: readonly { label: string; text: string }[] = [
+  { label: 'Royal sparkle', text: '꧁༺👑༻꧂' },
+  { label: 'Sparkle divider', text: '✧･ﾟ: *✧･ﾟ:*' },
+  { label: 'Heart flourish', text: '♡〜꒱˚♡' },
+  { label: 'Crown divider', text: '༺♡༻ ༺👑༻ ༺♡༻' },
+  { label: 'Fire trail', text: '༒☬༒' },
+  { label: 'Flower border', text: '༄༂࿐ 🌸 ༄༂࿐' },
+  { label: 'Attitude skull', text: '꧁༒𝗩𝗜𝗣༒꧂' },
+  { label: 'Moon stars', text: '☾⋆⁺˚⁎' },
+  { label: 'Cute hands', text: '♡꒦ ˳.˳ ꒦♡' },
+  { label: 'Rupee swag', text: '꧁༺💸༻꧂' },
+  { label: 'Zen balance', text: '☯︎·˚₊‧' },
+  { label: 'Party line', text: '༄༂🎊 🎉 🎊༄༂' },
+];
+
+export const TOTAL_SYMBOLS = SYMBOL_CATEGORIES.reduce((sum, cat) => sum + cat.symbols.length, 0);

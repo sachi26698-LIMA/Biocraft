@@ -41,8 +41,8 @@ export default function CategoriesPage() {
               from the registry, and favourites live only in your browser.
             </p>
           </span>
-          <span className="hub-header-count" aria-label="Nine tools across six categories">
-            9 tools · 6 categories
+          <span className="hub-header-count" aria-label="Twelve tools across six categories">
+            12 tools · 6 categories
           </span>
         </header>
 
@@ -109,7 +109,7 @@ export default function CategoriesPage() {
               Showing {shownTools.length} of {TOOLS.length} tools
             </p>
           </div>
-          <ul className="tile-grid tile-grid--nine">
+          <ul className="tile-grid tile-grid--twelve">
             {shownTools.map((tool) => (
               <ToolTile key={tool.key} toolKey={tool.key} />
             ))}

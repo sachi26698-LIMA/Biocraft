@@ -1,6 +1,7 @@
 import { bioLength } from '../../lib/text';
 import CharCounter from '../../components/CharCounter';
 import CopyButton from '../../components/CopyButton';
+import { RefreshIcon } from '../../components/icons';
 
 interface BioCardProps {
   bio: string;
@@ -11,6 +12,8 @@ interface BioCardProps {
   limit?: number;
   /** Accessible description of the limit, e.g. "Instagram's 150-character limit". */
   limitDescription?: string;
+  /** Optional per-card regenerate — replaces just this result. */
+  onRegenerate?: () => void;
 }
 
 export default function BioCard({
@@ -19,6 +22,7 @@ export default function BioCard({
   label = 'Bio',
   limit = 150,
   limitDescription = "Instagram's 150-character limit",
+  onRegenerate,
 }: BioCardProps) {
   const count = bioLength(bio);
 
@@ -35,6 +39,17 @@ export default function BioCard({
 
       <div className="bio-card-actions">
         <CopyButton text={bio} ariaLabel={`Copy ${label.toLowerCase()} option ${index + 1} to clipboard`} />
+        {onRegenerate && (
+          <button
+            type="button"
+            className="bio-icon-button bio-regenerate"
+            onClick={onRegenerate}
+            aria-label={`Regenerate ${label.toLowerCase()} option ${index + 1} with a fresh variation`}
+            title="Fresh variation"
+          >
+            <RefreshIcon size={16} />
+          </button>
+        )}
       </div>
     </article>
   );

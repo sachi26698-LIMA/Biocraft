@@ -58,7 +58,7 @@ export default function FancyFontTool() {
           {showDevanagariNote && (
             <p className="tool-note" role="note">
               Devanagari text can’t be restyled — Unicode has no styled Devanagari alphabets.
-              Devanagari characters will appear unchanged.
+              Devanagari characters appear unchanged; Hinglish (Latin script) styles normally.
             </p>
           )}
 

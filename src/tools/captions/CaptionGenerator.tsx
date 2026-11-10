@@ -16,16 +16,19 @@ import type { Language } from '../../types';
 import SegmentedControl from '../../components/SegmentedControl';
 import CharCounter from '../../components/CharCounter';
 import CopyButton from '../../components/CopyButton';
+import { CAPTION_FRAMES, applyCaptionFrame } from './captionFrames';
 
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
   { value: 'hi', label: 'हिन्दी', lang: 'hi' },
+  { value: 'hg', label: 'Hinglish' },
 ] as const;
 
 /**
  * Caption Generator — exactly five unique captions per run, shaped by topic,
- * tone and language. Each caption carries a live character counter (2,200-char
- * caption limit) and a one-tap copy button.
+ * tone and language. Optional Unicode caption frames wrap the result. Each
+ * caption carries a live character counter (2,200-char caption limit) and a
+ * one-tap copy button.
  */
 export default function CaptionGenerator() {
   const [topic, setTopic] = useState<TopicId>('photography');
@@ -33,7 +36,9 @@ export default function CaptionGenerator() {
   const [language, setLanguage] = useState<Language>('en');
   const [emojis, setEmojis] = useState(true);
   const [cta, setCta] = useState<CaptionCta>('none');
+  const [frame, setFrame] = useState('none');
   const [captions, setCaptions] = useState<string[] | null>(null);
+  const framed = (caption: string) => applyCaptionFrame(caption, frame);
   const [statusMessage, setStatusMessage] = useState('');
 
   const runGeneration = () => {
@@ -55,7 +60,7 @@ export default function CaptionGenerator() {
               aria-pressed={item.id === topic}
               onClick={() => setTopic(item.id)}
             >
-              {language === 'hi' ? item.labelHi : item.labelEn}
+              {language === 'hi' ? item.labelHi : language === 'hg' ? item.labelHg : item.labelEn}
             </button>
           ))}
         </div>
@@ -121,6 +126,24 @@ export default function CaptionGenerator() {
             <option value="tag">Tag a friend</option>
           </select>
         </div>
+
+        <div className="option-group">
+          <label className="option-label" htmlFor="caption-frame-select">
+            Caption frame <span className="optional">(optional)</span>
+          </label>
+          <select
+            id="caption-frame-select"
+            className="select"
+            value={frame}
+            onChange={(event) => setFrame(event.target.value)}
+          >
+            {CAPTION_FRAMES.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <button type="button" className="btn btn-primary btn-large generate-button" onClick={runGeneration}>
@@ -135,7 +158,7 @@ export default function CaptionGenerator() {
           {captions && (
             <div className="results-actions">
               <CopyButton
-                text={captions.join('\n\n')}
+                text={captions.map(framed).join('\n\n')}
                 ariaLabel="Copy all five captions to clipboard"
                
               />
@@ -155,14 +178,14 @@ export default function CaptionGenerator() {
                   <div className="bio-card-top">
                     <span className="bio-index">Caption {index + 1}</span>
                     <CharCounter
-                      count={bioLength(caption)}
+                      count={bioLength(framed(caption))}
                       limit={CAPTION_LIMIT}
                       ariaLabel={`Caption ${index + 1} length against Instagram's 2200-character limit`}
                     />
                   </div>
-                  <p className="bio-text">{caption}</p>
+                  <p className="bio-text">{framed(caption)}</p>
                   <div className="bio-card-actions">
-                    <CopyButton text={caption} ariaLabel={`Copy caption option ${index + 1} to clipboard`} />
+                    <CopyButton text={framed(caption)} ariaLabel={`Copy caption option ${index + 1} to clipboard`} />
                   </div>
                 </article>
               </li>

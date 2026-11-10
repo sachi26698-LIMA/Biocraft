@@ -2,17 +2,23 @@ import type { ComponentType } from 'react';
 import BioTool from './bio/BioTool';
 import StylishNameTool from './stylish/StylishNameTool';
 import FancyFontTool from './fonts/FancyFontTool';
+import DesignStudioTool from './design/DesignStudioTool';
 import UsernameGenerator from './username/UsernameGenerator';
 import SymbolGenerator from './symbols/SymbolGenerator';
 import HashtagGenerator from './hashtags/HashtagGenerator';
 import CaptionGenerator from './captions/CaptionGenerator';
 import HeadlineGenerator from './linkedin/HeadlineGenerator';
 import SummaryGenerator from './linkedin/SummaryGenerator';
+import WhatsappStatusTool from './whatsapp-status/WhatsappStatusTool';
+import SnapchatCaptionTool from './snapchat-caption/SnapchatCaptionTool';
 
 export type ToolKey =
   | 'bio'
+  | 'whatsapp-status'
+  | 'snapchat-caption'
   | 'stylish-name'
   | 'fancy-fonts'
+  | 'design-studio'
   | 'username'
   | 'symbols'
   | 'hashtags'
@@ -47,12 +53,12 @@ export const TOOLS: ToolMeta[] = [
     tabLabel: 'Bio',
     heading: 'Bio Generator',
     subheading:
-      'Five unique bios in English or Hindi — each within your platform’s character limit. Free and private, right in your browser.',
+      'Five unique bios in English, Hindi or Hinglish — each within your platform’s character limit. Free and private, right in your browser.',
     title: 'Bio Generator — BioCraft Social Media Toolkit',
     description:
-      'Generate five unique bios in English or Hindi — Instagram, Facebook, Threads, TikTok, X and LinkedIn limits respected. Free, private, no sign-up.',
+      'Generate five unique bios in English, Hindi or Hinglish — Instagram, Facebook, Threads, TikTok, X, LinkedIn, WhatsApp and Snapchat limits respected. Free, private, no sign-up.',
     ogTitle: 'Bio Generator — BioCraft',
-    ogDescription: 'Five unique bios per platform, EN & Hindi, no sign-up, private.',
+    ogDescription: 'Five unique bios per platform, EN · Hindi · Hinglish, no sign-up, private.',
     Component: BioTool,
   },
   {
@@ -61,12 +67,12 @@ export const TOOLS: ToolMeta[] = [
     tabLabel: 'Stylish Name',
     heading: 'Stylish Name Generator',
     subheading:
-      'Your display name in 24 Unicode text styles — copy any variant in one tap. Free and private, right in your browser.',
+      'Your display name in 33 Unicode text styles — with optional crown, gaming and attitude frames. Copy any variant in one tap. Free and private.',
     title: 'Stylish Name Generator — BioCraft Social Media Toolkit',
     description:
-      'Turn your display name into 24 stylish Unicode text variants — bold, script, fraktur, double-struck and more. One-tap copy, free, private, no sign-up.',
+      'Turn your display name into 33 stylish Unicode text variants — bold, script, fraktur, double-struck and more, with optional name frames. One-tap copy, free, private, no sign-up.',
     ogTitle: 'Stylish Name Generator — BioCraft',
-    ogDescription: '24 stylish Unicode variants of your name, one-tap copy, free and private.',
+    ogDescription: '33 stylish Unicode variants of your name, one-tap copy, free and private.',
     Component: StylishNameTool,
   },
   {
@@ -75,13 +81,27 @@ export const TOOLS: ToolMeta[] = [
     tabLabel: 'Fancy Fonts',
     heading: 'Fancy Font Generator',
     subheading:
-      'Paste any text and copy it in 24 styled Unicode fonts — perfect for bios, captions and comments.',
+      'Paste any text and copy it in 33 styled Unicode fonts — perfect for bios, captions and comments.',
     title: 'Fancy Font Generator — BioCraft Social Media Toolkit',
     description:
-      'Convert any text into 24 fancy Unicode fonts — bold, italic, script, monospace, fullwidth and more. Copy in one tap, free, private, no sign-up.',
+      'Convert any text into 33 fancy Unicode fonts — bold, italic, script, monospace, fullwidth and more. Copy in one tap, free, private, no sign-up.',
     ogTitle: 'Fancy Font Generator — BioCraft',
-    ogDescription: 'Any text in 24 fancy Unicode fonts, one-tap copy, free and private.',
+    ogDescription: 'Any text in 33 fancy Unicode fonts, one-tap copy, free and private.',
     Component: FancyFontTool,
+  },
+  {
+    key: 'design-studio',
+    path: '/design-studio',
+    tabLabel: 'Design Studio',
+    heading: 'Design Studio',
+    subheading:
+      'Type any sentence — get it in Unicode fonts, emoji frames and ready-made card designs, with a live preview and one-tap copy.',
+    title: 'Design Studio — BioCraft Social Media Toolkit',
+    description:
+      'Free Design Studio — type any sentence and get ready-made designs: 33 Unicode fonts × decorative emoji frames × 18 designer card styles. Mix yours in a live preview, or copy a curated mix.',
+    ogTitle: 'Design Studio — BioCraft',
+    ogDescription: 'Any sentence → ready-made font + emoji + card designs. Live preview, one-tap copy.',
+    Component: DesignStudioTool,
   },
   {
     key: 'username',
@@ -103,12 +123,12 @@ export const TOOLS: ToolMeta[] = [
     tabLabel: 'Symbols',
     heading: 'Emoji & Symbol Generator',
     subheading:
-      'A curated library of 300+ Unicode symbols and emoji — search, browse, tap to copy. Free and private.',
+      'A curated library of 531+ Unicode symbols and emoji — search, favourite ★, recents, one-tap copy. Free and private.',
     title: 'Emoji & Symbol Generator — BioCraft Social Media Toolkit',
     description:
-      'Search and copy 300+ curated Unicode symbols and emoji — hearts, stars, arrows, shapes and more. One-tap copy, free and private.',
+      'Search and copy 531+ curated Unicode symbols and emoji — hearts, stars, arrows, royal, faith and more. One-tap copy, free and private.',
     ogTitle: 'Emoji & Symbol Generator — BioCraft',
-    ogDescription: '300+ curated Unicode symbols and emoji, searchable, one-tap copy, free and private.',
+    ogDescription: '531+ curated Unicode symbols and emoji, searchable with favourites, free and private.',
     Component: SymbolGenerator,
   },
   {
@@ -117,12 +137,12 @@ export const TOOLS: ToolMeta[] = [
     tabLabel: 'Hashtags',
     heading: 'Hashtag Generator',
     subheading:
-      'Relevant, deduplicated hashtags for 12 niches — broad, medium and focused mix. English or Hindi.',
+      'Relevant, deduplicated hashtags for 14 niches — broad, medium and focused mix. English, Hindi or Hinglish.',
     title: 'Hashtag Generator — BioCraft Social Media Toolkit',
     description:
-      'Generate relevant, deduplicated hashtags for 12 niches in English or Hindi — broad, medium and focused mix. Free, private, no reach promises.',
+      'Generate relevant, deduplicated hashtags for 14 niches in English, Hindi or Hinglish — broad, medium and focused mix. Free, private, no reach promises.',
     ogTitle: 'Hashtag Generator — BioCraft',
-    ogDescription: 'Relevant deduplicated hashtags for 12 niches, EN & Hindi — free and private.',
+    ogDescription: 'Relevant deduplicated hashtags for 14 niches, EN · Hindi · Hinglish — free and private.',
     Component: HashtagGenerator,
   },
   {
@@ -131,12 +151,12 @@ export const TOOLS: ToolMeta[] = [
     tabLabel: 'Captions',
     heading: 'Caption Generator',
     subheading:
-      'Five unique captions for any topic and tone — English or Hindi, with counters and one-tap copy.',
+      'Five unique captions for any topic and tone — English, Hindi or Hinglish, with counters and one-tap copy.',
     title: 'Caption Generator — BioCraft Social Media Toolkit',
     description:
-      'Five unique captions for 12 topics in seven tones — casual, professional, funny, inspirational, minimal and more — EN or Hindi. One-tap copy.',
+      'Five unique captions for 12 topics in eight tones — casual, professional, funny, inspirational, quiet luxury and more — English, Hindi or Hinglish. Optional Unicode frames, one-tap copy.',
     ogTitle: 'Caption Generator — BioCraft',
-    ogDescription: 'Five unique captions per run — 12 topics, EN & Hindi, one-tap copy.',
+    ogDescription: 'Five unique captions per run — 12 topics, eight tones, EN · Hindi · Hinglish, one-tap copy.',
     Component: CaptionGenerator,
   },
   {
@@ -166,6 +186,34 @@ export const TOOLS: ToolMeta[] = [
     ogTitle: 'LinkedIn Summary Generator — BioCraft',
     ogDescription: 'Five professional LinkedIn About drafts, rule-based, free and private.',
     Component: SummaryGenerator,
+  },
+  {
+    key: 'whatsapp-status',
+    path: '/whatsapp-status-generator',
+    tabLabel: 'Status',
+    heading: 'WhatsApp Status Generator',
+    subheading:
+      'Ready-to-post WhatsApp status lines — good morning, attitude, love, festival and more, in English, Hindi or Hinglish.',
+    title: 'WhatsApp Status Generator — BioCraft Social Media Toolkit',
+    description:
+      'Free WhatsApp status generator — 9 hand-written categories (good morning, attitude, love, birthday, festival, funny, motivational and more) in English, Hindi and Hinglish. Rule-based, private, no sign-up.',
+    ogTitle: 'WhatsApp Status Generator — BioCraft',
+    ogDescription: 'Status lines for every mood — EN, Hindi & Hinglish, one-tap copy, free.',
+    Component: WhatsappStatusTool,
+  },
+  {
+    key: 'snapchat-caption',
+    path: '/snapchat-caption-generator',
+    tabLabel: 'Snapchat Captions',
+    heading: 'Snapchat Caption Generator',
+    subheading:
+      'Caption ideas for streaks, stories and every vibe — in English, Hindi or Hinglish.',
+    title: 'Snapchat Caption Generator — BioCraft Social Media Toolkit',
+    description:
+      'Free Snapchat caption generator — streaks, stories, attitude, cute, funny and love captions in English, Hindi and Hinglish. Rule-based, private, no sign-up.',
+    ogTitle: 'Snapchat Caption Generator — BioCraft',
+    ogDescription: 'Streak, story & vibe captions — EN, Hindi & Hinglish, one-tap copy.',
+    Component: SnapchatCaptionTool,
   },
 ];
 

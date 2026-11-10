@@ -1,7 +1,7 @@
 /**
  * Curated hashtag pools for the Hashtag Generator.
  *
- * 12 niches x English/Hindi x three reach buckets:
+ * 14 niches x English/Hindi/Hinglish x three reach buckets:
  *   broad   — high-volume, high competition
  *   medium  — topical, established communities
  *   focused — specific, lower competition
@@ -12,12 +12,14 @@
  */
 
 export type Bucket = 'broad' | 'medium' | 'focused';
-export type Language = 'en' | 'hi';
+export type Language = 'en' | 'hi' | 'hg';
 
 export interface NicheDefinition {
   id: string;
   labelEn: string;
   labelHi: string;
+  /** Hinglish UI label (Latin script). */
+  labelHg: string;
   pools: Record<Language, Record<Bucket, string[]>>;
 }
 
@@ -26,6 +28,7 @@ export const NICHES: NicheDefinition[] = [
     id: 'photography',
     labelEn: 'Photography',
     labelHi: 'फोटोग्राफी',
+    labelHg: 'Photography',
     pools: {
       en: {
         broad: ['#photography', '#photooftheday', '#photographyoftheday', '#picoftheday', '#portrait', '#streetphotography', '#naturephotography', '#landscapephotography', '#photographer', '#photo', '#portraitpage', '#moodygrams', '#photographyeveryday', '#lifestylephotography'],
@@ -37,12 +40,18 @@ export const NICHES: NicheDefinition[] = [
         medium: ['#पोर्ट्रेट', '#ट्रैवलफोटोग्राफी', '#स्ट्रिटफोटोग्राफी', '#फोटोग्राफीऑफदीडे', '#नैचुरललाइट', '#फोटोऑफदीडे', '#शादीफोटोग्राफी', '#प्रोडक्टफोटोग्राफी', '#कॉन्सेप्टफोटोग्राफी', '#फैशनफोटोग्राफर'],
         focused: ['#फिल्मफोटोग्राफी', '#35एमएम', '#प्राइमलेंस', '#पोट्रेटफोटोग्राफी', '#ब्लैकएंडव्हाइटफोटो', '#मोनोक्रोम', '#50एमएम', '#नेचुरललाइटफोटोग्राफी', '#फिल्मफोटोग्राफर', '#फोटोग्राफीवर्कशॉप'],
       },
+      hg: {
+        broad: ['#photography', '#photooftheday', '#myclicks', '#shutterbug', '#clicks', '#portrait', '#travelphoto', '#indiaclicks', '#lenslove', '#frame'],
+        medium: ['#photographyoftheday', '#portraitmood', '#streetphotoindia', '#35mmfilm', '#filmcommunity', '#indianphotographers', '#everydayindia', '#wanderlustclicks'],
+        focused: ['#ishootfilm', '#naturalight', '#35mmindia', '#shootfilm', '#primelens', '#filmisnotdead', '#shootfilmmag'],
+      },
     },
   },
   {
     id: 'food',
     labelEn: 'Food',
     labelHi: 'खाना',
+    labelHg: 'Food',
     pools: {
       en: {
         broad: ['#food', '#foodie', '#foodporn', '#instafood', '#yummy', '#delicious', '#foodphotography', '#foodlover', '#foodiesofinstagram', '#khana', '#deliciousfood', '#nomnom', '#foodielife', '#kitchenmagic'],
@@ -54,12 +63,18 @@ export const NICHES: NicheDefinition[] = [
         medium: ['#स्ट्रीटफूड', '#घरकाखाना', '#भारतीयरेसिपी', '#इंडियनफूड', '#खानाप्यारा', '#खानेकादीवाना', '#बिरयानी', '#टिक्का', '#मीठा', '#पंजाबीफूड'],
         focused: ['#स्ट्रीटफूडइंडिया', '#इंडियनस्ट्रीटफूड', '#घरपकवान', '#मिठाई', '#स्वादयात्रा', '#देसीफूड', '#सैंडविच', '#चाट', '#दाल', '#नाश्ता'],
       },
+      hg: {
+        broad: ['#foodie', '#swaad', '#khana', '#indianfood', '#foodstagram', '#foodlove', '#khaanapaan', '#gharkafood', '#foodblogger', '#swaadanusaar'],
+        medium: ['#indiansweets', '#streetfoodindia', '#homemadefood', '#foodbloggerindia', '#swaadiculture', '#khanapeena', '#desiswag', '#flavoursoffindia'],
+        focused: ['#biryanilover', '#gujaratifood', '#panjaabifood', '#southindianfood', '#delhistreetfood', '#swaadyatra', '#gharpakwan'],
+      },
     },
   },
   {
     id: 'fashion',
     labelEn: 'Fashion',
     labelHi: 'फैशन',
+    labelHg: 'Fashion',
     pools: {
       en: {
         broad: ['#fashion', '#style', '#ootd', '#instafashion', '#fashionblogger', '#fashionista', '#outfit', '#styleinspo', '#fashionlover', '#ootdinspiration', '#fashiondiaries', '#ootdshare', '#whatiworetoday', '#stylegoals'],
@@ -71,12 +86,18 @@ export const NICHES: NicheDefinition[] = [
         medium: ['#एथनिक', '#साड़ी', '#इंडियनस्टाइल', '#देसीफैशन', '#फैशनब्लॉगर', '#आउटफिटऑफदीडे', '#लहंगा', '#कुर्तीसेट', '#एथनिकलुक', '#हैंडलूम'],
         focused: ['#कढ़ाई', '#हथकरघा', '#साड़ीलव', '#एथनिकवियर', '#इंडियनफैशनब्लॉग', '#स्लोफैशन', '#पोचमपल्ली', '#बनारस', '#बनारसीसाड़ी', '#चिकनकारी'],
       },
+      hg: {
+        broad: ['#ootd', '#fashionista', '#indianswag', '#desistyle', '#styleinspo', '#streetstyleindia', '#outfitideas', '#whatiwore'],
+        medium: ['#sareelove', '#ethnicwear', '#indianfashion', '#handloom', '#ootdshare', '#desifashion', '#kurtiset', '#sareelover'],
+        focused: ['#kalamkari', '#bandhej', '#chanderi', '#blockprint', '#banarasisaree', '#chikankari'],
+      },
     },
   },
   {
     id: 'travel',
     labelEn: 'Travel',
     labelHi: 'यात्रा',
+    labelHg: 'Travel',
     pools: {
       en: {
         broad: ['#travel', '#wanderlust', '#travelphotography', '#travelgram', '#instatravel', '#traveltheworld', '#travelblogger', '#tourism', '#exploretheworld', '#traveling', '#travellife', '#wheretonext', '#wanderer', '#tourtheplanet'],
@@ -88,12 +109,18 @@ export const NICHES: NicheDefinition[] = [
         medium: ['#ट्रेवलइंडिया', '#भारतीयपर्यटन', '#घूमनाहैतो', '#सफ़रनामा', '#मैंघूमनेनिकला', '#घूमनेकाशौक', '#मनाली', '#गोवा', '#राजस्थान', '#केरल'],
         focused: ['#भारतभ्रमण', '#भारतयात्रा', '#ऑफबीटइंडिया', '#ट्रेकइंडिया', '#रोडट्रिपइंडिया', '#भारतपर्यटन', '#लेहलद्दाख', '#स्पीतिवैली', '#महाबलीपुरम', '#काशी'],
       },
+      hg: {
+        broad: ['#travelindia', '#wanderlust', '#incredibleindia', '#traveldiaries', '#exploreindia', '#travelgram', '#journeydiaries'],
+        medium: ['#solotravelers', '#budgettravelindia', '#mountainlover', '#himalayas', '#travelbloggerindia', '#offbeatindia', '#indiadiaries'],
+        focused: ['#backpackindia', '#indiaroadtrip', '#hiddengemsofindia', '#indiatreks', '#offthegridindia', '#chaloindia'],
+      },
     },
   },
   {
     id: 'fitness',
     labelEn: 'Fitness',
     labelHi: 'फिटनेस',
+    labelHg: 'Fitness',
     pools: {
       en: {
         broad: ['#fitness', '#gym', '#workout', '#fit', '#fitnessmotivation', '#training', '#gymlife', '#exercise', '#fitfam', '#fitlife', '#gains', '#fitspo', '#healthyliving'],
@@ -105,12 +132,18 @@ export const NICHES: NicheDefinition[] = [
         medium: ['#फिटनेसजर्नी', '#जिमलाइफ', '#व्यायाम', '#फिटनेसमोटिवेशन', '#बॉडीबिल्डिंग', '#वेटलिफ्टिंग', '#रनिंग', '#कार्डियो', '#मांसपेशी', '#फिटनेसइंडिया'],
         focused: ['#होमवर्कआउट', '#योग', '#फिटइंडिया', '#होमजिम', '#स्ट्रेंथट्रेनिंग', '#भारतीयफिटनेस', '#क्रॉसफिट', '#योगअभ्यास', '#फैटलॉस', '#फिटलाइफइंडिया'],
       },
+      hg: {
+        broad: ['#fitness', '#gym', '#workout', '#fitnessmotivation', '#fitindia', '#healthylifestyle', '#fitnessjourney'],
+        medium: ['#homeworkout', '#gymindia', '#strengthtraining', '#yogaindia', '#fitspoindia', '#gymlover', '#homegym'],
+        focused: ['#beginnerfitness', '#homeworkoutindia', '#indiangym', '#fitgirlsguide', '#strengthclub'],
+      },
     },
   },
   {
     id: 'beauty',
     labelEn: 'Beauty',
     labelHi: 'ब्यूटी',
+    labelHg: 'Beauty & Makeup',
     pools: {
       en: {
         broad: ['#beauty', '#makeup', '#skincare', '#beautyblogger', '#makeuptutorial', '#mua', '#instamakeup', '#glowup', '#selfcare', '#beautycare', '#beautytips', '#skincaretips', '#makeuptips'],
@@ -122,12 +155,18 @@ export const NICHES: NicheDefinition[] = [
         medium: ['#मेकअपट्यूटोरियल', '#स्किनकेयररूटीन', '#ब्यूटीटिप्स', '#इंडियनमेकअप', '#ग्लोइंगस्किन', '#ब्यूटीकेयर', '#लिपस्टिक', '#आईमेकअप', '#बेसमेकअप', '#फाउंडेशन'],
         focused: ['#ब्राइडलमेकअप', '#इंडियनब्यूटी', '#देसीब्यूटी', '#इंडियनस्किनकेयर', '#हिंदीब्यूटी', '#नेचुरलमेकअप', '#आयुर्वेदिकस्किनकेयर', '#नेचुरलस्किन', '#आयुर्वेद', '#हर्बलब्यूटी'],
       },
+      hg: {
+        broad: ['#beauty', '#makeup', '#skincare', '#makeupartist', '#beautyblogger', '#glam', '#beautytips'],
+        medium: ['#makeupindian', '#desimakeup', '#makeuptutorial', '#skincareroutine', '#indianbeauty', '#grwm'],
+        focused: ['#makeupinindia', '#desibeautyblogger', '#naturalmakeup', '#skincareindia', '#indianmakeuptutorial'],
+      },
     },
   },
   {
     id: 'tech',
     labelEn: 'Tech & Coding',
-    labelHi: 'टेक और कोडिंग',
+    labelHi: 'टेक',
+    labelHg: 'Tech & Coding',
     pools: {
       en: {
         broad: ['#tech', '#technology', '#coding', '#programmer', '#developer', '#programming', '#software', '#innovation', '#codinglife', '#techcommunity', '#techlife', '#codejourney', '#programminglife', '#softwareengineer'],
@@ -139,12 +178,18 @@ export const NICHES: NicheDefinition[] = [
         medium: ['#जावास्क्रिप्ट', '#पायथन', '#वेबडेवलपमेंट', '#कोडर्स', '#डेवलपरलाइफ', '#कोडिंगइंडिया', '#वेबडिजाइन', '#ऐपडेवलपमेंट', '#डेटासाइंस', '#एआई'],
         focused: ['#इंडियनडेवलपर', '#हिंदीटेक्नोलॉजी', '#टेकइंडिया', '#फ्रंटेंड', '#बिल्डइनपब्लिक', '#रिएक्टजेएस', '#नेक्स्टजेएस', '#टाइपस्क्रिप्ट', '#नोडजेएस', '#देवऑप्स'],
       },
+      hg: {
+        broad: ['#tech', '#coding', '#developer', '#programming', '#webdev', '#softwaredeveloper', '#coder'],
+        medium: ['#javascript', '#python', '#fullstack', '#webdevelopment', '#coders', '#learntocode', '#buildinpublic'],
+        focused: ['#indiandevelopers', '#devcommunity', '#indiehacker', '#codeeveryday', '#offbeatcode'],
+      },
     },
   },
   {
     id: 'music',
     labelEn: 'Music',
     labelHi: 'संगीत',
+    labelHg: 'Music',
     pools: {
       en: {
         broad: ['#music', '#musician', '#singer', '#song', '#musicproducer', '#musiclover', '#newmusic', '#indiansinger', '#instamusic', '#musictherapy', '#musicislife', '#playlist', '#musiclovers', '#goodmusic'],
@@ -156,12 +201,18 @@ export const NICHES: NicheDefinition[] = [
         medium: ['#हिंदीगाना', '#इंडीपॉप', '#संगीतकार', '#सिंगरलाइफ', '#गानाप्रैक्टिस', '#लोफाई', '#हिपहोप', '#रैप', '#गायन', '#म्यूजिकलाइफ'],
         focused: ['#हिंदुस्तानीसंगीत', '#लाइवसंगीत', '#इंडीम्यूज़िक', '#हिंदीरॉक', '#क्लासिकलसंगीत', '#सुर', '#हिंदीरैप', '#फ्यूजनसंगीत', '#लॉफाईहिंदी', '#मधुर'],
       },
+      hg: {
+        broad: ['#music', '#indianmusic', '#bollywood', '#indiemusic', '#musician', '#newmusic', '#musiclover'],
+        medium: ['#hindustani', '#sufi', '#bollywoodmusic', '#playback', '#classicalmusic', '#indieartist', '#covers'],
+        focused: ['#indieartistindia', '#independentmusic', '#hindustaniclassical', '#guitarindia', '#songwritersofindia'],
+      },
     },
   },
   {
     id: 'art',
     labelEn: 'Art & Illustration',
     labelHi: 'कला',
+    labelHg: 'Art & Sketch',
     pools: {
       en: {
         broad: ['#art', '#artist', '#illustration', '#drawing', '#artwork', '#painting', '#sketch', '#instart', '#artoftheday', '#artistsoninstagram', '#drawdaily', '#artstagram', '#doodle', '#illustrationart'],
@@ -173,12 +224,18 @@ export const NICHES: NicheDefinition[] = [
         medium: ['#वॉटरकलर', '#डिजिटलआर्ट', '#स्केचबुक', '#चित्रकारी', '#चित्रांकन', '#ऑयलपेंटिंग', '#एक्रिलिकपेंटिंग', '#चरकोल', '#पास्टल', '#आर्टकम्युनिटी'],
         focused: ['#भारतीयकला', '#लोककला', '#मंडला', '#इंडियनइलस्ट्रेशन', '#वारली', '#हिंदीआर्ट', '#मिनिएचरपेंटिंग', '#तंजोरपेंटिंग', '#कलमकारी', '#पित्तौरा'],
       },
+      hg: {
+        broad: ['#art', '#artwork', '#artist', '#drawing', '#painting', '#sketch', '#creative'],
+        medium: ['#sketchbook', '#procreate', '#digitalart', '#artistsofinstagram', '#sketchbooktour', '#illustration'],
+        focused: ['#indianart', '#digitalartistindia', '#traditionalart', '#artworkoftheday', '#artsharing'],
+      },
     },
   },
   {
     id: 'books',
     labelEn: 'Books & Reading',
-    labelHi: 'किताबें',
+    labelHi: 'किताब',
+    labelHg: 'Books & Reading',
     pools: {
       en: {
         broad: ['#books', '#bookstagram', '#reading', '#booklover', '#reader', '#booksofinstagram', '#bookworm', '#currentlyreading', '#bibliophile', '#readinglist', '#readingtime', '#booklife', '#whatireading', '#chapters'],
@@ -190,12 +247,18 @@ export const NICHES: NicheDefinition[] = [
         medium: ['#किताबप्रेमी', '#पढ़ना', '#साहित्यिक', '#बुक्स', '#किताबोंकीदुनिया', '#पढ़तेरहिए', '#हिंदीलेखक', '#कहानीकार', '#कवितापाठ', '#पुस्तकचक्र'],
         focused: ['#हिंदीसाहित्य', '#हिन्दीउपन्यास', '#भारतीयसाहित्य', '#पुस्तकमेला', '#बुकक्लब', '#साहित्यप्रेमी', '#छायावाद', '#प्रेमचंद', '#उपन्याससमीक्षा', '#हिंदीपुस्तक'],
       },
+      hg: {
+        broad: ['#books', '#bookstagram', '#reading', '#booklover', '#currentlyreading', '#readerofinstagram'],
+        medium: ['#bookstagramindia', '#indianauthors', '#readingcommunity', '#bookrecs', '#bookstagrammer'],
+        focused: ['#indianfiction', '#readmoreindia', '#indieauthors', '#booksofinstagram', '#bookwormclub'],
+      },
     },
   },
   {
     id: 'business',
     labelEn: 'Business',
     labelHi: 'बिज़नेस',
+    labelHg: 'Business & Startups',
     pools: {
       en: {
         broad: ['#business', '#entrepreneur', '#entrepreneurship', '#startup', '#smallbusiness', '#businessowner', '#success', '#hustle', '#motivation', '#businessgrowth', '#startupmindset', '#bizowner', '#ceo'],
@@ -207,12 +270,18 @@ export const NICHES: NicheDefinition[] = [
         medium: ['#स्टार्टअपइंडिया', '#लघुउद्योग', '#बिज़नेसटिप्स', '#उद्यमिता', '#बिजनेसग्रोथ', '#ईकामर्स', '#मार्केटिंग', '#दुकानदार', '#कस्टमर', '#बिज़नेसस्ट्रैटेजी'],
         focused: ['#भारतीयस्टार्टअप', '#वोकलफॉरलोकल', '#छोटेबिजनेस', '#भारतीयउद्यमी', '#स्टार्टअपभारत', '#स्वदेशी', '#ईकामर्सइंडिया', '#डिजिटलमार्केटिंग', '#स्टार्टअपफाउंडर', '#एमएसएमई'],
       },
+      hg: {
+        broad: ['#business', '#startup', '#entrepreneur', '#smallbusiness', '#startuplife', '#founderslife'],
+        medium: ['#indiastartups', '#d2c', '#indiabusiness', '#startuplaunch', '#founderlife'],
+        focused: ['#buildinpublic', '#indiastartupstory', '#smallbusinessindia', '#bootstrapped', '#founderjourney'],
+      },
     },
   },
   {
     id: 'comedy',
     labelEn: 'Comedy & Memes',
-    labelHi: 'कॉमेडी और मीम्स',
+    labelHi: 'कॉमेडी',
+    labelHg: 'Comedy & Memes',
     pools: {
       en: {
         broad: ['#comedy', '#memes', '#meme', '#funny', '#memeoftheday', '#lol', '#memeindia', '#humor', '#funnyvideos', '#instamemes', '#relatable', '#laughs', '#comedyreels'],
@@ -223,6 +292,57 @@ export const NICHES: NicheDefinition[] = [
         broad: ['#कॉमेडी', '#मीम्स', '#मज़ाकिया', '#हंसाना', '#हास्य', '#मजेदार', '#मजाक', '#व्यंग्य', '#चुटकुला', '#ठहाका'],
         medium: ['#मीमइंडिया', '#हंसी', '#हिंदीकॉमेडी', '#मीम्सऑफदीडे', '#मीमपेज', '#कमालमीम', '#स्टैंडअप', '#स्टैंडअपकॉमेडी', '#व्यंग्यकार', '#स्टैंडअपनाइट'],
         focused: ['#देसीमीम्स', '#हिंग्लिशमीम्स', '#वायरलमीम्स', '#हिंदीमीम्स', '#कॉमेडीस्केच', '#मीमभारत', '#देसीव्यंग्य', '#इंटरनेटमीम', '#राजनीतिव्यंग्य', '#व्हाट्सएपफॉरवर्ड'],
+      },
+      hg: {
+        broad: ['#comedy', '#funny', '#memes', '#indianmemes', '#dankmemes', '#memepage'],
+        medium: ['#desihumor', '#indiancomedy', '#sketchcomedy', '#standupindia', '#memepages'],
+        focused: ['#indiansketches', '#desimemes', '#comedyindia', '#localmemes', '#memecommunity'],
+      },
+    },
+  },
+  {
+    id: 'reels',
+    labelEn: 'Reels & Short Video',
+    labelHi: 'रील्स',
+    labelHg: 'Reels',
+    pools: {
+      en: {
+        broad: ['#reels', '#instareels', '#reelsinstagram', '#reelitfeelit', '#viralreels', '#shortvideo', '#reelsindia', '#reelvideo', '#reels_of_instagram', '#reelstagram', '#contentcreator', '#reelsedit', '#reelsvideo'],
+        medium: ['#reelmaker', '#reelscommunity', '#reelsbycreators', '#reeloftheday', '#reelsreels', '#reelcontent', '#reelcreation', '#reelsetup', '#reelspots', '#reelpage'],
+        focused: ['#reelsshowcase', '#reelsdaily', '#reelsofindia', '#reelssquad', '#reelsforyou', '#reelsnow', '#reelsinspo', '#reelsviralreels', '#reels_reels'],
+      },
+      hi: {
+        broad: ['#रील्स', '#रील्सइंडिया', '#शॉर्टवीडियो', '#वायरलरील्स', '#रीलवीडियो', '#रील्सऑफइंस्टा', '#रीलमेकर', '#हिंदीरील्स', '#रील्सपेज'],
+        medium: ['#रील्सडेली', '#रील्सस्क्वाड', '#रील्सफोरयू', '#रीलशोकश', '#रील्सइंस्पो', '#रील्सनाउ', '#रील्सऑफइंडिया'],
+        focused: ['#रील्ससमुदाय', '#देसीरील्स', '#हिंग्लिशरील्स', '#वायरलरील'],
+      },
+      hg: {
+        broad: ['#reels', '#instareels', '#reelsindia', '#reelitfeelit', '#viralreels', '#reelvideo'],
+        medium: ['#reelsofindia', '#reelssquad', '#reelsinspo', '#reelsdaily', '#reelsnow'],
+        focused: ['#reelsforyou', '#reelsreels', '#reelcontent'],
+      },
+    },
+  },
+  {
+    id: 'ai',
+    labelEn: 'AI & Future Tech',
+    labelHi: 'एआई',
+    labelHg: 'AI & Future Tech',
+    pools: {
+      en: {
+        broad: ['#ai', '#artificialintelligence', '#aitools', '#aiart', '#aigenerated', '#machinelearning', '#chatgpt', '#generativeai', '#aipowered', '#aicontent', '#airevolution', '#aiindia', '#aiimages'],
+        medium: ['#aiimagegenerator', '#promptengineering', '#aitoolsindia', '#airevolutionaries', '#aiautomation', '#learnwithai', '#aibusiness', '#aiworkflow', '#aiassistant', '#aistrategy', '#aitoolkit'],
+        focused: ['#gpt4', '#midjourneyai', '#stablediffusion', '#aiagents', '#llm', '#promptdesign', '#ai101', '#generativeartai', '#aipainting'],
+      },
+      hi: {
+        broad: ['#एआई', '#कृत्रिमबुद्धि', '#एआईटूल', '#एआईआर्ट', '#एआईइंडिया', '#मशीनलर्निंग', '#जेनेरेटिवएआई'],
+        medium: ['#एआईबिजनेस', '#प्रॉम्प्टइंजीनियरिंग', '#एआईटूलभारत', '#एआईलर्निंग', '#एआईवर्कफ्लो', '#एआईक्रांति'],
+        focused: ['#एआईएजेंट', '#मीडजर्नी', '#प्रॉम्प्टडिजाइन', '#एआईआर्टिस्ट'],
+      },
+      hg: {
+        broad: ['#ai', '#aiart', '#aitools', '#aiindia', '#generativeai', '#machinelearning'],
+        medium: ['#aiautomation', '#learnwithai', '#aibusiness', '#promptengineering', '#aitoolkit'],
+        focused: ['#gpt4', '#aiagents', '#stablediffusion'],
       },
     },
   },
@@ -266,10 +386,11 @@ const shuffle = <T>(items: T[]): T[] => {
   return array;
 };
 
-export type HashtagSize = 10 | 20 | 30;
+export type HashtagSize = 5 | 10 | 20 | 30;
 
 /** broad/medium/focused mix per result size. */
 const SIZE_MIX: Record<HashtagSize, [number, number, number]> = {
+  5: [1, 2, 2],
   10: [3, 3, 4],
   20: [6, 7, 7],
   30: [9, 10, 11],
