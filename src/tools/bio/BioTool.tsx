@@ -299,7 +299,7 @@ export default function BioTool() {
           <button type="submit" className="btn btn-primary btn-large generate-button">
             Generate {count} bios
           </button>
-          <p className="form-footnote">Free forever · No sign-up · Your text never leaves this page</p>
+          <p className="form-footnote">$0 forever · No sign-up · Your text never leaves this page</p>
         </form>
       </div>
 

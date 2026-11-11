@@ -26,70 +26,6 @@ export interface InfoPageMeta {
  */
 export const INFO_PAGES: InfoPageMeta[] = [
   {
-    path: '/features',
-    title: 'Features — BioCraft Social Media Toolkit',
-    description:
-      'Everything BioCraft does: twelve generators, eight platform workspaces, English + Hindi + Hinglish output, private browser-side processing, zero sign-up.',
-    ogTitle: 'BioCraft Features',
-    ogDescription: 'Twelve generators, eight platforms, EN · Hindi · Hinglish, free and private.',
-    heading: 'Features',
-    lede: 'Twelve generators across eight platform workspaces — everything listed here works today, in your browser, for free.',
-    sections: [
-      {
-        heading: 'The generators',
-        body: (
-          <ul>
-            <li><strong>Bio Generator</strong> — five unique bios per run. English, Hindi or Hinglish, personal or by category, with your platform’s real character limit (Instagram 150, Facebook 101, Threads 150, TikTok 80, X 160, LinkedIn 2,600, WhatsApp 139, Snapchat ≈150).</li>
-            <li><strong>Stylish Name Generator</strong> — your display name in 33 Unicode text styles with one-tap copy — plus optional crown, gaming and attitude frames; honest about Devanagari.</li>
-            <li><strong>Fancy Font Generator</strong> — any text in 33 fancy Unicode fonts, with copy-all.</li>
-            <li><strong>Design Studio</strong> — type any sentence, get ready-made designs: 33 Unicode fonts × 20 emoji frames × 18 designer card styles. Live preview plus a gallery of curated mixes, one-tap copy.</li>
-            <li><strong>Username Generator</strong> — twelve unique, rule-valid handles per run, four vibes, three lengths, EN/हिन्दी labels. Availability is never claimed — Instagram decides.</li>
-            <li><strong>Emoji &amp; Symbol Generator</strong> — 531 curated, deduplicated Unicode glyphs across 24 categories, with English and Hindi search, favourites and recents.</li>
-            <li><strong>Hashtag Generator</strong> — 10/20/30 deduplicated hashtags for 14 niches, English, Hindi or Hinglish, broad + medium + focused mix. Never promises reach.</li>
-            <li><strong>Caption Generator</strong> — exactly five unique captions for 12 topics in eight tones, English, Hindi or Hinglish, emoji on/off, optional CTA.</li>
-            <li><strong>LinkedIn Headline Generator</strong> — five professional headlines ≤ 220 characters (Role · Value · Proof).</li>
-            <li><strong>LinkedIn Summary Generator</strong> — five structured About-section drafts ≤ 2,600 characters, built only from your inputs.</li>
-            <li><strong>WhatsApp Status Generator</strong> — five statuses per run in English, Hindi or Hinglish, nine hand-written vibes, About-limit 139.</li>
-            <li><strong>Snapchat Caption Generator</strong> — five captions per run in English, Hindi or Hinglish.</li>
-            <li><strong>Bio Editor</strong> (<a onClick={handleAnchorClick} href="/bio-editor">/bio-editor</a>) — hand-build your bio: platform counters, 33 Unicode fonts, dividers, emoji quick-insert, 18 designer card previews, copy the exact text.</li>
-          </ul>
-        ),
-      },
-      {
-        heading: 'Eight platform workspaces',
-        body: (
-          <p>
-            Instagram, Facebook, Threads, TikTok, X, LinkedIn, WhatsApp and Snapchat each get a purpose-built workspace:
-            the tools that make sense for it, its real character limits, and its accent colour —
-            while the BioCraft identity stays constant. Switch platforms from the pills row above
-            any tool.
-          </p>
-        ),
-      },
-      {
-        heading: 'Private by design',
-        body: (
-          <p>
-            BioCraft has no backend. Every generator is rule-based code shipped to your browser:
-            nothing you type is uploaded, stored or logged, there are no accounts and no analytics.
-            The only network traffic is your browser fetching the static site itself.
-          </p>
-        ),
-      },
-      {
-        heading: 'Honest limits',
-        body: (
-          <ul>
-            <li>Unicode “fonts” are styled code points — they can look different across devices and break in some apps.</li>
-            <li>Devanagari has no styled Unicode alphabets; Hindi passes through unchanged and the tools say so.</li>
-            <li>Hashtags cannot guarantee reach; captions cannot guarantee engagement. We never pretend otherwise.</li>
-          </ul>
-        ),
-      },
-    ],
-  },
-
-  {
     path: '/use-cases',
     title: 'Use Cases — BioCraft Social Media Toolkit',
     description:
@@ -158,14 +94,14 @@ export const INFO_PAGES: InfoPageMeta[] = [
     path: '/pricing',
     title: 'Pricing — BioCraft Social Media Toolkit',
     description:
-      'BioCraft is free. Every tool, every platform, every run — $0, forever. No tiers, no trials, no sign-up, no limits.',
+      'BioCraft is $0. Every tool, every platform, every run — no tiers, no trials, no sign-up, no limits.',
     ogTitle: 'BioCraft Pricing',
-    ogDescription: 'Free forever. Every tool, every platform. $0, no sign-up.',
+    ogDescription: '$0 forever. Every tool, every platform. No sign-up.',
     heading: 'Pricing',
-    lede: 'One plan: everything. Free, forever, no strings.',
+    lede: 'One plan: everything. $0, forever, no strings.',
     sections: [
       {
-        heading: 'BioCraft — Free · $0',
+        heading: 'BioCraft — $0 · Always',
         body: (
           <ul>
             <li>All twelve generators, all eight platform workspaces, unlimited runs</li>
@@ -177,13 +113,13 @@ export const INFO_PAGES: InfoPageMeta[] = [
         ),
       },
       {
-        heading: 'Why it’s free',
+        heading: 'Why it’s $0',
         body: (
           <p>
             BioCraft is a static website with the generators built in. There are no AI APIs, no
             servers computing your bios and no usage meters to pay for — the cost is, effectively,
-            hosting static files. Keeping it free is the business model: there isn’t one, and that
-            is the point.
+            hosting static files. Keeping the site up costs nothing — the business model is to
+            have none, and that is the point.
           </p>
         ),
       },
@@ -267,7 +203,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
             <li><a onClick={handleAnchorClick} href="/fancy-font-generator">Fancy Font Generator</a> — 33 fonts, copy all</li>
             <li><a onClick={handleAnchorClick} href="/design-studio">Design Studio</a> — any sentence → ready-made font + emoji + card designs</li>
             <li><a onClick={handleAnchorClick} href="/username-generator">Username Generator</a> — 12 handles, four vibes</li>
-            <li><a onClick={handleAnchorClick} href="/emoji-symbol-generator">Emoji &amp; Symbol Generator</a> — 531 searchable glyphs</li>
+            <li><a onClick={handleAnchorClick} href="/emoji-symbol-generator">Emoji &amp; Symbol Generator</a> — 629 searchable glyphs</li>
             <li><a onClick={handleAnchorClick} href="/hashtag-generator">Hashtag Generator</a> — 14 niches, EN/हिन्दी/Hinglish, copy all</li>
             <li><a onClick={handleAnchorClick} href="/caption-generator">Caption Generator</a> — 5 captions, 7 tones, EN/हिन्दी/Hinglish</li>
             <li><a onClick={handleAnchorClick} href="/linkedin-headline-generator">LinkedIn Headline Generator</a> — 5 headlines ≤ 220 chars</li>
@@ -315,9 +251,9 @@ export const INFO_PAGES: InfoPageMeta[] = [
     path: '/about',
     title: 'About BioCraft — Social Media Toolkit',
     description:
-      'What BioCraft is, why it exists and how it works: a free, private, rule-based toolkit for social profiles — EN · Hindi · Hinglish, no sign-up, no AI APIs.',
+      'What BioCraft is, why it exists and how it works: a private, rule-based toolkit for social profiles — EN · Hindi · Hinglish, no sign-up, no AI APIs.',
     ogTitle: 'About BioCraft',
-    ogDescription: 'A free, private, rule-based social toolkit. EN · Hindi · Hinglish, no sign-up.',
+    ogDescription: 'A private, rule-based social toolkit. EN · Hindi · Hinglish, no sign-up.',
     heading: 'About BioCraft',
     lede: 'BioCraft is a small, opinionated toolkit for one specific itch: making social profiles without handing your data to a “growth” app.',
     sections: [
@@ -328,7 +264,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
             BioCraft is a collection of generators for social media profiles and captions: bios,
             usernames, display names, fancy text, symbols, hashtags, captions and LinkedIn
             headlines and summaries — for Instagram, Facebook, Threads, TikTok, X and LinkedIn.
-            Everything runs locally in your browser. It is free because it is static code, not
+            Everything runs locally in your browser. It costs nothing because it is static code, not
             because a VC said so.
           </p>
         ),
@@ -337,7 +273,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
         heading: 'Principles',
         body: (
           <ul>
-            <li><strong>Free, honestly.</strong> No tiers, no trials, no fake scarcity.</li>
+            <li><strong>$0, honestly.</strong> No tiers, no trials, no fake scarcity.</li>
             <li><strong>Private, structurally.</strong> No accounts, no uploads, no analytics, no cookies. There is no server to leak.</li>
             <li><strong>Rule-based, not AI-washed.</strong> The generators are deterministic templates and curated pools — you can read how they work, and they never pretend otherwise.</li>
             <li><strong>Honest about limits.</strong> Unicode fonts break in some apps; Devanagari has no styled glyphs; hashtags don’t guarantee reach. We say these out loud.</li>
@@ -416,7 +352,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
         heading: 'Why can’t BioCraft check if my username is available?',
         body: (
           <p>
-            Checking availability means querying Instagram at scale — there is no free, authorized
+            Checking availability means querying Instagram at scale — there is no authorized
             public API for it, and scraping breaks the moment Instagram changes markup. Handles
             follow Instagram’s character rules, but availability is decided by Instagram, not by us.
           </p>
@@ -454,7 +390,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
     ogTitle: 'Contact BioCraft',
     ogDescription: 'Honest bug-reporting and support expectations for BioCraft.',
     heading: 'Contact Us',
-    lede: 'The honest version: BioCraft is a free static site without a support desk — but you are not stuck.',
+    lede: 'The honest version: BioCraft is a $0 static site without a support desk — but you are not stuck.',
     sections: [
       {
         heading: 'Before you write in',
@@ -506,11 +442,11 @@ export const INFO_PAGES: InfoPageMeta[] = [
     path: '/login',
     title: 'Login — BioCraft Social Media Toolkit',
     description:
-      'There is no login at BioCraft — no accounts, no passwords, no sign-up. Everything runs free and private in your browser, by design.',
+      'There is no login at BioCraft — no accounts, no passwords, no sign-up. Everything runs privately in your browser, by design.',
     ogTitle: 'BioCraft — No Login Needed',
-    ogDescription: 'No accounts, no passwords. Everything free and private, in your browser.',
+    ogDescription: 'No accounts, no passwords. Everything private, in your browser.',
     heading: 'No Account Needed — On Purpose',
-    lede: 'You clicked Login and landed here: BioCraft has no login, because there is nothing to log in to. Every tool works instantly and free, right in your browser.',
+    lede: 'You clicked Login and landed here: BioCraft has no login, because there is nothing to log in to. Every tool works instantly, right in your browser.',
     sections: [
       {
         heading: 'Why BioCraft has no accounts',
@@ -519,7 +455,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
             <li><strong>Nothing to protect.</strong> Accounts exist to guard your saved data — BioCraft saves nothing. Your text lives in the page, in memory, and nowhere else.</li>
             <li><strong>Nothing to breach.</strong> No database of emails, no password hashes, no profiles — so leaking them is impossible.</li>
             <li><strong>Nothing to forget.</strong> No passwords to reset, no sessions to expire, no “continue with…” screens.</li>
-            <li><strong>Nothing between you and the tools.</strong> Free forever, no trial countdowns, no “upgrade to unlock”.</li>
+            <li><strong>Nothing between you and the tools.</strong> $0 forever, no trial countdowns, no “upgrade to unlock”.</li>
           </ul>
         ),
       },
@@ -623,17 +559,17 @@ export const INFO_PAGES: InfoPageMeta[] = [
     path: '/terms',
     title: 'Terms of Service — BioCraft Social Media Toolkit',
     description:
-      'Terms for using BioCraft: free use as-is, no warranties, your generated text is yours, trademarks belong to their owners.',
+      'Terms for using BioCraft: use as-is, no warranties, your generated text is yours, trademarks belong to their owners.',
     ogTitle: 'BioCraft Terms of Service',
-    ogDescription: 'Free to use, as-is, no warranties. Your text is yours.',
+    ogDescription: 'Use as-is, no warranties. Your text is yours.',
     heading: 'Terms of Service',
-    lede: 'Fair, plain-language terms for a free tool. Not legal advice — we are not lawyers.',
+    lede: 'Fair, plain-language terms for a $0 tool. Not legal advice — we are not lawyers.',
     sections: [
       {
         heading: 'Use of the service',
         body: (
           <p>
-            BioCraft is free to use for personal and commercial purposes. Use it lawfully: not to
+            BioCraft is yours to use for personal and commercial purposes. Use it lawfully: not to
             impersonate others, infringe trademarks, spam, deceive, or generate content that breaks
             the rules of the platforms you post to. You are responsible for what you publish.
           </p>
@@ -675,7 +611,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
           <p>
             To the maximum extent permitted by law, BioCraft’s operators are not liable for any
             damages arising from use of the site or its outputs — including lost accounts, rejected
-            handles or posts that underperform. The tools are free; use them with the same judgement
+            handles or posts that underperform. The tools are $0; use them with the same judgement
             you’d apply to any draft.
           </p>
         ),

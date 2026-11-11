@@ -50,6 +50,7 @@ export const SYMBOL_CATEGORIES: SymbolCategory[] = [
       s('💟', 'heart decoration'), s('♡', 'heart outline love'), s('♥', 'heart suit card'),
       s('❥', 'floral heart love'), s('❣', 'heart exclaim punctuation'), s('💌', 'love letter mail'),
       s('💋', 'kiss lips'), s('🩷', 'pink heart love'),
+      s('🫀', 'anatomical heart organ'),
     ],
   },
   {
@@ -67,6 +68,7 @@ export const SYMBOL_CATEGORIES: SymbolCategory[] = [
       s('✪', 'circled star'), s('✫', 'open centre star'), s('✬', 'black centre star'),
       s('✭', 'outlined star'), s('✰', 'shadowed star'), s('✩', 'outlined star small'),
       s('✷', 'pinwheel star'),
+      s('🌠', 'shooting star comet night sky'), s('⋆', 'star small tiny'),
     ],
   },
   {
@@ -88,6 +90,10 @@ export const SYMBOL_CATEGORIES: SymbolCategory[] = [
       s('😤', 'huff triumph steam'), s('😡', 'angry mad rage'), s('🤯', 'mind blown exploding'),
       s('🫠', 'melting face hot'), s('🫡', 'saluting respect'),
       s('🥲', 'smiling through tears'),
+      s('😈', 'smiling imp evil devil'), s('😠', 'angry face mad'), s('🥴', 'woozy face dizzy tipsy'),
+      s('😵', 'dizzy face knocked out'), s('🤧', 'sneezing face sick'), s('🥵', 'hot face sweating'),
+      s('🥶', 'cold face freezing'), s('🤠', 'cowboy face hat'), s('🧐', 'monocle face fancy'),
+      s('🤓', 'nerd face glasses'), s('🫣', 'face peeking fingers shy'), s('🤨', 'raised eyebrow sceptical'),
     ],
   },
   {
@@ -102,6 +108,8 @@ export const SYMBOL_CATEGORIES: SymbolCategory[] = [
       s('👌', 'okay hand perfect'), s('🤏', 'pinching small little'), s('✋', 'raised hand stop'),
       s('🖐️', 'hand splayed five'), s('👋', 'waving hand hello bye'), s('🫰', 'finger heart money'),
       s('🤙', 'call me shaka'), s('👊', 'fist bump punch'),
+      s('🖖', 'vulcan salute hand'), s('👆', 'point up finger'), s('👇', 'point down finger'),
+      s('👈', 'point left finger'), s('👉', 'point right finger'), s('☝️', 'index up hand'),
     ],
   },
   {
@@ -122,6 +130,8 @@ export const SYMBOL_CATEGORIES: SymbolCategory[] = [
       s('🌾', 'sheaf rice wheat grain'), s('🌵', 'cactus desert'), s('🌴', 'palm tree tropical'),
       s('🌙', 'crescent moon night'), s('🌕', 'full moon'), s('🌛', 'first quarter moon face'),
       s('🌝', 'full moon face'), s('🌞', 'sun face'), s('🌑', 'new moon dark'),
+      s('🌋', 'volcano mountain eruption'), s('🗻', 'mount fuji snow'), s('⛰️', 'mountain rock'),
+      s('🏜️', 'desert sand cactus'), s('🌪️', 'tornado whirlwind storm'), s('💨', 'dash air wind fast'),
     ],
   },
   {
@@ -139,6 +149,10 @@ export const SYMBOL_CATEGORIES: SymbolCategory[] = [
       s('🎂', 'birthday cake celebrate'), s('🍰', 'cake slice dessert'), s('🍦', 'soft ice cream dessert'),
       s('🍓', 'strawberry fruit berry'), s('🥭', 'mango fruit'), s('🍋', 'lemon citrus fruit'),
       s('🥑', 'avocado'),
+      s('🍉', 'watermelon fruit'), s('🍇', 'grapes fruit wine'), s('🍑', 'peach fruit'),
+      s('🍒', 'cherries fruit'), s('🍍', 'pineapple fruit'), s('🥝', 'kiwi fruit'),
+      s('🍅', 'tomato red'), s('🌽', 'corn maize'), s('🥞', 'pancakes breakfast'),
+      s('🍳', 'egg frying pan breakfast'),
     ],
   },
   {
@@ -155,6 +169,8 @@ export const SYMBOL_CATEGORIES: SymbolCategory[] = [
       s('➞', 'arrow bulleted right'), s('➡', 'black right arrow'), s('⬅', 'black left arrow'),
       s('↩', 'arrow curving back reply'), s('↪', 'arrow curving forward share'), s('➤', 'arrow pointer triangle'),
       s('⇢', 'rightwards wave dashed arrow'),
+      s('⤴', 'arrow curve up right'), s('⤵', 'arrow curve down right'), s('⬆', 'arrow up heavy'),
+      s('⬇', 'arrow down heavy'), s('➲', 'circled arrow right'), s('⤳', 'arrow wave right'),
     ],
   },
   {
@@ -172,6 +188,10 @@ export const SYMBOL_CATEGORIES: SymbolCategory[] = [
       s('▷', 'white right triangle'), s('▶', 'black right triangle play'), s('◀', 'black left triangle'),
       s('◁', 'white left triangle'), s('▾', 'black down small triangle'), s('▸', 'black right small triangle'),
       s('◗', 'right half black circle'),
+      s('▼', 'triangle down filled'), s('▽', 'triangle down outline'), s('▴', 'triangle up small filled'),
+      s('►', 'triangle right pointer play'), s('◄', 'triangle left pointer'), s('⬢', 'hexagon filled'),
+      s('⬡', 'hexagon outline'), s('⬟', 'pentagon filled'), s('⬥', 'diamond small filled'),
+      s('⬦', 'diamond small outline'),
     ],
   },
   {
@@ -187,6 +207,7 @@ export const SYMBOL_CATEGORIES: SymbolCategory[] = [
       s('❕', 'white exclamation'), s('❓', 'question mark red'), s('❔', 'white question mark'),
       s('⚠️', 'warning caution'), s('ℹ️', 'information info'), s('💯', 'hundred points perfect'),
       s('🔔', 'bell notification'), s('🚫', 'prohibited no entry'), s('⛔', 'no entry stop sign'),
+      s('🗹', 'ballot box check heavy'), s('🗸', 'check light mark'),
     ],
   },
   {
@@ -201,6 +222,8 @@ export const SYMBOL_CATEGORIES: SymbolCategory[] = [
       s('🎤', 'microphone sing'), s('🎷', 'saxophone jazz'), s('🎸', 'guitar rock'),
       s('🎹', 'keyboard piano'), s('🥁', 'drum beat'), s('🎺', 'trumpet brass'),
       s('🪕', 'banjo folk'), s('🎬', 'clapperboard film movie'),
+      s('🎻', 'violin strings music'), s('🪗', 'accordion music'), s('🎚️', 'slider control level'),
+      s('🎛️', 'control knobs panel'),
     ],
   },
   {
@@ -233,6 +256,8 @@ export const SYMBOL_CATEGORIES: SymbolCategory[] = [
       s('◦', 'white bullet point'), s('‣', 'triangular bullet'), s('‹', 'single left angle quote'),
       s('›', 'single right angle quote'), s('«', 'left guillemet quote'), s('»', 'right guillemet quote'),
       s('※', 'reference mark komejirushi'),
+      s('⁂', 'asterism stars divider'), s('⁑', 'two asterisks operator'), s('⁎', 'low asterisk'),
+      s('⁋', 'reversed pilcrow paragraph'),
     ],
   },
 ];
@@ -409,6 +434,7 @@ SYMBOL_CATEGORIES.push(
       s('🎆', 'fireworks celebration party'),
       s('🎇', 'sparkler fireworks party'),
       s('🪩', 'mirror ball disco party'),
+      s('🧨', 'firecracker explode celebrate'), s('🎏', 'carp streamer festival'), s('🎖️', 'medal honour service'),
     ],
   },
   {
@@ -421,6 +447,7 @@ SYMBOL_CATEGORIES.push(
       s('☪️', 'star crescent islam'), s('☸️', 'wheel dhamma buddhism'), s('☬', 'khanda sikh faith'),
       s('✡️', 'star of david judaism'), s('☯️', 'yin yang balance tao'), s('🕊️', 'dove peace spirit'),
       s('📿', 'prayer beads mala faith'), s('🛕', 'hindu temple mandir'), s('🛐', 'place of worship'),
+      s('🕎', 'menorah hanukkah jewish'), s('⛩️', 'shinto shrine japan'),
     ],
   },
   {
@@ -439,6 +466,7 @@ SYMBOL_CATEGORIES.push(
       s('🌃', 'night city friends out'),
       s('🧺', 'picnic blanket friends day'),
       s('🍱', 'bento meal friends together'),
+      s('💑', 'couple with heart love'), s('💏', 'kiss couple love'),
     ],
   },
   {
@@ -458,6 +486,9 @@ SYMBOL_CATEGORIES.push(
       s('🐶', 'dog puppy cute pet'),
       s('🐱', 'cat kitty cute pet'),
       s('🦄', 'unicorn magic cute'),
+      s('🐹', 'hamster cute face'), s('🦊', 'fox face cute'), s('🐯', 'tiger face'),
+      s('😺', 'cat smiling face'), s('😻', 'cat heart eyes love'), s('🐭', 'mouse face cute'),
+      s('🐸', 'frog face'),
     ],
   },
   {
@@ -474,6 +505,7 @@ SYMBOL_CATEGORIES.push(
       s('🌬️', 'wind gust melancholy'),
       s('🫤', 'face diagonal mouth meh sad'),
       s('😶‍🌫️', 'face in clouds absent sad'),
+      s('😓', 'face cold sweat tired'), s('🩶', 'grey heart love'),
     ],
   },
   {
@@ -486,6 +518,8 @@ SYMBOL_CATEGORIES.push(
       s('🛡️', 'shield defence game'), s('🎲', 'dice roll game'), s('🧩', 'puzzle piece game'),
       s('♟️', 'chess pawn strategy'), s('🐉', 'dragon fantasy game'), 
         s('💻', 'laptop pc gaming setup'),
+      s('🎰', 'slot machine casino lucky'), s('🥇', 'gold medal first winner'), s('🥈', 'silver medal second'),
+      s('🥉', 'bronze medal third'), s('🥊', 'boxing glove fight'), s('🏁', 'checkered flag race finish'),
     ],
   },
   {
@@ -498,6 +532,9 @@ SYMBOL_CATEGORIES.push(
        s('🗼', 'tower paris travel'), s('🗽', 'statue of liberty new york'),
       s('🎡', 'ferris wheel amusement travel'), s('🏝️', 'desert island beach travel'), s('🧳', 'luggage suitcase travel'),
       s('🌅', 'sunrise beach travel dawn'), s('🛶', 'canoe boat travel'), s('🧭', 'compass direction travel'),
+      s('🚗', 'car automobile drive'), s('🚌', 'bus transport travel'), s('🚲', 'bicycle bike cycle'),
+      s('🛴', 'kick scooter ride'), s('🛵', 'motor scooter ride'), s('🏖️', 'beach umbrella sand'),
+      s('🚠', 'cable car mountain'),
     ],
   },
   {
@@ -515,6 +552,8 @@ SYMBOL_CATEGORIES.push(
       s('🛍️', 'shopping bags fashion sale'),
       s('🪞', 'mirror vanity fashion'),
       s('🌂', 'umbrella rain fashion style'),
+      s('👢', 'boots shoes winter'), s('👡', 'sandals shoes summer'), s('🩴', 'flip flops beach'),
+      s('👛', 'purse wallet fashion'), s('👔', 'shirt tie business'), s('🧢', 'cap hat sport'),
     ],
   },
 );

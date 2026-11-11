@@ -65,7 +65,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioLimit: 150,
     bioHeading: 'Instagram Bio Generator',
     bioSubheading:
-      'Five unique bios in English, Hindi or Hinglish — each within Instagram’s 150-character limit. Free and private, right in your browser.',
+      'Five unique bios in English, Hindi or Hinglish — each within Instagram’s 150-character limit — right in your browser.',
     captionsLabel: 'Caption Generator',
     tools: ['bio', 'stylish-name', 'fancy-fonts', 'design-studio', 'username', 'symbols', 'hashtags', 'captions'],
   },
@@ -84,7 +84,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioLimit: 101,
     bioHeading: 'Facebook Bio Generator',
     bioSubheading:
-      'Five unique intro lines for your Facebook profile — each within the 101-character intro limit. English, Hindi or Hinglish. Free and private.',
+      'Five unique intro lines for your Facebook profile — each within the 101-character intro limit. English, Hindi or Hinglish. Private.',
     captionsLabel: 'Caption Generator',
     tools: ['bio', 'stylish-name', 'fancy-fonts', 'design-studio', 'username', 'symbols', 'hashtags', 'captions'],
   },
@@ -103,7 +103,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioLimit: 150,
     bioHeading: 'Threads Bio Generator',
     bioSubheading:
-      'Five unique bios for Threads — each within the 150-character limit. English, Hindi or Hinglish. Free and private, right in your browser.',
+      'Five unique bios for Threads — each within the 150-character limit. English, Hindi or Hinglish — right in your browser.',
     captionsLabel: 'Caption Generator',
     tools: ['bio', 'username', 'fancy-fonts', 'design-studio', 'symbols', 'hashtags', 'captions'],
   },
@@ -122,7 +122,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioLimit: 80,
     bioHeading: 'TikTok Bio Generator',
     bioSubheading:
-      'Five unique bios for TikTok — each within the tight 80-character limit. English, Hindi or Hinglish. Free and private.',
+      'Five unique bios for TikTok — each within the tight 80-character limit. English, Hindi or Hinglish. Private.',
     captionsLabel: 'Caption Generator',
     tools: ['bio', 'username', 'fancy-fonts', 'design-studio', 'hashtags', 'captions', 'symbols'],
   },
@@ -141,7 +141,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioLimit: 160,
     bioHeading: 'X Bio Generator',
     bioSubheading:
-      'Five unique bios for X — each within the 160-character limit. English, Hindi or Hinglish. Free and private, right in your browser.',
+      'Five unique bios for X — each within the 160-character limit. English, Hindi or Hinglish — right in your browser.',
     captionsLabel: 'Post Captions',
     tools: ['bio', 'username', 'fancy-fonts', 'design-studio', 'hashtags', 'captions', 'symbols'],
   },
@@ -160,7 +160,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioLimit: 2600,
     bioHeading: 'LinkedIn Professional Bio',
     bioSubheading:
-      'Five professional bio drafts for your LinkedIn About section — English. Free and private, right in your browser.',
+      'Five professional bio drafts for your LinkedIn About section — English — right in your browser.',
     captionsLabel: 'Professional Captions',
     tools: ['bio', 'linkedin-headline', 'linkedin-summary', 'stylish-name', 'username', 'captions', 'design-studio'],
     englishOnlyNote: 'LinkedIn tools currently produce English output.',
@@ -180,7 +180,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioLimit: 139,
     bioHeading: 'WhatsApp About Generator',
     bioSubheading:
-      'Five unique lines for your WhatsApp About — each within the 139-character limit. English, Hindi or Hinglish. Free and private.',
+      'Five unique lines for your WhatsApp About — each within the 139-character limit. English, Hindi or Hinglish. Private.',
     captionsLabel: 'Status Captions',
     tools: ['bio', 'whatsapp-status', 'stylish-name', 'fancy-fonts', 'design-studio', 'captions', 'symbols'],
   },
@@ -199,7 +199,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioLimit: 150,
     bioHeading: 'Snapchat Bio Generator',
     bioSubheading:
-      'Five unique lines for your Snapchat bio — each within roughly 150 characters. English, Hindi or Hinglish. Free and private.',
+      'Five unique lines for your Snapchat bio — each within roughly 150 characters. English, Hindi or Hinglish. Private.',
     captionsLabel: 'Story Captions',
     tools: ['bio', 'snapchat-caption', 'username', 'fancy-fonts', 'design-studio', 'symbols'],
   },

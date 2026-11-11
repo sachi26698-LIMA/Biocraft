@@ -5,6 +5,8 @@ import StyleGallery from '../../components/StyleGallery';
 import CharCounter from '../../components/CharCounter';
 import { NAME_DESIGNS, applyNameDesign } from './nameDesigns';
 
+const DEMO = 'BioCraft';
+
 /**
  * Stylish Name Generator — your display name in styled Unicode alphabets,
  * each variant copy-able. Rule-based, nothing leaves the browser.
@@ -16,13 +18,20 @@ export default function StylishNameTool() {
 
   const items = useMemo(
     () =>
-      trimmed
-        ? UNICODE_STYLES.map((style) => ({
-            id: style.id,
-            label: style.label,
-            text: applyNameDesign(style.transform(trimmed), design),
-          }))
-        : [],
+      UNICODE_STYLES.map((style) =>
+        trimmed
+          ? {
+              id: style.id,
+              label: style.label,
+              text: applyNameDesign(style.transform(trimmed), design),
+              demo: applyNameDesign(style.transform(DEMO), design),
+            }
+          : {
+              id: style.id,
+              label: style.label,
+              text: applyNameDesign(style.transform(DEMO), design),
+            },
+      ),
     [trimmed, design],
   );
 
@@ -92,18 +101,17 @@ export default function StylishNameTool() {
         </div>
 
         <div className="styles-main" aria-live="polite">
-          {items.length > 0 ? (
-            <StyleGallery
-              items={items}
-              copyLabel={(label) => `Copy ${label} style`}
-              copyAllText={items.map((item) => `${item.label}: ${item.text}`).join('\n')}
-              copyAllAriaLabel={"Copy all styles to clipboard"}
-            />
-          ) : (
-            <p className="empty-state-text styles-empty">
-              Type your name to see it in {UNICODE_STYLES.length} styles.
+          {!trimmed && (
+            <p className="tool-note" role="note">
+              Showing “{DEMO}” in all {UNICODE_STYLES.length} styles — type your name to replace it.
             </p>
           )}
+          <StyleGallery
+            items={items}
+            copyLabel={(label) => `Copy ${label} style`}
+            copyAllText={items.map((item) => `${item.label}: ${item.text}`).join('\n')}
+            copyAllAriaLabel={"Copy all styles to clipboard"}
+          />
         </div>
       </div>
     </div>

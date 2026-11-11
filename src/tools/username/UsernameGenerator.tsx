@@ -205,7 +205,7 @@ export default function UsernameGenerator() {
         <button type="submit" className="btn btn-primary btn-large generate-button">
           Generate {USERNAME_TARGET} usernames
         </button>
-        <p className="form-footnote">Free forever · No sign-up · Your text never leaves this page</p>
+        <p className="form-footnote">$0 forever · No sign-up · Your text never leaves this page</p>
       </form>
 
       <div className="results-block" role="region" aria-label="Generated usernames">

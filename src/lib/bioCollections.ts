@@ -74,7 +74,7 @@ const PART1: BioCollection[] = [
     description: 'Confidence-first bios for boys and men — attitude, hustle, dreams and discipline.',
     seoTitle: 'Instagram Bio for Boys — Ready-Made Mens Bios | BioCraft',
     seoDescription:
-      'Original, emoji-rich Instagram bios for boys — confidence, hustle, discipline and dreams. Copy any bio in one tap, in English, Hindi and Hinglish. Free and private.',
+      'Original, emoji-rich Instagram bios for boys — confidence, hustle, discipline and dreams. Copy any bio in one tap, in English, Hindi and Hinglish. Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Boys',
@@ -132,14 +132,14 @@ const PART1: BioCollection[] = [
     description: 'Warm, witty and unapologetically original bios for girls and women.',
     seoTitle: 'Instagram Bio for Girls — Ready-Made Girls Bios | BioCraft',
     seoDescription:
-      'Fresh Instagram bios for girls — confident, funny, soft, bold and desi. One-tap copy, in English, Hindi and Hinglish. Free, private, no sign-up.',
+      'Fresh Instagram bios for girls — confident, funny, soft, bold and desi. One-tap copy, in English, Hindi and Hinglish. Private, no sign-up.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Girls',
     lede: 'Bios with main-character energy — warm, sharp, soft or savage, exactly your vibe.',
     intro: [
       'A great girls bio is a small, honest mirror. Maybe you are the funny friend, the quiet designer, the dance-crew lead or the girl who replies three days later with excellent energy. The lines in this collection are written to hold all of that without performing for anyone — because a bio should sound like you at your most unguarded, not like a template.',
-      'Every entry is original BioCraft writing, free to copy and reuse. Use one as-is, stitch two together, or treat a line as a starting point. A few entries use Unicode display type for flair — they copy as real text. Hindi entries are written for natural bilingual bios, mixing Devanagari with everyday English the way people actually speak.',
+      'Every entry is original BioCraft writing, yours to copy and reuse. Use one as-is, stitch two together, or treat a line as a starting point. A few entries use Unicode display type for flair — they copy as real text. Hindi entries are written for natural bilingual bios, mixing Devanagari with everyday English the way people actually speak.',
     ],
     preview: 'girls',
     bios: [
@@ -190,7 +190,7 @@ const PART1: BioCollection[] = [
     description: 'Typographic flair — Unicode styled lines, minimal words, maximum presence.',
     seoTitle: 'Stylish Instagram Bio — Fancy Unicode Bios | BioCraft',
     seoDescription:
-      'Stylish Instagram bios with elegant Unicode type — bold, script, mono and fullwidth lines. One-tap copy, English and Hinglish, free and private.',
+      'Stylish Instagram bios with elegant Unicode type — bold, script, mono and fullwidth lines. One-tap copy, English and Hinglish, Private.',
     updated: 'November 2026',
     languages: 'English + Hinglish',
     audience: 'Everyone',
@@ -247,7 +247,7 @@ const PART1: BioCollection[] = [
     description: 'Sharp, confident, unbothered — attitude with substance, never cruelty.',
     seoTitle: 'Attitude Bio — Confident Instagram Attitude Bios | BioCraft',
     seoDescription:
-      'Attitude-packed bios: bold, confident and witty without being mean. Copy-ready for Instagram and more, one tap, free and private.',
+      'Attitude-packed bios: bold, confident and witty without being mean. Copy-ready for Instagram and more, one tap, Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
@@ -303,7 +303,7 @@ const PART1: BioCollection[] = [
     description: 'Premium, polished lines with quiet luxury — status with substance.',
     seoTitle: 'VIP Bio — Premium Instagram VIP Bios | BioCraft',
     seoDescription:
-      'VIP-style bios: polished, premium and understated. Elegant Unicode and classy copy-ready lines, English and Hinglish. Free, private, one-tap copy.',
+      'VIP-style bios: polished, premium and understated. Elegant Unicode and classy copy-ready lines, English and Hinglish. Private, one-tap copy.',
     updated: 'November 2026',
     languages: 'English + Hinglish',
     audience: 'Everyone',
@@ -356,7 +356,7 @@ const PART1: BioCollection[] = [
     description: 'Tender lines for couples, hearts and the hopelessly romantic.',
     seoTitle: 'Love Bio — Romantic Instagram Love Bios | BioCraft',
     seoDescription:
-      'Sweet, romantic and anniversary-ready love bios — English, Hindi and Hinglish, emoji-rich, one-tap copy. Free and private.',
+      'Sweet, romantic and anniversary-ready love bios — English, Hindi and Hinglish, emoji-rich, one-tap copy. Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
@@ -409,7 +409,7 @@ const PART1: BioCollection[] = [
     description: 'Honest, melancholic lines — depth without damage, healing without cliché.',
     seoTitle: 'Sad Bio — Emotional Sad Instagram Bios | BioCraft',
     seoDescription:
-      'Poetic, emotional sad bios about healing, heartbreak and growing quietly. One-tap copy, EN · Hindi · Hinglish. Free and private.',
+      'Poetic, emotional sad bios about healing, heartbreak and growing quietly. One-tap copy, EN · Hindi · Hinglish. Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
@@ -462,7 +462,7 @@ const PART1: BioCollection[] = [
     description: 'Regal, dignified lines for kings, queens and everyone with royal posture.',
     seoTitle: 'Royal Bio — Kings & Queens Instagram Bios | BioCraft',
     seoDescription:
-      'Royal-style bios for him and her — regal, classy and confident. Copy-ready in one tap, EN · Hindi · Hinglish. Free and private.',
+      'Royal-style bios for him and her — regal, classy and confident. Copy-ready in one tap, EN · Hindi · Hinglish. Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
@@ -515,7 +515,7 @@ const PART1: BioCollection[] = [
     description: 'Short, honest one-liners for people who like it clean.',
     seoTitle: 'Simple Bio — Short Simple Instagram Bios | BioCraft',
     seoDescription:
-      'Minimal, short and honest Instagram bios — one or two lines, zero clutter. One-tap copy, free and private.',
+      'Minimal, short and honest Instagram bios — one or two lines, zero clutter. One-tap copy, Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
@@ -568,7 +568,7 @@ const PART1: BioCollection[] = [
     description: 'Relaxed, witty, effortlessly cool — zero try-hard energy.',
     seoTitle: 'Cool Bio — Cool & Funny Instagram Bios | BioCraft',
     seoDescription:
-      'Cool, funny and effortless bios for Instagram and beyond — witty one-liners and chill lines. One-tap copy, free and private.',
+      'Cool, funny and effortless bios for Instagram and beyond — witty one-liners and chill lines. One-tap copy, Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
@@ -620,7 +620,7 @@ const PART1: BioCollection[] = [
     description: 'Original Devanagari bios — shayari-tinged lines and everyday wit in Hindi.',
     seoTitle: 'Hindi Bio — Best Instagram Bios in Hindi | BioCraft',
     seoDescription:
-      'Original Instagram bios in Hindi (Devanagari) and Hinglish — emotional, funny and reflective. One-tap copy with correct rendering. Free and private.',
+      'Original Instagram bios in Hindi (Devanagari) and Hinglish — emotional, funny and reflective. One-tap copy with correct rendering. Private.',
     updated: 'November 2026',
     languages: 'Hindi + Hinglish',
     audience: 'Everyone',
@@ -675,7 +675,7 @@ const PART1: BioCollection[] = [
     description: 'Clean, fluent English bios for professionals, creators and minimalists.',
     seoTitle: 'English Bio — Professional Instagram English Bios | BioCraft',
     seoDescription:
-      'Polished English and Hinglish Instagram bios — crisp, modern and professional. One-tap copy, free and private, for creators and businesses.',
+      'Polished English and Hinglish Instagram bios — crisp, modern and professional. One-tap copy, Private, for creators and businesses.',
     updated: 'November 2026',
     languages: 'English + Hinglish',
     audience: 'Everyone',
@@ -728,7 +728,7 @@ const PART1: BioCollection[] = [
     description: 'Respectful devotional bios honoring Shri Ram — serene and sincere.',
     seoTitle: 'Shree Ram Bio — Jai Shree Ram Instagram Bios | BioCraft',
     seoDescription:
-      'Reverent Shree Ram bios in Hindi, Hinglish and English — devotional, peaceful and respectful lines. One-tap copy. Free and private.',
+      'Reverent Shree Ram bios in Hindi, Hinglish and English — devotional, peaceful and respectful lines. One-tap copy. Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
@@ -777,7 +777,7 @@ const PART1: BioCollection[] = [
     description: 'Warm, trustworthy bios for personal profiles, pages and small businesses.',
     seoTitle: 'Facebook Bio — Best Facebook Bios & About Lines | BioCraft',
     seoDescription:
-      'Facebook-ready bios for personal profiles, creators and small businesses. Trustworthy, warm and clear. One-tap copy, free.',
+      'Facebook-ready bios for personal profiles, creators and small businesses. Trustworthy, warm and clear. One-tap copy.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Facebook',
@@ -828,7 +828,7 @@ const PART1: BioCollection[] = [
     description: 'For YouTubers, streamers and content creators building an audience.',
     seoTitle: 'Creator Bio — Instagram Bios for Content Creators | BioCraft',
     seoDescription:
-      'Creator bios for YouTubers, streamers and influencers — crisp, discoverable and real. One-tap copy. Free and private.',
+      'Creator bios for YouTubers, streamers and influencers — crisp, discoverable and real. One-tap copy. Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
@@ -879,7 +879,7 @@ const PART1: BioCollection[] = [
     description: 'Bios for wedding, portrait, street and travel photographers.',
     seoTitle: 'Photographer Bio — Instagram Bios for Photographers | BioCraft',
     seoDescription:
-      'Photographer bios for weddings, portraits, street and travel — with booking cues. One-tap copy, free and private.',
+      'Photographer bios for weddings, portraits, street and travel — with booking cues. One-tap copy, Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
@@ -930,7 +930,7 @@ const PART1: BioCollection[] = [
     description: 'Campus-life bios — studies, side projects, sports and self-discovery.',
     seoTitle: 'Student Bio — Instagram Bios for Students & College | BioCraft',
     seoDescription:
-      'Student bios for school and college — ambitious, funny and real. Eng · Hindi · Hinglish, one-tap copy. Free and private.',
+      'Student bios for school and college — ambitious, funny and real. Eng · Hindi · Hinglish, one-tap copy. Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
@@ -1083,7 +1083,7 @@ const PART2: BioCollection[] = [
     description: 'Soft hearts, sparkles and warm chaos — bios for the sweet ones.',
     seoTitle: 'Cute Bio — Sweet Instagram Bios for Her & Him | BioCraft',
     seoDescription:
-      'Original cute Instagram bios — soft hearts, sparkles and playful warmth. Copy any bio in one tap, English, Hindi and Hinglish, free and private.',
+      'Original cute Instagram bios — soft hearts, sparkles and playful warmth. Copy any bio in one tap, English, Hindi and Hinglish, Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
@@ -1116,7 +1116,7 @@ const PART2: BioCollection[] = [
     ],
     faqs: [
       { q: 'Which cute bio should I use?', a: 'Pick the one that makes you smile first — that is usually the closest to your real energy. Add your own keyword (a food, a hobby, a city) to make it yours.' },
-      { q: 'Are these bios free to use?', a: 'Yes. BioCraft is free, private and needs no sign-up — copy any line and use it on any platform.' },
+      { q: 'Are these bios yours to use?', a: 'Yes — copy any line and use it on any platform, no sign-up required.' },
       { q: 'Can I use a cute bio on WhatsApp or Snapchat?', a: 'Absolutely. Every bio here is a short Unicode string — paste it into WhatsApp About, Snapchat or Instagram equally well.' },
     ],
     related: ['love-bio', 'instagram-bio-for-girls', 'hinglish-bio'],
@@ -1129,7 +1129,7 @@ const PART2: BioCollection[] = [
     description: 'Real desi energy in Latin script — chai, hustle, heart and a little attitude.',
     seoTitle: 'Hinglish Bio — Desi Instagram Bios in Hinglish | BioCraft',
     seoDescription:
-      'Original Hinglish Instagram bios — chai, hustle, heart and attitude, written the way India actually texts. One-tap copy, free and private.',
+      'Original Hinglish Instagram bios — chai, hustle, heart and attitude, written the way India actually texts. One-tap copy, Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
@@ -1174,7 +1174,7 @@ const PART2: BioCollection[] = [
     description: 'For the grinders, the clutch players and the 2 AM queue warriors.',
     seoTitle: 'Gamer Bio — Gaming Instagram Bios That Hit Different | BioCraft',
     seoDescription:
-      'Original gamer Instagram bios — grind, clutch, squad and endless queue. Copy any bio in one tap, English, Hindi and Hinglish, free and private.',
+      'Original gamer Instagram bios — grind, clutch, squad and endless queue. Copy any bio in one tap, English, Hindi and Hinglish, Private.',
     updated: 'November 2026',
     languages: 'English + Hindi + Hinglish',
     audience: 'Everyone',
