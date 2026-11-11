@@ -6,6 +6,7 @@ import { TOOLS, toolForPath } from '../tools/registry';
 import { useRecentlyUsed } from '../lib/toolbox';
 import HomePage from '../pages/HomePage';
 import InfoPage from '../pages/InfoPage';
+import FeaturesPage from '../pages/FeaturesPage';
 import CategoriesPage from '../pages/CategoriesPage';
 import BioCollectionsPage from '../pages/BioCollectionsPage';
 import BioCollectionPage from '../pages/BioCollectionPage';
@@ -41,6 +42,7 @@ export default function ToolShell() {
   const isCategories = path === '/categories';
   const isCollectionsIndex = path === COLLECTIONS_INDEX;
   const isBioEditor = path === BIO_EDITOR;
+  const isFeatures = path === '/features';
   const collection = collectionForPath(path);
   const tool = toolForPath(path);
   const isToolRoute = TOOL_PATHS.has(path);
@@ -49,10 +51,10 @@ export default function ToolShell() {
 
   // Unknown paths fall back to the homepage.
   useEffect(() => {
-    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !collection) {
+    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isFeatures && !collection) {
       navigate(HOME, { replace: true });
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, collection]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, collection]);
 
   // Remember tool visits (localStorage only) for the "Recently used" rail.
   useEffect(() => {
@@ -85,12 +87,14 @@ export default function ToolShell() {
       document.title = 'Categories — BioCraft Social Media Toolkit';
     } else if (isCollectionsIndex) {
       document.title = 'Ready-Made Bio Collections — BioCraft Social Media Toolkit';
+    } else if (isFeatures) {
+      document.title = 'Features — BioCraft Social Media Toolkit';
     } else if (isBioEditor) {
       document.title = 'Bio Editor — Style & Copy Your Instagram Bio | BioCraft';
     } else if (collection) {
       document.title = collection.seoTitle;
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, collection, tool]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, collection, tool]);
 
   if (isHome) return <HomePage />;
   if (isCategories) return <CategoriesPage />;
@@ -122,6 +126,7 @@ export default function ToolShell() {
       </section>
     );
   }
+  if (path === '/features') return <FeaturesPage />;
   if (infoPage) return <InfoPage path={path} />;
   return <HomePage />; // transient state while the replace-navigation lands
 }

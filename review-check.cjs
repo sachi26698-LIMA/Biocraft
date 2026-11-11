@@ -187,12 +187,12 @@ const runAxe = async (routeName) => {
   check('stage renders above the toolkit', Boolean($('.platform-stage')) && Boolean($('.toolkit-workspace')) && ($('.platform-stage').compareDocumentPosition($('.toolkit-workspace')) & 4) !== 0);
   check('the laptop carries no app icons of its own (pills switch worlds)', $$('.platform-stage .stage-app').length === 0 && $$('.platform-stage .stage-app-icon').length === 0);
   check('stage defaults to the Instagram theme', $('.platform-stage')?.getAttribute('data-platform') === 'instagram');
-  check('laptop screen boots the Instagram app home', Boolean($('.platform-stage .stage-slab-screen .mock-wide--instagram')));
+  check('laptop screen boots the Instagram app home', Boolean($('.platform-stage .stage-slab-screen .mock.m-ig')));
   const xTile = $$('.toolkit-workspace .platform-pill').find((el) => (el.textContent ?? '').includes('X'));
   await click(xTile);
   check('clicking the X workspace pill re-themes the stage', $('.platform-stage')?.getAttribute('data-platform') === 'x');
   check('X workspace pill reports aria-pressed=true', xTile?.getAttribute('aria-pressed') === 'true');
-  check('X app home swaps in on the laptop screen', Boolean($('.platform-stage .stage-slab-screen .mock-wide--x')) && !$('.platform-stage .stage-slab-screen .mock-wide--instagram'));
+  check('X app home swaps in on the laptop screen', Boolean($('.platform-stage .stage-slab-screen .mock.m-x')) && !$('.platform-stage .stage-slab-screen .mock.m-ig'));
   check('shared platform state follows the stage (workspace heading)', ($('#tool-heading')?.textContent ?? '').includes('X'));
   const igTile = $$('.toolkit-workspace .platform-pill').find((el) => (el.textContent ?? '').includes('Instagram'));
   await click(igTile);
@@ -205,7 +205,7 @@ const runAxe = async (routeName) => {
   check('explore-powerful-tools section is removed from the homepage', !$('#powerful-tools-title') && $$('.tile-grid').length === 0);
   check('why-choose (Built Different) section is removed from the homepage', !$('#why-title') && $$('.why-card').length === 0);
   check('twelve popular-category chips render', $$('.chip-cloud .chip').length === 12);
-  check('how-it-works renders five steps', $$('.how-step').length === 5);
+  check('how it works section was removed in the hero rework', !$('#how-title') && $$('.how-step').length === 0);
   check('FAQ renders 7 items', $$('.faq-item').length === 7);
   const faqFirst = $('.faq-question');
   check('first FAQ question starts expanded', faqFirst?.getAttribute('aria-expanded') === 'true');
@@ -213,20 +213,18 @@ const runAxe = async (routeName) => {
   check('second FAQ question toggles open', $$('.faq-question')[1].getAttribute('aria-expanded') === 'true');
   await click($$('.faq-question')[1]);
   check('second FAQ question toggles closed', $$('.faq-question')[1].getAttribute('aria-expanded') === 'false');
-  check('final CTA links to /resources', Boolean($('#final-cta-title')?.closest('section')?.querySelector('a[href="/resources"]')));
+  check('final CTA section was removed in the hero rework', !$('#final-cta-title'));
 
-  console.log('\n--- Section order (Header→Toolkit→How→Chips→FAQ→Final CTA→Footer) ---');
+  console.log('\n--- Section order (Header→Toolkit→Chips→FAQ→Footer) ---');
   const markers = [
     ['site-header', '.site-header'],
     ['live toolkit workspace', '.toolkit-workspace'],
-    ['how it works', '#how-title'],
     ['popular categories', '#popular-categories-title'],
     ['faq', '#faq-title'],
-    ['final CTA', '#final-cta-title'],
     ['site footer', '.site-footer'],
   ];
   const markerEls = markers.map(([name, sel]) => [name, $(sel)]);
-  check('all seven landmark regions are present', markerEls.every(([, el]) => Boolean(el)));
+  check('all five landmark regions are present', markerEls.every(([, el]) => Boolean(el)));
   check('sections render in the designed order', markerEls.every(([, el], i) => i === 0 || Boolean(markerEls[i - 1][1] && el && (markerEls[i - 1][1].compareDocumentPosition(el) & 4))), );
 
   console.log('\n--- Toolkit shell (route /) ---');
@@ -383,7 +381,7 @@ const runAxe = async (routeName) => {
   check('counter shows 5/30', $$('.char-count').some((el) => el.textContent.trim() === '5/30'));
   const nameRows = $$('.style-row');
   check('33 style rows render', nameRows.length === 33);
-  check('Bold row is 𝐇𝐞𝐥𝐥𝐨', nameRows.find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.style-row-text').textContent === '𝐇𝐞𝐥𝐥𝐨');
+  check('Bold row is 𝐇𝐞𝐥𝐥𝐨', nameRows.find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.style-row-text-live').textContent === '𝐇𝐞𝐥𝐥𝐨');
   await click(nameRows.find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.copy-button'));
   check('stylish copy writes 𝐇𝐞𝐥𝐥𝐨 byte-exact', clipboardText === '𝐇𝐞𝐥𝐥𝐨');
   check('stylish name tool exposes Copy all', Boolean($$('[aria-label="Copy all styles to clipboard"]')[0]));
@@ -393,14 +391,14 @@ const runAxe = async (routeName) => {
   const combiningPattern = /[\u0300-\u036F]/g;
   const devRows = $$('.style-row').filter((row) => row.querySelector('.style-row-label').textContent !== 'Upside Down');
   const devBroken = devRows.filter((row) => {
-    const value = row.querySelector('.style-row-text').textContent;
+    const value = row.querySelector('.style-row-text-live').textContent;
     const base = value.replace(combiningPattern, '');
     return !base.includes('नमस्ते');
   }).map((row) => row.querySelector('.style-row-label').textContent);
   if (devBroken.length) console.log('   Devanagari dropped by styles:', devBroken.join(', '));
   check('Devanagari survives round-trip in non-reversed styles', devBroken.length === 0);
   const upRow = $$('.style-row').find((row) => row.querySelector('.style-row-label').textContent === 'Upside Down');
-  check('Upside Down keeps every Devanagari code point', Array.from(upRow.querySelector('.style-row-text').textContent).filter((c) => /[\u0900-\u097F]/.test(c)).length === 6);
+  check('Upside Down keeps every Devanagari code point', Array.from(upRow.querySelector('.style-row-text-live').textContent).filter((c) => /[\u0900-\u097F]/.test(c)).length === 6);
 
   console.log('\n--- axe: /stylish-name-generator ---');
   check('/stylish-name-generator has 0 axe violations', (await runAxe('/stylish-name-generator')) === 0);
@@ -416,8 +414,8 @@ const runAxe = async (routeName) => {
   check('counter shows 5/2200', $$('.char-count').some((el) => el.textContent.trim() === '5/2200'));
   const fontRows = $$('.style-row');
   check('33 style rows render', fontRows.length === 33);
-  check('Fullwidth row text is Ｈｅｌｌｏ', fontRows.find((row) => row.querySelector('.style-row-label').textContent === 'Fullwidth').querySelector('.style-row-text').textContent === 'Ｈｅｌｌｏ');
-  check('Monospace row text is 𝙷𝚎𝚕𝚕𝚘', fontRows.find((row) => row.querySelector('.style-row-label').textContent === 'Monospace').querySelector('.style-row-text').textContent === '𝙷𝚎𝚕𝚕𝚘');
+  check('Fullwidth row text is Ｈｅｌｌｏ', fontRows.find((row) => row.querySelector('.style-row-label').textContent === 'Fullwidth').querySelector('.style-row-text-live').textContent === 'Ｈｅｌｌｏ');
+  check('Monospace row text is 𝙷𝚎𝚕𝚕𝚘', fontRows.find((row) => row.querySelector('.style-row-label').textContent === 'Monospace').querySelector('.style-row-text-live').textContent === '𝙷𝚎𝚕𝚕𝚘');
   await click(fontRows.find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.copy-button'));
   check('font copy writes 𝐇𝐞𝐥𝐥𝐨 byte-exact', clipboardText === '𝐇𝐞𝐥𝐥𝐨');
 
@@ -426,14 +424,14 @@ const runAxe = async (routeName) => {
   const combiningPattern2 = /[\u0300-\u036F]/g;
   const devRows2 = $$('.style-row').filter((row) => row.querySelector('.style-row-label').textContent !== 'Upside Down');
   const devBroken2 = devRows2.filter((row) => {
-    const value = row.querySelector('.style-row-text').textContent;
+    const value = row.querySelector('.style-row-text-live').textContent;
     const base = value.replace(combiningPattern2, '');
     return !base.includes('नमस्ते');
   }).map((row) => row.querySelector('.style-row-label').textContent);
   if (devBroken2.length) console.log('   Devanagari dropped by styles:', devBroken2.join(', '));
   check('Devanagari survives round-trip in non-reversed styles', devBroken2.length === 0);
   const upRow2 = $$('.style-row').find((row) => row.querySelector('.style-row-label').textContent === 'Upside Down');
-  check('Upside Down keeps every Devanagari code point', Array.from(upRow2.querySelector('.style-row-text').textContent).filter((c) => /[\u0900-\u097F]/.test(c)).length === 6);
+  check('Upside Down keeps every Devanagari code point', Array.from(upRow2.querySelector('.style-row-text-live').textContent).filter((c) => /[\u0900-\u097F]/.test(c)).length === 6);
 
   console.log('\n--- axe: /fancy-font-generator ---');
   check('/fancy-font-generator has 0 axe violations', (await runAxe('/fancy-font-generator')) === 0);
@@ -494,13 +492,13 @@ const runAxe = async (routeName) => {
   check('document.title updated', window.document.title === EXPECTED_TITLES['/emoji-symbol-generator']);
 
   const allButtons = $$('.symbol-grid .symbol-button');
-  check('all symbols render by default (531)', allButtons.length === 531);
+  check('all symbols render by default (629)', allButtons.length === 629);
   check('category filter group renders (All + Favourites + 24)', $$('.symbol-categories .chip').length === 26);
 
   const searchInput = $('#symbol-search-input');
   await setInputValue(searchInput, 'heart', 'input');
   const heartCount = $$('.symbol-grid .symbol-button').length;
-  check('search "heart" (English) narrows the grid', heartCount > 0 && heartCount < 531);
+  check('search "heart" (English) narrows the grid', heartCount > 0 && heartCount < 629);
   check('search count hint updates', text('#symbol-search-hint').includes(String(heartCount)));
 
   await setInputValue(searchInput, 'दिल', 'input');
@@ -515,7 +513,7 @@ const runAxe = async (routeName) => {
   await setInputValue(searchInput, '', 'input');
   const heartsChip = $$('.symbol-categories .chip').find((el) => el.textContent.trim() === 'Hearts & Love');
   await click(heartsChip);
-  check('Hearts & Love filter shows 26 symbols', $$('.symbol-grid .symbol-button').length === 26);
+  check('Hearts & Love filter shows 27 symbols', $$('.symbol-grid .symbol-button').length === 27);
 
   const redHeart = $$('.symbol-grid .symbol-button').find((el) => el.getAttribute('aria-label') === 'Copy ❤️ to clipboard');
   check('red heart button is findable', Boolean(redHeart));
@@ -675,7 +673,6 @@ const runAxe = async (routeName) => {
 
   console.log('\n--- Info routes render ---');
   const INFO_ROUTES = [
-    ['/features', 'Features', 'Features — BioCraft Social Media Toolkit'],
     ['/use-cases', 'Use Cases', 'Use Cases — BioCraft Social Media Toolkit'],
     ['/pricing', 'Pricing', 'Pricing — BioCraft Social Media Toolkit'],
     ['/blog', 'Blog', 'Blog — BioCraft Social Media Toolkit'],
@@ -693,6 +690,15 @@ const runAxe = async (routeName) => {
     check(`${path}: h1 renders`, ($('h1.info-title')?.textContent ?? '').trim() === heading);
     check(`${path}: document.title set`, window.document.title === title);
   }
+  console.log('\n--- /features: dedicated Features page ---');
+  await goto('/features');
+  check('/features: dedicated hero h1 renders', ($('h1.features-title')?.textContent ?? '').includes('Twelve generators'));
+  check('/features: h1 is not the generic info-title', !$('h1.info-title'));
+  check('/features: document.title set', window.document.title === EXPECTED_TITLES['/features']);
+  check('/features: toolbox renders 13 cards', $$('.features-grid .feature-card').length === 13);
+  check('/features: every toolbox card links to a route', $$('.features-grid .feature-card').every((a) => (a.getAttribute('href') ?? '').startsWith('/')));
+  check('/features: symbols card cites the real 629 count', $$('.feature-card').some((card) => (card.textContent ?? '').includes('629')));
+
   console.log('\n--- Tool page chrome: breadcrumb + how-to + related ---');
   await goto('/bio-generator');
   check('tool page breadcrumb shows Home / All Tools / Bio Generator', ($('.breadcrumbs')?.textContent ?? '').includes('Home') && ($('.breadcrumbs')?.textContent ?? '').includes('All Tools') && ($('.breadcrumbs')?.textContent ?? '').includes('Bio Generator'));

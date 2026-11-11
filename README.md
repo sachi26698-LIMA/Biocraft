@@ -25,7 +25,7 @@ light-glass interface — no page reloads, no accounts, no uploads.
   clamped to 6–30, Instagram rule-valid and deduplicated. Devanagari input is
   transliterated approximately.
 - **Emoji & Symbol Generator** (`/emoji-symbol-generator`) — a curated library
-  of 531 Unicode symbols and emoji across 24 categories, English and Hindi
+  of 629 Unicode symbols and emoji across 24 categories, English and Hindi
   search, favourites, recently-used and curated multi-glyph combos,
   one-tap copy plus copy-all.
 - **Hashtag Generator** (`/hashtag-generator`) — relevant, deduplicated
@@ -99,7 +99,7 @@ mint `#D9F5E9`, cyan `#D9F0FA`, peach `#FFE7DB`. Text `#241B35` with secondary
 hover `#7A3CA8`, and the signature CTA is a purple→rose gradient. Errors
 `#B42318`, success `#0E7A4D`. Background-blur glass panels, soft 3D-style icon
 tiles, delicate hover elevation, `prefers-reduced-motion` honored, system
-fonts, visible purple focus rings — no dark surfaces anywhere.
+UI font stack plus two self-hosted SIL OFL subsets — Baloo 2 (display headings) and Noto Sans Math (styled-Unicode coverage for the font tools) — visible purple focus rings — no dark surfaces anywhere.
 
 ## Homepage
 
@@ -125,8 +125,9 @@ hamburger sheet on mobile.
 ## Tech stack
 
 React 18 · TypeScript · Vite · plain CSS (no Tailwind, no CSS framework).
-No runtime dependencies beyond React and React DOM. No external fonts,
-no external images, no trackers, no analytics, no cookies, no storage.
+No runtime dependencies beyond React and React DOM. Self-hosted fonts
+(Baloo 2 + Noto Sans Math, SIL OFL, subset woff2 under `public/fonts/`), no external font or
+image requests, no trackers, no analytics, no cookies, no storage.
 
 ## Getting started
 
@@ -225,7 +226,7 @@ direct visits and crawlers get correct meta.
 
 ## Curated data & honesty notes
 
-- **Symbols** — 531 entries across 24 categories; keywords are English. Glyphs
+- **Symbols** — 629 entries across 24 categories; keywords are English. Glyphs
   are deduplicated exactly. Favourites, recently-used and 12 curated combos are
   stored in localStorage only.
 - **Hashtags** — curated tags (EN/HI) across 14 niches in three reach buckets.

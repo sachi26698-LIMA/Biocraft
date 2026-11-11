@@ -72,9 +72,9 @@ const ROUTES = [
     path: '/emoji-symbol-generator',
     title: 'Emoji & Symbol Generator — BioCraft Social Media Toolkit',
     description:
-      'Search and copy 531+ curated Unicode symbols and emoji — hearts, stars, arrows, royal, faith and more. One-tap copy, free and private.',
+      'Search and copy 629 curated Unicode symbols and emoji — hearts, stars, arrows, royal, faith and more. One-tap copy, free and private.',
     ogTitle: 'Emoji & Symbol Generator — BioCraft',
-    ogDescription: '531+ curated Unicode symbols and emoji, searchable with favourites, free and private.',
+    ogDescription: '629 curated Unicode symbols and emoji, searchable with favourites, free and private.',
   },
   {
     path: '/hashtag-generator',

@@ -65,7 +65,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioLimit: 150,
     bioHeading: 'Instagram Bio Generator',
     bioSubheading:
-      'Five unique bios in English, Hindi or Hinglish — each within Instagram’s 150-character limit. — right in your browser.',
+      'Five unique bios in English, Hindi or Hinglish — each within Instagram’s 150-character limit — right in your browser.',
     captionsLabel: 'Caption Generator',
     tools: ['bio', 'stylish-name', 'fancy-fonts', 'design-studio', 'username', 'symbols', 'hashtags', 'captions'],
   },
@@ -103,7 +103,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioLimit: 150,
     bioHeading: 'Threads Bio Generator',
     bioSubheading:
-      'Five unique bios for Threads — each within the 150-character limit. English, Hindi or Hinglish. — right in your browser.',
+      'Five unique bios for Threads — each within the 150-character limit. English, Hindi or Hinglish — right in your browser.',
     captionsLabel: 'Caption Generator',
     tools: ['bio', 'username', 'fancy-fonts', 'design-studio', 'symbols', 'hashtags', 'captions'],
   },
@@ -141,7 +141,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioLimit: 160,
     bioHeading: 'X Bio Generator',
     bioSubheading:
-      'Five unique bios for X — each within the 160-character limit. English, Hindi or Hinglish. — right in your browser.',
+      'Five unique bios for X — each within the 160-character limit. English, Hindi or Hinglish — right in your browser.',
     captionsLabel: 'Post Captions',
     tools: ['bio', 'username', 'fancy-fonts', 'design-studio', 'hashtags', 'captions', 'symbols'],
   },
@@ -160,7 +160,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioLimit: 2600,
     bioHeading: 'LinkedIn Professional Bio',
     bioSubheading:
-      'Five professional bio drafts for your LinkedIn About section — English. — right in your browser.',
+      'Five professional bio drafts for your LinkedIn About section — English — right in your browser.',
     captionsLabel: 'Professional Captions',
     tools: ['bio', 'linkedin-headline', 'linkedin-summary', 'stylish-name', 'username', 'captions', 'design-studio'],
     englishOnlyNote: 'LinkedIn tools currently produce English output.',

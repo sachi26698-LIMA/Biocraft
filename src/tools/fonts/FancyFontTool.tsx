@@ -4,6 +4,8 @@ import { CAPTION_LIMIT, bioLength } from '../../lib/text';
 import StyleGallery from '../../components/StyleGallery';
 import CharCounter from '../../components/CharCounter';
 
+const DEMO = 'BioCraft';
+
 /**
  * Fancy Font Generator — any text, restyled with Unicode alphabets.
  * These are styled characters, not downloadable font files.
@@ -14,13 +16,20 @@ export default function FancyFontTool() {
 
   const items = useMemo(
     () =>
-      trimmed
-        ? UNICODE_STYLES.map((style) => ({
-            id: style.id,
-            label: style.label,
-            text: style.transform(trimmed),
-          }))
-        : [],
+      UNICODE_STYLES.map((style) =>
+        trimmed
+          ? {
+              id: style.id,
+              label: style.label,
+              text: style.transform(trimmed),
+              demo: style.transform(DEMO),
+            }
+          : {
+              id: style.id,
+              label: style.label,
+              text: style.transform(DEMO),
+            },
+      ),
     [trimmed],
   );
 
@@ -70,18 +79,17 @@ export default function FancyFontTool() {
         </div>
 
         <div className="styles-main" aria-live="polite">
-          {items.length > 0 ? (
-            <StyleGallery
-              items={items}
-              copyLabel={(label) => `Copy ${label} text`}
-              copyAllText={items.map((item) => `${item.label}: ${item.text}`).join('\n')}
-              copyAllAriaLabel={"Copy all styles to clipboard"}
-            />
-          ) : (
-            <p className="empty-state-text styles-empty">
-              Type something to see it in {UNICODE_STYLES.length} styles.
+          {!trimmed && (
+            <p className="tool-note" role="note">
+              Showing “{DEMO}” in all {UNICODE_STYLES.length} styles — type your own text to replace it.
             </p>
           )}
+          <StyleGallery
+            items={items}
+            copyLabel={(label) => `Copy ${label} text`}
+            copyAllText={items.map((item) => `${item.label}: ${item.text}`).join('\n')}
+            copyAllAriaLabel={"Copy all styles to clipboard"}
+          />
         </div>
       </div>
     </div>

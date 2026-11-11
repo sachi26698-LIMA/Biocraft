@@ -53,7 +53,7 @@ export const TOOLS: ToolMeta[] = [
     tabLabel: 'Bio',
     heading: 'Bio Generator',
     subheading:
-      'Five unique bios in English, Hindi or Hinglish — each within your platform’s character limit. — right in your browser.',
+      'Five unique bios in English, Hindi or Hinglish — each within your platform’s character limit — right in your browser.',
     title: 'Bio Generator — BioCraft Social Media Toolkit',
     description:
       'Generate five unique bios in English, Hindi or Hinglish — Instagram, Facebook, Threads, TikTok, X, LinkedIn, WhatsApp and Snapchat limits respected. Private, no sign-up.',
@@ -123,12 +123,12 @@ export const TOOLS: ToolMeta[] = [
     tabLabel: 'Symbols',
     heading: 'Emoji & Symbol Generator',
     subheading:
-      'A curated library of 531+ Unicode symbols and emoji — search, favourite ★, recents, one-tap copy. Private.',
+      'A curated library of 629 Unicode symbols and emoji — search, favourite ★, recents, one-tap copy. Private.',
     title: 'Emoji & Symbol Generator — BioCraft Social Media Toolkit',
     description:
-      'Search and copy 531+ curated Unicode symbols and emoji — hearts, stars, arrows, royal, faith and more. One-tap copy, Private.',
+      'Search and copy 629 curated Unicode symbols and emoji — hearts, stars, arrows, royal, faith and more. One-tap copy, Private.',
     ogTitle: 'Emoji & Symbol Generator — BioCraft',
-    ogDescription: '531+ curated Unicode symbols and emoji, searchable with favourites, Private.',
+    ogDescription: '629 curated Unicode symbols and emoji, searchable with favourites, Private.',
     Component: SymbolGenerator,
   },
   {
