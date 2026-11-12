@@ -10,6 +10,7 @@ registry as a fallback — Supabase enhances, never replaces, the shipped app.
 | --- | --- |
 | `supabase/migrations/0001_initial_schema.sql` | All 10 tables (`platforms`, `categories`, `bios`, `generators`, `fonts`, `symbols`, `emoji_collections`, `hashtags`, `captions`, `seo_pages`), indexes, `search_bios()` full-text/filter/pagination function, `updated_at` triggers |
 | `supabase/migrations/0002_rls_policies.sql` | RLS enabled on every table; anon/authenticated roles get read-only access to `is_active` rows; writes are revoked explicitly |
+| `supabase/migrations/0003_reconcile_live_to_repo.sql` | Reconciles the initially drifted live schema to the reviewed schema; safe to apply after 0001 and 0002 |
 | `scripts/seed-supabase.mjs` | Idempotent seed generator — reads the checked-in registry (`src/`), emits deterministic SQL to `supabase/seed/` |
 | `supabase/seed/*.sql` | Generated seeds (committed; regenerate with `node scripts/seed-supabase.mjs`) |
 | `scripts/seed-data-entry.tsx` | Data entry bundled by the seeder (exact registry the app ships) |
@@ -25,16 +26,17 @@ hashtags 1,155, captions 3,888, seo_pages 48.
 
 ## One-time setup (owner)
 
-1. **Restore the project** (Supabase dashboard → Quick_kit project → "Restore project").
-   The project is currently **INACTIVE** (paused). Until it is restored, the
-   site runs entirely on the bundled registry — nothing breaks.
-2. **Create a publishable key**: Project Settings → API Keys → Publishable keys →
-   create `biocraft_frontend`.
-3. **Apply the schema**: dashboard → SQL Editor → run, in order:
+1. **Restore the project if paused** (Supabase dashboard → Quick_kit project →
+   "Restore project"). The site uses the bundled registry while unavailable.
+2. **Use a publishable key**: Project Settings → API Keys → Publishable keys.
+3. **Apply the schema for a new database**: dashboard → SQL Editor → run, in order:
    - `supabase/migrations/0001_initial_schema.sql`
    - `supabase/migrations/0002_rls_policies.sql`
+   - `supabase/migrations/0003_reconcile_live_to_repo.sql`
    - then each file in `supabase/seed/` in numeric order
-   (or `psql "$SUPABASE_DB_URL" -f <file>` per file).
+   (or `psql "$SUPABASE_DB_URL" -f <file>` per file). The existing project
+   `jvpadtzfsuekixrquzjv` has already had these migrations and seeds applied;
+   do not reapply the initial migration to an existing schema.
 4. **Verify counts** in SQL Editor:
    ```sql
    select 'platforms' t, count(*) from public.platforms
@@ -86,8 +88,10 @@ from a server-side environment. Nothing in the client can write.
 
 ## Known limitations
 
-- The Supabase project is paused; live verification of migration application
-  and RLS behaviour requires the restore step above (one click).
+- Live database counts, anonymous reads, inactive-row filtering and anonymous
+  insert rejection were verified through SQL. Browser/REST connectivity and
+  deployment integration still need verification in an environment that can
+  reach the project's API.
 - Symbols/hashtags/captions generators still read the bundled pools at
   runtime (they are also seeded into the DB for the admin phase). Swapping
   those hot paths is a deliberate follow-up, not part of this phase.
