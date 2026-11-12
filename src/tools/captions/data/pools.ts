@@ -69,7 +69,7 @@ export const TONES: Array<{ id: CaptionTone; label: string }> = [
   { id: 'luxe', label: 'Quiet Luxury' },
 ];
 
-const TEMPLATES: Record<CaptionTone, Record<Language, string[]>> = {
+export const TEMPLATES: Record<CaptionTone, Record<Language, string[]>> = {
   witty: {
     en: [
       'When {topic} is the personality trait, not the hobby.',

@@ -129,6 +129,15 @@ No runtime dependencies beyond React and React DOM. Self-hosted fonts
 (Baloo 2 + Noto Sans Math, SIL OFL, subset woff2 under `public/fonts/`), no external font or
 image requests, no trackers, no analytics, no cookies, no storage.
 
+## Supabase (database-only phase)
+
+Optional, guest-first Supabase integration — no auth, public content is
+read-only via RLS, and the site runs fully from the bundled registry when the
+environment variables are absent. Schema, RLS policies, an idempotent seed
+(8 platforms · 33 categories · 506 bios · 33 fonts · 629 symbols · 1,155
+hashtags · 3,888 captions · 48 SEO routes) and a self-healing collection page
+live fetch all live in the repo. See [docs/SUPABASE.md](docs/SUPABASE.md).
+
 ## Getting started
 
 ```bash

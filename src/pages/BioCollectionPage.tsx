@@ -15,6 +15,7 @@ import {
   WandIcon,
 } from '../components/icons';
 import CollectionIcon from '../components/CollectionIcon';
+import { fetchCollectionBios } from '../lib/biosRemote';
 import {
   COLLECTION_NAV,
   collectionBySlug,
@@ -60,21 +61,48 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
   const [filter, setFilter] = useState<Filter>('all');
   /** Per-slot variation swaps, keyed by slot id (query/filter changes reset). */
   const [swaps, setSwaps] = useState<Record<string, BioEntry>>({});
+  /** Supabase rows when configured and reachable; null = bundled registry. */
+  const [remoteBios, setRemoteBios] = useState<BioEntry[] | null>(null);
+  const [remoteError, setRemoteError] = useState(false);
+  const [retryTick, setRetryTick] = useState(0);
 
   useEffect(() => {
     setSwaps({});
   }, [query, filter, slug]);
 
+  useEffect(() => {
+    let cancelled = false;
+    setRemoteError(false);
+    fetchCollectionBios(slug)
+      .then((result) => {
+        if (cancelled) return;
+        if (result.source === 'supabase' && result.bios.length > 0) {
+          setRemoteBios(result.bios);
+        }
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        console.warn('Supabase unavailable — using the bundled collection.', error);
+        setRemoteBios(null);
+        setRemoteError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, retryTick]);
+
+  const sourceBios = remoteBios ?? collection?.bios ?? [];
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!collection) return [] as BioEntry[];
-    return collection.bios.filter((bio) => {
+    return sourceBios.filter((bio) => {
       if (!matchesFilter(bio, filter)) return false;
       if (!q) return true;
       const haystack = `${bio.plain ?? bio.text}\n${bio.text}`.toLowerCase();
       return haystack.includes(q);
     });
-  }, [collection, query, filter]);
+  }, [collection, sourceBios, query, filter]);
 
   const slotKey = (index: number, original: BioEntry) => `${index}:${original.text.slice(0, 24)}`;
   const displayed = visible.map((bio, index) => swaps[slotKey(index, bio)] ?? bio);
@@ -83,7 +111,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
   const regenerateAt = (index: number) => () => {
     if (!collection) return;
     const onScreen = new Set(displayed.map((bio) => bio.text));
-    const pool = collection.bios.filter((candidate) => !onScreen.has(candidate.text));
+    const pool = sourceBios.filter((candidate) => !onScreen.has(candidate.text));
     if (pool.length === 0) {
       toast('Every bio is already on screen — clear the filter for more variations.');
       return;
@@ -129,7 +157,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
             <h1>{collection.name}</h1>
             <p className="bc-detail-lede">{collection.lede}</p>
             <p className="bc-detail-meta">
-              <span>{collection.bios.length} bios</span>
+              <span>{sourceBios.length} bios</span>
               <span aria-hidden="true">·</span>
               <span>{collection.languages}</span>
               <span aria-hidden="true">·</span>
@@ -165,7 +193,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
         {collection.preview && (
           <ProfilePreview
             variant={collection.preview}
-            bios={collection.bios.filter((bio) => !DEVANAGARI.test(bio.text)).map((bio) => bio.text)}
+            bios={sourceBios.filter((bio) => !DEVANAGARI.test(bio.text)).map((bio) => bio.text)}
           />
         )}
 
@@ -176,7 +204,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
             <input
               type="search"
               className="bc-search-input"
-              placeholder={`Search ${collection.bios.length} ${collection.name.toLowerCase()}s…`}
+              placeholder={`Search ${sourceBios.length} ${collection.name.toLowerCase()}s…`}
               aria-label={`Search ${collection.name}`}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -202,13 +230,22 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
           </div>
           <div className="bc-toolbar-foot">
             <p className="bc-result-count" role="status">
-              Showing {visible.length} of {collection.bios.length} bios
+              Showing {visible.length} of {sourceBios.length} bios
             </p>
             <button type="button" className="btn btn-secondary btn-small bc-copy-all" onClick={() => void copyAll()}>
               <ListIcon size={16} aria-hidden="true" /> Copy all shown
             </button>
           </div>
         </div>
+
+        {remoteError && (
+          <div className="bc-remote-notice" role="status">
+            <p>The live library couldn’t be reached — showing the built-in collection instead.</p>
+            <button type="button" className="btn btn-secondary btn-small" onClick={() => setRetryTick((tick) => tick + 1)}>
+              Retry live library
+            </button>
+          </div>
+        )}
 
         {/* Bio grid */}
         {visible.length > 0 ? (
