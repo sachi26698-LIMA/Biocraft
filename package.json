@@ -9,7 +9,9 @@
     "build": "tsc --noEmit && vite build && node scripts/build-shells.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "seed": "node scripts/seed-supabase.mjs"
+    "seed": "node scripts/seed-supabase.mjs",
+    "test:collections": "node tests/collection-navigation.cjs",
+    "test:review": "esbuild review-harness.tsx --bundle --platform=node --format=cjs --outfile=review-harness.bundle.cjs && node review-check.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
@@ -20,6 +22,9 @@
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "axe-core": "^4.14.0",
+    "esbuild": "^0.25.12",
+    "jsdom": "^26.1.0",
     "typescript": "^5.5.4",
     "vite": "^5.4.8"
   }

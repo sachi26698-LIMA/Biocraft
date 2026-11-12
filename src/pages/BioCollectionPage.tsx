@@ -61,8 +61,8 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
   const [filter, setFilter] = useState<Filter>('all');
   /** Per-slot variation swaps, keyed by slot id (query/filter changes reset). */
   const [swaps, setSwaps] = useState<Record<string, BioEntry>>({});
-  /** Supabase rows when configured and reachable; null = bundled registry. */
-  const [remoteBios, setRemoteBios] = useState<BioEntry[] | null>(null);
+  /** Associate remote rows with their collection so navigation never shows stale bios. */
+  const [remoteBios, setRemoteBios] = useState<{ slug: string; bios: BioEntry[] } | null>(null);
   const [remoteError, setRemoteError] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
 
@@ -77,7 +77,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
       .then((result) => {
         if (cancelled) return;
         if (result.source === 'supabase' && result.bios.length > 0) {
-          setRemoteBios(result.bios);
+          setRemoteBios({ slug, bios: result.bios });
         }
       })
       .catch((error: unknown) => {
@@ -91,7 +91,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
     };
   }, [slug, retryTick]);
 
-  const sourceBios = remoteBios ?? collection?.bios ?? [];
+  const sourceBios = (remoteBios?.slug === slug ? remoteBios.bios : null) ?? collection?.bios ?? [];
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
