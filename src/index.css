@@ -3349,3 +3349,7 @@ img, svg, video, canvas { max-width: 100%; }
   .bio-card:not(.bio-design) { background-color: rgba(255, 255, 255, 0.94); }
   .laptop-float, .laptop-glow, .laptop-shadow, .home-star { animation: none; }
 }
+
+/* Reserve a modest loading area while an on-demand route or tool arrives. */
+.route-loading { min-height: 18rem; padding: 2rem 1rem; margin: 0 auto; max-width: 72rem; }
+.tool-loading { min-height: 12rem; padding-block: 1rem; }

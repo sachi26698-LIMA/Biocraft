@@ -1,18 +1,19 @@
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { handleAnchorClick, navigate, usePath } from '../lib/router';
 import ToolWorkspace from './ToolWorkspace';
 import Breadcrumbs from './Breadcrumbs';
 import { TOOLS, toolForPath } from '../tools/registry';
 import { useRecentlyUsed } from '../lib/toolbox';
 import HomePage from '../pages/HomePage';
-import InfoPage from '../pages/InfoPage';
-import FeaturesPage from '../pages/FeaturesPage';
-import CategoriesPage from '../pages/CategoriesPage';
-import BioCollectionsPage from '../pages/BioCollectionsPage';
-import BioCollectionPage from '../pages/BioCollectionPage';
-import BioEditorPage from '../pages/BioEditorPage';
 import { infoPageForPath } from '../pages/info';
 import { collectionForPath } from '../lib/bioCollections';
+
+const InfoPage = lazy(() => import('../pages/InfoPage'));
+const FeaturesPage = lazy(() => import('../pages/FeaturesPage'));
+const CategoriesPage = lazy(() => import('../pages/CategoriesPage'));
+const BioCollectionsPage = lazy(() => import('../pages/BioCollectionsPage'));
+const BioCollectionPage = lazy(() => import('../pages/BioCollectionPage'));
+const BioEditorPage = lazy(() => import('../pages/BioEditorPage'));
 
 const TOOL_PATHS = new Set(TOOLS.map((tool) => tool.path));
 const COLLECTIONS_INDEX = '/bio-collections';
@@ -21,6 +22,19 @@ const HOME = '/';
 // This import is removed from production builds; the route is not linked publicly.
 const diagnosticsEnabled = typeof __BIOCRAFT_PREVIEW_DIAGNOSTICS__ !== 'undefined' && __BIOCRAFT_PREVIEW_DIAGNOSTICS__;
 const DiagnosticsPage = diagnosticsEnabled ? lazy(() => import('../pages/PreviewDiagnosticsPage')) : null;
+
+// A fragment can be requested before a lazy page exists; resolve it after the
+// page actually mounts instead of silently leaving the visitor at the top.
+function ReadyPage({ path, children }: { path: string; children: ReactNode }) {
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash) document.getElementById(hash)?.scrollIntoView?.({ block: 'start' });
+  }, [path]);
+  return children;
+}
+function DeferredPage({ path, children }: { path: string; children: ReactNode }) {
+  return <Suspense fallback={<p className="route-loading" role="status">Loading page…</p>}><ReadyPage path={path}>{children}</ReadyPage></Suspense>;
+}
 
 /**
  * Route dispatcher.
@@ -104,10 +118,10 @@ export default function ToolShell() {
 
   if (isDiagnostics && DiagnosticsPage) return <Suspense fallback={<p>Loading diagnostics…</p>}><DiagnosticsPage /></Suspense>;
   if (isHome) return <HomePage />;
-  if (isCategories) return <CategoriesPage />;
-  if (isCollectionsIndex) return <BioCollectionsPage />;
-  if (isBioEditor) return <BioEditorPage />;
-  if (collection) return <BioCollectionPage slug={collection.slug} />;
+  if (isCategories) return <DeferredPage path={path}><CategoriesPage /></DeferredPage>;
+  if (isCollectionsIndex) return <DeferredPage path={path}><BioCollectionsPage /></DeferredPage>;
+  if (isBioEditor) return <DeferredPage path={path}><BioEditorPage /></DeferredPage>;
+  if (collection) return <DeferredPage path={path}><BioCollectionPage slug={collection.slug} /></DeferredPage>;
   if (isToolRoute) {
     return (
       <section className="tool-page">
@@ -133,7 +147,7 @@ export default function ToolShell() {
       </section>
     );
   }
-  if (path === '/features') return <FeaturesPage />;
-  if (infoPage) return <InfoPage path={path} />;
+  if (path === '/features') return <DeferredPage path={path}><FeaturesPage /></DeferredPage>;
+  if (infoPage) return <DeferredPage path={path}><InfoPage path={path} /></DeferredPage>;
   return <HomePage />; // transient state while the replace-navigation lands
 }

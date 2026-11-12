@@ -129,7 +129,7 @@ export default function PlatformStage() {
                         The display is pure black — our live interface renders on top of it. */}
                     {/* React 18.3 does not map the React 19 `fetchPriority` prop; the HTML attribute is
             `fetchpriority` (case-insensitive), which React 18 forwards when spelled lowercase. */}
-                    <img className="laptop-chassis" src="/laptop-hero.webp" alt="" width={1742} height={1246} decoding="async" draggable={false} {...{ fetchpriority: 'high' } as object} />
+                    <img className="laptop-chassis" src="/laptop-hero.webp" srcSet="/laptop-hero-871.webp 871w, /laptop-hero.webp 1742w" sizes="(min-width: 1100px) 780px, (min-width: 600px) 560px, 330px" alt="" width={1742} height={1246} decoding="async" draggable={false} {...{ fetchpriority: 'high' } as object} />
                     <div className="laptop-screen-shell">
                       <div className="laptop-screen-canvas">
                         {/* The live app home — full-bleed, no chrome, no search */}

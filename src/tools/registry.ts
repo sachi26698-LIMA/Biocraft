@@ -1,16 +1,18 @@
-import type { ComponentType } from 'react';
+import { lazy, type ComponentType } from 'react';
+// The default workspace remains in the initial bundle. Other tools are loaded
+// on demand, so their data and rendering code do not block every first visit.
 import BioTool from './bio/BioTool';
-import StylishNameTool from './stylish/StylishNameTool';
-import FancyFontTool from './fonts/FancyFontTool';
-import DesignStudioTool from './design/DesignStudioTool';
-import UsernameGenerator from './username/UsernameGenerator';
-import SymbolGenerator from './symbols/SymbolGenerator';
-import HashtagGenerator from './hashtags/HashtagGenerator';
-import CaptionGenerator from './captions/CaptionGenerator';
-import HeadlineGenerator from './linkedin/HeadlineGenerator';
-import SummaryGenerator from './linkedin/SummaryGenerator';
-import WhatsappStatusTool from './whatsapp-status/WhatsappStatusTool';
-import SnapchatCaptionTool from './snapchat-caption/SnapchatCaptionTool';
+const StylishNameTool = lazy(() => import('./stylish/StylishNameTool'));
+const FancyFontTool = lazy(() => import('./fonts/FancyFontTool'));
+const DesignStudioTool = lazy(() => import('./design/DesignStudioTool'));
+const UsernameGenerator = lazy(() => import('./username/UsernameGenerator'));
+const SymbolGenerator = lazy(() => import('./symbols/SymbolGenerator'));
+const HashtagGenerator = lazy(() => import('./hashtags/HashtagGenerator'));
+const CaptionGenerator = lazy(() => import('./captions/CaptionGenerator'));
+const HeadlineGenerator = lazy(() => import('./linkedin/HeadlineGenerator'));
+const SummaryGenerator = lazy(() => import('./linkedin/SummaryGenerator'));
+const WhatsappStatusTool = lazy(() => import('./whatsapp-status/WhatsappStatusTool'));
+const SnapchatCaptionTool = lazy(() => import('./snapchat-caption/SnapchatCaptionTool'));
 
 export type ToolKey =
   | 'bio'

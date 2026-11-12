@@ -14,6 +14,7 @@ interface BioCardProps {
   limitDescription?: string;
   /** Optional per-card regenerate — replaces just this result. */
   onRegenerate?: () => void;
+  regenerateDisabled?: boolean;
 }
 
 export default function BioCard({
@@ -23,6 +24,7 @@ export default function BioCard({
   limit = 150,
   limitDescription = "Instagram's 150-character limit",
   onRegenerate,
+  regenerateDisabled = false,
 }: BioCardProps) {
   const count = bioLength(bio);
 
@@ -44,6 +46,7 @@ export default function BioCard({
             type="button"
             className="bio-icon-button bio-regenerate"
             onClick={onRegenerate}
+            disabled={regenerateDisabled}
             aria-label={`Regenerate ${label.toLowerCase()} option ${index + 1} with a fresh variation`}
             title="Fresh variation"
           >
