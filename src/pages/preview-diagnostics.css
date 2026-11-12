@@ -1,0 +1,21 @@
+.preview-diag { padding: 2.5rem 1rem 4rem; background: #fcf9fc; color: #292137; }
+.preview-diag-inner { max-width: 64rem; margin: 0 auto; }
+.preview-diag h1 { font-size: clamp(1.9rem, 6vw, 2.7rem); line-height: 1.15; margin: .3rem 0 .8rem; }
+.preview-diag h2 { font-size: 1.35rem; margin: 1.5rem 0 .6rem; }
+.preview-diag h3 { font-size: 1rem; margin: 0; }
+.preview-diag p { line-height: 1.55; margin: .45rem 0; overflow-wrap: anywhere; }
+.preview-diag-eyebrow { font-size: .75rem; letter-spacing: .12em; font-weight: 800; color: #77356a; }
+.preview-diag-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: .75rem; }
+.preview-diag-card { background: white; border: 1px solid #e8dce9; border-radius: 1rem; padding: 1rem; margin: .75rem 0; min-width: 0; }
+.preview-diag-list .preview-diag-card { margin: 0; }
+.preview-diag-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; }
+.preview-diag-actions { display: flex; flex-wrap: wrap; gap: .55rem; margin: 1rem 0; align-items: center; }
+.preview-diag button, .preview-diag-actions a { border: 1px solid #713662; border-radius: .6rem; background: #fff; color: #502044; padding: .6rem .85rem; font: inherit; font-weight: 700; min-height: 44px; cursor: pointer; text-decoration: none; }
+.preview-diag button:hover, .preview-diag-actions a:hover { background: #f6e8f3; }
+.preview-diag button:focus-visible, .preview-diag a:focus-visible { outline: 3px solid #a83f91; outline-offset: 2px; }
+.preview-diag button:disabled { opacity: .55; cursor: wait; }
+.preview-diag-status { border-radius: 99px; padding: .2rem .55rem; font-size: .75rem; white-space: nowrap; }
+.preview-diag .status-pass { background: #dbf4e5; color: #13592f; }
+.preview-diag .status-fail { background: #ffe5e5; color: #8b2020; }
+.preview-diag .status-not-tested { background: #eeeaf1; color: #4f4756; }
+@media (max-width: 480px) { .preview-diag { padding-inline: .9rem; } .preview-diag-actions > button { flex: 1 1 100%; } }

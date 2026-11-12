@@ -406,6 +406,18 @@ const ROUTES = [
   },
 ];
 
+// Direct links to the temporary diagnostic exist only in this branch's Preview build.
+if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_GIT_COMMIT_REF === 'arena/5e351ec3-biocraft') {
+  ROUTES.push({
+    path: '/preview-diagnostics',
+    title: 'Preview Diagnostics — BioCraft',
+    description: 'Temporary Preview-only diagnostics.',
+    ogTitle: 'Preview Diagnostics — BioCraft',
+    ogDescription: 'Temporary Preview-only diagnostics.',
+    noindex: true,
+  });
+}
+
 // Optional canonical/og:url generation. Omits them entirely unless the
 // production domain is known and passed in — placeholder domains must not ship.
 const SITE_URL = (process.env.SITE_URL ?? '').trim().replace(/\/+$/, '');
@@ -469,7 +481,9 @@ for (const route of ROUTES) {
     `${route.path} twitter:description`,
   );
 
-  if (SITE_URL) {
+  if (route.noindex) {
+    html = html.replace('</head>', '  <meta name="robots" content="noindex, nofollow" />\n  </head>');
+  } else if (SITE_URL) {
     html = html.replace('</head>', () => `${canonicalFor(route.path)}  </head>`);
   }
 

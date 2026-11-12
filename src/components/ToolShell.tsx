@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { handleAnchorClick, navigate, usePath } from '../lib/router';
 import ToolWorkspace from './ToolWorkspace';
 import Breadcrumbs from './Breadcrumbs';
@@ -18,6 +18,9 @@ const TOOL_PATHS = new Set(TOOLS.map((tool) => tool.path));
 const COLLECTIONS_INDEX = '/bio-collections';
 const BIO_EDITOR = '/bio-editor';
 const HOME = '/';
+// This import is removed from production builds; the route is not linked publicly.
+const diagnosticsEnabled = typeof __BIOCRAFT_PREVIEW_DIAGNOSTICS__ !== 'undefined' && __BIOCRAFT_PREVIEW_DIAGNOSTICS__;
+const DiagnosticsPage = diagnosticsEnabled ? lazy(() => import('../pages/PreviewDiagnosticsPage')) : null;
 
 /**
  * Route dispatcher.
@@ -43,6 +46,7 @@ export default function ToolShell() {
   const isCollectionsIndex = path === COLLECTIONS_INDEX;
   const isBioEditor = path === BIO_EDITOR;
   const isFeatures = path === '/features';
+  const isDiagnostics = diagnosticsEnabled && path === '/preview-diagnostics';
   const collection = collectionForPath(path);
   const tool = toolForPath(path);
   const isToolRoute = TOOL_PATHS.has(path);
@@ -51,10 +55,10 @@ export default function ToolShell() {
 
   // Unknown paths fall back to the homepage.
   useEffect(() => {
-    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isFeatures && !collection) {
+    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isFeatures && !isDiagnostics && !collection) {
       navigate(HOME, { replace: true });
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, collection]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, isDiagnostics, collection]);
 
   // Remember tool visits (localStorage only) for the "Recently used" rail.
   useEffect(() => {
@@ -77,7 +81,9 @@ export default function ToolShell() {
   }, [path]);
 
   useEffect(() => {
-    if (isHome) {
+    if (isDiagnostics) {
+      document.title = 'Preview Diagnostics — BioCraft';
+    } else if (isHome) {
       document.title = 'BioCraft — All-in-One Social Media Toolkit';
     } else if (isToolRoute) {
       document.title = tool.title;
@@ -94,8 +100,9 @@ export default function ToolShell() {
     } else if (collection) {
       document.title = collection.seoTitle;
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, collection, tool]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, isDiagnostics, collection, tool]);
 
+  if (isDiagnostics && DiagnosticsPage) return <Suspense fallback={<p>Loading diagnostics…</p>}><DiagnosticsPage /></Suspense>;
   if (isHome) return <HomePage />;
   if (isCategories) return <CategoriesPage />;
   if (isCollectionsIndex) return <BioCollectionsPage />;

@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "seed": "node scripts/seed-supabase.mjs",
     "test:collections": "node tests/collection-navigation.cjs",
-    "test:review": "esbuild review-harness.tsx --bundle --platform=node --format=cjs --outfile=review-harness.bundle.cjs && node review-check.cjs"
+    "test:review": "esbuild review-harness.tsx --bundle --platform=node --format=cjs --loader:.css=empty --outfile=review-harness.bundle.cjs && node review-check.cjs",
+    "test:diagnostics": "node tests/preview-diagnostics.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
