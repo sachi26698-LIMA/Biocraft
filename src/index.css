@@ -3334,3 +3334,18 @@ img, svg, video, canvas { max-width: 100%; }
 @media (max-width: 374px) {
   .stage-footer-date { display: none; }
 }
+
+/* Mobile keeps the same glass palette, without repeatedly blurring content
+   behind every card during scrolling and interaction. */
+@media (max-width: 640px) {
+  .site-header-inner, .workspace-card, .bio-card, .bc-card, .bc-home-card,
+  .bc-nav-chip, .search-panel {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .site-header-inner, .workspace-card, .bc-card, .bc-home-card, .search-panel {
+    background-color: rgba(255, 255, 255, 0.96);
+  }
+  .bio-card:not(.bio-design) { background-color: rgba(255, 255, 255, 0.94); }
+  .laptop-float, .laptop-glow, .laptop-shadow, .home-star { animation: none; }
+}

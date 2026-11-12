@@ -30,10 +30,23 @@ const rowToEntry = (row: BioRow): BioEntry => ({
   style: row.style_type ?? undefined,
 });
 
+// Deduplicate only concurrent reads. Results and failures are never retained,
+// so navigation and explicit retries still fetch fresh active data under RLS.
+const pendingCollections = new Map<string, Promise<RemoteBioResult>>();
+
 /** Fetch every published bio of one collection. Throws on network/DB errors. */
-export async function fetchCollectionBios(slug: string): Promise<RemoteBioResult> {
-  if (!supabase) return { bios: [], source: 'local' };
-  const { data, error } = await supabase
+export function fetchCollectionBios(slug: string): Promise<RemoteBioResult> {
+  if (!supabase) return Promise.resolve({ bios: [], source: 'local' });
+  const pending = pendingCollections.get(slug);
+  if (pending) return pending;
+  const request = readCollectionBios(slug);
+  pendingCollections.set(slug, request);
+  void request.then(() => pendingCollections.delete(slug), () => pendingCollections.delete(slug));
+  return request;
+}
+
+async function readCollectionBios(slug: string): Promise<RemoteBioResult> {
+  const { data, error } = await supabase!
     .from('bios')
     .select('content, plain_content, language, style_type')
     .eq('source_slug', slug)

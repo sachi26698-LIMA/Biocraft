@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import Breadcrumbs from '../components/Breadcrumbs';
 import BioCollectionCard from '../components/BioCollectionCard';
 import { designForBio } from '../lib/bioCollections';
@@ -24,6 +24,22 @@ import {
 
 const HAS_EMOJI = /\p{Extended_Pictographic}/u;
 const DEVANAGARI = /[\u0900-\u097F]/;
+const slotKey = (index: number, original: BioEntry) => `${index}:${original.text.slice(0, 24)}`;
+
+const BioGrid = memo(function BioGrid({ visible, displayed, swaps, slug, name, onRegenerate }: {
+  visible: BioEntry[]; displayed: BioEntry[]; swaps: Record<string, BioEntry>; slug: string; name: string;
+  onRegenerate: (index: number) => void;
+}) {
+  return <ul className="bio-grid">
+    {displayed.map((bio, index) => (
+      <BioCollectionCard
+        key={`${index}-${bio.text.slice(0, 12)}-${swaps[slotKey(index, visible[index])] ? 'v' : 'o'}`}
+        bio={bio} label={`bio ${index + 1} from ${name}`}
+        design={designForBio(slug, index)} onRegenerate={() => onRegenerate(index)}
+      />
+    ))}
+  </ul>;
+});
 
 type Filter = 'all' | 'emoji' | 'styled' | 'hi' | 'en';
 
@@ -58,6 +74,7 @@ function matchesFilter(bio: BioEntry, filter: Filter): boolean {
 export default function BioCollectionPage({ slug }: { slug: string }) {
   const collection = collectionBySlug(slug);
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
   const [filter, setFilter] = useState<Filter>('all');
   /** Per-slot variation swaps, keyed by slot id (query/filter changes reset). */
   const [swaps, setSwaps] = useState<Record<string, BioEntry>>({});
@@ -67,8 +84,8 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
   const [retryTick, setRetryTick] = useState(0);
 
   useEffect(() => {
-    setSwaps({});
-  }, [query, filter, slug]);
+    setSwaps((current) => Object.keys(current).length ? {} : current);
+  }, [deferredQuery, filter, slug]);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,7 +111,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
   const sourceBios = (remoteBios?.slug === slug ? remoteBios.bios : null) ?? collection?.bios ?? [];
 
   const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
     if (!collection) return [] as BioEntry[];
     return sourceBios.filter((bio) => {
       if (!matchesFilter(bio, filter)) return false;
@@ -102,13 +119,13 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
       const haystack = `${bio.plain ?? bio.text}\n${bio.text}`.toLowerCase();
       return haystack.includes(q);
     });
-  }, [collection, sourceBios, query, filter]);
+  }, [collection, sourceBios, deferredQuery, filter]);
 
-  const slotKey = (index: number, original: BioEntry) => `${index}:${original.text.slice(0, 24)}`;
-  const displayed = visible.map((bio, index) => swaps[slotKey(index, bio)] ?? bio);
+  const displayed = useMemo(() => visible.map((bio, index) => swaps[slotKey(index, bio)] ?? bio), [visible, swaps]);
+  const previewBios = useMemo(() => sourceBios.filter((bio) => !DEVANAGARI.test(bio.text)).map((bio) => bio.text), [sourceBios]);
 
   /** Swaps that slot for another bio from the same collection not already on screen. */
-  const regenerateAt = (index: number) => () => {
+  const regenerateAt = useCallback((index: number) => {
     if (!collection) return;
     const onScreen = new Set(displayed.map((bio) => bio.text));
     const pool = sourceBios.filter((candidate) => !onScreen.has(candidate.text));
@@ -118,7 +135,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
     }
     const replacement = pool[Math.floor(Math.random() * pool.length)];
     setSwaps((current) => ({ ...current, [slotKey(index, visible[index])]: replacement }));
-  };
+  }, [collection, displayed, sourceBios, visible]);
 
   if (!collection) {
     // ToolShell replaces unknown paths with the homepage; render nothing meanwhile.
@@ -193,7 +210,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
         {collection.preview && (
           <ProfilePreview
             variant={collection.preview}
-            bios={sourceBios.filter((bio) => !DEVANAGARI.test(bio.text)).map((bio) => bio.text)}
+            bios={previewBios}
           />
         )}
 
@@ -249,20 +266,10 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
 
         {/* Bio grid */}
         {visible.length > 0 ? (
-          <ul className="bio-grid">
-            {displayed.map((bio, index) => (
-              <BioCollectionCard
-                key={`${index}-${bio.text.slice(0, 12)}-${swaps[slotKey(index, visible[index])] ? 'v' : 'o'}`}
-                bio={bio}
-                label={`bio ${index + 1} from ${collection.name}`}
-                design={designForBio(collection.slug, index)}
-                onRegenerate={regenerateAt(index)}
-              />
-            ))}
-          </ul>
+          <BioGrid visible={visible} displayed={displayed} swaps={swaps} slug={collection.slug} name={collection.name} onRegenerate={regenerateAt} />
         ) : (
           <div className="empty-state" role="status">
-            <p className="empty-state-title">No bios match “{query.trim()}”</p>
+            <p className="empty-state-title">No bios match “{deferredQuery.trim()}”</p>
             <p className="empty-state-text">Try fewer words, or clear the filter — Hindi minds like Hindi searches.</p>
             <button type="button" className="btn btn-secondary btn-small" onClick={() => { setQuery(''); setFilter('all'); }}>
               Reset filters

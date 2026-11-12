@@ -3,7 +3,7 @@
  * Persisted in localStorage (key `biocraft:favs` / `biocraft:recent`); no
  * accounts, no analytics — the data never leaves the browser.
  */
-import { useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 
 const FAV_KEY = 'biocraft:favs';
 const RECENT_KEY = 'biocraft:recent';
@@ -120,24 +120,33 @@ function subscribeSymbols(listener: () => void) {
   };
 }
 
+function toggleSymbolFavourite(glyph: string) {
+  hydrateSymbols();
+  if (symbolFavs.has(glyph)) symbolFavs.delete(glyph);
+  else symbolFavs.add(glyph);
+  persist(SYMBOL_FAV_KEY, [...symbolFavs]);
+  emitSymbols();
+}
+
+function recordSymbol(glyph: string) {
+  hydrateSymbols();
+  symbolRecents = [glyph, ...symbolRecents.filter((item) => item !== glyph)].slice(0, MAX_SYMBOL_RECENTS);
+  persist(SYMBOL_RECENT_KEY, symbolRecents);
+  emitSymbols();
+}
+
 /** Favourite glyphs — the glyph itself is the key (stable across sessions). */
 export function useSymbolFavourites() {
   const snapshot = useSyncExternalStore(subscribeSymbols, () => {
     hydrateSymbols();
     return [...symbolFavs].sort().join('\u0001');
   });
-  const favList = snapshot ? snapshot.split('\u0001') : [];
+  const favSet = useMemo(() => new Set(snapshot ? snapshot.split('\u0001') : []), [snapshot]);
   return {
-    favs: new Set(favList),
-    isFav: (glyph: string) => symbolFavs.has(glyph),
-    toggle: (glyph: string) => {
-      hydrateSymbols();
-      if (symbolFavs.has(glyph)) symbolFavs.delete(glyph);
-      else symbolFavs.add(glyph);
-      persist(SYMBOL_FAV_KEY, [...symbolFavs]);
-      emitSymbols();
-    },
-    count: favList.length,
+    favs: favSet,
+    isFav: (glyph: string) => favSet.has(glyph),
+    toggle: toggleSymbolFavourite,
+    count: favSet.size,
   };
 }
 
@@ -149,14 +158,6 @@ export function useSymbolRecents() {
   });
   return {
     recents: snapshot ? snapshot.split('\u0001') : [],
-    record: (glyph: string) => {
-      hydrateSymbols();
-      symbolRecents = [glyph, ...symbolRecents.filter((item) => item !== glyph)].slice(
-        0,
-        MAX_SYMBOL_RECENTS,
-      );
-      persist(SYMBOL_RECENT_KEY, symbolRecents);
-      emitSymbols();
-    },
+    record: recordSymbol,
   };
 }

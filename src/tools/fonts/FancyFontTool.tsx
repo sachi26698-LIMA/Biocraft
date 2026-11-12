@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { UNICODE_STYLES, hasDevanagari } from '../../lib/unicodeStyles';
 import { CAPTION_LIMIT, bioLength } from '../../lib/text';
 import StyleGallery from '../../components/StyleGallery';
 import CharCounter from '../../components/CharCounter';
 
 const DEMO = 'BioCraft';
+const copyLabel = (label: string) => `Copy ${label} text`;
 
 /**
  * Fancy Font Generator — any text, restyled with Unicode alphabets.
@@ -13,15 +14,16 @@ const DEMO = 'BioCraft';
 export default function FancyFontTool() {
   const [text, setText] = useState('');
   const trimmed = text.trim();
+  const previewText = useDeferredValue(trimmed);
 
   const items = useMemo(
     () =>
       UNICODE_STYLES.map((style) =>
-        trimmed
+        previewText
           ? {
               id: style.id,
               label: style.label,
-              text: style.transform(trimmed),
+              text: style.transform(previewText),
               demo: style.transform(DEMO),
             }
           : {
@@ -30,8 +32,9 @@ export default function FancyFontTool() {
               text: style.transform(DEMO),
             },
       ),
-    [trimmed],
+    [previewText],
   );
+  const copyAllText = useMemo(() => items.map((item) => `${item.label}: ${item.text}`).join('\n'), [items]);
 
   const showDevanagariNote = hasDevanagari(trimmed);
   const count = bioLength(text);
@@ -79,15 +82,15 @@ export default function FancyFontTool() {
         </div>
 
         <div className="styles-main" aria-live="polite">
-          {!trimmed && (
+          {!previewText && (
             <p className="tool-note" role="note">
               Showing “{DEMO}” in all {UNICODE_STYLES.length} styles — type your own text to replace it.
             </p>
           )}
           <StyleGallery
             items={items}
-            copyLabel={(label) => `Copy ${label} text`}
-            copyAllText={items.map((item) => `${item.label}: ${item.text}`).join('\n')}
+            copyLabel={copyLabel}
+            copyAllText={copyAllText}
             copyAllAriaLabel={"Copy all styles to clipboard"}
           />
         </div>

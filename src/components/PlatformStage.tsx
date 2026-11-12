@@ -4,6 +4,25 @@ import { useToolkit } from '../lib/toolkit';
 import { platformById } from '../tools/platforms';
 import { PLATFORM_WIDE_MOCKS } from './stageMocks';
 
+// The ticking clock must not re-render the entire platform illustration.
+function StageClock() {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  return (
+    <span className="stage-footer-datetime">
+      <span className="stage-footer-date">{now ? now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : '···'}</span>
+      <span className="stage-footer-time">
+        <span className="stage-footer-time-short">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '··:··'}</span>
+        <span className="stage-footer-time-full" aria-hidden="true">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : '··:··'}</span>
+      </span>
+    </span>
+  );
+}
 
 /**
  * The hero — a premium MacBook-class laptop: photoreal asset for the
@@ -18,7 +37,6 @@ export default function PlatformStage() {
   const { platform } = useToolkit();
   const config = platformById(platform);
   const Mock = PLATFORM_WIDE_MOCKS[config.id];
-  const [now, setNow] = useState<Date | null>(null);
   /* Scale the fixed 610×419 app-home canvas to fill the live display */
   const [mockScale, setMockScale] = useState(1);
   useLayoutEffect(() => {
@@ -43,35 +61,40 @@ export default function PlatformStage() {
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
     if (reduce.matches || !fine.matches) return undefined;
     let targetX = 0, targetY = 0, currentX = 0, currentY = 0, raf = 0;
-    const onMove = (event: MouseEvent) => {
-      const rect = stage.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      targetX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-      targetY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-    };
-    const onLeave = () => { targetX = 0; targetY = 0; };
+    let pointer: { x: number; y: number } | null = null;
     const tick = () => {
+      // Coalesce pointer events into one geometry read per frame, before writes.
+      if (pointer) {
+        const rect = stage.getBoundingClientRect();
+        if (rect.width && rect.height) {
+          targetX = ((pointer.x - rect.left) / rect.width - 0.5) * 2;
+          targetY = ((pointer.y - rect.top) / rect.height - 0.5) * 2;
+        }
+        pointer = null;
+      }
       currentX += (targetX - currentX) * 0.06;
       currentY += (targetY - currentY) * 0.06;
       layer.style.setProperty('--plx', currentX.toFixed(4));
       layer.style.setProperty('--ply', currentY.toFixed(4));
-      raf = window.requestAnimationFrame(tick);
+      if (Math.abs(targetX - currentX) > 0.001 || Math.abs(targetY - currentY) > 0.001) {
+        raf = window.requestAnimationFrame(tick);
+      } else {
+        raf = 0;
+      }
     };
+    const schedule = () => { if (!raf) raf = window.requestAnimationFrame(tick); };
+    const onMove = (event: MouseEvent) => {
+      pointer = { x: event.clientX, y: event.clientY };
+      schedule();
+    };
+    const onLeave = () => { pointer = null; targetX = 0; targetY = 0; schedule(); };
     stage.addEventListener('mousemove', onMove);
     stage.addEventListener('mouseleave', onLeave);
-    raf = window.requestAnimationFrame(tick);
     return () => {
       stage.removeEventListener('mousemove', onMove);
       stage.removeEventListener('mouseleave', onLeave);
       window.cancelAnimationFrame(raf);
     };
-  }, []);
-
-  useEffect(() => {
-    const tick = () => setNow(new Date());
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
   }, []);
 
   return (
@@ -123,14 +146,7 @@ export default function PlatformStage() {
 
                         {/* Screen footer: live date/time + system icons */}
                         <div className="stage-slab-footer">
-                          <span className="stage-footer-datetime">
-                            <span className="stage-footer-date">{now ? now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : '···'}</span>
-                            <span className="stage-footer-time">
-                              {/* Two localized variants — the phone-sized one drops seconds; CSS toggles them by width */}
-                              <span className="stage-footer-time-short">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '··:··'}</span>
-                              <span className="stage-footer-time-full" aria-hidden="true">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : '··:··'}</span>
-                            </span>
-                          </span>
+                          <StageClock />
                           <span className="stage-footer-home" aria-hidden="true"><span className="stage-footer-home-bar" /></span>
                           <span className="stage-footer-icons" aria-hidden="true">
                             {/* Wi-Fi */}
