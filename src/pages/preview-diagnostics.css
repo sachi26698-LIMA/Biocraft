@@ -18,4 +18,12 @@
 .preview-diag .status-pass { background: #dbf4e5; color: #13592f; }
 .preview-diag .status-fail { background: #ffe5e5; color: #8b2020; }
 .preview-diag .status-not-tested { background: #eeeaf1; color: #4f4756; }
-@media (max-width: 480px) { .preview-diag { padding-inline: .9rem; } .preview-diag-actions > button { flex: 1 1 100%; } }
+/* On small screens the floating sticky header can cover diagnostic headings
+   while scrolling. Keep it in normal flow only on this temporary page. */
+@media (max-width: 640px) {
+  html.preview-diagnostics-active .site-header { position: static; }
+  .preview-diag { padding: 1.75rem .9rem 3rem; }
+  .preview-diag-inner, .preview-diag-row > *, .preview-diag-actions > * { min-width: 0; max-width: 100%; }
+  .preview-diag h1, .preview-diag h2, .preview-diag h3 { overflow-wrap: anywhere; }
+  .preview-diag-actions > button, .preview-diag-actions > a { flex: 1 1 100%; text-align: center; }
+}

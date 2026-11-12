@@ -1,5 +1,5 @@
 /* Temporary, branch-scoped Preview diagnostics. No writes or credentials are displayed. */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BIO_COLLECTIONS } from '../lib/bioCollections';
 import { fetchCollectionBios, searchBios } from '../lib/biosRemote';
 import { supabase } from '../lib/supabase';
@@ -96,8 +96,8 @@ async function runCheck(id: TestId): Promise<Result> {
       const [first, second] = await Promise.all([
         withTimeout(searchBios({ limit: 5, offset: 0 })), withTimeout(searchBios({ limit: 5, offset: 5 })),
       ]);
-      const ids = new Set((first ?? []).map((row) => row.id));
-      return first?.length === 5 && second?.length === 5 && second.every((row) => !ids.has(row.id))
+      const uniqueIds = new Set([...(first ?? []), ...(second ?? [])].map((row) => row.id));
+      return first?.length === 5 && second?.length === 5 && uniqueIds.size === 10
         ? passed('Two five-row RPC pages returned distinct IDs. There is no collection pagination UI to test.')
         : failed('Two RPC pages did not return five distinct rows each.');
     }
@@ -118,6 +118,12 @@ export default function PreviewDiagnosticsPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [busy, setBusy] = useState(false);
   const [manual, setManual] = useState<Record<string, Status>>({});
+
+  // Limit the mobile header adjustment to this temporary page and undo it on navigation.
+  useEffect(() => {
+    document.documentElement.classList.add('preview-diagnostics-active');
+    return () => document.documentElement.classList.remove('preview-diagnostics-active');
+  }, []);
 
   const run = async (checks: TestId[]) => {
     if (busy) return;

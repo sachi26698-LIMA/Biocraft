@@ -47,6 +47,7 @@ async function main() {
   const root = createRoot(document.getElementById('root'));
   await act(async () => { root.render(React.createElement(Page)); });
   assert.match(document.body.textContent, /NOT TESTED/);
+  assert.ok(document.documentElement.classList.contains('preview-diagnostics-active'));
   const findButton = (label) => [...document.querySelectorAll('button')].find((b) => b.textContent === label);
   await act(async () => { findButton('Run All Tests').click(); await new Promise((r) => setTimeout(r, 20)); });
   assert.match(document.body.textContent, /HTTP 200 · success/);
@@ -54,12 +55,17 @@ async function main() {
   assert.match(document.body.textContent, /RLS active-read permission: PASS/);
   assert.equal([...document.querySelectorAll('.preview-diag-status.status-pass')].length, 7);
   assert.equal([...document.querySelectorAll('.preview-diag-status.status-not-tested')].length, 14);
+  global.__diagSearch = async ({ offset = 0 }) => Array.from({ length: 5 }, (_, i) => ({ id: String(offset + (offset === 0 && i === 4 ? 0 : i)) }));
+  const paginationCard = [...document.querySelectorAll('.preview-diag-card')].find((card) => card.querySelector('h3')?.textContent === 'Pagination RPC');
+  await act(async () => { paginationCard.querySelector('button').click(); await new Promise((r) => setTimeout(r, 10)); });
+  assert.match(paginationCard.textContent, /FAIL/);
   failure = true;
   await act(async () => { findButton('Test Supabase Connection').click(); await new Promise((r) => setTimeout(r, 10)); });
   assert.match(document.body.textContent, /HTTP 403/);
   assert.doesNotMatch(document.body.textContent, /PRIVATE_CANARY_ERROR/);
   assert.match(document.body.textContent, /Records returned: —/);
   await act(async () => { root.unmount(); });
-  console.log('PASS diagnostics mocked success, manual NOT TESTED, failure sanitization and stale summary clearing');
+  assert.ok(!document.documentElement.classList.contains('preview-diagnostics-active'));
+  console.log('PASS diagnostics mocked success, duplicate IDs, manual NOT TESTED, failure sanitization, cleanup and stale summary clearing');
 }
 main().catch((err) => { console.error(err); process.exitCode = 1; });

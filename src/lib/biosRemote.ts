@@ -39,6 +39,7 @@ export async function fetchCollectionBios(slug: string): Promise<RemoteBioResult
     .eq('source_slug', slug)
     .eq('is_active', true)
     .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
     .limit(500);
   if (error) throw new Error(error.message);
   return { bios: (data as BioRow[]).map(rowToEntry), source: 'supabase' };
