@@ -1,0 +1,20 @@
+-- SPECIFICATION ONLY. NO EXECUTABLE MIGRATION. DO NOT DEPLOY.
+-- Target: isolated admin database, never existing public project.
+-- Create isolated non-login object owner and narrowly scoped executor roles;
+-- verify actual provider support, login grants and role inheritance; no owner,
+-- superuser, BYPASSRLS, client membership, generic SQL or public schema CREATE.
+-- Lock down schema, default ACLs for every creator, tables, sequences, functions;
+-- RLS deny guests; no private schema exposed via REST. Prove effective privileges.
+-- Model: members(subject,role,enabled,version), session(id,subject,expiry,
+-- revoked,verified MFA attestation), safety singleton OFF, documents(kind,
+-- target_environment,stable_key,current_release,version), revisions(document,
+-- revision_number,base,author,state,canonical_payload,hash,review evidence),
+-- typed immutable revisions and dependency snapshot, membership-change approvals,
+-- publication history, audit + delivery outbox, idempotency and release outbox.
+-- Appropriate PK, unique, FK, checks, indexes, explicit timestamps, bounded sizes,
+-- retention and transactional invariants must be defined and reviewed. Target
+-- IDs are typed target-qualified values; no FKs to another project's tables.
+-- On submission validate canonical hash, typed payload and dependency graph;
+-- immutable submitted content; serialize revision and sidecar modifications.
+-- Prevent audit UPDATE/DELETE/TRUNCATE for runtime roles; independent sink is
+-- required as privileged owners can bypass local protections. Analytics OFF.

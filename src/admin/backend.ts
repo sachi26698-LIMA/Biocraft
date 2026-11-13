@@ -3,7 +3,7 @@
  * Future implementations must perform authentication and permission checks on
  * the server for every operation; this interface is not an authorization gate.
  */
-export type AdminRole = 'super_admin' | 'admin' | 'editor' | 'moderator' | 'analyst';
+export type AdminRole = 'super_admin' | 'admin' | 'content_manager' | 'editor' | 'seo_manager' | 'moderator' | 'analyst' | 'auditor';
 export interface AdminSession {
   userId: string;
   role: AdminRole;
@@ -21,4 +21,4 @@ export interface AdminApi {
   logout(): Promise<void>;
 }
 /** Hard-coded fail-closed status until a separately reviewed adapter is approved. */
-export const adminBackend = { status: 'unavailable', reason: 'Isolated administrative backend is not configured.' } as const;
+export const adminBackend = { status: 'unavailable', reason: 'Administrative access is not configured or enabled.' } as const;

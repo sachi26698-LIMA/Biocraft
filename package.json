@@ -23,7 +23,16 @@
     "test:admin-public-regression": "node tests/admin-public-regression.cjs",
     "test:admin-performance": "node tests/admin-performance-audit.cjs",
     "test:admin-phase": "node tests/admin-phase-browser.cjs",
-    "test:admin-lazy-error": "node tests/admin-lazy-error.cjs"
+    "test:admin-lazy-error": "node tests/admin-lazy-error.cjs",
+    "test:admin-phase3-schema": "node tests/admin-phase3-schema-review.cjs",
+    "test:admin-privilege-review": "node tests/admin-privilege-review.cjs",
+    "test:admin-isolated-foundation": "node tests/admin-isolated-foundation.cjs",
+    "test:admin-isolated-workflow": "node tests/admin-isolated-workflow.cjs",
+    "test:admin-isolated-permissions": "node tests/admin-isolated-permissions.cjs",
+    "test:admin-bio-domain": "node tests/admin-bio-domain.mjs",
+    "test:admin-identity": "node tests/admin-identity.mjs",
+    "test:admin-private-commands": "node tests/admin-private-commands.cjs",
+    "test:admin-auth-flow": "node tests/admin-auth-flow.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

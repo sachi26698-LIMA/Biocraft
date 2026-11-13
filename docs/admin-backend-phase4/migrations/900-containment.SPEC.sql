@@ -1,0 +1,9 @@
+-- SPECIFICATION ONLY. NO EXECUTABLE MIGRATION. DO NOT DEPLOY.
+-- Disable gateway, worker and receiver separately, switch source/target OFF,
+-- revoke workload and user sessions/credentials, stop leases and account for
+-- in-flight transactions. Provider operators execute approved runbook.
+-- Preserve both databases, receipt/outbox and immutable external evidence.
+-- Reconcile uncertain commits; restore into isolated target for verification.
+-- Reversal is a new reviewed release with target version checks, not DROP or
+-- blind database restore. Any destructive removal/retention change requires
+-- independent authorization, dependency analysis and verified backups.

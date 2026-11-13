@@ -1,0 +1,10 @@
+-- SPECIFICATION ONLY. NO EXECUTABLE MIGRATION. DO NOT DEPLOY.
+-- Target: explicitly authorized, pinned by project reference and environment.
+-- Inspect version, schemas, exposed API schemas, table/column/default ACLs,
+-- inherited/effective privileges including PUBLIC, TEMP and CREATE, roles and
+-- memberships, owner and BYPASSRLS, functions and trigger definitions/owners,
+-- RLS FORCE/policies, event triggers, extensions, indexes and migration history.
+-- Enumerate definer call graph and API/SQL reachability; inspect no user data,
+-- secrets, JWTs or credentials. Check backup and Auth capability separately.
+-- Capture a signed/dated evidence report and compare against approved baseline.
+-- Metadata alone does not prove security; no production write test is permitted.

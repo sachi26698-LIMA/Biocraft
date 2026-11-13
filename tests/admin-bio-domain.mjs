@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {validateBio,duplicateKey,ValidationError} from '../admin-backend/domain/bio.mjs';
+const rules={fixture:{count:'unicode_code_points',max:3},utf16:{count:'utf16_code_units',max:3}};
+const base={content:'ab',language:'en',platform:'fixture',active:true,featured:false};
+assert.equal(validateBio({...base,content:'a😀'},rules).count,2);
+assert.equal(validateBio({...base,content:'e\u0301'},rules).content,'é');
+assert.throws(()=>validateBio({...base,content:'ab😀',platform:'utf16'},rules),ValidationError);
+assert.throws(()=>validateBio({...base,content:'x\u0000'},rules),ValidationError);
+assert.throws(()=>validateBio({...base,platform:'constructor'},rules),ValidationError);
+assert.throws(()=>validateBio({...base,language:'xx'},rules),ValidationError);
+assert.throws(()=>validateBio({...base,arbitrary:'x'},rules),ValidationError);
+assert.throws(()=>validateBio({...base,active:'true'},rules),ValidationError);
+assert.throws(()=>validateBio({...base}, {fixture:{count:'graphemes',max:3}}),ValidationError);
+assert.equal(duplicateKey(' É  Hello\n WORLD '),duplicateKey('e\u0301 hello world'));
+console.log('PASS bio domain: fail-closed fields/rules, unicode normalization, counting, control characters and duplicate hints');
