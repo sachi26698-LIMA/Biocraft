@@ -252,7 +252,7 @@ Consequences, stated without softening:
 
 ---
 
-## 5. The 34 grants and the 4 trigger bodies
+## 5. The 35 grants and the 4 trigger bodies
 
 The `GRANT EXECUTE` block is **one reviewed statement executed after `012`**,
 outside the migration files, and lives in a single canonical file:
@@ -761,7 +761,7 @@ confers capability — the migrations only define the functions.
 2. Execute `001 → 011` in order; after each file, assert its objects exist and
    the previous files' objects are unchanged.
 3. Generate the credential with `node scripts/admin-executor-credential.mjs`,
-   create `bc_admin_executor`, apply the 34 grants from
+   create `bc_admin_executor`, apply the 35 grants from
    `admin-backend/grants/executor-grants.sql`; verify every negative privilege
    above.
 4. Land the D1 routing fix and deploy to the existing Preview; verify
