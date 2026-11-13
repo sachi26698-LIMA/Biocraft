@@ -4,7 +4,7 @@
 
 Latest pushed commit is `d8f34d1` on `arena/5e351ec3-biocraft`, plus the local
 changes listed under "Files in this checkpoint". The Admin backend is
-**implemented end to end in code**: SQL candidates `001`–`011`, identity and
+**implemented end to end in code**: SQL candidates `001`–`012`, identity and
 session boundary, password+TOTP login, **first-factor TOTP enrolment**, recovery,
 encrypted session cookie, CSRF gateway, rate limiting, step-up MFA freshness,
 server-side RBAC, the module APIs (bios, categories/collections, platforms,
@@ -24,7 +24,7 @@ request, so no hosted interaction has ever been claimed.
 | Phase | Status | Actual scope and remaining work |
 |---|---|---|
 | Shared boundary | Owner decision recorded | Existing shared project only; public site and Admin share Production-connected data and risk. No new project. |
-| Database | Partial, synthetic only | Candidate migrations 001–011 and rollbacks are local only and unapproved. Private draft/session, encrypted login handoff, rate-limit and staff routines have no live client or server grants. A local disposable PostgreSQL 17.11 cluster passed selected concurrency, ownership, grants and RLS tests; its synthetic auth fixtures cannot validate actual provider-owned `auth.sessions` semantics or live effective grants. |
+| Database | Partial, synthetic only | Candidate migrations 001–012 and rollbacks are local only and unapproved. Private draft/session, encrypted login handoff, rate-limit and staff routines have no live client or server grants. A local disposable PostgreSQL 17.11 cluster passed selected concurrency, ownership, grants and RLS tests; its synthetic auth fixtures cannot validate actual provider-owned `auth.sessions` semantics or live effective grants. |
 | Auth/RBAC | Implemented in code, disabled | Password→TOTP→encrypted cookie→session→private draft flow composed against mocked Auth/PGlite, plus first-factor enrolment (single-use pending flow, AAL1 accepted only after the database membership gate, one audit row per attempt). CSRF retrieval now rechecks provider identity and live Admin session. SQL role-checks and RLS are defense in depth, not a privilege audit; SQL-capable callers can spoof JWT GUCs. Bootstrap, real provider integration, verified trusted proxy client-key extraction, distributed ingress protection, key rotation, MFA freshness, recovery, session refresh and security review remain. |
 | Modules | Implemented in code, blocked on grants | Private draft creation/list/detail/edit/submit/review, assigned review queue and staff listing/update candidates exist; staff update is not exposed via API, super-admin promotion disabled. No durable Admin UI or usable hosted APIs. Other requested modules are not implemented. |
 | Workflow | Partial, publishing disabled | Mock-only draft reviews and atomic success audit; no idempotency, actual content publishing, version rollback, outbox/receiver or public-content writes. |
@@ -42,13 +42,22 @@ request, so no hosted interaction has ever been claimed.
 
 ## Files in this checkpoint
 
-- `admin-backend/migrations/001`–`011` and matching `admin-backend/rollback/` files: candidate DDL for synthetic targets only, no shared apply (011 is the first-factor TOTP enrolment gate).
+- `admin-backend/migrations/001`–`012` and matching `admin-backend/rollback/` files: candidate DDL for synthetic targets only, no shared apply. 011 is the first-factor TOTP enrolment gate; 012 adds Super-Admin-authorised recovery (D2) and bounded cleanup (D4).
+- `admin-backend/grants/executor-grants.sql`: the single canonical 34-signature grant list; `tests/admin-grant-inventory.mjs` keeps it and the migrations in agreement.
+- `scripts/admin-executor-credential.mjs`: D3 credential generator (48 chars) plus the two-role rotation SQL; prints to stdout only.
 - `admin-backend/server/{identity,auth-flow,api,database,auth-controller,auth-storage,provider-logout,session-cookie}.mjs`: unmounted server-side candidates. Tests include synthetic complete flow and staff commands; no hosted endpoint or real Auth.
 - `src/admin/AdminApp.tsx` and `src/admin/backend.ts`: eight proposed role labels, no functionality enabled.
 - `docs/admin-preview/current/{desktop,tablet,mobile}.png`: local Chromium screenshots, not physical devices or hosted verification.
 - `tests/admin-isolated-foundation.cjs`, `tests/admin-isolated-workflow.cjs`, `tests/admin-isolated-permissions.cjs`, `admin-backend/domain/bio.mjs`, `tests/admin-bio-domain.mjs` and `package.json` test scripts.
 - Nine `docs/MASTER_ADMIN_*.md` tracker and implementation records. Phase 3/4 uncommitted reviews and tests preserved.
 
+- **D1–D4 decisions implemented** (revision 2): routing fixed and locked by two
+  tests; authenticator recovery replaced by a Super-Admin-authorised single-use
+  grant (migration 012, `factor_gate`, `stamp_mfa_enrolled`, recovery UI at
+  `/admin/login`, Staff module issue/revoke); cleanup implemented as a bounded,
+  locked, audited function; credential generator and two-role rotation scripted.
+  Counts are now derived by `test:admin-grant-inventory`: 19 tables, 38 functions
+  (34 granted, 4 trigger-only).
 ### Latest local implementation batch
 
 - **Pre-execution security review** (`docs/FINAL_SECURITY_REVIEW.md`): all 31

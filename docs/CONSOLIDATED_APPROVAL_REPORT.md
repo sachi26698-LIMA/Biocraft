@@ -1,5 +1,10 @@
 # CONSOLIDATED APPROVAL REPORT — BioCraft Master Admin on `jvpadtzfsuekixrquzjv`
 
+**Revision 3 — incorporates your D1–D4 decisions; the SQL package is now
+001–012 plus one canonical grant file.** Counts in this revision are derived from
+the files by `test:admin-grant-inventory`, not written by hand: **19 tables, 38
+functions (34 granted), 1 grant file, 24 SQL files with recorded SHA-256.**
+
 **Status: awaiting your decision. Nothing in this report has been executed.** No
 schema, role, grant, Auth setting or account has been created in the shared
 project. This file supersedes `docs/MASTER_ADMIN_APPROVAL_REQUEST.md` as the
@@ -42,12 +47,13 @@ Everything is **additive and confined to a new schema**. Nothing in `public`,
 | # | Object | Effect on Production/guests |
 |---|---|---|
 | 1 | new schema `bc_admin_v1` | invisible to `anon`/`authenticated`; `REVOKE ALL ... FROM public, anon, authenticated` |
-| 2 | 17 new tables (admin users, roles, permissions, sessions, drafts, versions, approvals, audit, security events, settings, notifications, backup records, login flows, rate limits) | none; RLS enabled with a restrictive `deny_clients` policy and all table privileges revoked |
-| 3 | 31 new functions, all `SECURITY DEFINER`, `search_path=pg_catalog` (28 callable by the executor; 3 are trigger functions and get no grant) | none by default: every function ends with `REVOKE ALL ... FROM public, anon, authenticated` |
+| 2 | 19 new tables (15 in 001, 2 in 006, 2 in 012: recovery grants, cleanup runs) | none; RLS enabled with a restrictive `deny_clients` policy and all table privileges revoked |
+| 3 | 38 new functions, `search_path=pg_catalog` fixed on every one: 34 callable `SECURITY DEFINER` (all granted) + 4 trigger bodies (never granted: `reject_mutation`, `guard_draft`, `guard_approval`, `stamp_mfa_enrolled`) | none by default: every function ends with `REVOKE ALL ... FROM public, anon, authenticated` |
 | 4 | triggers on the new tables only | none |
 | 5 | `ALTER DEFAULT PRIVILEGES IN SCHEMA bc_admin_v1 ...` | per-schema only, affects **future** `bc_admin_v1` objects created by the same role. Global default ACLs (which govern `public`) are **not** touched |
 | 6 | new login role `bc_admin_executor` | cannot log in to the API as a user; no table privileges; not a member of any privileged role |
-| 7 | grant: `USAGE` on schema + `EXECUTE` on 28 named functions to that role | the only new capability, and it is reachable only by that role |
+| 7 | grant: `USAGE` on schema + `EXECUTE` on 34 named functions to that role (`admin-backend/grants/executor-grants.sql`, SHA-256 `d47c519a…4de53e`) | the only new capability, and it is reachable only by that role |
+| 8 | one nullable column `admin_users.mfa_enrolled_at` (012) | none on `public`; it is the enrol-vs-recover record for D2 |
 
 **Explicitly not changed:** `public.*` tables and their 10 RLS policies, guest
 SELECT policies, the four existing migrations, `auth` schema, any existing role
@@ -70,9 +76,14 @@ Production, `main`.
 3. `authenticated` holds `TRIGGER` and `TEMP` on `public` (pre-existing, reported
    earlier). This approval does **not** change it, and the Admin design does not
    depend on it.
-4. Rate limiting and login handoffs are stored in the Admin schema; growth is not
-   automatically pruned. A cleanup job (delete rows older than 1 day) is
-   recommended but not created here.
+4. Rate limiting and login handoffs are stored in the Admin schema. Growth is now
+   bounded by `cleanup_expired` (012): expired rows only, ≤1000 per call, advisory
+   locked, every run recorded. It is Super-Admin-scheduled on the Preview because
+   Vercel Cron targets Production only; that limitation is documented, not hidden.
+5. The number of tables, functions and grants is now derived from the files by
+   `test:admin-grant-inventory`, which fails if any of the three drifts. Earlier
+   revisions of this report said 25, then 28, then 31 functions; the correct
+   figure for this package is 38 definitions / 34 grants / 19 tables.
 
 ---
 
@@ -86,9 +97,10 @@ the reviewed functions. Alternatives considered and rejected:
 | Use the `service_role` key over PostgREST | `service_role` is `BYPASSRLS` with write access to every `public` table. A leak = full database takeover. Violates least privilege and your "no weakening" rule. |
 | Use `postgres` / DB password | Owner of every public table; same objection, larger blast radius. |
 | No database at all (UI only) | Cannot deliver CRUD/analytics/audit. |
-| **Dedicated `bc_admin_executor`** | Selected. No table grant, no schema CREATE, no role membership, EXECUTE on exactly 28 functions, and the server additionally refuses to start if the connected role is privileged (`assertLimitedRole`). |
+| **Dedicated `bc_admin_executor`** | Selected. No table grant, no schema CREATE, no role membership, EXECUTE on exactly 34 functions, and the server additionally refuses to start if the connected role is privileged (`assertLimitedRole`). |
 
-Creation is `CREATE ROLE ... LOGIN PASSWORD` + `GRANT USAGE` + 28 `GRANT EXECUTE`.
+Creation is `CREATE ROLE ... LOGIN PASSWORD` (48 chars from a CSPRNG, D3) +
+`GRANT USAGE` + 34 `GRANT EXECUTE` from the single canonical grant file.
 The password never appears in this repository, in `VITE_*` variables or in chat;
 it goes straight into Vercel Preview env vars.
 
@@ -115,38 +127,31 @@ not applied. TOTP is already enabled (`mfa_totp_enroll_enabled`,
 
 ## 4. Super Admin provisioning (no self-service bootstrap by design)
 
-Run **after** approval, in this order:
+Order is enforced by the database, not by convention — see
+`docs/FINAL_SECURITY_REVIEW.md` §7 for the full runbook, including the recovery
+procedure for a lost authenticator.
 
-1. **Create the user** (Supabase Dashboard → Authentication → Users → *Add user*).
-   Use the owner's real e-mail, *Auto Confirm User*, and a unique strong password.
-   Copy the user UUID.
-2. **Enrol TOTP** — first sign-in at `https://<origin>/admin/login`. Because the
-   account has a password but no verified factor yet, the server answers the
-   password step with `enrolment: true` and the UI shows a one-time setup key.
-   Enter it in an authenticator app, then the 6-digit code; that call is gated by
-   `bc_admin_v1.enrolment_eligible(uuid)` (enabled membership + role + live
-   provider session, audited), and only then is an Admin session issued. The
-   factor must show `verified` before the account can be used. Step 3
-   (membership) must therefore be run **before** the first browser sign-in.
+1. Dashboard → Authentication → *Add user* (auto-confirm, strong unique password).
+2. **Grant membership before the first sign-in**, in one transaction, with an
+   explicit `actor_id = null` bootstrap audit row:
 
-   Note the ordering: create the user (1), grant membership (3) and only then
-   enrol (2). Enrolment deliberately refuses an account with no membership, so
-   nothing can be enrolled by an uninvited user.
-3. **Grant membership + role** (SQL Editor, exact statements):
+```sql
+insert into bc_admin_v1.admin_users (id, enabled) values ('<uuid>', true);
+insert into bc_admin_v1.admin_user_roles (user_id, role_id) values ('<uuid>','super_admin');
+insert into bc_admin_v1.admin_audit_logs(actor_id, request_id, action, target_type, target_id, details)
+  values (null, gen_random_uuid(), 'staff.bootstrap', 'staff', '<uuid>', '{"method":"dashboard"}');
+```
 
-   ```sql
-   insert into bc_admin_v1.admin_users (id, enabled) values ('<USER-UUID>', true);
-   insert into bc_admin_v1.admin_user_roles (user_id, role_id)
-     values ('<USER-UUID>', 'super_admin');
-   -- optional, audited by the application on first use; no audit row is forged here
-   insert into bc_admin_v1.admin_audit_logs(actor_id, request_id, action, target_type, target_id)
-     values (null, gen_random_uuid(), 'staff.bootstrap', 'staff', '<USER-UUID>');
-   ```
-4. **Verify** with `select * from bc_admin_v1.list_staff(10, null);` — returns one
-   enabled user with `{super_admin}` once called through an authenticated session.
+3. First sign-in at `/admin/login` → `factor_gate` returns `'enrol'` (the account
+   has never proven a factor) → partner app enrolment → first code → `aal2` →
+   Admin session → the `stamp_mfa_enrolled` trigger records the proof.
+4. Sign out and sign in again with the password only: the response **must** be
+   `mfa_required: true`. That is the mandatory-enrolment check.
+5. A lost authenticator is recovered by a **different** Super Admin issuing a
+   single-use code (15 min, five attempts), never by re-enrolling from a password.
 
-There is no endpoint that creates the first administrator, so a compromised
-browser cannot escalate itself.
+There is no endpoint anywhere that creates the first administrator, and none that
+lets an account re-open itself: privilege must be granted out of band.
 
 ---
 
@@ -155,13 +160,16 @@ browser cannot escalate itself.
 | Level | Action | Effect |
 |---|---|---|
 | Instant off-switch | remove `ADMIN_BACKEND_ENABLED` in Vercel (Preview) | every `/api/admin/*` request returns 503; no database access |
-| Revoke executor | `REVOKE ALL ON FUNCTION ... FROM bc_admin_executor;` (the 28 listed) | backend loses all capability; grants are the only path |
+| Revoke executor | `REVOKE ALL ON FUNCTION ... FROM bc_admin_executor;` (the 34 listed) | backend loses all capability; grants are the only path |
 | Drop executor | `DROP OWNED BY bc_admin_executor; DROP ROLE bc_admin_executor;` | removes remaining privileges |
-| Full removal | `admin-backend/rollback/010→001` in reverse order | drops only `bc_admin_v1` objects; refuses if any Admin table holds rows; never touches `public`/`auth` |
+| Full removal | `admin-backend/rollback/012→001` in reverse order | drops only `bc_admin_v1` objects; refuses if any Admin table holds rows — and 012 also refuses while any `mfa_enrolled_at` is set; never touches `public`/`auth` |
+| Credential rotation (D3) | `node scripts/admin-executor-credential.mjs --rotate` | two-role switch: successor created, env switched, old role retired only after the successor is proven |
 
 The rollback scripts were executed in the disposable PostgreSQL 17.11 fixture
 (`test:admin-isolated-foundation`, `test:admin-postgres-local`) and reproduce a
-clean reinstall.
+clean reinstall. `rollback/012`'s three data guards are covered by the same suite,
+and `test:admin-grant-inventory` asserts no rollback file contains `CASCADE` or
+names a `public`/`auth` object.
 
 ---
 
@@ -173,18 +181,30 @@ bytes that passed the disposable PostgreSQL 17.11 suites.
 
 ### 6a. Exact permission changes (the only new capability)
 
+The grant list is not duplicated here: it is one canonical file,
+`admin-backend/grants/executor-grants.sql` (SHA-256
+`d47c519ac6eb8d94212e498544f9021c3d072d2633959c54a612fb4c7f4de53e`), reproduced
+in full:
+
 ```sql
--- Run as the dashboard postgres role, one transaction.
-begin;
-create role bc_admin_executor login password '<generated-64-char-secret>'
-  nosuperuser nocreatedb nocreaterole noreplication nobypassrls inherit;
-revoke all on schema bc_admin_v1 from bc_admin_executor;      -- implicit, explicit
+-- SHA-256 d47c519ac6eb8d94212e498544f9021c3d072d2633959c54a612fb4c7f4de53e
+-- 34 signatures = 38 functions minus 4 trigger bodies (reject_mutation,
+-- guard_draft, guard_approval, stamp_mfa_enrolled).
+
 grant usage on schema bc_admin_v1 to bc_admin_executor;
+
 grant execute on function
   bc_admin_v1.require_actor(text),
+  bc_admin_v1.enrolment_eligible(uuid),
+  bc_admin_v1.factor_gate(uuid),
   bc_admin_v1.open_admin_session(uuid),
   bc_admin_v1.revoke_admin_session(uuid),
   bc_admin_v1.revoke_my_sessions(uuid),
+  bc_admin_v1.store_login_flow(bytea,bytea,integer),
+  bc_admin_v1.take_login_flow(bytea),
+  bc_admin_v1.consume_rate_limit(text,bytea),
+  bc_admin_v1.list_staff(integer,uuid),
+  bc_admin_v1.update_staff(uuid,bigint,boolean,text[],uuid),
   bc_admin_v1.create_bio_draft(text,jsonb,uuid),
   bc_admin_v1.update_bio_draft(uuid,bigint,jsonb,uuid),
   bc_admin_v1.get_bio_draft(uuid),
@@ -192,8 +212,6 @@ grant execute on function
   bc_admin_v1.review_draft(uuid,bigint,boolean,uuid),
   bc_admin_v1.list_my_bio_drafts(integer,timestamptz,uuid),
   bc_admin_v1.list_bio_review_queue(integer,timestamptz,uuid),
-  bc_admin_v1.list_staff(integer,uuid),
-  bc_admin_v1.update_staff(uuid,bigint,boolean,text[],uuid),
   bc_admin_v1.list_platforms(integer,uuid),
   bc_admin_v1.list_categories(integer,uuid),
   bc_admin_v1.list_collections(integer,text),
@@ -205,49 +223,33 @@ grant execute on function
   bc_admin_v1.list_role_catalog(),
   bc_admin_v1.list_my_sessions(integer,timestamptz),
   bc_admin_v1.list_audit_logs(integer,bigint),
-  bc_admin_v1.store_login_flow(bytea,bytea,integer),
-  bc_admin_v1.take_login_flow(bytea),
-  bc_admin_v1.consume_rate_limit(text,bytea),
-  bc_admin_v1.enrolment_eligible(uuid)
-to bc_admin_executor;
--- No table, sequence, column or schema-CREATE privilege is granted.
-commit;
+  bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),
+  bc_admin_v1.revoke_recovery_grant(uuid,uuid),
+  bc_admin_v1.consume_recovery_grant(bytea,uuid),
+  bc_admin_v1.recovery_grant_state(uuid),
+  bc_admin_v1.cleanup_expired(text,integer,uuid)
+ to bc_admin_executor;
 ```
 
-28 of the 31 functions are granted; `guard_draft`, `guard_approval` and
-`reject_mutation` are trigger bodies, are never called by the server, and get no
-grant at all.
+The role itself precedes it, and the password comes from
+`node scripts/admin-executor-credential.mjs` (D3, 48 characters, stdout only):
+
+```sql
+create role bc_admin_executor login password '<generated>'
+  nosuperuser nocreatedb nocreaterole noreplication nobypassrls inherit;
+```
+
+34 of the 38 functions are granted. The 4 trigger bodies — `guard_draft`,
+`guard_approval`, `reject_mutation` and `stamp_mfa_enrolled` — are never called by
+the server and get no grant. `stamp_mfa_enrolled` matters most: it writes the
+`mfa_enrolled_at` value that D2's enrol-vs-recover decision rests on, so no login
+may invoke it directly.
 
 `require_actor(text)` is granted because the server calls it once per write as a
 defence-in-depth check before the operation's own function; every function also
 re-checks internally, so removing the grant would not widen access.
 
-
-
-- `admin-backend/migrations/001_admin_foundation.sql` — `54d52c1f1d74cf492f431ee46f761313beefd6493e4ff2e918cde97ebb7c7db7`
-- `admin-backend/migrations/002_workflow_integrity.sql` — `b23d6e9519ccd5ab4cecf9cbe27c8903a6d6a84ae74b7006fce3e3b08383b822`
-- `admin-backend/migrations/003_permission_catalog.sql` — `37a839dc250d3a51622355e9cc03646d4e39ebeb821922d8117bffa2d5e6c3cb`
-- `admin-backend/migrations/004_private_draft_commands.sql` — `554631e23e6497ee6db5ce96d37d773f127eccc6054fd4b22ee4f5b2c48ef3fa`
-- `admin-backend/migrations/005_session_commands.sql` — `3b08b1446791796949fdbc61123f6b5ba59473dac79f2530261b23ed269899cb`
-- `admin-backend/migrations/006_auth_controls.sql` — `d4e20279bd722c2ff694bffbfde8897d63dda2235e088119457bbbf0a0b88adb`
-- `admin-backend/migrations/007_staff_commands.sql` — `d04c19d37acd213229a8f3088871fc51ae9b2f0b36602e40081437c8ef0b512d`
-- `admin-backend/migrations/008_bio_edit.sql` — `a4b594c7d3479fad588c026d21a11abe037bf2e4970fd97e8449674bf895c652`
-- `admin-backend/migrations/009_recovery_sessions.sql` — `7851eb4f03d97fbcdcd7f62cb00b54437233a2a064f12a911bd5d530b5c5a30b`
-- `admin-backend/migrations/010_admin_module_commands.sql` — `5ac31357267a496759aa47b6838baf6ec755ae95c8dd06d0a2616529c775023b`
-- `admin-backend/migrations/011_totp_enrolment.sql` — `4507ed36f5571c92e0d85f1ca017809997be760a05693d5c6306b5f0939ddb21`
-- `admin-backend/rollback/001_admin_foundation.sql` — `98b80fd0cd9d0bc3cc1e87da1352a27f29771fd5dd8016d84744dffe9bda1a77`
-- `admin-backend/rollback/002_workflow_integrity.sql` — `9a8b79d9fda725b9efda3cc052aab246dbcf5a5336d84ea8a692733b422b1097`
-- `admin-backend/rollback/003_permission_catalog.sql` — `2d589421922666f3bd93f0c3b0a6bb6f87f77a91c9c3c620f27f0df37f0c20d1`
-- `admin-backend/rollback/004_private_draft_commands.sql` — `59479d8343d2d85f7e64b9541451abed955f19d8abba95cac49723cfc718f625`
-- `admin-backend/rollback/005_session_commands.sql` — `14007468a63d0e99d5f4958d42f52b1c8653c83b310312741ea4072ef0ddb822`
-- `admin-backend/rollback/006_auth_controls.sql` — `50994d3db55adc9f6c96ed9db64d4468a9ccbb40a4b29955f135b78860906dec`
-- `admin-backend/rollback/007_staff_commands.sql` — `65f6473b705669f5d053f4901f41d4b5ba38948eb8cd2b9e3f536ae50e7d1d8a`
-- `admin-backend/rollback/008_bio_edit.sql` — `d788af5f302c37b0758536a88387a53f9f47b849de40fe46bb5f031b0d04b0ad`
-- `admin-backend/rollback/009_recovery_sessions.sql` — `8297b2e082d5e82a034274ba336bc1efb1d06b7502c33cbdc5a18405d2cc0ffa`
-- `admin-backend/rollback/010_admin_module_commands.sql` — `6b08e5d5895f11322e618a1aecd25ae7ff8600055d74a874964e07098c213e04`
-- `admin-backend/rollback/011_totp_enrolment.sql` — `89f59839ee62c9a5cf9436d8cf6a617f2878fb37cbcd701994d13db0d84ce980`
-
----
+No table, sequence, column or schema-`CREATE` privilege is granted.
 
 ### 6b. Enrolment gate semantics (011)
 
@@ -266,6 +268,43 @@ Consequences that the server must — and does — enforce:
   with only `{eligible: <bool>}` — no tokens, no secrets, no email;
 - the TOTP secret is never returned by the API after confirmation, and the
   otpauth URI is returned exactly once to the enrolling browser.
+
+---
+
+### 6c. Recovery (D2) and cleanup (D4) semantics — what 012 adds and why
+
+**D2 — no password-only re-enrolment.** The provider reports zero verified factors
+for both "never enrolled" and "lost the device", so the distinction is recorded in
+the database: `admin_users.mfa_enrolled_at`, written by the `stamp_mfa_enrolled`
+trigger on the first `admin_sessions` insert, which `open_admin_session` only
+permits for an `aal2` caller. `factor_gate()` then answers `'enrol'` only while
+that column is null, `'recover'` after, and `'denied'` for a disabled, roled-out
+or session-less account.
+
+Recovery needs a *second*, fully authenticated Super Admin:
+
+| Property | Where it is enforced |
+|---|---|
+| Super Admin verification | `require_actor('staff.manage')` inside `issue_recovery_grant` |
+| Explicit authorisation for one account | the named `user_id`, `FOR UPDATE` on the target row, enabled + roled required |
+| No self-service | `p_user_id = actor` is refused |
+| Single use | one live grant per account (a new issue revokes the old); `consumed_at` set under `FOR UPDATE` |
+| Expiry | TTL clamped to 1–15 minutes by a table check constraint *and* the function |
+| Rate limiting | five attempts inside the same locked row; the cap revokes the grant; issuance/redemption also pass through `consume_rate_limit` |
+| Audit | `auth.recovery.issued / .revoked / .attempt / .state` and `auth.factor_gate`, with the actor or `NULL` on denial — never a code, salt or token |
+| No silent bypass | redemption creates no session, sets no cookie, changes no password and deletes no factor |
+
+The code is 12 symbols of Crockford base32 (checksum included, vowels excluded),
+40 bits, shown once, stored only as `sha256(salt ‖ code)` with an 8-byte salt.
+
+**D4 — bounded cleanup.** `cleanup_expired(target, limit, request_id)` requires
+`settings.manage`, accepts only `admin_login_flows` (expired) and
+`admin_rate_limits` (older than a day), caps the batch at 1000, takes a per-target
+advisory lock, uses `FOR UPDATE SKIP LOCKED`, and writes one `admin_cleanup_runs`
+row plus one `ops.cleanup` audit row per run — skips included. It cannot name an
+audit table; any other target raises `22023` before any delete. On the Preview the
+schedule is the authenticated Super Admin action in the Settings module, because
+Vercel Cron targets Production only and Production is out of scope.
 
 ---
 
@@ -1139,6 +1178,311 @@ commit;
 
 ---
 
+### `012_recovery_and_cleanup.sql`
+
+SHA-256 `879bf5e64a276eff4e361e428c99f80af89ec184a4cd25b30f829f4619c12664`.
+Adds D2 (Super-Admin-authorised recovery) and D4 (bounded cleanup). One nullable
+column on `admin_users`, two tables, seven functions and one trigger.
+
+```sql
+-- LOCAL SYNTHETIC FIXTURES ONLY. Not approved for shared execution.
+-- Recovery authorisation, single-use recovery tokens, and bounded cleanup of the
+-- two operational tables from 006.
+--
+-- Design goals (owner decisions D2 and D4):
+--  * There is no password-only route back in for an account that ever had a
+--    verified factor. Recovery requires a second, already fully authenticated
+--    Super Admin to authorise one specific account, one time.
+--  * A recovery grant is bound to the requesting account, expires quickly, is
+--    consumed atomically exactly once, and can be withdrawn by a Super Admin.
+--  * Every attempt, including denied and rate-limited ones, commits an audit row
+--    with no token material.
+--  * Cleanup deletes only expired operational rows, never audit evidence, works
+--    in bounded batches under a per-table advisory lock, and records the outcome.
+begin;
+
+-- D2 needs to tell "never enrolled" apart from "lost the factor": the provider
+-- reports zero verified factors for both. This column is written once, by the
+-- database, when a second factor has actually been proven (open_admin_session
+-- below), so the distinction cannot be forged by a password-only session.
+alter table bc_admin_v1.admin_users add column mfa_enrolled_at timestamptz;
+
+-- Stamp the first proof of a second factor. open_admin_session (005) can only
+-- succeed for an aal2 caller, so an inserted row is itself the evidence; doing it
+-- in a trigger keeps 005 unchanged and makes the write unconditional for every
+-- future command that opens a session.
+create function bc_admin_v1.stamp_mfa_enrolled() returns trigger
+language plpgsql security definer set search_path=pg_catalog as $$
+begin
+ update bc_admin_v1.admin_users u
+  set mfa_enrolled_at = coalesce(u.mfa_enrolled_at, now())
+  where u.id = new.user_id;
+ return null;
+end $$;
+create trigger admin_sessions_stamp_mfa after insert on bc_admin_v1.admin_sessions
+ for each row execute function bc_admin_v1.stamp_mfa_enrolled();
+
+-- Pre-MFA decision for a password session with zero verified factors.
+--   'enrol'   -> an enabled member that has never proven a factor may enrol one;
+--   'recover' -> an enabled member that previously had one must use recovery;
+--   'denied'  -> everything else.
+-- Returns text instead of raising so the audit row commits; the caller rejects
+-- anything that is not 'enrol' or 'recover'.
+create function bc_admin_v1.factor_gate(p_request_id uuid) returns text
+language plpgsql security definer set search_path=pg_catalog as $$
+declare uid uuid; sid uuid; eligible boolean:=false; enrolled boolean:=false; outcome text:='denied';
+begin
+ if p_request_id is null then raise exception 'invalid factor request' using errcode='22023'; end if;
+ uid := auth.uid();
+ begin sid := nullif(auth.jwt()->>'session_id','')::uuid;
+ exception when invalid_text_representation then sid := null; end;
+ if uid is not null and sid is not null and coalesce(auth.jwt()->>'aal','') in ('aal1','aal2') then
+  select true, (u.mfa_enrolled_at is not null) into eligible, enrolled
+   from bc_admin_v1.admin_users u
+   where u.id = uid and u.enabled
+     and exists (select 1 from bc_admin_v1.admin_user_roles r where r.user_id = u.id)
+     and exists (select 1 from auth.sessions s where s.id = sid and s.user_id = uid);
+  if eligible then outcome := case when enrolled then 'recover' else 'enrol' end; end if;
+ end if;
+ insert into bc_admin_v1.admin_audit_logs(actor_id,request_id,action,target_type,target_id,details)
+ values (case when eligible then uid else null end, p_request_id, 'auth.factor_gate', 'staff', uid::text,
+         pg_catalog.jsonb_build_object('outcome', outcome));
+ return outcome;
+end $$;
+
+-- A short, human-transcribed code (Crockford base32, no vowels, so it cannot
+-- spell a word) is hashed with pg_catalog.sha256 over a random 32-byte salt. The
+-- plaintext exists only in the Super Admin's browser and the recovering user's
+-- browser: the database stores 8 bytes of salt and 32 bytes of digest.
+create table bc_admin_v1.admin_recovery_grants (
+ id uuid primary key,
+ user_id uuid not null,
+ issued_by uuid not null,
+ issued_at timestamptz not null,
+ expires_at timestamptz not null,
+ salt bytea not null,
+ code_hash bytea not null,
+ attempts integer not null default 0,
+ consumed_at timestamptz,
+ revoked_at timestamptz,
+ constraint recovery_grants_salt_len check (octet_length(salt) = 8),
+ constraint recovery_grants_hash_len check (octet_length(code_hash) = 32),
+ constraint recovery_grants_window check (expires_at > issued_at and expires_at <= issued_at + interval '15 minutes'),
+ constraint recovery_grants_attempts check (attempts between 0 and 5),
+ constraint recovery_grants_consumed check ((consumed_at is null) or (revoked_at is null))
+);
+create index admin_recovery_grants_user_idx on bc_admin_v1.admin_recovery_grants(user_id, issued_at desc);
+create index admin_recovery_grants_expiry_idx on bc_admin_v1.admin_recovery_grants(expires_at);
+
+-- One row per cleanup run. Retained as evidence; bounded by a partial unique
+-- index so a table cannot have two concurrent finishes for the same instant.
+create table bc_admin_v1.admin_cleanup_runs (
+ id bigint generated always as identity primary key,
+ target text not null check (target in ('admin_login_flows','admin_rate_limits')),
+ started_at timestamptz not null,
+ finished_at timestamptz,
+ deleted integer not null default 0 check (deleted >= 0),
+ skipped boolean not null default false,
+ detail jsonb not null default '{}'::jsonb
+);
+create index admin_cleanup_runs_target_idx on bc_admin_v1.admin_cleanup_runs(target, id desc);
+
+alter table bc_admin_v1.admin_recovery_grants enable row level security;
+alter table bc_admin_v1.admin_cleanup_runs enable row level security;
+create policy deny_clients on bc_admin_v1.admin_recovery_grants as restrictive for all to anon,authenticated using(false) with check(false);
+create policy deny_clients on bc_admin_v1.admin_cleanup_runs as restrictive for all to anon,authenticated using(false) with check(false);
+revoke all on bc_admin_v1.admin_recovery_grants,bc_admin_v1.admin_cleanup_runs from public,anon,authenticated;
+
+-- A recovery code is delivered out of band by the Super Admin. Format:
+-- 8 characters from a 32-symbol alphabet (no 0/O/1/I/L/U), plus 4 checksum
+-- characters, 12 characters total, ~40 bits of entropy, single use, 5 attempts.
+-- Normalisation (upper case, strip separators) happens in the trusted server, not
+-- here, so this function compares a fixed-length digest only.
+create function bc_admin_v1.issue_recovery_grant(
+ p_user_id uuid, p_code_hash bytea, p_salt bytea, p_ttl interval, p_request_id uuid)
+returns uuid
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; gid uuid; target_enabled boolean; live boolean;
+begin
+ actor := bc_admin_v1.require_actor('staff.manage');
+ if p_request_id is null or p_user_id is null or p_code_hash is null or p_salt is null then
+  raise exception 'invalid recovery grant' using errcode='22023';
+ end if;
+ if octet_length(p_code_hash) <> 32 or octet_length(p_salt) <> 8 then
+  raise exception 'invalid recovery grant' using errcode='22023';
+ end if;
+ if p_ttl is null or p_ttl < interval '1 minute' or p_ttl > interval '15 minutes' then
+  raise exception 'invalid recovery window' using errcode='22023';
+ end if;
+ -- The target must be an enabled Admin member, and must not be the issuer: a
+ -- Super Admin cannot authorise recovery of their own account.
+ if p_user_id = actor then raise exception 'self recovery is not permitted' using errcode='42501'; end if;
+ -- Serialise on the target account: this is the same row lock 007's update_staff
+ -- takes, so a concurrent disable and a concurrent grant cannot interleave.
+ select u.enabled into target_enabled from bc_admin_v1.admin_users u where u.id = p_user_id for update;
+ if target_enabled is not true then raise exception 'not authorized' using errcode='42501'; end if;
+ if not exists (select 1 from bc_admin_v1.admin_user_roles r where r.user_id = p_user_id) then
+  raise exception 'not authorized' using errcode='42501';
+ end if;
+ -- Only one live grant per account: a second Super Admin cannot race a first.
+ update bc_admin_v1.admin_recovery_grants g
+  set revoked_at = now()
+  where g.user_id = p_user_id and g.consumed_at is null and g.revoked_at is null;
+ gid := pg_catalog.gen_random_uuid();
+ insert into bc_admin_v1.admin_recovery_grants(id,user_id,issued_by,issued_at,expires_at,salt,code_hash)
+ values (gid, p_user_id, actor, now(), now() + p_ttl, p_salt, p_code_hash);
+ insert into bc_admin_v1.admin_audit_logs(actor_id,request_id,action,target_type,target_id,details)
+ values (actor, p_request_id, 'auth.recovery.issued', 'staff', p_user_id::text,
+         pg_catalog.jsonb_build_object('grant_id', gid, 'expires_in_seconds', extract(epoch from p_ttl)::integer));
+ return gid;
+end $$;
+
+create function bc_admin_v1.revoke_recovery_grant(p_grant_id uuid, p_request_id uuid) returns boolean
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; changed integer;
+begin
+ actor := bc_admin_v1.require_actor('staff.manage');
+ if p_grant_id is null or p_request_id is null then
+  raise exception 'invalid recovery grant' using errcode='22023';
+ end if;
+ update bc_admin_v1.admin_recovery_grants g
+  set revoked_at = now()
+  where g.id = p_grant_id and g.consumed_at is null and g.revoked_at is null;
+ get diagnostics changed = row_count;
+ insert into bc_admin_v1.admin_audit_logs(actor_id,request_id,action,target_type,target_id,details)
+ values (actor, p_request_id, 'auth.recovery.revoked', 'recovery_grant', p_grant_id::text,
+         pg_catalog.jsonb_build_object('revoked', changed > 0));
+ return changed > 0;
+end $$;
+
+-- Pre-MFA by necessity: the recovering account has lost its factor. It must have
+-- a live password (aal1) provider session, an enabled membership and at least one
+-- role, exactly like the first-factor enrolment gate in 011. It returns text
+-- instead of raising so the audit row commits; the server rejects anything that
+-- is not 'ok'.
+create function bc_admin_v1.consume_recovery_grant(p_code_hash bytea, p_request_id uuid) returns text
+language plpgsql security definer set search_path=pg_catalog as $$
+declare uid uuid; sid uuid; grant_row bc_admin_v1.admin_recovery_grants; outcome text:='denied';
+begin
+ if p_request_id is null or p_code_hash is null or octet_length(p_code_hash) <> 32 then
+  raise exception 'invalid recovery attempt' using errcode='22023';
+ end if;
+ uid := auth.uid();
+ begin sid := nullif(auth.jwt()->>'session_id','')::uuid;
+ exception when invalid_text_representation then sid := null; end;
+ if uid is not null and sid is not null and coalesce(auth.jwt()->>'aal','') in ('aal1','aal2')
+    and exists (select 1 from bc_admin_v1.admin_users u where u.id = uid and u.enabled)
+    and exists (select 1 from bc_admin_v1.admin_user_roles r where r.user_id = uid)
+    and exists (select 1 from auth.sessions s where s.id = sid and s.user_id = uid) then
+  -- FOR UPDATE serialises concurrent guesses on the same grant, so the attempt
+  -- counter cannot be bypassed by parallel requests.
+  select g.* into grant_row from bc_admin_v1.admin_recovery_grants g
+   where g.user_id = uid and g.consumed_at is null and g.revoked_at is null and g.expires_at > now()
+   order by g.issued_at desc limit 1
+   for update;
+  if found then
+   if grant_row.code_hash = p_code_hash then
+    update bc_admin_v1.admin_recovery_grants g set consumed_at = now() where g.id = grant_row.id;
+    outcome := 'ok';
+   else
+    update bc_admin_v1.admin_recovery_grants g set attempts = g.attempts + 1 where g.id = grant_row.id;
+    outcome := case when grant_row.attempts + 1 >= 5 then 'exhausted' else 'mismatch' end;
+    if grant_row.attempts + 1 >= 5 then
+     update bc_admin_v1.admin_recovery_grants g set revoked_at = now() where g.id = grant_row.id;
+    end if;
+   end if;
+  else
+   outcome := 'no_grant';
+  end if;
+ end if;
+ insert into bc_admin_v1.admin_audit_logs(actor_id,request_id,action,target_type,target_id,details)
+ values (case when outcome = 'ok' then uid else null end, p_request_id, 'auth.recovery.attempt', 'staff', uid::text,
+         pg_catalog.jsonb_build_object('outcome', outcome));
+ return outcome;
+end $$;
+
+-- The recovering account may read the salt and remaining attempts of its own live
+-- grant, so the client can compute the digest locally. The salt is not secret and
+-- is useless without the 40-bit single-use code; no other account's grant is
+-- reachable, and nothing here can consume a grant. Denials are audited.
+create function bc_admin_v1.recovery_grant_state(p_request_id uuid) returns table(salt bytea, attempts_remaining integer, expires_at timestamptz)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare uid uuid; sid uuid; g bc_admin_v1.admin_recovery_grants; exposed boolean:=false;
+begin
+ if p_request_id is null then raise exception 'invalid recovery request' using errcode='22023'; end if;
+ uid := auth.uid();
+ begin sid := nullif(auth.jwt()->>'session_id','')::uuid;
+ exception when invalid_text_representation then sid := null; end;
+ if uid is not null and sid is not null and coalesce(auth.jwt()->>'aal','') in ('aal1','aal2')
+    and exists (select 1 from bc_admin_v1.admin_users u where u.id = uid and u.enabled)
+    and exists (select 1 from auth.sessions s where s.id = sid and s.user_id = uid) then
+  select x.* into g from bc_admin_v1.admin_recovery_grants x
+   where x.user_id = uid and x.consumed_at is null and x.revoked_at is null and x.expires_at > now()
+   order by x.issued_at desc limit 1;
+  exposed := found;
+ end if;
+ insert into bc_admin_v1.admin_audit_logs(actor_id,request_id,action,target_type,target_id,details)
+ values (case when exposed then uid else null end, p_request_id, 'auth.recovery.state', 'staff', uid::text,
+         pg_catalog.jsonb_build_object('grant_present', exposed));
+ if not exposed then return; end if;
+ return query select g.salt, greatest(0, 5 - g.attempts), g.expires_at;
+end $$;
+
+-- Bounded, idempotent cleanup. Deletes only rows whose own expiry has passed;
+-- audit evidence is never touched. A per-target advisory lock makes a concurrent
+-- run skip instead of deleting twice, and every run (including skips) is
+-- recorded so the schedule can be observed from the Admin audit module.
+create function bc_admin_v1.cleanup_expired(p_target text, p_limit integer, p_request_id uuid) returns integer
+language plpgsql security definer set search_path=pg_catalog as $$
+declare run_id bigint; removed integer := 0; locked boolean;
+begin
+ perform bc_admin_v1.require_actor('settings.manage');
+ if p_request_id is null then raise exception 'invalid cleanup' using errcode='22023'; end if;
+ if p_target not in ('admin_login_flows','admin_rate_limits') then
+  raise exception 'invalid cleanup target' using errcode='22023';
+ end if;
+ if p_limit is null or p_limit < 1 or p_limit > 1000 then
+  raise exception 'invalid cleanup batch' using errcode='22023';
+ end if;
+ locked := pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended('bc_admin_v1:cleanup:' || p_target, 0));
+ insert into bc_admin_v1.admin_cleanup_runs(target,started_at,skipped,detail)
+ values (p_target, now(), not locked, pg_catalog.jsonb_build_object('limit', p_limit))
+ returning id into run_id;
+ if locked then
+  if p_target = 'admin_login_flows' then
+   -- Expired handoffs are useless; expired ones are the only rows deleted.
+   delete from bc_admin_v1.admin_login_flows f
+    where f.flow_hash in (
+     select x.flow_hash from bc_admin_v1.admin_login_flows x
+      where x.expires_at <= now() order by x.expires_at limit p_limit for update skip locked);
+  else
+   -- A rate-limit bucket is stale once its one-minute window is long past.
+   -- The key is (bucket,key_hash); delete by primary key from the bounded set.
+   delete from bc_admin_v1.admin_rate_limits r
+    where (r.bucket, r.key_hash) in (
+     select x.bucket, x.key_hash from bc_admin_v1.admin_rate_limits x
+      where x.started_at <= now() - interval '1 day' order by x.started_at limit p_limit for update skip locked);
+  end if;
+  get diagnostics removed = row_count;
+ end if;
+ update bc_admin_v1.admin_cleanup_runs c
+  set finished_at = now(), deleted = removed where c.id = run_id;
+ insert into bc_admin_v1.admin_audit_logs(actor_id,request_id,action,target_type,target_id,details)
+ values (null, p_request_id, 'ops.cleanup', 'table', p_target,
+         pg_catalog.jsonb_build_object('deleted', removed, 'skipped', not locked, 'run_id', run_id));
+ return removed;
+end $$;
+
+revoke all on function bc_admin_v1.factor_gate(uuid),
+ bc_admin_v1.stamp_mfa_enrolled(),
+ bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),
+ bc_admin_v1.revoke_recovery_grant(uuid,uuid),
+ bc_admin_v1.consume_recovery_grant(bytea,uuid),
+ bc_admin_v1.recovery_grant_state(uuid),
+ bc_admin_v1.cleanup_expired(text,integer,uuid) from public,anon,authenticated;
+commit;
+```
+
 ## 8. Full rollback SQL
 
 ### `001_admin_foundation.sql`
@@ -1301,5 +1645,44 @@ commit;
 -- Local rollback for 011. Disposable synthetic clusters only.
 begin;
 drop function if exists bc_admin_v1.enrolment_eligible(uuid);
+commit;
+```
+
+### `012_recovery_and_cleanup.sql`
+
+SHA-256 `dee97dc4d0960839553261ef279c47c3b967bd7729ced59da7f03cb832b433dd`.
+Refuses while any recovery grant, cleanup run **or** `mfa_enrolled_at` value
+exists — the last check is deliberate: dropping the column would make an account
+that had proven a factor look like a first-time enroller, reopening the
+password-only enrolment path that 012 closes.
+
+```sql
+-- Rollback for 012. Drops only the four functions and the two tables created by
+-- 012. Refuses while recovery grants or cleanup evidence exist, because deleting
+-- either would remove security evidence; there is no CASCADE.
+begin;
+do $$
+declare n integer;
+begin
+ select count(*) into n from bc_admin_v1.admin_recovery_grants;
+ if n > 0 then raise exception 'refusing rollback: % recovery grant rows exist', n; end if;
+ select count(*) into n from bc_admin_v1.admin_cleanup_runs;
+ if n > 0 then raise exception 'refusing rollback: % cleanup run rows exist', n; end if;
+ -- Dropping mfa_enrolled_at would make an account that had proven a factor look
+ -- like a first-time enroller, which reopens the password-only path 012 closes.
+ select count(*) into n from bc_admin_v1.admin_users where mfa_enrolled_at is not null;
+ if n > 0 then raise exception 'refusing rollback: % accounts have a recorded enrolment', n; end if;
+end $$;
+drop function bc_admin_v1.consume_recovery_grant(bytea,uuid);
+drop function bc_admin_v1.factor_gate(uuid);
+drop function bc_admin_v1.recovery_grant_state(uuid);
+drop function bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid);
+drop function bc_admin_v1.revoke_recovery_grant(uuid,uuid);
+drop function bc_admin_v1.cleanup_expired(text,integer,uuid);
+drop trigger admin_sessions_stamp_mfa on bc_admin_v1.admin_sessions;
+drop function bc_admin_v1.stamp_mfa_enrolled();
+drop table bc_admin_v1.admin_recovery_grants;
+drop table bc_admin_v1.admin_cleanup_runs;
+alter table bc_admin_v1.admin_users drop column mfa_enrolled_at;
 commit;
 ```

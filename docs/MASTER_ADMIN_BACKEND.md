@@ -60,10 +60,21 @@ signature until redeployed.
 - `POST /api/admin/v1/auth/login`, `POST /api/admin/v1/auth/mfa` — password +
   TOTP, encrypted single-use handoff, encrypted session cookie.
 - `POST /api/admin/v1/auth/enroll`, `POST /api/admin/v1/auth/enroll-confirm` —
-  first-factor enrolment for an account with no verified TOTP yet. The password
-  flow authorises exactly one attempt; the account must hold an enabled Admin
-  membership with a live provider session (`011_totp_enrolment.sql`), every
-  attempt is audited, and the secret is returned once and never stored.
+  first-factor enrolment, reachable **only** when `factor_gate` answers `'enrol'`,
+  i.e. the account has never proven a factor (`admin_users.mfa_enrolled_at` is
+  null, migration 012), holds an enabled membership with a role and has a live
+  provider session (`011_totp_enrolment.sql`). The password flow authorises
+  exactly one attempt; every attempt is audited; the secret is returned once and
+  never stored.
+- `POST /api/admin/v1/auth/recovery/complete` — a password session for an account
+  that **has** proven a factor can only redeem a Super-Admin-issued, single-use,
+  15-minute recovery code. It mints no session, sets no cookie, changes no
+  password and removes no factor (012).
+- `POST /api/admin/v1/staff/recovery`, `POST /api/admin/v1/staff/recovery/revoke` —
+  Super Admin issues or withdraws one recovery grant; the code is returned exactly
+  once with `Cache-Control: no-store`.
+- `POST /api/admin/v1/ops/cleanup` — bounded (`<=1000`), advisory-locked cleanup of
+  expired login flows and stale rate limits; every run is recorded (012).
 - `POST /api/admin/v1/auth/recovery/request|exchange|complete` — recovery with
   TOTP, Admin session revocation before the provider password change.
 - `GET /api/admin/v1/session`, `GET /api/admin/v1/csrf`, `DELETE /api/admin/v1/session`.
