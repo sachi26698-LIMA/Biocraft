@@ -416,6 +416,12 @@ if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_GIT_COMMIT_REF ==
     ogDescription: 'Temporary Preview-only diagnostics.',
     noindex: true,
   });
+  // Noindex static shells for the branch-only, public-data admin preview.
+  for (const section of ['', '/users', '/bios', '/categories', '/platforms', '/generators', '/content', '/analytics', '/security', '/settings']) {
+    ROUTES.push({ path: `/admin${section}`, title: 'Admin Preview — BioCraft',
+      description: 'BioCraft admin workspace preview.', ogTitle: 'Admin Preview — BioCraft',
+      ogDescription: 'BioCraft admin workspace preview.', noindex: true });
+  }
 }
 
 // Optional canonical/og:url generation. Omits them entirely unless the

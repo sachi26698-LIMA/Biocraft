@@ -1,0 +1,15 @@
+const {PGlite}=require('@electric-sql/pglite');const assert=require('node:assert/strict');const fs=require('node:fs');const path=require('node:path');
+(async()=>{const db=new PGlite();try{await db.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);
+create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+create function auth.jwt() returns jsonb language sql stable as $$select jsonb_build_object('aal',current_setting('request.jwt.claim.aal',true))$$;
+insert into auth.users values ('10000000-0000-0000-0000-000000000001');`);
+for(const file of ['001-private-foundation.REVIEW.sql','002-authorization.REVIEW.sql']) await db.exec(fs.readFileSync(path.join(__dirname,'../docs/master-admin-blueprint',file),'utf8'));
+await db.exec(`insert into bc_admin.members(user_id,role) values('10000000-0000-0000-0000-000000000001','editor'); set request.jwt.claim.sub='10000000-0000-0000-0000-000000000001';set request.jwt.claim.aal='aal2';`);
+const allow=async action=>assert.equal((await db.query('select bc_admin.require_permission($1) id',[action])).rows[0].id,'10000000-0000-0000-0000-000000000001');
+const deny=async action=>assert.rejects(db.query('select bc_admin.require_permission($1)',[action]),e=>e.code==='42501');
+await allow('content.draft');await deny('content.publish');await deny('bogus.permission');await db.exec("update bc_admin.members set role='moderator'");await allow('content.review.reject');await deny('content.review.approve');await deny('members.manage');
+await db.exec("update bc_admin.members set role='super_admin'");await allow('members.manage');await db.exec("set request.jwt.claim.aal='aal1'");await deny('members.manage');await db.exec("set request.jwt.claim.aal='aal2';update bc_admin.members set enabled=false");await deny('members.manage');
+await db.exec('set role authenticated');await assert.rejects(db.query("select bc_admin.require_permission('members.manage')"),e=>e.code==='42501');await db.exec('reset role');
+await db.exec(fs.readFileSync(path.join(__dirname,'../docs/master-admin-blueprint/098-remove-authorization.REVIEW.sql'),'utf8'));await db.exec(fs.readFileSync(path.join(__dirname,'../docs/master-admin-blueprint/099-schema-removal.REVIEW.sql'),'utf8'));
+console.log('PASS local draft permission helper: allowlist, AAL, roles, disabled member, direct access denial, fixture removal');
+}finally{await db.close()}})().catch(e=>{console.error(e);process.exitCode=1});

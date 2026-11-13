@@ -2,7 +2,20 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), {
+    name: 'admin-preview-shell',
+    configurePreviewServer(server) {
+      // vite preview's SPA fallback ignores folder shells without a trailing
+      // slash; use the noindex shell for admin deep links instead.
+      server.middlewares.use((req, _res, next) => {
+        const [pathname, query] = (req.url ?? '').split('?', 2);
+        if (/^\/admin(?:\/(?:users|bios|categories|platforms|generators|content|analytics|security|settings))?$/.test(pathname)) {
+          req.url = `${pathname}/${query ? `?${query}` : ''}`;
+        }
+        next();
+      });
+    },
+  }],
   // Temporary diagnostics are only compiled into this branch's Vercel Preview.
   define: {
     __BIOCRAFT_PREVIEW_DIAGNOSTICS__: JSON.stringify(
