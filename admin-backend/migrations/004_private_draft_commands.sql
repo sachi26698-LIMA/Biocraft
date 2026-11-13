@@ -20,7 +20,7 @@ begin
  perform 1 from bc_admin_v1.admin_users u where u.id=uid and u.enabled for update;
  if not found then raise exception 'not authorized' using errcode='42501'; end if;
  perform 1 from bc_admin_v1.admin_sessions s where s.id=sid and s.user_id=uid and s.revoked_at is null and s.expires_at > now() for update;
- if not found or not exists (
+ if not found or not exists (select 1 from auth.sessions ps where ps.id=sid and ps.user_id=uid) or not exists (
   select 1 from bc_admin_v1.admin_user_roles ur join bc_admin_v1.admin_role_permissions rp on rp.role_id=ur.role_id
   where ur.user_id=uid and rp.permission_id=p_permission
  ) then raise exception 'not authorized' using errcode='42501'; end if;

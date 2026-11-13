@@ -5,6 +5,8 @@
 // Each entry point requires a durable shared rate limiter; no in-memory fallback.
 // Membership/session checks in the database are still required after AAL2.
 import {AccessError} from './identity.mjs';
+import {createHash} from 'node:crypto';
+const keyDigest=(prefix,value)=>`${prefix}:${createHash('sha256').update(value).digest('hex')}`;
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 async function limit(limiter, bucket, key) {
  if (typeof limiter !== 'function' || typeof key !== 'string' || key.length < 1 || key.length > 200) throw new AccessError('UNAVAILABLE');
@@ -16,8 +18,12 @@ function invalid() {throw new AccessError('UNAUTHENTICATED');}
 /** Stage password login and enumerate verified TOTP factors, using a provider
  * client dedicated to this attempt. It does not establish an admin session. */
 export async function beginPasswordLogin({client,email,password,limiter,rateKey}) {
- await limit(limiter,'password-login',rateKey);
+ if(typeof rateKey!=='string'||rateKey.length<1||rateKey.length>200) unavailable();
+ await limit(limiter,'password-login',keyDigest('network',rateKey));
  if (typeof email !== 'string' || email.length>254 || !email.includes('@') || typeof password !== 'string' || password.length<1 || password.length>1024) invalid();
+ // Separate account bucket also slows distributed guessing. Only digests are
+ // passed to the persistent limiter; account lockouts are temporary and bounded.
+ await limit(limiter,'password-login',keyDigest('account',email.trim().toLowerCase()));
  if (!client?.auth?.signInWithPassword || !client.auth.mfa?.listFactors) unavailable();
  let login; try {login=await client.auth.signInWithPassword({email:email.trim(),password});} catch {unavailable();}
  if (login.error || !login.data?.session?.access_token || !login.data?.session?.refresh_token) invalid();
@@ -36,8 +42,10 @@ export async function beginPasswordLogin({client,email,password,limiter,rateKey}
 /** Challenge and verify an existing verified factor. The resulting AAL2 session
  * is not Admin authorization: verify identity and membership separately. */
 export async function verifyTotp({client,factorId,code,limiter,rateKey}) {
- await limit(limiter,'totp-verify',rateKey);
+ if(typeof rateKey!=='string'||rateKey.length<1||rateKey.length>200) unavailable();
+ await limit(limiter,'totp-verify',keyDigest('network',rateKey));
  if (typeof factorId!=='string' || !uuid.test(factorId) || typeof code!=='string' || !/^\d{6,8}$/.test(code)) invalid();
+ await limit(limiter,'totp-verify',keyDigest('factor',factorId));
  if (!client?.auth?.mfa?.challengeAndVerify) unavailable();
  let response; try {response=await client.auth.mfa.challengeAndVerify({factorId,code});} catch {unavailable();}
  if (response.error || !response.data?.access_token || !response.data?.refresh_token) invalid();

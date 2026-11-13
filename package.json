@@ -32,10 +32,15 @@
     "test:admin-bio-domain": "node tests/admin-bio-domain.mjs",
     "test:admin-identity": "node tests/admin-identity.mjs",
     "test:admin-private-commands": "node tests/admin-private-commands.cjs",
-    "test:admin-auth-flow": "node tests/admin-auth-flow.mjs"
+    "test:admin-auth-flow": "node tests/admin-auth-flow.mjs",
+    "test:admin-api-integration": "node tests/admin-api-integration.mjs",
+    "test:admin-session-cookie": "node tests/admin-session-cookie.mjs",
+    "test:admin-full-flow": "node tests/admin-full-flow.mjs",
+    "test:admin-staff-commands": "node tests/admin-staff-commands.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
+    "pg": "^8.23.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

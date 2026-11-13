@@ -40,10 +40,10 @@ export function createProviderClient(url, publishableKey) {
   }
   return createClient(url, publishableKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
 }
-/** Provider getUser validates the token server-side. Resolve state every time;
- * if the resolver is absent, the admin backend fails closed. */
-export async function authorizeRead({token, permission, provider, resolveSession, now = Date.now()}) {
-  if (!permissionName.test(permission ?? '') || !provider?.auth?.getUser || typeof resolveSession !== 'function') denied('UNAVAILABLE');
+/** Verify identity with the actual Supabase Auth user endpoint before using any
+ * untrusted claim. No Admin authorization or session revocation is implied. */
+export async function verifyProviderIdentity({token, provider, now = Date.now()}) {
+  if (!provider?.auth?.getUser) denied('UNAVAILABLE');
   const claims = claimsFrom(token);
   if (claims.iss !== ISSUER || !(claims.aud === 'authenticated' || (Array.isArray(claims.aud) && claims.aud.includes('authenticated'))) ||
       claims.role !== 'authenticated' || claims.aal !== 'aal2' || claims.is_anonymous !== false ||
@@ -53,12 +53,16 @@ export async function authorizeRead({token, permission, provider, resolveSession
   let result;
   try { result = await provider.auth.getUser(token); } catch { denied('UNAVAILABLE'); }
   if (result?.error || !result?.data?.user || result.data.user.id !== claims.sub || result.data.user.is_anonymous === true) denied('UNAUTHENTICATED');
+  return Object.freeze({userId: claims.sub, sessionId: claims.session_id, assuranceLevel: 'aal2'});
+}
+/** Read-only guard; the resolver must query live membership and revocable session. */
+export async function authorizeRead({token, permission, provider, resolveSession, now = Date.now()}) {
+  if (!permissionName.test(permission ?? '') || typeof resolveSession !== 'function') denied('UNAVAILABLE');
+  const identity = await verifyProviderIdentity({token, provider, now});
   let state;
-  try { state = await resolveSession({userId: claims.sub, sessionId: claims.session_id}); } catch { denied('UNAVAILABLE'); }
-  // Resolver must query live membership + an independently revocable server-side
-  // session. An AAL2 JWT by itself is not a session-revocation or freshness check.
-  if (!state || state.userId !== claims.sub || state.sessionId !== claims.session_id ||
+  try { state = await resolveSession({userId: identity.userId, sessionId: identity.sessionId}); } catch { denied('UNAVAILABLE'); }
+  if (!state || state.userId !== identity.userId || state.sessionId !== identity.sessionId ||
       state.enabled !== true || state.revoked !== false || !Number.isFinite(state.expiresAt) || state.expiresAt <= now ||
       !Array.isArray(state.permissions) || !state.permissions.includes(permission)) denied('FORBIDDEN');
-  return Object.freeze({userId: claims.sub, sessionId: claims.session_id});
+  return Object.freeze({userId: identity.userId, sessionId: identity.sessionId});
 }

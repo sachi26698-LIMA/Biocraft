@@ -3,11 +3,12 @@
 const {PGlite}=require('@electric-sql/pglite');const fs=require('node:fs');const assert=require('node:assert/strict');
 const a='11111111-1111-4111-8111-111111111111',b='22222222-2222-4222-8222-222222222222',sa='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',sb='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',req='cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 (async()=>{const db=new PGlite();try{
- await db.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);
+ await db.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);create table auth.sessions(id uuid primary key,user_id uuid not null references auth.users(id));
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
  create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('test.jwt',true),''),'{}')::jsonb$$;`);
  for(const f of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql']) await db.exec(fs.readFileSync('admin-backend/migrations/'+f,'utf8'));
  await db.exec(`insert into auth.users values('${a}'),('${b}'); insert into bc_admin_v1.admin_users(id,enabled) values('${a}',true),('${b}',true);
+ insert into auth.sessions(id,user_id) values('${sa}','${a}'),('${sb}','${b}');
  insert into bc_admin_v1.admin_sessions(id,user_id,expires_at) values('${sa}','${a}',now()+interval '1 hour'),('${sb}','${b}',now()+interval '1 hour');
  insert into bc_admin_v1.admin_user_roles(user_id,role_id) values('${a}','editor'),('${b}','admin');`);
  const set=async(u,s,aal='aal2')=>db.exec(`select set_config('test.uid','${u}',false),set_config('test.jwt','{"session_id":"${s}","aal":"${aal}"}',false)`);
