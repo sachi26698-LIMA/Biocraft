@@ -1240,7 +1240,7 @@ commit;
 SHA-256 `9311ebcbe76f9008d24c3841194a9c0d8770974e711591b250f3d616ff32d733`.
 Adds D2 (Super-Admin-authorised recovery, plus the audited reset that completes it)
 and D4 (bounded cleanup). One nullable column on `admin_users`, two tables, eight
-functions and one trigger.
+functions (one of them the `stamp_mfa_enrolled` trigger body) and one trigger.
 
 ```sql
 -- LOCAL SYNTHETIC FIXTURES ONLY. Not approved for shared execution.
