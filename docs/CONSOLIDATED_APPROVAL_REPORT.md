@@ -2,8 +2,9 @@
 
 **Revision 3 — incorporates your D1–D4 decisions; the SQL package is now
 001–012 plus one canonical grant file.** Counts in this revision are derived from
-the files by `test:admin-grant-inventory`, not written by hand: **19 tables, 38
-functions (35 granted), 1 grant file, 24 SQL files with recorded SHA-256.**
+the files by `test:admin-grant-inventory`, not written by hand: **19 tables, 39
+functions (35 granted, 4 trigger bodies), 1 canonical grant file, 25 SQL files
+with recorded SHA-256.**
 
 **Status: awaiting your decision. Nothing in this report has been executed.** No
 schema, role, grant, Auth setting or account has been created in the shared
