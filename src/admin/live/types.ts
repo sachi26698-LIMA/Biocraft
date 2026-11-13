@@ -40,6 +40,48 @@ export type BioRow = {
   updated_at: string;
 };
 
+/** The three registry tables read by Catalog.tsx. Each mirrors one row-returning
+ * function on the server; `is_active` is present on all three, which is what lets
+ * one badge component serve them. */
+export type PlatformRow = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  is_active: boolean;
+  sort_order: number | null;
+};
+
+export type CategoryRow = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  platform_slug: string | null;
+  is_active: boolean;
+  sort_order: number | null;
+};
+
+export type GeneratorRow = {
+  id: string;
+  name: string;
+  slug: string;
+  generator_type: string | null;
+  character_limit: number | null;
+  is_active: boolean;
+  platform_slug: string | null;
+};
+
+export type SeoPageRow = {
+  id: string;
+  page_slug: string;
+  title: string | null;
+  meta_description: string | null;
+  robots: string | null;
+  is_active: boolean;
+  updated_at: string;
+};
+
 export type NotificationRow = {
   id: string;
   category: string;

@@ -37,6 +37,10 @@ const replies={
  '/sessions':{items:[{id:'66666666-6666-4666-8666-666666666666',created_at:'2026-11-02T08:00:00.000Z',expires_at:new Date(Date.now()+3600e3).toISOString(),revoked_at:null}]},
  '/settings':{items:[{key:'content.review_required',value:{enabled:true},version:2,updated_at:'2026-11-01T09:00:00.000Z'}]},
  '/backups':{items:[{id:'77777777-7777-4777-8777-777777777777',environment:'production',provider_reference:'snap-2026-11-01',state:'restore_verified',requested_at:'2026-11-01T00:00:00.000Z',verified_at:'2026-11-01T01:00:00.000Z'}]},
+ '/platforms':{items:[{id:'11111111-1111-4111-8111-111111111111',name:'Instagram',slug:'instagram',description:'Photo and caption platform',is_active:true,sort_order:1},{id:'22222222-2222-4222-8222-222222222222',name:'Legacy',slug:'legacy',description:null,is_active:false,sort_order:2}]},
+ '/categories':{items:[{id:'33333333-3333-4333-8333-333333333333',name:'Motivation',slug:'motivation',description:'Encouraging bios',platform_slug:'instagram',is_active:true,sort_order:1}]},
+ '/generators':{items:[{id:'44444444-4444-4444-8444-444444444444',name:'Bio for Instagram',slug:'bio-for-instagram',generator_type:'bio',character_limit:150,is_active:true,platform_slug:'instagram'}]},
+ '/seo-pages':{items:[{id:'99999999-9999-4999-8999-999999999999',page_slug:'motivation-bios',title:'Motivation bios',meta_description:'Short encouraging bios',robots:'index,follow',is_active:true,updated_at:'2026-11-02T09:00:00.000Z'}]},
  '/notifications':{items:[{id:'88888888-8888-4888-8888-888888888888',category:'review.assigned',message:'A draft is waiting for your review.',created_at:'2026-11-02T09:00:00.000Z',read_at:null,unread:true}]},
 };
 
@@ -100,6 +104,28 @@ const DENIED=new Set(process.env.DENY_PATH?[process.env.DENY_PATH]:[]);
    await page.getByRole('region',{name:'Bio library table'}).waitFor();
    assert.match(await page.getByRole('region',{name:'Bio library table'}).innerText(),/Visible/);
 
+   // Registries: real rows, a disabled row labelled as disabled, and an honest
+   // statement that nothing here is editable — all three are live reads now.
+   await page.goto(`${base}/admin/platforms`,{waitUntil:'networkidle'});
+   await page.getByRole('region',{name:'Scrollable platforms table'}).waitFor();
+   const platforms=await page.getByRole('region',{name:'Scrollable platforms table'}).innerText();
+   assert.match(platforms,/instagram/);
+   assert.match(platforms,/Disabled/);
+   await page.getByText('Not editable here').waitFor();
+
+   await page.goto(`${base}/admin/categories`,{waitUntil:'networkidle'});
+   await page.getByRole('region',{name:'Scrollable categories table'}).waitFor();
+   assert.match(await page.getByRole('region',{name:'Scrollable categories table'}).innerText(),/motivation/);
+   // SEO pages share the categories screen and must render from the live read too.
+   await page.getByRole('region',{name:'Scrollable SEO pages table'}).waitFor();
+   assert.match(await page.getByRole('region',{name:'Scrollable SEO pages table'}).innerText(),/motivation-bios/);
+   // The bundled preview data must not be what is on screen in live mode.
+   assert.equal(await page.getByText('Bundled',{exact:false}).count()>0&&await page.getByText('Read-only · bundled').count()>0,false);
+
+   await page.goto(`${base}/admin/generators`,{waitUntil:'networkidle'});
+   await page.getByRole('region',{name:'Scrollable generators table'}).waitFor();
+   assert.match(await page.getByRole('region',{name:'Scrollable generators table'}).innerText(),/150 chars/);
+
    // Analytics: real numbers and an explicit "not measured" statement.
    await page.goto(`${base}/admin/analytics`,{waitUntil:'networkidle'});
    await page.getByRole('heading',{name:'Analytics',exact:true}).waitFor();
@@ -121,7 +147,7 @@ const DENIED=new Set(process.env.DENY_PATH?[process.env.DENY_PATH]:[]);
 
    // No overflow at a phone width, on every live route.
    if(opts.isMobile){await page.setViewportSize({width:320,height:700});
-    for(const route of ['/admin','/admin/users','/admin/content','/admin/bios','/admin/analytics','/admin/security','/admin/settings']){
+    for(const route of ['/admin','/admin/users','/admin/content','/admin/bios','/admin/categories','/admin/platforms','/admin/generators','/admin/analytics','/admin/security','/admin/settings']){
      await page.goto(`${base}${route}`,{waitUntil:'networkidle'});
      const dims=await page.evaluate(()=>({w:innerWidth,s:document.documentElement.scrollWidth}));
      assert.ok(dims.s<=dims.w,`${name} ${route} overflows: ${JSON.stringify(dims)}`);
