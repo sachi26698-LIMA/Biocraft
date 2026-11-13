@@ -2,7 +2,7 @@
   "name": "biocraft",
   "private": true,
   "version": "1.0.0",
-  "description": "BioCraft — All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
+  "description": "BioCraft \u2014 All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,7 +17,11 @@
     "test:performance": "node tests/symbol-search.cjs && node tests/symbol-renders.cjs && node tests/font-preloads.cjs",
     "test:admin-draft": "node tests/admin-draft-rbac.cjs && node tests/admin-workflow-draft.cjs && node tests/admin-gateway-draft.cjs",
     "test:admin-blueprint": "node tests/admin-blueprint-schema.cjs && node tests/admin-auth-blueprint.cjs",
-    "test:admin-browser": "node tests/admin-preview-browser.cjs"
+    "test:admin-browser": "node tests/admin-preview-browser.cjs",
+    "test:admin-catalog": "node tests/admin-catalog-audit.cjs",
+    "test:admin-interactions": "node tests/admin-interaction-audit.cjs",
+    "test:admin-public-regression": "node tests/admin-public-regression.cjs",
+    "test:admin-performance": "node tests/admin-performance-audit.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

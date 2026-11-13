@@ -452,6 +452,15 @@ const replaceOrThrow = (html, pattern, replacement, label) => {
 };
 
 for (const route of ROUTES) {
+  if (route.path === '/admin' || route.path.startsWith('/admin/')) {
+    // Do not load the public app, CSS or providers inside the admin document.
+    const html = readFileSync(join(dist, 'admin-preview.html'), 'utf8');
+    const outDir = join(dist, route.path);
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, 'index.html'), html, 'utf8');
+    console.log(`shell written: dist${route.path}/index.html`);
+    continue;
+  }
   if (route.runAsTemplate) {
     // The hero exists only on the homepage. Discover the same responsive image
     // before React executes without downloading it on every other route.
