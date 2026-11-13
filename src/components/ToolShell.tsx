@@ -74,6 +74,15 @@ export default function ToolShell() {
     }
   }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, isDiagnostics, collection]);
 
+  // On in-app navigation, start the font while the lazy page/tool is loading,
+  // rather than waiting for the first styled card to scroll into view.
+  useEffect(() => {
+    const hasStyledBios = collection?.bios.some((bio) => /[\u2100-\u214f\u{1d400}-\u{1d7ff}]/u.test(bio.text));
+    if ((hasStyledBios || path === '/stylish-name-generator' || path === '/fancy-font-generator') && document.fonts?.load) {
+      void document.fonts.load('400 1em "Noto Sans Math"', '𝒜').catch(() => {});
+    }
+  }, [path, collection]);
+
   // Remember tool visits (localStorage only) for the "Recently used" rail.
   useEffect(() => {
     if (isToolRoute) record(tool.key);

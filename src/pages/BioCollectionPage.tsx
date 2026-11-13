@@ -1,4 +1,4 @@
-import { memo, useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Breadcrumbs from '../components/Breadcrumbs';
 import BioCollectionCard from '../components/BioCollectionCard';
 import { designForBio } from '../lib/bioCollections';
@@ -26,17 +26,23 @@ const HAS_EMOJI = /\p{Extended_Pictographic}/u;
 const DEVANAGARI = /[\u0900-\u097F]/;
 const slotKey = (index: number, original: BioEntry) => `${index}:${original.text.slice(0, 24)}`;
 
+// Each item owns its bound click callback. A replacement should not re-render
+// every other card (and its copy state) just because the list changed.
+const BioGridItem = memo(function BioGridItem({ bio, index, slug, name, onRegenerate }: {
+  bio: BioEntry; index: number; slug: string; name: string; onRegenerate: (index: number) => void;
+}) {
+  return <BioCollectionCard bio={bio} label={`bio ${index + 1} from ${name}`}
+    design={designForBio(slug, index)} onRegenerate={() => onRegenerate(index)} />;
+});
+
 const BioGrid = memo(function BioGrid({ visible, displayed, swaps, slug, name, onRegenerate }: {
   visible: BioEntry[]; displayed: BioEntry[]; swaps: Record<string, BioEntry>; slug: string; name: string;
   onRegenerate: (index: number) => void;
 }) {
   return <ul className="bio-grid">
     {displayed.map((bio, index) => (
-      <BioCollectionCard
-        key={`${index}-${bio.text.slice(0, 12)}-${swaps[slotKey(index, visible[index])] ? 'v' : 'o'}`}
-        bio={bio} label={`bio ${index + 1} from ${name}`}
-        design={designForBio(slug, index)} onRegenerate={() => onRegenerate(index)}
-      />
+      <BioGridItem key={`${index}-${bio.text.slice(0, 12)}-${swaps[slotKey(index, visible[index])] ? 'v' : 'o'}`}
+        bio={bio} index={index} slug={slug} name={name} onRegenerate={onRegenerate} />
     ))}
   </ul>;
 });
@@ -126,18 +132,26 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
   const displayed = useMemo(() => visible.map((bio, index) => swaps[slotKey(index, bio)] ?? bio), [visible, swaps]);
   const previewBios = useMemo(() => sourceBios.filter((bio) => !DEVANAGARI.test(bio.text)).map((bio) => bio.text), [sourceBios]);
 
+  // Publish committed state to the stable handler; there are no geometry reads
+  // here, so this layout effect does not force a browser layout.
+  const regenerationContext = useRef({ sourceBios, visible, displayed });
+  useLayoutEffect(() => {
+    regenerationContext.current = { sourceBios, visible, displayed };
+  }, [sourceBios, visible, displayed]);
+
   /** Swaps that slot for another bio from the same collection not already on screen. */
   const regenerateAt = useCallback((index: number) => {
-    if (!collection) return;
-    const onScreen = new Set(displayed.map((bio) => bio.text));
-    const pool = sourceBios.filter((candidate) => !onScreen.has(candidate.text));
+    const { sourceBios: source, visible: currentVisible, displayed: currentDisplayed } = regenerationContext.current;
+    if (!currentVisible[index]) return;
+    const onScreen = new Set(currentDisplayed.map((bio) => bio.text));
+    const pool = source.filter((candidate) => !onScreen.has(candidate.text));
     if (pool.length === 0) {
       toast('Every bio is already on screen — clear the filter for more variations.');
       return;
     }
     const replacement = pool[Math.floor(Math.random() * pool.length)];
-    setSwaps((current) => ({ ...current, [slotKey(index, visible[index])]: replacement }));
-  }, [collection, displayed, sourceBios, visible]);
+    setSwaps((current) => ({ ...current, [slotKey(index, currentVisible[index])]: replacement }));
+  }, []);
 
   if (!collection) {
     // ToolShell replaces unknown paths with the homepage; render nothing meanwhile.

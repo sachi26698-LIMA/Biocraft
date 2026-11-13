@@ -425,6 +425,18 @@ const canonicalFor = (path) => (SITE_URL ? `  <link rel="canonical" href="${SITE
 
 const template = readFileSync(join(dist, 'index.html'), 'utf8');
 
+// Collections whose bundled entries contain styled mathematical glyphs, plus
+// the two galleries that show them immediately. Keep the hint off routes that
+// do not use the face; remote data may still trigger the normal CSS load.
+const MATH_FONT_PATHS = new Set([
+  '/instagram-bio-for-boys', '/instagram-bio-for-girls', '/stylish-instagram-bio',
+  '/attitude-bio', '/vip-bio', '/love-bio', '/sad-bio', '/royal-bio', '/simple-bio',
+  '/cool-bio', '/english-bio', '/creator-bio', '/photographer-bio', '/student-bio',
+  '/cute-bio', '/hinglish-bio', '/gamer-bio', '/stylish-name-generator', '/fancy-font-generator',
+]);
+const MATH_FONT_HREF = '/fonts/noto-math/noto-sans-math-styles-400.woff2';
+const mathFontPreload = `  <link rel="preload" as="font" type="font/woff2" href="${MATH_FONT_HREF}" fetchpriority="low" crossorigin />\n`;
+
 const escapeAttr = (value) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 
 const replaceOrThrow = (html, pattern, replacement, label) => {
@@ -441,12 +453,17 @@ for (const route of ROUTES) {
     // Some static hosts serve index.html as a fallback for clean URLs. Guard
     // the hint by pathname so that those non-home routes do not fetch the hero.
     const heroPreload = `  <script>if(location.pathname === '/'){const l=document.createElement('link');l.rel='preload';l.as='image';l.href='/laptop-hero-871.webp';l.imageSrcset='/laptop-hero-871.webp 871w, /laptop-hero.webp 1742w';l.imageSizes='(min-width: 1100px) 780px, (min-width: 600px) 560px, 330px';l.fetchPriority='high';document.head.appendChild(l)}</script>\n`;
-    const html = template.replace('<head>', () => `<head>\n${heroPreload}`).replace('</head>', () => `${canonicalFor(route.path)}  </head>`);
+    // Some hosts use the root shell as the fallback for clean URLs. Start the
+    // font only for the same routes as the dedicated static shells.
+    const fallbackFontPreload = `  <script>if(${JSON.stringify([...MATH_FONT_PATHS])}.includes(location.pathname.replace(/\\/$/,''))){const l=document.createElement('link');l.rel='preload';l.as='font';l.type='font/woff2';l.fetchPriority='low';l.href='${MATH_FONT_HREF}';l.crossOrigin='anonymous';document.head.appendChild(l)}</script>\n`;
+    const html = template.replace('<head>', () => `<head>\n${heroPreload}${fallbackFontPreload}`).replace('</head>', () => `${canonicalFor(route.path)}  </head>`);
     writeFileSync(join(dist, 'index.html'), html, 'utf8');
     console.log('homepage hero preload injected into: dist/index.html');
     continue;
   }
-  let html = template;
+  let html = MATH_FONT_PATHS.has(route.path)
+    ? template.replace('<head>', () => `<head>\n${mathFontPreload}`)
+    : template;
   html = replaceOrThrow(
     html,
     /<title>[^<]*<\/title>/,

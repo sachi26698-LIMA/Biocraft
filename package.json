@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "seed": "node scripts/seed-supabase.mjs",
-    "test:collections": "node tests/collection-navigation.cjs && node tests/remote-dedup.cjs",
+    "test:collections": "node tests/collection-navigation.cjs && node tests/remote-dedup.cjs && node tests/collection-pagination.cjs && node tests/collection-card-renders.cjs",
     "test:review": "esbuild review-harness.tsx --bundle --platform=node --format=cjs --loader:.css=empty --outfile=review-harness.bundle.cjs && node review-check.cjs",
     "test:diagnostics": "node tests/preview-diagnostics.cjs",
     "test:generation": "node tests/generation-runner.cjs && node tests/generation-steps.cjs && node tests/generation-ui.cjs"

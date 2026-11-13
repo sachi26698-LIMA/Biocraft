@@ -21,14 +21,14 @@ async function main() {
   const { fetchCollectionBios } = m.exports;
   const a = fetchCollectionBios('one'), b = fetchCollectionBios('one'), other = fetchCollectionBios('two');
   assert.equal(calls, 2); assert.equal(a, b);
-  waits.shift()({ data: [{ content: 'one', language: 'en' }], error: null });
-  waits.shift()({ data: [], error: null });
+  waits.shift()({ data: [{ id: '00000000-0000-0000-0000-000000000001', created_at: '2026-01-01T00:00:00+00:00', content: 'one', language: 'en' }], count: 1, error: null });
+  waits.shift()({ data: [], count: 0, error: null });
   assert.equal((await a).bios[0].text, 'one'); await other;
   const fresh = fetchCollectionBios('one'); assert.equal(calls, 3);
   waits.shift()({ data: null, error: { message: 'unavailable' } });
   await assert.rejects(fresh);
   const retry = fetchCollectionBios('one'); assert.equal(calls, 4);
-  waits.shift()({ data: [], error: null }); await retry;
+  waits.shift()({ data: [], count: 0, error: null }); await retry;
   console.log('PASS concurrent reads deduplicated; separate slugs, fresh reads and retries work');
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; });

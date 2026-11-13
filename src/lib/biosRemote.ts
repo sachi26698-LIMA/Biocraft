@@ -17,6 +17,8 @@ export interface RemoteBioResult {
 }
 
 interface BioRow {
+  id: string;
+  created_at: string;
   content: string;
   plain_content: string | null;
   language: BioLang;
@@ -45,17 +47,60 @@ export function fetchCollectionBios(slug: string): Promise<RemoteBioResult> {
   return request;
 }
 
+const COLLECTION_PAGE_SIZE = 500;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 async function readCollectionBios(slug: string): Promise<RemoteBioResult> {
-  const { data, error } = await supabase!
-    .from('bios')
-    .select('content, plain_content, language, style_type')
-    .eq('source_slug', slug)
-    .eq('is_active', true)
-    .order('created_at', { ascending: true })
-    .order('id', { ascending: true })
-    .limit(500);
-  if (error) throw new Error(error.message);
-  return { bios: (data as BioRow[]).map(rowToEntry), source: 'supabase' };
+  const rows: BioRow[] = [];
+  const ids = new Set<string>();
+  let expected: number | null = null;
+  let cursor: BioRow | null = null;
+  let pages = 0;
+  while (expected === null || rows.length < expected) {
+    let query = supabase!
+      .from('bios')
+      .select('id, created_at, content, plain_content, language, style_type', cursor ? {} : { count: 'exact' })
+      .eq('source_slug', slug)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true });
+    if (cursor) {
+      // Values are returned by Postgres, not supplied by the visitor. Quote the
+      // timestamp for PostgREST's filter grammar and reject malformed cursors.
+      if (!UUID.test(cursor.id) || !/^\d{4}-\d\d-\d\d[T ][\d:.]+(?:Z|[+-]\d\d(?::?\d\d)?)$/.test(cursor.created_at)) {
+        throw new Error('Invalid collection pagination cursor');
+      }
+      const timestamp = `"${cursor.created_at}"`;
+      query = query.or(`created_at.gt.${timestamp},and(created_at.eq.${timestamp},id.gt.${cursor.id})`);
+    }
+    const { data, error, count } = await query.limit(COLLECTION_PAGE_SIZE);
+    if (error) throw new Error(error.message);
+    if (expected === null) {
+      if (count === null || count === undefined) throw new Error('Collection count unavailable');
+      expected = count;
+    }
+    const page = (data ?? []) as BioRow[];
+    pages++;
+    for (const row of page) {
+      if (!UUID.test(row.id) || ids.has(row.id)) throw new Error('Invalid or repeated collection row');
+      ids.add(row.id);
+      rows.push(row);
+    }
+    if (rows.length > expected || (page.length === 0 && rows.length < expected)) {
+      throw new Error('Collection changed while loading; please retry');
+    }
+    cursor = page[page.length - 1] ?? null;
+  }
+  if (pages > 1) {
+    // Separate HTTP requests do not share a database snapshot. Detect changes
+    // in the total rather than silently returning an obviously partial set.
+    const { count, error } = await supabase!.from('bios')
+      .select('id', { count: 'exact', head: true })
+      .eq('source_slug', slug)
+      .eq('is_active', true);
+    if (error || count !== expected) throw new Error('Collection changed while loading; please retry');
+  }
+  return { bios: rows.map(rowToEntry), source: 'supabase' };
 }
 
 export interface BioSearchFilters {
