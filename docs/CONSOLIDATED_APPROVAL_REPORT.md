@@ -276,7 +276,7 @@ No table, sequence, column or schema-`CREATE` privilege is granted.
 ### 6b. SHA-256 of every file in the package
 
 <!-- admin-sync:totals:start -->
-20 tables. 48 functions = 43 callable SECURITY DEFINER + 5 trigger bodies. 43 granted signatures. 14 forward migrations, 14 rollbacks and 1 grant file (`29` SQL files).
+20 tables. 49 functions = 44 callable SECURITY DEFINER + 5 trigger bodies. 44 granted signatures. 14 forward migrations, 14 rollbacks and 1 grant file (`29` SQL files).
 <!-- admin-sync:totals:end -->
 
 Regenerate the same list with
@@ -298,7 +298,7 @@ security review, stops matching the bytes on disk.
 - `admin-backend/migrations/011_totp_enrolment.sql` — `4507ed36f5571c92e0d85f1ca017809997be760a05693d5c6306b5f0939ddb21`
 - `admin-backend/migrations/012_recovery_and_cleanup.sql` — `81848c310f3ea16b4aa5bee279660b7d919e2dfd795136dbcfac958332f84f2a`
 - `admin-backend/migrations/013_publication_bridge.sql` — `8c9148fc9ce2fe086daf46ad6700dc16d1327165aa1f9221a90b366a1a506d9c`
-- `admin-backend/migrations/014_module_read_surface.sql` — `5f3a026c8a63a7f28ed24cbddefbb46f3e61517fe0995e6f1519aa97db3ff895`
+- `admin-backend/migrations/014_module_read_surface.sql` — `d1c5c53a6488eb4038a2f7834816470113c9fdc699c3a1d4fa12ced9fef12adf`
 - `admin-backend/rollback/001_admin_foundation.sql` — `98b80fd0cd9d0bc3cc1e87da1352a27f29771fd5dd8016d84744dffe9bda1a77`
 - `admin-backend/rollback/002_workflow_integrity.sql` — `9a8b79d9fda725b9efda3cc052aab246dbcf5a5336d84ea8a692733b422b1097`
 - `admin-backend/rollback/003_permission_catalog.sql` — `2d589421922666f3bd93f0c3b0a6bb6f87f77a91c9c3c620f27f0df37f0c20d1`
@@ -312,8 +312,8 @@ security review, stops matching the bytes on disk.
 - `admin-backend/rollback/011_totp_enrolment.sql` — `89f59839ee62c9a5cf9436d8cf6a617f2878fb37cbcd701994d13db0d84ce980`
 - `admin-backend/rollback/012_recovery_and_cleanup.sql` — `99823ea75d85f1a10ba871d1435bb29f9830c745fef010aeef2c85d928fcde96`
 - `admin-backend/rollback/013_publication_bridge.sql` — `433221b5573aa45e863c81222f2dc41c93fe00684332ab1ee724f1803d187785`
-- `admin-backend/rollback/014_module_read_surface.sql` — `71ee002073871c890d46229648eb6a5e017e5cb4bbb0274b4185436c6072bb06`
-- `admin-backend/grants/executor-grants.sql` — `867811ecec89578f8a90a8295c162911610390d91b0e8902ec4f09fb07206ffe`
+- `admin-backend/rollback/014_module_read_surface.sql` — `70732964832c950300ebd122d428585a34d02471c41590bf329922e58a910eef`
+- `admin-backend/grants/executor-grants.sql` — `1e9787d5e6dd9a6090d8a28fb04757efa7432b19d3720a39b620b70c0cf7d731`
 <!-- admin-sync:checksums:end -->
 
 ### 6c. Enrolment gate semantics (011, hardened by 012)
@@ -1894,7 +1894,7 @@ commit;
 
 ### `014_module_read_surface.sql`
 
-SHA-256 `5f3a026c8a63a7f28ed24cbddefbb46f3e61517fe0995e6f1519aa97db3ff895`.
+SHA-256 `d1c5c53a6488eb4038a2f7834816470113c9fdc699c3a1d4fa12ced9fef12adf`.
 
 ```sql
 -- 014. Read surface for the modules that had tables but no command: publication
@@ -1977,6 +1977,29 @@ create trigger admin_publications_notify after insert on bc_admin_v1.admin_bio_p
 -- ---------------------------------------------------------------------------
 -- Reads.
 -- ---------------------------------------------------------------------------
+
+-- Who is signed in, and what may they do. The endpoint exists because the console
+-- has to answer "may I see this?" before it asks for the data, and because a static
+-- preview cannot know anything about the account. Roles and permissions are read
+-- from membership, never from a client-supplied claim; the session facts come from
+-- the same checks that `require_actor` makes, so this cannot report a permission
+-- that an actual call would then refuse.
+create function bc_admin_v1.session_identity()
+returns table(user_id uuid,roles text[],permissions text[],session_expires_at timestamptz,session_created_at timestamptz)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; sid uuid;
+begin
+ actor := bc_admin_v1.require_actor('dashboard.read');
+ sid := (auth.jwt()->>'session_id')::uuid;
+ return query
+  select actor,
+         coalesce((select array_agg(ur.role_id order by ur.role_id) from bc_admin_v1.admin_user_roles ur where ur.user_id = actor), array[]::text[]),
+         coalesce((select array_agg(distinct rp.permission_id order by rp.permission_id)
+                   from bc_admin_v1.admin_user_roles ur join bc_admin_v1.admin_role_permissions rp on rp.role_id = ur.role_id
+                   where ur.user_id = actor), array[]::text[]),
+         s.expires_at, s.created_at
+  from bc_admin_v1.admin_sessions s where s.id = sid;
+end $$;
 
 -- The caller's own inbox, newest first. Nobody can read another member's rows:
 -- the recipient is the authenticated actor, never a parameter.
@@ -2073,7 +2096,8 @@ begin
   order by b.id limit p_limit;
 end $$;
 
-revoke all on function bc_admin_v1.list_my_notifications(integer,timestamptz),
+revoke all on function bc_admin_v1.session_identity(),
+ bc_admin_v1.list_my_notifications(integer,timestamptz),
  bc_admin_v1.mark_notifications_read(timestamptz),
  bc_admin_v1.list_publication_jobs(integer,uuid),
  bc_admin_v1.list_backup_records(integer,timestamptz),
@@ -2396,7 +2420,7 @@ commit;
 
 ### `014_module_read_surface.sql`
 
-SHA-256 `71ee002073871c890d46229648eb6a5e017e5cb4bbb0274b4185436c6072bb06`.
+SHA-256 `70732964832c950300ebd122d428585a34d02471c41590bf329922e58a910eef`.
 
 ```sql
 -- Rollback for 014. Removes the triggers first so no event can call a function
@@ -2411,6 +2435,7 @@ drop function bc_admin_v1.list_backup_records(integer,timestamptz);
 drop function bc_admin_v1.list_publication_jobs(integer,uuid);
 drop function bc_admin_v1.mark_notifications_read(timestamptz);
 drop function bc_admin_v1.list_my_notifications(integer,timestamptz);
+drop function bc_admin_v1.session_identity();
 commit;
 ```
 
@@ -2418,13 +2443,13 @@ commit;
 
 ### `executor-grants.sql`
 
-SHA-256 `867811ecec89578f8a90a8295c162911610390d91b0e8902ec4f09fb07206ffe`.
+SHA-256 `1e9787d5e6dd9a6090d8a28fb04757efa7432b19d3720a39b620b70c0cf7d731`.
 
 ```sql
 -- CANONICAL EXECUTOR GRANT LIST. Executed by a human with project access AFTER
 -- migrations 001–012, never by the application, and never as the executor itself.
 --
--- 43 signatures = 48 functions created by 001–014 minus the 5 trigger bodies
+-- 44 signatures = 49 functions created by 001–014 minus the 5 trigger bodies
 -- (reject_mutation, guard_draft, guard_approval, stamp_mfa_enrolled). Trigger
 -- functions are invoked by the trigger machinery as the table owner and must not
 -- be granted: a direct EXECUTE would widen the surface for no benefit.
@@ -2474,6 +2499,7 @@ grant execute on function
   bc_admin_v1.publish_bio_draft(uuid,bigint,uuid,uuid),
   bc_admin_v1.list_bio_publications(uuid,integer,bigint),
   bc_admin_v1.create_revert_draft(bigint,uuid),
+  bc_admin_v1.session_identity(),
   bc_admin_v1.list_my_notifications(integer,timestamptz),
   bc_admin_v1.mark_notifications_read(timestamptz),
   bc_admin_v1.list_publication_jobs(integer,uuid),

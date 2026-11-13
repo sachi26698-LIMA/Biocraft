@@ -67,3 +67,78 @@ html.admin-document,html.admin-document body,html.admin-document #root{margin:0;
 /* Recovery (D2): the code is typed from an out-of-band message, so the field is
 monospaced and letter-spaced like the setup key, and never autofilled. */
 #admin-recovery-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:1px;text-transform:lowercase}
+
+/* ---------------------------------------------------------------------------
+   Live Admin layer (src/admin/live/*).
+   Every value comes from the tokens already defined on .ad-app, so the live
+   modules cannot drift from the shell's palette in light or dark mode, and the
+   public site is untouched: all selectors are scoped under .ad-app.
+--------------------------------------------------------------------------- */
+
+/* Panels stacked in a module, and a denser stat grid for the overview cards. */
+.ad-panel + .ad-panel{margin-top:18px}
+.ad-stats--tight{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:0}
+.ad-stats--tight .ad-stat{padding:13px 14px}
+.ad-stats--tight .ad-stat strong{font-size:22px}
+
+/* Loading / denied / empty / error. One shape, four meanings, four colours: the
+   point is that "nothing here" never looks like "you may not see this". */
+.ad-live-state{display:flex;align-items:center;gap:12px;border:1px dashed var(--ad-line);border-radius:11px;background:var(--ad-soft);padding:14px 16px;font-size:12.5px;color:var(--ad-muted);line-height:1.55}
+.ad-live-state strong{display:block;color:var(--ad-text);font-size:13px;margin-bottom:2px}
+.ad-live-state p{margin:0}
+.ad-live-state button{margin-left:auto;border:1px solid var(--ad-line);background:var(--ad-card);color:var(--ad-text);border-radius:8px;padding:7px 11px;font-size:12px}
+.ad-live-state.is-denied{border-style:solid;border-color:#e6d2b4;background:#fdf6e9}
+.ad-live-state.is-error{border-style:solid;border-color:#efcfcc;background:#fdf1f0}
+.ad-live-state.is-empty{border-style:dotted}
+.ad-app.ad-dark .ad-live-state.is-denied{background:#2b2417;border-color:#5c4a22}
+.ad-app.ad-dark .ad-live-state.is-error{background:#2e1d1c;border-color:#5e3230}
+
+/* A spinner that costs one element and respects reduced motion. */
+.ad-spinner{width:14px;height:14px;border-radius:50%;border:2px solid var(--ad-line);border-top-color:var(--ad-purple);animation:ad-spin .7s linear infinite;flex:none}
+@keyframes ad-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.ad-spinner{animation:none;border-top-color:var(--ad-line)}}
+
+/* Keyset paging footer. Says "all results shown" rather than offering a page
+   number the server cannot honour. */
+.ad-pagination{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:14px;font-size:12px;color:var(--ad-muted)}
+.ad-pagination div{display:flex;gap:8px}
+.ad-pagination button{border:1px solid var(--ad-line);background:var(--ad-card);color:var(--ad-text);border-radius:8px;padding:7px 11px;font-size:12px}
+.ad-pagination button:disabled{opacity:.5;cursor:not-allowed}
+
+/* Form controls inside a live panel. Same height and radius as .ad-auth so the
+   console does not have two visual languages for "type something here". */
+.ad-field{display:grid;gap:5px;font-size:11px;font-weight:750;letter-spacing:.5px;text-transform:uppercase;color:var(--ad-muted)}
+.ad-field span{color:var(--ad-muted)}
+.ad-field small{font-weight:500;letter-spacing:0;text-transform:none;font-size:11.5px;line-height:1.45}
+.ad-field input,.ad-field select,.ad-field textarea{height:40px;padding:0 11px;border:1px solid var(--ad-line);border-radius:9px;background:var(--ad-soft);color:var(--ad-text);font-size:13px;font-weight:500;letter-spacing:0;text-transform:none}
+.ad-field textarea{height:auto;min-height:110px;padding:10px 11px;line-height:1.55;resize:vertical;font-family:inherit}
+.ad-field input:focus-visible,.ad-field select:focus-visible,.ad-field textarea:focus-visible{outline:2px solid var(--ad-purple);outline-offset:1px}
+.ad-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.ad-form-grid .ad-field--wide{grid-column:1 / -1}
+@media(max-width:700px){.ad-form-grid{grid-template-columns:minmax(0,1fr)}.ad-stats--tight{grid-template-columns:minmax(0,1fr)}}
+
+/* Role chips in the session card. */
+.ad-chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.ad-chip{display:inline-flex;align-items:center;border:1px solid var(--ad-line);border-radius:999px;background:var(--ad-soft);padding:3px 9px;font-size:11px;font-weight:650;color:var(--ad-text);white-space:nowrap}
+.ad-badge--red{background:#fdeceb;color:#8f1f18}
+.ad-app.ad-dark .ad-badge--red{background:#3a1f1e;color:#ffb4ab}
+
+/* "This account" facts: a two-column definition list that collapses on a phone
+   rather than forcing a 390 px viewport to scroll sideways. */
+.ad-session-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 22px;margin:0}
+.ad-session-facts div{min-width:0}
+.ad-session-facts small{display:block;font-size:10.5px;font-weight:750;letter-spacing:.6px;text-transform:uppercase;color:var(--ad-muted);margin-bottom:4px}
+.ad-session-facts code,.ad-session-facts span{font-size:12.5px;overflow-wrap:anywhere}
+.ad-session-facts code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media(max-width:700px){.ad-session-facts{grid-template-columns:minmax(0,1fr);gap:12px}}
+
+/* Page header used by the live modules. Mirrors .ad-page-head so the live and
+   bundled screens have identical rhythm. */
+.ad-page-head p{max-width:760px;line-height:1.6}
+
+/* Row-level actions: compact so a table with four buttons stays readable. */
+.ad-table .ad-action-row{gap:6px}
+.ad-table .ad-action-row button{white-space:nowrap;padding:6px 9px;font-size:11.5px}
+.ad-mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;overflow-wrap:anywhere}
+.ad-nowrap{white-space:nowrap}
+.ad-right{text-align:right}

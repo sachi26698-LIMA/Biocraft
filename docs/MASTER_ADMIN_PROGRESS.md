@@ -59,7 +59,7 @@ request, so no hosted interaction has ever been claimed.
   Counts are now derived by `test:admin-grant-inventory`:
 
 <!-- admin-sync:totals:start -->
-20 tables. 48 functions = 43 callable SECURITY DEFINER + 5 trigger bodies. 43 granted signatures. 14 forward migrations, 14 rollbacks and 1 grant file (`29` SQL files).
+20 tables. 49 functions = 44 callable SECURITY DEFINER + 5 trigger bodies. 44 granted signatures. 14 forward migrations, 14 rollbacks and 1 grant file (`29` SQL files).
 <!-- admin-sync:totals:end -->
 ### Latest local implementation batch
 

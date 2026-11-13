@@ -36,7 +36,7 @@ try {
  bc_admin_v1.list_settings(integer,text),bc_admin_v1.update_setting(text,jsonb,bigint,uuid),bc_admin_v1.list_role_catalog(),
  bc_admin_v1.list_my_sessions(integer,timestamptz),bc_admin_v1.list_audit_logs(integer,bigint),bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),bc_admin_v1.revoke_recovery_grant(uuid,uuid),bc_admin_v1.reset_factor_enrolment(uuid,uuid),bc_admin_v1.cleanup_expired(text,integer,uuid),
  bc_admin_v1.publish_bio_draft(uuid,bigint,uuid,uuid),bc_admin_v1.list_bio_publications(uuid,integer,bigint),bc_admin_v1.create_revert_draft(bigint,uuid),
- bc_admin_v1.list_my_notifications(integer,timestamptz),bc_admin_v1.mark_notifications_read(timestamptz),
+ bc_admin_v1.session_identity(),bc_admin_v1.list_my_notifications(integer,timestamptz),bc_admin_v1.mark_notifications_read(timestamptz),
  bc_admin_v1.list_publication_jobs(integer,uuid),bc_admin_v1.list_backup_records(integer,timestamptz),
  bc_admin_v1.list_public_bios(integer,uuid,text,text,boolean) to fixture_executor;`);
  // PGlite has one login: session_user comparison is simulated here; real
@@ -97,6 +97,16 @@ try {
  assert.equal((await call('/api/admin/v1/staff','PATCH',{userId:b,expectedVersion:1,enabled:'yes',roles:['editor']})).status,422);
  assert.equal((await call('/api/admin/v1/staff','PATCH',{userId:b,expectedVersion:1,enabled:true,roles:[]})).status,422);
  assert.equal((await call('/api/admin/v1/staff','PATCH',{userId:b,expectedVersion:1,enabled:true,roles:['editor'],extra:1})).status,422);
+ // GET /session reports the account from membership, and the shape the console
+ // needs: an id, roles and permissions.
+ const who = await call('/api/admin/v1/session');
+ assert.equal(who.status,200,JSON.stringify(await who.clone().json()));
+ const whoBody = await who.json();
+ assert.equal(whoBody.user.id, a);
+ assert.deepEqual(whoBody.user.roles, ['editor']);
+ assert.ok(whoBody.user.permissions.includes('content.draft'));
+ assert.ok(!whoBody.user.permissions.includes('staff.manage'));
+ assert.ok(!Number.isNaN(Date.parse(whoBody.expires_at)));
  // 014 read surface: shape validation first, then the real reads.
  assert.equal((await call('/api/admin/v1/notifications')).status,200);
  // The draft flow above ran through submit and review, so the author and the

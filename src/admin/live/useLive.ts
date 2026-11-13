@@ -19,6 +19,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { currentSession, request, type AdminSession } from '../backend';
 
+// Re-exported so a module can make one deliberate request without importing the
+// backend layer directly and accidentally bypassing the shared error vocabulary.
+export { request };
+
 export type LiveState = 'idle' | 'loading' | 'ready' | 'denied' | 'error';
 
 export interface LiveResult<T> {
@@ -50,6 +54,82 @@ export function describeError(error: unknown): string {
   if (code === 'INVALID') return 'The request was rejected as invalid.';
   if (typeof code === 'string' && code.length > 0) return `The request failed (${code}).`;
   return 'The request failed. Try again.';
+}
+
+/**
+ * A paged read that can append.
+ *
+ * The server pages by cursor, so "next page" means "ask for what comes after the
+ * last row I hold" — never an offset that could skip a row if something changed
+ * in between. `loadMore` appends; `reload` starts over.
+ */
+export function usePaged<T>(path: string | null, take: (last: T | null) => string | null): LiveResult<T[]> & { loadMore: () => void; hasMore: boolean } {
+  const [state, setState] = useState<LiveState>('idle');
+  const [rows, setRows] = useState<T[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [nonce, setNonce] = useState(0);
+  const [more, setMore] = useState(false);
+  const [appending, setAppending] = useState(false);
+  const live = useRef(true);
+
+  useEffect(() => {
+    live.current = true;
+    return () => { live.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!path) { setState('idle'); setRows([]); setError(null); return; }
+    const controller = new AbortController();
+    setState('loading');
+    setError(null);
+    setCursor(null);
+    setMore(false);
+    request<{ items: T[] }>(path, { signal: controller.signal })
+      .then(body => {
+        if (!live.current || controller.signal.aborted) return;
+        const items = Array.isArray(body.items) ? body.items : [];
+        setRows(items);
+        // A full page means the server may hold more; a short page means it does not.
+        setMore(items.length > 0);
+        setState('ready');
+      })
+      .catch((cause: unknown) => {
+        if (!live.current || controller.signal.aborted) return;
+        setRows([]);
+        setState(isDenied(cause) ? 'denied' : 'error');
+        setError(describeError(cause));
+      });
+    return () => controller.abort();
+  }, [path, nonce]);
+
+  const loadMore = useCallback(() => {
+    if (!path || appending) return;
+    const last = rows.length > 0 ? rows[rows.length - 1] : null;
+    const next = take(last);
+    if (!next) { setMore(false); return; }
+    if (next === cursor) return;
+    setAppending(true);
+    setCursor(next);
+    const separator = path.includes('?') ? '&' : '?';
+    request<{ items: T[] }>(`${path}${separator}after=${encodeURIComponent(next)}`)
+      .then(body => {
+        if (!live.current) return;
+        const items = Array.isArray(body.items) ? body.items : [];
+        setRows(previous => [...previous, ...items]);
+        setMore(items.length > 0);
+      })
+      .catch((cause: unknown) => { if (live.current) setError(describeError(cause)); })
+      .finally(() => { if (live.current) setAppending(false); });
+  }, [path, rows, cursor, appending, take]);
+
+  const reload = useCallback(() => setNonce(value => value + 1), []);
+  return { state, data: state === 'ready' ? rows : null, error, reload, loadMore, hasMore: more };
+}
+
+/** POST/PUT a write and report what happened, without pretending it worked. */
+export async function mutate<T>(path: string, body: unknown, method: 'POST' | 'PUT' | 'PATCH' = 'POST'): Promise<T> {
+  return request<T>(path, { method, body: JSON.stringify(body) });
 }
 
 /** GET a path and report the outcome without ever fabricating data. */

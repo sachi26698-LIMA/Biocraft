@@ -56,11 +56,11 @@ const granted = [...grants.matchAll(/bc_admin_v1\.([a-z0-9_]+)\(([^)]*)\)/g)]
 // 3. Numbers the review and the approval report must both state.
 assert.equal(tables.length, 20, `expected 20 tables, found ${tables.length}`);
 assert.equal(new Set(tables).size, 20, 'duplicate table definition');
-assert.equal(created.length, 48, `expected 48 functions, found ${created.length}`);
+assert.equal(created.length, 49, `expected 49 functions, found ${created.length}`);
 assert.equal(triggerBodies.length, 5, `expected 5 trigger bodies, found ${triggerBodies.length}`);
-assert.equal(granted.length, 43, `expected 43 granted signatures, found ${granted.length}`);
+assert.equal(granted.length, 44, `expected 44 granted signatures, found ${granted.length}`);
 assert.equal(new Set(granted).size, granted.length, 'duplicate grant');
-assert.equal(functions.length, 43, 'callable functions must equal the 43 grants');
+assert.equal(functions.length, 44, 'callable functions must equal the 44 grants');
 assert.equal(invoker.length, 0, `unexpected SECURITY INVOKER function: ${invoker.map(f => f.fn)}`);
 
 // 4. Every granted name exists in the migrations, and nothing else is granted.

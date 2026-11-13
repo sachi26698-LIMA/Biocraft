@@ -80,6 +80,8 @@ const OPERATIONS = Object.freeze({
   sessionRevoke: {permission:'dashboard.read',sql:'select bc_admin_v1.revoke_admin_session($1::uuid)'},
   sessionRevokeAll: {permission:'dashboard.read',sql:'select bc_admin_v1.revoke_my_sessions($1::uuid) as revoked'},
   sessionCheck: {permission:'dashboard.read',sql:'select true as active'},
+  // Who am I, from membership rather than from a claim. Backs GET /session.
+  sessionIdentity: {permission:'dashboard.read',sql:'select * from bc_admin_v1.session_identity()'},
   staffList: {permission:'staff.read',sql:'select * from bc_admin_v1.list_staff($1,$2::uuid)'},
   list: {permission:'content.read',sql:'select * from bc_admin_v1.list_my_bio_drafts($1,$2::timestamptz,$3::uuid)'},
   draftGet: {permission:'content.read',sql:'select * from bc_admin_v1.get_bio_draft($1::uuid)'},

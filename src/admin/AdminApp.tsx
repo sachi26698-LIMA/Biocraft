@@ -6,6 +6,14 @@ import { TOOLS } from '../tools/registry';
 import { handleAnchorClick, usePath } from '../lib/router';
 import { adminBackend } from './backend';
 import LiveModules from './LiveModules';
+import LiveOverview from './live/Overview';
+import LiveUsers from './live/Users';
+import LiveContent from './live/Content';
+import LiveLibrary from './live/Library';
+import LiveAnalytics from './live/Analytics';
+import LiveSecurity from './live/Security';
+import LiveSettings from './live/Settings';
+import { probeBackend, type BackendStatus } from './backend';
 import Login from './Login';
 import './admin.css';
 
@@ -118,8 +126,20 @@ function Unavailable({section, moduleKey}:{section: typeof unavailable[string];m
 
 export default function AdminApp() {
  const path=usePath();const [menu,setMenu]=useState(false);const [dark,setDark]=useState(false);
+ // The console has two modes and never mixes them. With no reachable backend it
+ // shows the bundled read-only inventory exactly as before; once /health answers,
+ // it switches to the live modules. The probe result is a state, not a guess, and
+ // a failed probe never renders live-looking numbers.
+ const [backend,setBackend]=useState<BackendStatus>('unavailable');
+ const [probed,setProbed]=useState(false);
+ useEffect(()=>{
+  const controller=new AbortController();
+  probeBackend(controller.signal).then(result=>{ if(!controller.signal.aborted){ setBackend(result); setProbed(true); } }).catch(()=>{ if(!controller.signal.aborted){ setBackend('unavailable'); setProbed(true); } });
+  return ()=>controller.abort();
+ },[]);
+ const live = backend === 'ready' || backend === 'unauthenticated';
  const menuButton=useRef<HTMLButtonElement>(null);const sidebar=useRef<HTMLElement>(null);
- useEffect(()=>{document.title='Admin Preview — BioCraft'; return ()=>{document.title='BioCraft — All-in-One Social Media Toolkit';};},[]);
+ useEffect(()=>{document.title='Admin — BioCraft'; return ()=>{document.title='BioCraft — All-in-One Social Media Toolkit';};},[]);
  useEffect(()=>{setMenu(false);},[path]);
  useEffect(() => {
   if (!menu) return;
@@ -142,6 +162,13 @@ export default function AdminApp() {
  const item=nav.find(n=>n.path===path); let content:ReactNode;
  if (!item && path === '/admin/login') content=<><PageHead eyebrow="ADMIN ACCESS" title="Sign in" description="Server-side password and authenticator verification is required to use the Admin workspace."/><Login/></>;
  else if (!item) content=<><PageHead eyebrow="NOT FOUND" title="Page not found" description="This workspace page doesn’t exist."/><a className="ad-text-link" href="/admin" onClick={handleAnchorClick}>Back to overview <Icon name="arrow" size={15}/></a></>;
+ else if(live&&item.key==='overview')content=<LiveOverview/>;
+ else if(live&&item.key==='users')content=<LiveUsers/>;
+ else if(live&&item.key==='content')content=<LiveContent/>;
+ else if(live&&item.key==='bios')content=<><LiveLibrary/><LiveModules/></>;
+ else if(live&&item.key==='analytics')content=<LiveAnalytics/>;
+ else if(live&&item.key==='security')content=<LiveSecurity/>;
+ else if(live&&item.key==='settings')content=<LiveSettings/>;
  else if(item.key==='overview')content=<><Overview/><LiveModules/></>;else if(item.key==='bios')content=<BioLibrary/>;else if(item.key==='categories')content=<Collections/>;else if(item.key==='platforms')content=<Platforms/>;else if(item.key==='generators')content=<Generators/>;else content=<Unavailable key={item.key} moduleKey={item.key} section={unavailable[item.key]}/>;
- return <div className={`ad-app ${dark?'ad-dark':''}`}><a className="ad-skip" href="#admin-main">Skip to content</a>{menu&&<button className="ad-overlay" aria-label="Close navigation" onClick={()=>setMenu(false)}/>}<aside ref={sidebar} className={`ad-sidebar ${menu?'ad-sidebar-open':''}`} aria-label="Admin navigation"><a className="ad-brand" href="/admin" onClick={e=>{handleAnchorClick(e);setMenu(false);}}><span className="ad-brand-mark"><Icon name="layers" size={21}/></span><span><strong>BioCraft</strong><small>ADMIN WORKSPACE</small></span></a><div className="ad-sidebar-label">WORKSPACE</div><nav>{nav.slice(0,7).map(n=><NavLink key={n.key} item={n} path={path} close={()=>setMenu(false)}/>)}</nav><div className="ad-sidebar-label ad-sidebar-label-second">MANAGE</div><nav>{nav.slice(7).map(n=><NavLink key={n.key} item={n} path={path} close={()=>setMenu(false)}/>)}</nav><div className="ad-sidebar-bottom"><div className="ad-sidebar-card"><span className="ad-mini-lock"><Icon name="lock" size={16}/></span><strong>Built for secure work</strong><p>Admin services are not connected in this preview.</p><a href="/admin/security" onClick={e=>{handleAnchorClick(e);setMenu(false);}}>View security <Icon name="arrow" size={14}/></a><a href="/admin/login" onClick={e=>{handleAnchorClick(e);setMenu(false);}}>Admin sign-in <Icon name="arrow" size={14}/></a></div><a className="ad-back" href="/">← <span>Back to BioCraft</span><Icon name="external" size={15}/></a></div></aside><div className="ad-content"><header className="ad-topbar"><button ref={menuButton} className="ad-mobile-menu" type="button" aria-label="Open navigation" aria-expanded={menu} onClick={()=>setMenu(true)}><Icon name="menu"/></button><div className="ad-breadcrumb"><span>Workspace</span><span>/</span><strong>{item?.label ?? (path === '/admin/login' ? 'Sign in' : 'Not found')}</strong></div><div className="ad-top-actions"><span className="ad-preview-pill"><i/> Preview mode</span><button className="ad-theme-toggle" type="button" onClick={()=>setDark(!dark)} aria-label={dark?'Switch to light mode':'Switch to dark mode'} title={dark?'Switch to light mode':'Switch to dark mode'}><Icon name={dark?'sun':'moon'} size={18}/></button><span className="ad-avatar" aria-hidden="true"><Icon name="lock" size={16}/></span></div></header><main id="admin-main" className="ad-main">{content}<footer className="ad-footer"><span>BioCraft Admin Preview</span><span>Public data only · No admin session</span></footer></main></div></div>;
+ return <div className={`ad-app ${dark?'ad-dark':''}`}><a className="ad-skip" href="#admin-main">Skip to content</a>{menu&&<button className="ad-overlay" aria-label="Close navigation" onClick={()=>setMenu(false)}/>}<aside ref={sidebar} className={`ad-sidebar ${menu?'ad-sidebar-open':''}`} aria-label="Admin navigation"><a className="ad-brand" href="/admin" onClick={e=>{handleAnchorClick(e);setMenu(false);}}><span className="ad-brand-mark"><Icon name="layers" size={21}/></span><span><strong>BioCraft</strong><small>ADMIN WORKSPACE</small></span></a><div className="ad-sidebar-label">WORKSPACE</div><nav>{nav.slice(0,7).map(n=><NavLink key={n.key} item={n} path={path} close={()=>setMenu(false)}/>)}</nav><div className="ad-sidebar-label ad-sidebar-label-second">MANAGE</div><nav>{nav.slice(7).map(n=><NavLink key={n.key} item={n} path={path} close={()=>setMenu(false)}/>)}</nav><div className="ad-sidebar-bottom"><div className="ad-sidebar-card"><span className="ad-mini-lock"><Icon name="lock" size={16}/></span><strong>{live?'Signed-in console':'Built for secure work'}</strong><p>{!probed?'Checking whether the Admin service is reachable…':live?'Live data. Sign-in, roles and every action are checked on the server.':'Admin services are not connected in this preview.'}</p><a href="/admin/security" onClick={e=>{handleAnchorClick(e);setMenu(false);}}>View security <Icon name="arrow" size={14}/></a><a href="/admin/login" onClick={e=>{handleAnchorClick(e);setMenu(false);}}>Admin sign-in <Icon name="arrow" size={14}/></a></div><a className="ad-back" href="/">← <span>Back to BioCraft</span><Icon name="external" size={15}/></a></div></aside><div className="ad-content"><header className="ad-topbar"><button ref={menuButton} className="ad-mobile-menu" type="button" aria-label="Open navigation" aria-expanded={menu} onClick={()=>setMenu(true)}><Icon name="menu"/></button><div className="ad-breadcrumb"><span>Workspace</span><span>/</span><strong>{item?.label ?? (path === '/admin/login' ? 'Sign in' : 'Not found')}</strong></div><div className="ad-top-actions"><span className="ad-preview-pill"><i/> {live?'Live data':'Preview mode'}</span><button className="ad-theme-toggle" type="button" onClick={()=>setDark(!dark)} aria-label={dark?'Switch to light mode':'Switch to dark mode'} title={dark?'Switch to light mode':'Switch to dark mode'}><Icon name={dark?'sun':'moon'} size={18}/></button><span className="ad-avatar" aria-hidden="true"><Icon name="lock" size={16}/></span></div></header><main id="admin-main" className="ad-main">{content}<footer className="ad-footer"><span>{live?'BioCraft Admin Console':'BioCraft Admin Preview'}</span><span>{live?'Server-verified session · Every action audited':'Public data only · No admin session'}</span></footer></main></div></div>;
 }

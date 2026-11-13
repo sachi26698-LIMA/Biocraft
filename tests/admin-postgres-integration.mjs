@@ -42,7 +42,7 @@ try {
  bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),bc_admin_v1.revoke_recovery_grant(uuid,uuid),
  bc_admin_v1.consume_recovery_grant(bytea,uuid),bc_admin_v1.recovery_grant_state(uuid),bc_admin_v1.reset_factor_enrolment(uuid,uuid),
  bc_admin_v1.publish_bio_draft(uuid,bigint,uuid,uuid),bc_admin_v1.list_bio_publications(uuid,integer,bigint),bc_admin_v1.create_revert_draft(bigint,uuid),
- bc_admin_v1.list_my_notifications(integer,timestamptz),bc_admin_v1.mark_notifications_read(timestamptz),bc_admin_v1.list_publication_jobs(integer,uuid),
+ bc_admin_v1.session_identity(),bc_admin_v1.list_my_notifications(integer,timestamptz),bc_admin_v1.mark_notifications_read(timestamptz),bc_admin_v1.list_publication_jobs(integer,uuid),
  bc_admin_v1.list_backup_records(integer,timestamptz),bc_admin_v1.list_public_bios(integer,uuid,text,text,boolean),
  bc_admin_v1.cleanup_expired(text,integer,uuid),bc_admin_v1.factor_gate(uuid) to bc_fixture_executor;
  -- Synthetic public rows so module reads have deterministic content.
@@ -365,6 +365,14 @@ try {
  assert.deepEqual(publishAudit.rows.map(r=>r.details.publication),['created','restored','created','archived']);
 
  // ---- 014: module read surface and the notification writer ----
+ // Who-am-I comes from membership, not from the token: the roles and permissions
+ // reported are exactly the ones a real call will enforce.
+ const who = (await exec({...asReviewer,operation:'sessionIdentity',args:[]}))[0];
+ assert.equal(who.user_id,reviewer);
+ assert.deepEqual(who.roles,['content_manager']);
+ assert.ok(who.permissions.includes('content.review'));
+ assert.ok(!who.permissions.includes('staff.manage'),'a content manager must not be told it can manage staff');
+ assert.ok(new Date(who.session_expires_at) > new Date());
  // The inbox only ever shows the caller's rows, and the writer records the three
  // events that matter: assigned, decided, published.
  const inboxAuthor = await exec({...asAuthor,operation:'notificationList',args:[50,null]});

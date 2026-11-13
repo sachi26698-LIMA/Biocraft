@@ -113,9 +113,9 @@ try {
   for (const name of migrations) await client.query(fs.readFileSync(`admin-backend/migrations/${name}`,'utf8'));
   const counts = await client.query("select (select count(*)::int from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='bc_admin_v1' and c.relkind='r') tables, (select count(*)::int from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='bc_admin_v1') functions");
   assert.equal(counts.rows[0].tables, 20);
-  assert.equal(counts.rows[0].functions, 48);
+  assert.equal(counts.rows[0].functions, 49);
 
-  console.log('PASS rollback cycle (fresh database): all three 012 guards refuse before touching anything, rollback/012 restores a working 011 gate after dropping mfa_enrolled_at, rollback/013 removes the bridge without touching public.bios, rollback/014 drops the notification triggers before their function, full reverse teardown leaves no schema or function, and a clean reinstall recreates 20 tables and 48 functions');
+  console.log('PASS rollback cycle (fresh database): all three 012 guards refuse before touching anything, rollback/012 restores a working 011 gate after dropping mfa_enrolled_at, rollback/013 removes the bridge without touching public.bios, rollback/014 drops the notification triggers before their function, full reverse teardown leaves no schema or function, and a clean reinstall recreates 20 tables and 49 functions');
 } finally {
   await client.end();
   const cleanup = new pg.Client({host: socket, database: 'postgres', user});

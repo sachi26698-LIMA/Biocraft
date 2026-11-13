@@ -685,7 +685,7 @@ and compare.
 - `admin-backend/migrations/011_totp_enrolment.sql` — `4507ed36f5571c92e0d85f1ca017809997be760a05693d5c6306b5f0939ddb21`
 - `admin-backend/migrations/012_recovery_and_cleanup.sql` — `81848c310f3ea16b4aa5bee279660b7d919e2dfd795136dbcfac958332f84f2a`
 - `admin-backend/migrations/013_publication_bridge.sql` — `8c9148fc9ce2fe086daf46ad6700dc16d1327165aa1f9221a90b366a1a506d9c`
-- `admin-backend/migrations/014_module_read_surface.sql` — `5f3a026c8a63a7f28ed24cbddefbb46f3e61517fe0995e6f1519aa97db3ff895`
+- `admin-backend/migrations/014_module_read_surface.sql` — `d1c5c53a6488eb4038a2f7834816470113c9fdc699c3a1d4fa12ced9fef12adf`
 - `admin-backend/rollback/001_admin_foundation.sql` — `98b80fd0cd9d0bc3cc1e87da1352a27f29771fd5dd8016d84744dffe9bda1a77`
 - `admin-backend/rollback/002_workflow_integrity.sql` — `9a8b79d9fda725b9efda3cc052aab246dbcf5a5336d84ea8a692733b422b1097`
 - `admin-backend/rollback/003_permission_catalog.sql` — `2d589421922666f3bd93f0c3b0a6bb6f87f77a91c9c3c620f27f0df37f0c20d1`
@@ -699,8 +699,8 @@ and compare.
 - `admin-backend/rollback/011_totp_enrolment.sql` — `89f59839ee62c9a5cf9436d8cf6a617f2878fb37cbcd701994d13db0d84ce980`
 - `admin-backend/rollback/012_recovery_and_cleanup.sql` — `99823ea75d85f1a10ba871d1435bb29f9830c745fef010aeef2c85d928fcde96`
 - `admin-backend/rollback/013_publication_bridge.sql` — `433221b5573aa45e863c81222f2dc41c93fe00684332ab1ee724f1803d187785`
-- `admin-backend/rollback/014_module_read_surface.sql` — `71ee002073871c890d46229648eb6a5e017e5cb4bbb0274b4185436c6072bb06`
-- `admin-backend/grants/executor-grants.sql` — `867811ecec89578f8a90a8295c162911610390d91b0e8902ec4f09fb07206ffe`
+- `admin-backend/rollback/014_module_read_surface.sql` — `70732964832c950300ebd122d428585a34d02471c41590bf329922e58a910eef`
+- `admin-backend/grants/executor-grants.sql` — `1e9787d5e6dd9a6090d8a28fb04757efa7432b19d3720a39b620b70c0cf7d731`
 <!-- admin-sync:checksums:end -->
  The grant file is included because it is the statement that actually
 confers capability — the migrations only define the functions.

@@ -55,9 +55,19 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
    if(url.pathname==='/api/admin/v1/session' && request.method==='POST' && !url.search) {
     operation='sessionOpen';args=[id];
    } else if(url.pathname==='/api/admin/v1/session' && request.method==='DELETE' && !url.search) {
+    // `revoke_admin_session(p_request_id)` closes the caller's *own* session: the
+    // target comes from the verified JWT session id inside SQL, and the argument
+    // is only the request id recorded in the audit row. Passing the session id
+    // here would be wrong — it would be recorded as if it were a request.
     operation='sessionRevoke';args=[id];
+   } else if(url.pathname==='/api/admin/v1/sessions/revoke-all' && request.method==='POST' && !url.search) {
+    // "Sign out everywhere". Step-up protected, because it is a destructive act on
+    // every live session this account holds, including the calling one.
+    operation='sessionRevokeAll';args=[id];
    } else if(url.pathname==='/api/admin/v1/session' && request.method==='GET' && !url.search) {
-    operation='sessionCheck';args=[];
+    // Returns the account and what it may do, so a console can decide what to show
+    // before requesting module data. Server-side checks still run per call.
+    operation='sessionIdentity';args=[];
    } else if(url.pathname==='/api/admin/v1/sessions' && request.method==='GET') {
     paging(url,['limit','before'],{before:'time'});
     operation='mySessions';args=[pageLimit(url),url.searchParams.get('before')];
@@ -210,6 +220,12 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
    }
    const rows=await execute({identity,operation,args});
    if(!Array.isArray(rows))fail(503,'UNAVAILABLE');
+   // "Revoke all my sessions" must name the caller's own action, not another one.
+   if(operation==='sessionRevokeAll') {
+    const revoked=Number(rows[0]?.revoked);
+    if(rows.length!==1||!Number.isSafeInteger(revoked)||revoked<0)fail(503,'UNAVAILABLE');
+    return json(200,{revoked,request_id:id});
+   }
    if(operation==='sessionOpen') {
     const expiry=rows[0]?.expires_at;
     if(rows.length!==1 || !expiry || !Number.isFinite(Date.parse(expiry)))fail(503,'UNAVAILABLE');
@@ -230,6 +246,14 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     return json(200,{bio_id:rows[0].bio_id,action:rows[0].action,request_id:id});
    }
    if(operation==='revert'){if(rows.length!==1||typeof rows[0]?.revert_draft!=='string'||!uid.test(rows[0].revert_draft))fail(503,'UNAVAILABLE');return json(201,{draft_id:rows[0].revert_draft,request_id:id});}
+   if(operation==='sessionIdentity'){
+    if(rows.length!==1)fail(503,'UNAVAILABLE');
+    const row=rows[0];
+    if(typeof row?.user_id!=='string'||!Array.isArray(row.roles)||!Array.isArray(row.permissions))fail(503,'UNAVAILABLE');
+    const expires=typeof row.session_expires_at==='string'?row.session_expires_at:new Date(row.session_expires_at).toISOString();
+    return json(200,{user:{id:row.user_id,roles:row.roles,permissions:row.permissions},
+      expires_at:expires,created_at:row.session_created_at,request_id:id});
+   }
    if(operation==='analytics')return json(200,{metrics:rows,request_id:id});
 
    if(operation==='settingUpdate'){if(rows.length!==1||!Number.isSafeInteger(rows[0]?.version))fail(503,'UNAVAILABLE');return json(200,{version:rows[0].version,request_id:id});}

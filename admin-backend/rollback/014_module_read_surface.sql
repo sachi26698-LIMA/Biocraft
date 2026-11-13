@@ -10,4 +10,5 @@ drop function bc_admin_v1.list_backup_records(integer,timestamptz);
 drop function bc_admin_v1.list_publication_jobs(integer,uuid);
 drop function bc_admin_v1.mark_notifications_read(timestamptz);
 drop function bc_admin_v1.list_my_notifications(integer,timestamptz);
+drop function bc_admin_v1.session_identity();
 commit;

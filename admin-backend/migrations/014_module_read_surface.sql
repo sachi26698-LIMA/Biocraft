@@ -79,6 +79,29 @@ create trigger admin_publications_notify after insert on bc_admin_v1.admin_bio_p
 -- Reads.
 -- ---------------------------------------------------------------------------
 
+-- Who is signed in, and what may they do. The endpoint exists because the console
+-- has to answer "may I see this?" before it asks for the data, and because a static
+-- preview cannot know anything about the account. Roles and permissions are read
+-- from membership, never from a client-supplied claim; the session facts come from
+-- the same checks that `require_actor` makes, so this cannot report a permission
+-- that an actual call would then refuse.
+create function bc_admin_v1.session_identity()
+returns table(user_id uuid,roles text[],permissions text[],session_expires_at timestamptz,session_created_at timestamptz)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; sid uuid;
+begin
+ actor := bc_admin_v1.require_actor('dashboard.read');
+ sid := (auth.jwt()->>'session_id')::uuid;
+ return query
+  select actor,
+         coalesce((select array_agg(ur.role_id order by ur.role_id) from bc_admin_v1.admin_user_roles ur where ur.user_id = actor), array[]::text[]),
+         coalesce((select array_agg(distinct rp.permission_id order by rp.permission_id)
+                   from bc_admin_v1.admin_user_roles ur join bc_admin_v1.admin_role_permissions rp on rp.role_id = ur.role_id
+                   where ur.user_id = actor), array[]::text[]),
+         s.expires_at, s.created_at
+  from bc_admin_v1.admin_sessions s where s.id = sid;
+end $$;
+
 -- The caller's own inbox, newest first. Nobody can read another member's rows:
 -- the recipient is the authenticated actor, never a parameter.
 create function bc_admin_v1.list_my_notifications(p_limit integer,p_before timestamptz)
@@ -174,7 +197,8 @@ begin
   order by b.id limit p_limit;
 end $$;
 
-revoke all on function bc_admin_v1.list_my_notifications(integer,timestamptz),
+revoke all on function bc_admin_v1.session_identity(),
+ bc_admin_v1.list_my_notifications(integer,timestamptz),
  bc_admin_v1.mark_notifications_read(timestamptz),
  bc_admin_v1.list_publication_jobs(integer,uuid),
  bc_admin_v1.list_backup_records(integer,timestamptz),
