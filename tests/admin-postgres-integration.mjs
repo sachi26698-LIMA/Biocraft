@@ -147,8 +147,12 @@ try {
  const stale={...identity,mfaVerifiedAt:Math.floor(Date.now()/1000)-3600};
  await assert.rejects(exec({identity:{...stale,sessionId:activeSid},operation:'create',args:['stale',JSON.stringify({content:'x',language:'en',platform:'instagram',active:true,featured:false}),randomUUID()]}),e=>e.code==='28000');
  await assert.rejects(exec({identity:{...active,mfaVerifiedAt:null},operation:'create',args:['none',JSON.stringify({content:'x',language:'en',platform:'instagram',active:true,featured:false}),randomUUID()]}),e=>e.code==='28000');
- // 011 enrolment gate: an AAL1 password session is enough only for enrolment,
- // and only while the membership is enabled, roled and the provider session lives.
+ // 011 enrolment gate, hardened by 012: an AAL1 password session is enough only
+ // for enrolment, only while the membership is enabled, roled and the provider
+ // session lives, AND only while the account has never proven a factor. Any
+ // earlier session in this suite proves one, so the record is cleared first —
+ // which is exactly what the audited reset does for a real operator.
+ await admin.query('update bc_admin_v1.admin_users set mfa_enrolled_at=null where id=$1',[uid]);
  const aal1={...identity,assuranceLevel:'aal1',mfaVerifiedAt:Math.floor(Date.now()/1000)};
  assert.deepEqual(await exec({identity:aal1,operation:'enrolmentEligible',args:[randomUUID()]}),[{eligible:true}]);
  await assert.rejects(exec({identity:aal1,operation:'create',args:['aal1',JSON.stringify({content:'x',language:'en',platform:'instagram',active:true,featured:false}),randomUUID()]}),/Invalid operation/);
@@ -161,13 +165,18 @@ try {
  await admin.query('delete from bc_admin_v1.admin_user_roles where user_id=$1',[uid]);
  assert.deepEqual(await exec({identity:aal1,operation:'enrolmentEligible',args:[randomUUID()]}),[{eligible:false}]);
  await admin.query("insert into bc_admin_v1.admin_user_roles(user_id,role_id) values($1,'editor')",[uid]);
- // AAL2 sessions pass the same gate (re-enrolment after a lost device).
+ // An AAL2 session passes the same gate while the record is still clear.
  assert.deepEqual(await exec({identity:{...aal1,sessionId:activeSid,assuranceLevel:'aal2'},operation:'enrolmentEligible',args:[randomUUID()]}),[{eligible:true}]);
+ // Once a factor is recorded, the gate refuses a fresh enrolment even for AAL2:
+ // the account must go through recovery, which is the whole point of D2.
+ await admin.query('update bc_admin_v1.admin_users set mfa_enrolled_at=now() where id=$1',[uid]);
+ assert.deepEqual(await exec({identity:{...aal1,sessionId:activeSid,assuranceLevel:'aal2'},operation:'enrolmentEligible',args:[randomUUID()]}),[{eligible:false}]);
+ await admin.query('update bc_admin_v1.admin_users set mfa_enrolled_at=null where id=$1',[uid]);
  // Every attempt commits an audit row, and no token material is stored.
  const audits=await admin.query("select actor_id,details from bc_admin_v1.admin_audit_logs where action='auth.enrolment_attempt' order by id");
- assert.equal(audits.rows.length,5);
- assert.deepEqual(audits.rows.map(r=>r.details.eligible),[true,false,false,false,true]);
- assert.equal(audits.rows.filter(r=>r.actor_id===null).length,3);
+ assert.equal(audits.rows.length,6);
+ assert.deepEqual(audits.rows.map(r=>r.details.eligible),[true,false,false,false,true,false]);
+ assert.equal(audits.rows.filter(r=>r.actor_id===null).length,4);
  assert.equal(JSON.stringify(audits.rows).includes('eyJ'),false);
  await assert.rejects(exec({identity:aal1,operation:'enrolmentEligible',args:[null]}),e=>e.code==='22023');
  // ---- 012: Super-Admin-authorised recovery and bounded cleanup ----
@@ -274,7 +283,9 @@ try {
  assert.equal((await admin.query("select count(*)::int n from bc_admin_v1.admin_rate_limits where started_at>now()-interval '1 day'")).rows[0].n>=1,true);
  const auditAfter=(await admin.query("select count(*)::int n from bc_admin_v1.admin_audit_logs")).rows[0].n;
  assert(auditAfter>auditBefore,'cleanup must add audit rows, never remove them');
- assert.equal((await admin.query("select count(*)::int n from bc_admin_v1.admin_audit_logs where action='auth.enrolment_attempt'")).rows[0].n,5);
+ // Cleanup never touches audit evidence: the gate attempts recorded earlier survive
+// every delete. The exact count is asserted where the gate is exercised.
+assert((await admin.query("select count(*)::int n from bc_admin_v1.admin_audit_logs where action='auth.enrolment_attempt'")).rows[0].n>=6);
  assert.equal((await admin.query("select count(*)::int n from bc_admin_v1.admin_cleanup_runs where finished_at is not null and deleted>0")).rows[0].n>=2,true);
  // Argument validation happens before any delete: a table other than the two
  // operational ones cannot even be named, and an oversized batch is refused.

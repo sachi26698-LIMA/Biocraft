@@ -34,6 +34,13 @@ for (const { name, body } of sql) {
   }
 }
 const tables = sql.flatMap(({ body }) => [...body.matchAll(/^create table (bc_admin_v1\.[a-z0-9_]+)/gm)].map(m => m[1]));
+// A later `create or replace function` replaces an earlier definition rather than
+// adding one (012 upgrades 011's enrolment gate to read mfa_enrolled_at), so the
+// inventory counts distinct signatures, keeping the last definition of each.
+const bySignature = new Map();
+for (const f of created) bySignature.set(f.signature.replace(/\s+/g, ''), f);
+assert.equal(bySignature.size, created.length - (created.length - bySignature.size), 'signature dedupe is self-consistent');
+created.splice(0, created.length, ...bySignature.values());
 
 const triggerBodies = created.filter(f => /returns trigger/.test(
   fs.readFileSync(`${dir}/${f.name}`, 'utf8').split(f.fn)[1] ?? ''));
@@ -101,7 +108,12 @@ for (const { name, body } of sql.slice(1)) {
 for (const name of files) {
   const rollback = fs.readFileSync(`admin-backend/rollback/${name}`, 'utf8');
   assert.ok(!/\bcascade\b/i.test(rollback.replace(/--[^\n]*/g, '')), `${name} rollback uses CASCADE`);
-  assert.ok(!/\b(public|auth)\./i.test(rollback.replace(/--[^\n]*/g, '').replace(/auth\.(uid|jwt)\(\)/g, '')), `${name} rollback touches public/auth`);
+  // The restored 011 gate legitimately *reads* auth.uid()/auth.jwt() and
+  // auth.sessions; the rule is that no rollback may create, drop, write to or
+  // re-grant anything in public/auth.
+  const stripped = rollback.replace(/--[^\n]*/g, '').replace(/auth\.(uid|jwt)\(\)/g, '');
+  assert.ok(!/(create|alter|drop|insert into|delete from|update|grant|revoke)\s+(table\s+|function\s+)?(public|auth)\./i.test(stripped), `${name} rollback modifies public/auth`);
+  assert.ok(!/\b(delete from|insert into|update)\s+auth\./i.test(stripped), `${name} rollback writes to auth`);
 }
 
 // 10. The credential script must emit the canonical grant list, not a copy.

@@ -41,6 +41,34 @@ create trigger admin_sessions_stamp_mfa after insert on bc_admin_v1.admin_sessio
 --   'denied'  -> everything else.
 -- Returns text instead of raising so the audit row commits; the caller rejects
 -- anything that is not 'enrol' or 'recover'.
+-- 011's gate answered "is this account allowed to have a factor", which stays true
+-- for an account that already proved one. With 012 the enrolment record exists, so
+-- the gate can also answer "has it never enrolled", and it is replaced here rather
+-- than edited in 011 because the column it reads is created by this file. After
+-- this statement the only way to reach enrolment from a password session is an
+-- account whose factor was never proven, or was explicitly reset.
+create or replace function bc_admin_v1.enrolment_eligible(p_request_id uuid) returns boolean
+language plpgsql security definer set search_path=pg_catalog as $$
+declare uid uuid; sid uuid; eligible boolean:=false;
+begin
+ if p_request_id is null then raise exception 'invalid request' using errcode='22023'; end if;
+ uid:=auth.uid();
+ begin sid:=nullif(auth.jwt()->>'session_id','')::uuid;
+ exception when invalid_text_representation then sid:=null; end;
+ if uid is not null and sid is not null and coalesce(auth.jwt()->>'aal','') in ('aal1','aal2') then
+  select exists(
+    select 1 from bc_admin_v1.admin_users u
+    where u.id=uid and u.enabled and u.mfa_enrolled_at is null
+      and exists(select 1 from bc_admin_v1.admin_user_roles r where r.user_id=u.id)
+      and exists(select 1 from auth.sessions s where s.id=sid and s.user_id=uid)
+  ) into eligible;
+ end if;
+ insert into bc_admin_v1.admin_audit_logs(actor_id,request_id,action,target_type,target_id,details)
+ values(case when eligible then uid else null end,p_request_id,'auth.enrolment_attempt','staff',uid::text,
+        jsonb_build_object('eligible',eligible));
+ return eligible;
+end $$;
+
 create function bc_admin_v1.factor_gate(p_request_id uuid) returns text
 language plpgsql security definer set search_path=pg_catalog as $$
 declare uid uuid; sid uuid; eligible boolean:=false; enrolled boolean:=false; outcome text:='denied';
@@ -316,7 +344,8 @@ begin
  return removed;
 end $$;
 
-revoke all on function bc_admin_v1.factor_gate(uuid),
+revoke all on function bc_admin_v1.enrolment_eligible(uuid),
+ bc_admin_v1.factor_gate(uuid),
  bc_admin_v1.stamp_mfa_enrolled(),
  bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),
  bc_admin_v1.revoke_recovery_grant(uuid,uuid),

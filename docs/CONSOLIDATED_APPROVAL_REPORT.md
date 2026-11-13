@@ -168,7 +168,11 @@ lets an account re-open itself: privilege must be granted out of band.
 
 The rollback scripts were executed in the disposable PostgreSQL 17.11 fixture
 (`test:admin-isolated-foundation`, `test:admin-postgres-local`) and reproduce a
-clean reinstall. `rollback/012`'s three data guards are covered by the same suite,
+clean reinstall. A dedicated `tests/admin-rollback-cycle.mjs` (part of the same
+runner, in its own fresh database) proves the three 012 guards refuse *before*
+dropping anything, that `rollback/012` restores a working 011 gate even though it
+drops the column that gate reads, and that a full reverse teardown leaves no
+schema and a reinstall recreates 19 tables and 39 functions. `rollback/012`'s three data guards are covered by the same suite,
 and `test:admin-grant-inventory` asserts no rollback file contains `CASCADE` or
 names a `public`/`auth` object.
 
@@ -288,7 +292,7 @@ security review, stops matching the bytes on disk.
 - `admin-backend/migrations/009_recovery_sessions.sql` — `7851eb4f03d97fbcdcd7f62cb00b54437233a2a064f12a911bd5d530b5c5a30b`
 - `admin-backend/migrations/010_admin_module_commands.sql` — `5ac31357267a496759aa47b6838baf6ec755ae95c8dd06d0a2616529c775023b`
 - `admin-backend/migrations/011_totp_enrolment.sql` — `4507ed36f5571c92e0d85f1ca017809997be760a05693d5c6306b5f0939ddb21`
-- `admin-backend/migrations/012_recovery_and_cleanup.sql` — `9311ebcbe76f9008d24c3841194a9c0d8770974e711591b250f3d616ff32d733`
+- `admin-backend/migrations/012_recovery_and_cleanup.sql` — `81848c310f3ea16b4aa5bee279660b7d919e2dfd795136dbcfac958332f84f2a`
 - `admin-backend/rollback/001_admin_foundation.sql` — `98b80fd0cd9d0bc3cc1e87da1352a27f29771fd5dd8016d84744dffe9bda1a77`
 - `admin-backend/rollback/002_workflow_integrity.sql` — `9a8b79d9fda725b9efda3cc052aab246dbcf5a5336d84ea8a692733b422b1097`
 - `admin-backend/rollback/003_permission_catalog.sql` — `2d589421922666f3bd93f0c3b0a6bb6f87f77a91c9c3c620f27f0df37f0c20d1`
@@ -300,13 +304,19 @@ security review, stops matching the bytes on disk.
 - `admin-backend/rollback/009_recovery_sessions.sql` — `8297b2e082d5e82a034274ba336bc1efb1d06b7502c33cbdc5a18405d2cc0ffa`
 - `admin-backend/rollback/010_admin_module_commands.sql` — `6b08e5d5895f11322e618a1aecd25ae7ff8600055d74a874964e07098c213e04`
 - `admin-backend/rollback/011_totp_enrolment.sql` — `89f59839ee62c9a5cf9436d8cf6a617f2878fb37cbcd701994d13db0d84ce980`
-- `admin-backend/rollback/012_recovery_and_cleanup.sql` — `10409bf3e639f59668d56f59fcadc04ac50d1fd440e8da2c665e5330f4a58bde`
+- `admin-backend/rollback/012_recovery_and_cleanup.sql` — `99823ea75d85f1a10ba871d1435bb29f9830c745fef010aeef2c85d928fcde96`
 - `admin-backend/grants/executor-grants.sql` — `7c78b58f765d74d33336e7ec79a9777ee15f7662fe40fe5c3823b99258dc035d`
 
-### 6c. Enrolment gate semantics (011)
+### 6c. Enrolment gate semantics (011, hardened by 012)
 
-`bc_admin_v1.enrolment_eligible(uuid)` is the only function callable before a
-second factor exists. It returns a boolean rather than raising, so that the
+`bc_admin_v1.enrolment_eligible(uuid)` is callable before a second factor exists.
+Migration 012 **replaces its body** (`create or replace`) to add the one condition
+011 could not express, because the column did not exist yet: the account must have
+`mfa_enrolled_at is null`. Without that condition the gate answers "this account
+may have a factor", which stays true for an account that already proved one and
+would let a password session re-enrol past D2. After 012 it answers "this account
+has never proved a factor", and the only way to make that true again is the
+audited Super Admin reset (§6d). It returns a boolean rather than raising, so that the
 **denied attempt is still audited** (a raise would roll the audit row back).
 Consequences that the server must — and does — enforce:
 
@@ -1240,10 +1250,10 @@ commit;
 
 ### `012_recovery_and_cleanup.sql`
 
-SHA-256 `9311ebcbe76f9008d24c3841194a9c0d8770974e711591b250f3d616ff32d733`.
-Adds D2 (Super-Admin-authorised recovery, plus the audited reset that completes it)
-and D4 (bounded cleanup). One nullable column on `admin_users`, two tables, eight
-functions (one of them the `stamp_mfa_enrolled` trigger body) and one trigger.
+SHA-256 `81848c310f3ea16b4aa5bee279660b7d919e2dfd795136dbcfac958332f84f2a`.
+Adds D2 (Super-Admin-authorised recovery, the audited reset that completes it, and
+a hardened replacement for 011's enrolment gate) and D4 (bounded cleanup). One
+nullable column on `admin_users`, two tables, eight functions and one trigger.
 
 ```sql
 -- LOCAL SYNTHETIC FIXTURES ONLY. Not approved for shared execution.
@@ -1289,6 +1299,34 @@ create trigger admin_sessions_stamp_mfa after insert on bc_admin_v1.admin_sessio
 --   'denied'  -> everything else.
 -- Returns text instead of raising so the audit row commits; the caller rejects
 -- anything that is not 'enrol' or 'recover'.
+-- 011's gate answered "is this account allowed to have a factor", which stays true
+-- for an account that already proved one. With 012 the enrolment record exists, so
+-- the gate can also answer "has it never enrolled", and it is replaced here rather
+-- than edited in 011 because the column it reads is created by this file. After
+-- this statement the only way to reach enrolment from a password session is an
+-- account whose factor was never proven, or was explicitly reset.
+create or replace function bc_admin_v1.enrolment_eligible(p_request_id uuid) returns boolean
+language plpgsql security definer set search_path=pg_catalog as $$
+declare uid uuid; sid uuid; eligible boolean:=false;
+begin
+ if p_request_id is null then raise exception 'invalid request' using errcode='22023'; end if;
+ uid:=auth.uid();
+ begin sid:=nullif(auth.jwt()->>'session_id','')::uuid;
+ exception when invalid_text_representation then sid:=null; end;
+ if uid is not null and sid is not null and coalesce(auth.jwt()->>'aal','') in ('aal1','aal2') then
+  select exists(
+    select 1 from bc_admin_v1.admin_users u
+    where u.id=uid and u.enabled and u.mfa_enrolled_at is null
+      and exists(select 1 from bc_admin_v1.admin_user_roles r where r.user_id=u.id)
+      and exists(select 1 from auth.sessions s where s.id=sid and s.user_id=uid)
+  ) into eligible;
+ end if;
+ insert into bc_admin_v1.admin_audit_logs(actor_id,request_id,action,target_type,target_id,details)
+ values(case when eligible then uid else null end,p_request_id,'auth.enrolment_attempt','staff',uid::text,
+        jsonb_build_object('eligible',eligible));
+ return eligible;
+end $$;
+
 create function bc_admin_v1.factor_gate(p_request_id uuid) returns text
 language plpgsql security definer set search_path=pg_catalog as $$
 declare uid uuid; sid uuid; eligible boolean:=false; enrolled boolean:=false; outcome text:='denied';
@@ -1564,7 +1602,8 @@ begin
  return removed;
 end $$;
 
-revoke all on function bc_admin_v1.factor_gate(uuid),
+revoke all on function bc_admin_v1.enrolment_eligible(uuid),
+ bc_admin_v1.factor_gate(uuid),
  bc_admin_v1.stamp_mfa_enrolled(),
  bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),
  bc_admin_v1.revoke_recovery_grant(uuid,uuid),
@@ -1742,11 +1781,12 @@ commit;
 
 ### `012_recovery_and_cleanup.sql`
 
-SHA-256 `10409bf3e639f59668d56f59fcadc04ac50d1fd440e8da2c665e5330f4a58bde`.
+SHA-256 `99823ea75d85f1a10ba871d1435bb29f9830c745fef010aeef2c85d928fcde96`.
 Refuses while any recovery grant, cleanup run **or** `mfa_enrolled_at` value
 exists — the last check is deliberate: dropping the column would make an account
 that had proven a factor look like a first-time enroller, reopening the
-password-only enrolment path that 012 closes.
+password-only enrolment path that 012 closes. Before dropping the column it
+restores 011's gate, so the surviving function never references a missing column.
 
 ```sql
 -- Rollback for 012. Drops only the functions and the two tables created by
@@ -1770,6 +1810,31 @@ drop function bc_admin_v1.factor_gate(uuid);
 drop function bc_admin_v1.recovery_grant_state(uuid);
 drop function bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid);
 drop function bc_admin_v1.revoke_recovery_grant(uuid,uuid);
+-- The 012 replacement of 011's gate reads mfa_enrolled_at. Restore the 011 body
+-- before the column is dropped, otherwise the surviving function would reference a
+-- missing column and every enrolment attempt would error instead of answering.
+create or replace function bc_admin_v1.enrolment_eligible(p_request_id uuid) returns boolean
+language plpgsql security definer set search_path=pg_catalog as $$
+declare uid uuid; sid uuid; eligible boolean:=false;
+begin
+ if p_request_id is null then raise exception 'invalid request' using errcode='22023'; end if;
+ uid:=auth.uid();
+ begin sid:=nullif(auth.jwt()->>'session_id','')::uuid;
+ exception when invalid_text_representation then sid:=null; end;
+ if uid is not null and sid is not null and coalesce(auth.jwt()->>'aal','') in ('aal1','aal2') then
+  select exists(
+    select 1 from bc_admin_v1.admin_users u
+    where u.id=uid and u.enabled
+      and exists(select 1 from bc_admin_v1.admin_user_roles r where r.user_id=u.id)
+      and exists(select 1 from auth.sessions s where s.id=sid and s.user_id=uid)
+  ) into eligible;
+ end if;
+ insert into bc_admin_v1.admin_audit_logs(actor_id,request_id,action,target_type,target_id,details)
+ values(case when eligible then uid else null end,p_request_id,'auth.enrolment_attempt','staff',uid::text,
+        jsonb_build_object('eligible',eligible));
+ return eligible;
+end $$;
+revoke all on function bc_admin_v1.enrolment_eligible(uuid) from public,anon,authenticated;
 drop function bc_admin_v1.reset_factor_enrolment(uuid,uuid);
 drop function bc_admin_v1.cleanup_expired(text,integer,uuid);
 drop trigger admin_sessions_stamp_mfa on bc_admin_v1.admin_sessions;

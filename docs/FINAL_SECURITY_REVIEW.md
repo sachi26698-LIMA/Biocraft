@@ -164,7 +164,7 @@ migration.
 | 28 | `list_role_catalog()` | `postgres` | `pg_catalog` | `require_actor('staff.read')` | exec-role | additive |
 | 29 | `list_my_sessions(integer,timestamptz)` | `postgres` | `pg_catalog` | `require_actor('dashboard.read')`; own rows only | exec-role | additive |
 | 30 | `list_audit_logs(integer,bigint)` | `postgres` | `pg_catalog` | `require_actor('audit.read')`; redacted columns only | exec-role | additive |
-| 31 | `enrolment_eligible(uuid)` | `postgres` | `pg_catalog` | **the only pre-`aal2` function**: requires `aal ∈ {aal1,aal2}`, enabled membership, ≥1 role, live `auth.sessions` row; **returns `false` instead of raising so the denial is still audited**; the adapter converts anything but a single `true` row into `403` | exec-role | **security-sensitive** |
+| 31 | `enrolment_eligible(uuid)` | `postgres` | `pg_catalog` | **pre-`aal2` by design**: requires `aal ∈ {aal1,aal2}`, enabled membership, ≥1 role, live `auth.sessions` row, **and `mfa_enrolled_at is null`** (012 replaces the 011 body) so an account that already proved a factor can never enrol a replacement; **returns `false` instead of raising so the denial is still audited**; the adapter converts anything but a single `true` row into `403` | exec-role | **security-sensitive** |
 | 32 | `stamp_mfa_enrolled()` **trigger** | `postgres` | `pg_catalog` | none needed — fires only after a real `admin_sessions` insert, i.e. only after `open_admin_session` accepted an `aal2` caller | `revoke` only, **no exec-role** | **security-sensitive** (records D2's enrol-vs-recover fact) |
 | 33 | `factor_gate(uuid)` | `postgres` | `pg_catalog` | **pre-`aal2` by design**: requires `aal ∈ {aal1,aal2}`, enabled membership, ≥1 role, live `auth.sessions` row; returns `'enrol'` only if `mfa_enrolled_at is null`, else `'recover'`; returns `'denied'` instead of raising so the denial is audited | exec-role | **security-sensitive** |
 | 34 | `issue_recovery_grant(uuid,bytea,bytea,interval,uuid)` | `postgres` | `pg_catalog` | `require_actor('staff.manage')`; rejects self-recovery, requires an enabled roled target, `FOR UPDATE` on the target row, revokes any previous live grant, TTL clamped to 1–15 min, 8-byte salt / 32-byte digest | exec-role | **security-sensitive** |
@@ -687,7 +687,7 @@ confers capability — the migrations only define the functions.
 | `009_recovery_sessions.sql` | `7851eb4f03d97fbcdcd7f62cb00b54437233a2a064f12a911bd5d530b5c5a30b` | yes |
 | `010_admin_module_commands.sql` | `5ac31357267a496759aa47b6838baf6ec755ae95c8dd06d0a2616529c775023b` | yes |
 | `011_totp_enrolment.sql` | `4507ed36f5571c92e0d85f1ca017809997be760a05693d5c6306b5f0939ddb21` | yes |
-| `012_recovery_and_cleanup.sql` | `9311ebcbe76f9008d24c3841194a9c0d8770974e711591b250f3d616ff32d733` | yes |
+| `012_recovery_and_cleanup.sql` | `81848c310f3ea16b4aa5bee279660b7d919e2dfd795136dbcfac958332f84f2a` | yes |
 | `rollback/001` | `98b80fd0cd9d0bc3cc1e87da1352a27f29771fd5dd8016d84744dffe9bda1a77` | yes |
 | `rollback/002` | `9a8b79d9fda725b9efda3cc052aab246dbcf5a5336d84ea8a692733b422b1097` | yes |
 | `rollback/003` | `2d589421922666f3bd93f0c3b0a6bb6f87f77a91c9c3c620f27f0df37f0c20d1` | yes |
@@ -699,7 +699,7 @@ confers capability — the migrations only define the functions.
 | `rollback/009` | `8297b2e082d5e82a034274ba336bc1efb1d06b7502c33cbdc5a18405d2cc0ffa` | yes |
 | `rollback/010` | `6b08e5d5895f11322e618a1aecd25ae7ff8600055d74a874964e07098c213e04` | yes |
 | `rollback/011` | `89f59839ee62c9a5cf9436d8cf6a617f2878fb37cbcd701994d13db0d84ce980` | yes |
-| `rollback/012` | `10409bf3e639f59668d56f59fcadc04ac50d1fd440e8da2c665e5330f4a58bde` | yes |
+| `rollback/012` | `99823ea75d85f1a10ba871d1435bb29f9830c745fef010aeef2c85d928fcde96` | yes |
 | `grants/executor-grants.sql` | `7c78b58f765d74d33336e7ec79a9777ee15f7662fe40fe5c3823b99258dc035d` | yes |
 
 **B. Correctness and safety**
@@ -740,6 +740,10 @@ confers capability — the migrations only define the functions.
       disposable role before go-live is not claimed, only documented.
 - [ ] D4 cleanup run once per target on the Preview and both rows visible in
       `admin_cleanup_runs`.
+- [ ] Rollback rehearsed on the disposable cluster before execution
+      (`test:admin-rollback-cycle`): 012 refuses on enrolment/cleanup evidence,
+      `rollback/012` restores a working 011 gate after dropping the column, and a
+      full reverse teardown plus reinstall reproduces 19 tables / 39 functions.
 
 **C. Explicitly out of scope until separately approved**
 

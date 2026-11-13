@@ -15,5 +15,6 @@ server.once('error',readyReject);server.once('exit',(code)=>readyReject(Error(`P
 const timer=setTimeout(()=>readyReject(Error(`PostgreSQL startup timeout: ${logs}`)),15000);
 try{await ready;clearTimeout(timer);const result=spawnSync(process.execPath,['tests/admin-postgres-integration.mjs'],{cwd:process.cwd(),env:{...process.env,BIOCRAFT_TEST_PG_SOCKET:sock},stdio:'inherit'});if(result.status!==0)process.exitCode=result.status??1;
  const app=spawnSync(process.execPath,['tests/admin-app-local.mjs'],{cwd:process.cwd(),env:{...process.env,BIOCRAFT_TEST_PG_SOCKET:sock},stdio:'inherit'});if(app.status!==0)process.exitCode=app.status??1;
+ const cycle=spawnSync(process.execPath,['tests/admin-rollback-cycle.mjs'],{cwd:process.cwd(),env:{...process.env,BIOCRAFT_TEST_PG_SOCKET:sock},stdio:'inherit'});if(cycle.status!==0)process.exitCode=cycle.status??1;
  const httpTest=spawnSync(process.execPath,['tests/admin-http-smoke.mjs'],{cwd:process.cwd(),env:{...process.env,BIOCRAFT_TEST_PG_SOCKET:sock},stdio:'inherit'});if(httpTest.status!==0)process.exitCode=httpTest.status??1;}
 finally{clearTimeout(timer);server.kill('SIGTERM');if(server.exitCode===null)await once(server,'exit');console.log(`Disposable PostgreSQL cluster stopped; synthetic files retained at ${root}`)}
