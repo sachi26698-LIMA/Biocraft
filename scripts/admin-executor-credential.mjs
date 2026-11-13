@@ -10,6 +10,18 @@
 // Nothing here connects to a database or to Vercel. It only produces text a human
 // with project access must run deliberately.
 import {randomBytes} from 'node:crypto';
+import {readFileSync} from 'node:fs';
+import {fileURLToPath} from 'node:url';
+
+// The grant statements are taken verbatim from the canonical file, never
+// retyped here: a copied list is exactly how the published counts drifted
+// (25 -> 28 -> 31) before test:admin-grant-inventory existed.
+const grantSource = readFileSync(
+  fileURLToPath(new URL('../admin-backend/grants/executor-grants.sql', import.meta.url)), 'utf8')
+  .split('\n').filter(line => !line.startsWith('--')).join('\n').trim();
+// The canonical file names `bc_admin_executor`; the rotation creates the successor
+// first, so the same statements are re-targeted rather than retyped.
+const grantBlock = role => grantSource.replace(/\bbc_admin_executor\b/g, role);
 
 const ALPHABET = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const LENGTH = 48; // > 40 as decided in D3, ~283 bits of entropy.
@@ -37,108 +49,18 @@ if (rotate) {
 -- 1. Create the successor and give it exactly the same privileges as the old one.
 create role bc_admin_executor_next login password '${password}'
   nosuperuser nocreatedb nocreaterole noreplication nobypassrls inherit;
-grant usage on schema bc_admin_v1 to bc_admin_executor_next;
-grant execute on function
-  bc_admin_v1.require_actor(text),
-  bc_admin_v1.enrolment_eligible(uuid),
-  bc_admin_v1.factor_gate(uuid),
-  bc_admin_v1.open_admin_session(uuid),
-  bc_admin_v1.revoke_admin_session(uuid),
-  bc_admin_v1.revoke_my_sessions(uuid),
-  bc_admin_v1.store_login_flow(bytea,bytea,integer),
-  bc_admin_v1.take_login_flow(bytea),
-  bc_admin_v1.consume_rate_limit(text,bytea),
-  bc_admin_v1.list_staff(integer,uuid),
-  bc_admin_v1.update_staff(uuid,bigint,boolean,text[],uuid),
-  bc_admin_v1.create_bio_draft(text,jsonb,uuid),
-  bc_admin_v1.update_bio_draft(uuid,bigint,jsonb,uuid),
-  bc_admin_v1.get_bio_draft(uuid),
-  bc_admin_v1.submit_draft(uuid,bigint,uuid,uuid),
-  bc_admin_v1.review_draft(uuid,bigint,boolean,uuid),
-  bc_admin_v1.list_my_bio_drafts(integer,timestamptz,uuid),
-  bc_admin_v1.list_bio_review_queue(integer,timestamptz,uuid),
-  bc_admin_v1.list_platforms(integer,uuid),
-  bc_admin_v1.list_categories(integer,uuid),
-  bc_admin_v1.list_collections(integer,text),
-  bc_admin_v1.list_generators(integer,uuid),
-  bc_admin_v1.list_seo_pages(integer,uuid),
-  bc_admin_v1.analytics_overview(),
-  bc_admin_v1.list_settings(integer,text),
-  bc_admin_v1.update_setting(text,jsonb,bigint,uuid),
-  bc_admin_v1.list_role_catalog(),
-  bc_admin_v1.list_my_sessions(integer,timestamptz),
-  bc_admin_v1.list_audit_logs(integer,bigint),
-  bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),
-  bc_admin_v1.revoke_recovery_grant(uuid,uuid),
-  bc_admin_v1.consume_recovery_grant(bytea,uuid),
-  bc_admin_v1.recovery_grant_state(uuid),
-  bc_admin_v1.cleanup_expired(text,integer,uuid)
- to bc_admin_executor_next;
-
--- 2. Verify the successor is limited (must return true, one row):
-select session_user=current_user as no_setrole,
-       not r.rolsuper and not r.rolbypassrls and not r.rolcreaterole
-       and not r.rolcreatedb and not r.rolreplication as limited
-  from pg_roles r where r.rolname=current_user;   -- connect AS bc_admin_executor_next
-
--- 3. Point the Preview at the successor and redeploy:
---      ADMIN_DB_USER=bc_admin_executor_next.<project-ref>
---      ADMIN_DB_PASSWORD=<the password printed above>
---    Confirm /api/admin/v1/health is 200 and one read module returns rows.
-
--- 4. Retire the old login only after step 3 succeeds:
-revoke all on function bc_admin_v1.require_actor(text) from bc_admin_executor; -- ... repeat for all 34
-drop owned by bc_admin_executor;
-drop role bc_admin_executor;
-
--- 5. Rename the successor so the env var stays stable for the next rotation:
-alter role bc_admin_executor_next rename to bc_admin_executor;`);
+${grantBlock('bc_admin_executor_next')}`);
 } else {
   console.log(`-- D3 ACTIVATION. Review the whole report first; nothing here is executed.
 -- 1. Create the executor with a generated 48-character password.
 create role bc_admin_executor login password '${password}'
   nosuperuser nocreatedb nocreaterole noreplication nobypassrls inherit;
-grant usage on schema bc_admin_v1 to bc_admin_executor;
--- 2. Grant EXECUTE on exactly the 34 reviewed signatures (28 from 004-011,
---    6 from 012: factor_gate, issue/revoke/consume recovery, state, cleanup).
+-- 2. Grant EXECUTE on exactly the reviewed signatures, read from the canonical
+--    grant file (admin-backend/grants/executor-grants.sql) so this script can
+--    never drift from what the approval report and the tests describe.
 --    The trigger bodies reject_mutation, guard_draft, guard_approval and
 --    stamp_mfa_enrolled are deliberately NOT granted.
-grant execute on function
-  bc_admin_v1.require_actor(text),
-  bc_admin_v1.enrolment_eligible(uuid),
-  bc_admin_v1.factor_gate(uuid),
-  bc_admin_v1.open_admin_session(uuid),
-  bc_admin_v1.revoke_admin_session(uuid),
-  bc_admin_v1.revoke_my_sessions(uuid),
-  bc_admin_v1.store_login_flow(bytea,bytea,integer),
-  bc_admin_v1.take_login_flow(bytea),
-  bc_admin_v1.consume_rate_limit(text,bytea),
-  bc_admin_v1.list_staff(integer,uuid),
-  bc_admin_v1.update_staff(uuid,bigint,boolean,text[],uuid),
-  bc_admin_v1.create_bio_draft(text,jsonb,uuid),
-  bc_admin_v1.update_bio_draft(uuid,bigint,jsonb,uuid),
-  bc_admin_v1.get_bio_draft(uuid),
-  bc_admin_v1.submit_draft(uuid,bigint,uuid,uuid),
-  bc_admin_v1.review_draft(uuid,bigint,boolean,uuid),
-  bc_admin_v1.list_my_bio_drafts(integer,timestamptz,uuid),
-  bc_admin_v1.list_bio_review_queue(integer,timestamptz,uuid),
-  bc_admin_v1.list_platforms(integer,uuid),
-  bc_admin_v1.list_categories(integer,uuid),
-  bc_admin_v1.list_collections(integer,text),
-  bc_admin_v1.list_generators(integer,uuid),
-  bc_admin_v1.list_seo_pages(integer,uuid),
-  bc_admin_v1.analytics_overview(),
-  bc_admin_v1.list_settings(integer,text),
-  bc_admin_v1.update_setting(text,jsonb,bigint,uuid),
-  bc_admin_v1.list_role_catalog(),
-  bc_admin_v1.list_my_sessions(integer,timestamptz),
-  bc_admin_v1.list_audit_logs(integer,bigint),
-  bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),
-  bc_admin_v1.revoke_recovery_grant(uuid,uuid),
-  bc_admin_v1.consume_recovery_grant(bytea,uuid),
-  bc_admin_v1.recovery_grant_state(uuid),
-  bc_admin_v1.cleanup_expired(text,integer,uuid)
- to bc_admin_executor;
+${grantBlock('bc_admin_executor')}
 -- 3. Store the password ONLY in Vercel Preview env vars (ADMIN_DB_PASSWORD).
 --    Never in the repository, a VITE_* variable, a log or a chat message.
 alter role bc_admin_executor password '<rotate with --rotate after any exposure>';`);

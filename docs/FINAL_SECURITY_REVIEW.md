@@ -607,8 +607,13 @@ and reproduced in the package for your approval.
 
 `scripts/admin-executor-credential.mjs` generates a **48-character** password
 from a 55-symbol alphabet using rejection sampling (no modulo bias, ~276 bits).
-It prints the creation SQL, the 34-signature grant block and the rotation SQL to
-stdout only: it writes no file, sets no env var, and logs nothing. Verified: 50
+It prints the creation SQL, the grant block and the rotation SQL to stdout only:
+it writes no file, sets no env var, and logs nothing. The grant statements are
+read from `admin-backend/grants/executor-grants.sql` at run time and re-targeted to
+the rotation role, so the script cannot drift from the reviewed list — a retyped
+copy is exactly how the earlier counts went wrong. `test:admin-grant-inventory`
+asserts both outputs contain all 35 signatures, the right role and a 48-character
+password, and that no shell assignment is emitted. Verified: 50
 consecutive runs produced 50 distinct values, all 48 characters.
 
 Rotation is the two-role procedure you asked for: create `bc_admin_executor_next`

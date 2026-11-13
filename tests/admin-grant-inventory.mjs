@@ -104,7 +104,24 @@ for (const name of files) {
   assert.ok(!/\b(public|auth)\./i.test(rollback.replace(/--[^\n]*/g, '').replace(/auth\.(uid|jwt)\(\)/g, '')), `${name} rollback touches public/auth`);
 }
 
-// 10. Documentation cannot drift from the files: every migration, rollback and
+// 10. The credential script must emit the canonical grant list, not a copy.
+//     A retyped list is how the earlier published counts drifted; this asserts the
+//     generated activation and rotation SQL contain exactly the 35 signatures from
+//     the grant file, targeted at the right role, and never a secret in a file.
+import {execFileSync} from 'node:child_process';
+const runScript = args => execFileSync(process.execPath, ['scripts/admin-executor-credential.mjs', ...args], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore']});
+const signatures = [...grants.matchAll(/bc_admin_v1\.([a-z0-9_]+)\(([^)]*)\)/g)].map(m => `${m[1]}(${m[2].replace(/\s+/g, '')})`);
+for (const [args, role] of [[[], 'bc_admin_executor'], [['--rotate'], 'bc_admin_executor_next']]) {
+  const out = runScript(args);
+  const emitted = [...out.matchAll(/bc_admin_v1\.([a-z0-9_]+)\(([^)]*)\)/g)].map(m => `${m[1]}(${m[2].replace(/\s+/g, '')})`);
+  for (const signature of signatures) assert.ok(emitted.includes(signature), `${args.join(' ') || 'create'} output omits ${signature}`);
+  assert.equal(new Set(emitted).size, signatures.length, `${args.join(' ') || 'create'} output has a duplicate or extra signature`);
+  assert.match(out, new RegExp(`to ${role};`), `grants are not targeted at ${role}`);
+  assert.match(out, new RegExp(`create role ${role} login password '[A-Za-z0-9]{48}'`), 'password is not 48 characters');
+  assert.ok(!/ADMIN_DB_PASSWORD=[^<]/.test(out), 'the script must not emit a shell env assignment');
+}
+
+// 11. Documentation cannot drift from the files: every migration, rollback and
 //     the grant list must appear verbatim in the approval report, and every
 //     SHA-256 quoted for them must match the bytes on disk.
 import {createHash} from 'node:crypto';

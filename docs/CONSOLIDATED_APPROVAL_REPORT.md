@@ -241,7 +241,9 @@ grant execute on function
 ```
 
 The role itself precedes it, and the password comes from
-`node scripts/admin-executor-credential.mjs` (D3, 48 characters, stdout only):
+`node scripts/admin-executor-credential.mjs` (D3, 48 characters, stdout only). That
+script reads this same canonical file instead of holding a copy of the list, so
+the SQL you approve is the SQL it prints:
 
 ```sql
 create role bc_admin_executor login password '<generated>'
