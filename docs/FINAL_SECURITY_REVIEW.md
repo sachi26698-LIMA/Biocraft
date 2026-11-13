@@ -81,7 +81,7 @@ loudly rather than silently redefining a function. 012's only `ALTER` is
 no lock on `public`.
 
 **No `public` object is created, altered, dropped or re-owned by any of the
-eleven files.** `010` performs only `SELECT`s against `public.platforms`,
+twelve files.** `010` performs only `SELECT`s against `public.platforms`,
 `public.categories`, `public.bios`, `public.generators`, `public.seo_pages`.
 
 ---
@@ -122,10 +122,11 @@ the single largest residual risk in the design and is covered in §4 and §11.
 ## 3. All 39 functions — SECURITY DEFINER matrix
 
 Every function below is created with an explicit `SET search_path = pg_catalog`,
-so no unqualified name can resolve to an attacker-controlled schema. There is no
-`SECURITY INVOKER` function among the 28 callable ones; the only non-definer
-functions are the three trigger bodies, which is correct — they must run with the
-invoker's rights because they only ever raise.
+so no unqualified name can resolve to an attacker-controlled schema.
+`test:admin-grant-inventory` asserts the `search_path` clause on all 39. There is
+no `SECURITY INVOKER` function among the 35 callable ones; the only non-callable
+functions are the four trigger bodies, which run as the table owner and only
+raise or stamp.
 
 Legend for **Grants**: `exec-role` = `GRANT EXECUTE … TO bc_admin_executor`
 (executed as a separate, reviewed statement, not inside the migration);
