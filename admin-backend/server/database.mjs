@@ -12,9 +12,21 @@ pg.types.setTypeParser(20,value=>Number(value));
  * Credentials must be injected server-side; never commit or log them. The pool
  * is lazy and does not connect until a request is executed. A dedicated limited
  * DB role must be reviewed/provisioned separately before any real use. */
-export function createPostgresPool({host,user,password,ca}={}) {
- if(host!=='db.jvpadtzfsuekixrquzjv.supabase.co' || typeof user!=='string' || !user || typeof password!=='string' || !password || (ca!==undefined && typeof ca!=='string')) throw new Error('Invalid database configuration');
- return new Pool({host,user,password,database:'postgres',ssl:{rejectUnauthorized:true,...(ca?{ca}:{})},max:3,connectionTimeoutMillis:5000,idleTimeoutMillis:10000});
+const PROJECT_REF='jvpadtzfsuekixrquzjv';
+// Accepted hosts are limited to this project's direct connection and its
+// Supavisor session pooler (Vercel egress is IPv4-only, so the pooler is the
+// realistic production path). Any other host is refused.
+const DIRECT=`db.${PROJECT_REF}.supabase.co`;
+const POOLER=/^aws-[0-9]+-[a-z0-9-]+\.pooler\.supabase\.com$/;
+export function createPostgresPool({host,user,password,ca,port}={}) {
+ if(typeof host!=='string'||(host!==DIRECT && !POOLER.test(host)) || typeof user!=='string' || !user || typeof password!=='string' || !password || (ca!==undefined && typeof ca!=='string')) throw new Error('Invalid database configuration');
+ // A pooler login must be scoped to the project (postgres.<ref>) or explicit
+ // project role (role.<ref>); a direct login must not carry a project suffix.
+ const expected=host===DIRECT?/^[a-z_][a-z0-9_]{0,62}$/:new RegExp(`^[a-z_][a-z0-9_]{0,62}\\.${PROJECT_REF}$`);
+ if(!expected.test(user)) throw new Error('Invalid database configuration');
+ const resolvedPort=port===undefined?(host===DIRECT?5432:5432):port;
+ if(!Number.isSafeInteger(resolvedPort)||resolvedPort<1||resolvedPort>65535) throw new Error('Invalid database configuration');
+ return new Pool({host,port:resolvedPort,user,password,database:'postgres',ssl:{rejectUnauthorized:true,...(ca?{ca}:{})},max:3,connectionTimeoutMillis:5000,idleTimeoutMillis:10000});
 }
 export async function assertLimitedRole(client) {
  const roleCheck=await client.query(`select session_user=current_user

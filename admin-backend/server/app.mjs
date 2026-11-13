@@ -65,8 +65,11 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  if (!trustedHeader||!ingressSecret) return fail('missing trusted client header');
  let provider;
  try {provider=createProviderClient(PROJECT_URL,env.ADMIN_SUPABASE_PUBLISHABLE_KEY);} catch {return fail('invalid provider configuration');}
+ // Direct connection by default; set ADMIN_DB_HOST to the Supavisor pooler host
+ // (with a project-scoped ADMIN_DB_USER) when IPv4 egress is required.
+ const dbHost=typeof env.ADMIN_DB_HOST==='string'&&env.ADMIN_DB_HOST?env.ADMIN_DB_HOST:'db.jvpadtzfsuekixrquzjv.supabase.co';
  let pool;
- try {pool=poolFactory({host:'db.jvpadtzfsuekixrquzjv.supabase.co',user:env.ADMIN_DB_USER,password:env.ADMIN_DB_PASSWORD});} catch {return fail('invalid database configuration');}
+ try {pool=poolFactory({host:dbHost,user:env.ADMIN_DB_USER,password:env.ADMIN_DB_PASSWORD});} catch {return fail('invalid database configuration');}
  const execute=createDatabaseExecutor(pool,{now});
  const storage=createAuthStorage({pool,encryptionKey:flowKey,hashKey});
  // Supabase clients must be per-request so sessions never leak between requests.
