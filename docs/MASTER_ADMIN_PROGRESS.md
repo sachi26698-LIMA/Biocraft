@@ -1,15 +1,29 @@
 # Master Admin — persistent execution tracker
 
-## Current checkpoint — local implementation, not release ready
+## Current checkpoint — backend complete in code, blocked on shared-project approval
 
-Commit `e902ccdc2851f46ffa32b9428b9744e7378fe867` is pushed. Vercel Preview deployment `dpl_sezJZgsLjQ1x15c2gC1wBXCWBJnc` is READY with alias assigned; hosted browser/API behavior is not independently verified. Prior UI-only deployment `dpl_GyXSySRAM7gNupQ1kW6A6FreXEL3` was READY at `https://biocraft-p5y96wpul-sachi26698-6758s-projects.vercel.app/admin`. Backend candidates are **not mounted, configured or deployed**; Preview is a UI scratchpad, not functional Admin. No shared DB, grants, credentials, accounts or real content were changed by this local checkpoint. Existing shared project `jvpadtzfsuekixrquzjv` is the sole target; any shared security migration needs exact SQL, impact, rollback and prior explicit approval.
+Latest pushed commit is `5847171` on `arena/5e351ec3-biocraft`. The Admin backend
+is now **implemented end to end in code**: SQL candidates `001`–`010`, identity and
+session boundary, password+TOTP login, recovery, encrypted session cookie, CSRF
+gateway, rate limiting, step-up MFA freshness, server-side RBAC, the module APIs
+(bios, categories/collections, platforms, generators, SEO, analytics, audit,
+settings, staff, sessions), a fail-closed server composition, a Vercel Node entry
+and a sign-in UI.
+
+It is **not deployed as functional Admin**: the shared problem is unchanged.
+`jvpadtzfsuekixrquzjv` needs the Admin schema + grants, a limited DB login and a
+first administrator; those are shared-security changes awaiting explicit
+approval (see `docs/MASTER_ADMIN_APPROVAL_REQUEST.md`). Until then every hosted
+`/api/admin/*` request returns 503 by design and `/admin/login` states that
+sign-in is unavailable. Hosted verification also remains impossible from this
+sandbox: TLS to the Vercel Preview URL fails before any HTTP request.
 
 | Phase | Status | Actual scope and remaining work |
 |---|---|---|
 | Shared boundary | Owner decision recorded | Existing shared project only; public site and Admin share Production-connected data and risk. No new project. |
 | Database | Partial, synthetic only | Candidate migrations 001–009 and rollbacks are local only and unapproved. Private draft/session, encrypted login handoff, rate-limit and staff routines have no live client or server grants. A local disposable PostgreSQL 17.11 cluster passed selected concurrency, ownership, grants and RLS tests; its synthetic auth fixtures cannot validate actual provider-owned `auth.sessions` semantics or live effective grants. |
-| Auth/RBAC | Partial, unmounted | Password→TOTP→encrypted cookie→session→private draft flow composed against mocked Auth/PGlite. CSRF retrieval now rechecks provider identity and live Admin session. SQL role-checks and RLS are defense in depth, not a privilege audit; SQL-capable callers can spoof JWT GUCs. Bootstrap, real provider integration, verified trusted proxy client-key extraction, distributed ingress protection, key rotation, MFA freshness, recovery, session refresh and security review remain. |
-| Modules | Partial, local commands | Private draft creation/list/detail/edit/submit/review, assigned review queue and staff listing/update candidates exist; staff update is not exposed via API, super-admin promotion disabled. No durable Admin UI or usable hosted APIs. Other requested modules are not implemented. |
+| Auth/RBAC | Implemented in code, disabled | Password→TOTP→encrypted cookie→session→private draft flow composed against mocked Auth/PGlite. CSRF retrieval now rechecks provider identity and live Admin session. SQL role-checks and RLS are defense in depth, not a privilege audit; SQL-capable callers can spoof JWT GUCs. Bootstrap, real provider integration, verified trusted proxy client-key extraction, distributed ingress protection, key rotation, MFA freshness, recovery, session refresh and security review remain. |
+| Modules | Implemented in code, blocked on grants | Private draft creation/list/detail/edit/submit/review, assigned review queue and staff listing/update candidates exist; staff update is not exposed via API, super-admin promotion disabled. No durable Admin UI or usable hosted APIs. Other requested modules are not implemented. |
 | Workflow | Partial, publishing disabled | Mock-only draft reviews and atomic success audit; no idempotency, actual content publishing, version rollback, outbox/receiver or public-content writes. |
 | Security | Not release assessed | Candidate storage has encrypted one-time handoffs and per-network/account/factor rate buckets, but no cleanup job, operational limits, real concurrency or security review. Login flow revokes local SDK state only on some failure paths; provider revocation semantics need testing. No production secrets or unreviewed grants used. |
 | Testing | Local only | Mocked-provider/PGlite tests and local disposable PostgreSQL 17.11 tests pass. Real Supabase Auth, actual hosted grants/RLS, full concurrency, hosted browser, physical-device and independent security testing remain. |
