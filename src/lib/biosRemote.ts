@@ -51,6 +51,21 @@ const COLLECTION_PAGE_SIZE = 500;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function readCollectionBios(slug: string): Promise<RemoteBioResult> {
+  const rows = await readCollectionRows(slug, COLLECTION_PAGE_SIZE);
+  return { bios: rows.map(rowToEntry), source: 'supabase' };
+}
+
+// For the Preview-only diagnostics: compare the production page size against
+// deliberately small pages, using the very same reader and cursor grammar.
+// The caller checks for a guest session and only displays aggregate results.
+export async function diagnoseCollectionKeyset(slug: string): Promise<{ count: number; matches: boolean }> {
+  if (!supabase) throw new Error('Supabase is not configured');
+  const normal = await readCollectionRows(slug, COLLECTION_PAGE_SIZE);
+  const small = await readCollectionRows(slug, 5);
+  return { count: normal.length, matches: normal.length === small.length && normal.every((row, index) => row.id === small[index].id) };
+}
+
+async function readCollectionRows(slug: string, pageSize: number): Promise<BioRow[]> {
   const rows: BioRow[] = [];
   const ids = new Set<string>();
   let expected: number | null = null;
@@ -73,7 +88,7 @@ async function readCollectionBios(slug: string): Promise<RemoteBioResult> {
       const timestamp = `"${cursor.created_at}"`;
       query = query.or(`created_at.gt.${timestamp},and(created_at.eq.${timestamp},id.gt.${cursor.id})`);
     }
-    const { data, error, count } = await query.limit(COLLECTION_PAGE_SIZE);
+    const { data, error, count } = await query.limit(pageSize);
     if (error) throw new Error(error.message);
     if (expected === null) {
       if (count === null || count === undefined) throw new Error('Collection count unavailable');
@@ -100,7 +115,7 @@ async function readCollectionBios(slug: string): Promise<RemoteBioResult> {
       .eq('is_active', true);
     if (error || count !== expected) throw new Error('Collection changed while loading; please retry');
   }
-  return { bios: rows.map(rowToEntry), source: 'supabase' };
+  return rows;
 }
 
 export interface BioSearchFilters {

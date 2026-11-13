@@ -14,10 +14,26 @@ const MOCKS = Object.fromEntries(
 function StageClock() {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
-    const tick = () => setNow(new Date());
+    const compact = window.matchMedia('(max-width: 599px)');
+    let timer: number | undefined;
+    const tick = () => {
+      window.clearTimeout(timer);
+      if (document.hidden) return;
+      const time = new Date();
+      setNow(time);
+      // Phones show minutes only. Update precisely at the next visible unit,
+      // and refresh immediately when the viewport or tab visibility changes.
+      const period = compact.matches ? 60_000 : 1_000;
+      timer = window.setTimeout(tick, period - (time.getTime() % period) + 5);
+    };
     tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
+    compact.addEventListener('change', tick);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      window.clearTimeout(timer);
+      compact.removeEventListener('change', tick);
+      document.removeEventListener('visibilitychange', tick);
+    };
   }, []);
   return (
     <span className="stage-footer-datetime">

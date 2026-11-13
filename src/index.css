@@ -125,9 +125,18 @@ body {
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  /* Same mapped glyphs/metrics as the original, subset to this unicode-range. */
-  src: url('/fonts/noto-math/noto-sans-math-styles-400.woff2') format('woff2');
-  unicode-range: U+2100-214F, U+1D400-1D7FF;
+  /* Complement of the small common-styles face below. Together they preserve
+     the same glyphs and metrics as the original styles subset. */
+  src: url('/fonts/noto-math/noto-sans-math-other-400.woff2') format('woff2');
+  unicode-range: U+2100-214F, U+1D434-1D5D3, U+1D608-1D66F, U+1D6A4-1D7FF;
+}
+@font-face {
+  font-family: 'Noto Sans Math';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/noto-math/noto-sans-math-common-400.woff2') format('woff2');
+  unicode-range: U+1D400-1D433, U+1D5D4-1D607, U+1D670-1D6A3;
 }
 
 /* ---------- Accessibility utilities ---------- */
@@ -3358,8 +3367,10 @@ img, svg, video, canvas { max-width: 100%; }
 }
 
 /* Reserve a modest loading area while an on-demand route or tool arrives. */
-.route-loading { min-height: 18rem; padding: 2rem 1rem; margin: 0 auto; max-width: 72rem; }
-.tool-loading { min-height: 12rem; padding-block: 1rem; }
+/* Keep the footer below the viewport while a lazy route is still loading;
+   otherwise it appears briefly and shifts away when the route mounts. */
+.route-loading { min-height: 100vh; padding: 2rem 1rem; margin: 0 auto; max-width: 72rem; }
+.tool-loading { min-height: 100vh; padding-block: 1rem; }
 
 /* Let the browser defer layout/paint for offscreen content without removing it
    from search, the DOM, keyboard navigation, or the accessibility tree. The
@@ -3374,6 +3385,9 @@ img, svg, video, canvas { max-width: 100%; }
   .home-shell > section[aria-labelledby='faq-title'] { contain-intrinsic-size: auto 1000px; }
   .site-footer { contain-intrinsic-size: auto 1500px; }
   .bio-collection-page .bio-grid > .bio-card { content-visibility: auto; contain-intrinsic-size: auto 200px; }
+  /* Square symbol cells retain their grid geometry while offscreen. Full-width
+     alphabet rows remain normally laid out because their heights can wrap. */
+  .symbol-cell:not(.symbol-cell--row) { aspect-ratio: 1; content-visibility: auto; contain-intrinsic-size: auto 56px; }
   @media (min-width: 640px) {
     .home-shell > section[aria-labelledby='bio-collections-title'] { contain-intrinsic-size: auto 1200px; }
     .home-shell > section[aria-labelledby='popular-categories-title'] { contain-intrinsic-size: auto 370px; }

@@ -1,20 +1,20 @@
 /* Temporary, branch-scoped Preview diagnostics. No writes or credentials are displayed. */
 import { useEffect, useState } from 'react';
 import { BIO_COLLECTIONS } from '../lib/bioCollections';
-import { fetchCollectionBios, searchBios } from '../lib/biosRemote';
+import { diagnoseCollectionKeyset, fetchCollectionBios, searchBios } from '../lib/biosRemote';
 import { supabase } from '../lib/supabase';
 import { PLATFORMS } from '../tools/platforms';
 import './preview-diagnostics.css';
 
 type Status = 'PASS' | 'FAIL' | 'NOT TESTED';
-type TestId = 'connection' | 'collections' | 'platforms' | 'search' | 'category' | 'pagination' | 'guest';
+type TestId = 'connection' | 'collections' | 'platforms' | 'search' | 'category' | 'pagination' | 'keyset' | 'guest';
 type Result = { status: Status; detail: string };
 type Summary = { statusCode: number; elapsed: number; returned: number; total: number; en: number; hi: number; hg: number };
 const labels: Record<TestId, string> = {
   connection: 'Supabase connection', collections: 'Bio collections', platforms: 'Platform data',
-  search: 'Search RPC', category: 'Category filter RPC', pagination: 'Pagination RPC', guest: 'Guest read access',
+  search: 'Search RPC', category: 'Category filter RPC', pagination: 'Pagination RPC', keyset: 'Collection keyset pagination', guest: 'Guest read access',
 };
-const ids: TestId[] = ['connection', 'collections', 'platforms', 'search', 'category', 'pagination', 'guest'];
+const ids: TestId[] = ['connection', 'collections', 'platforms', 'search', 'category', 'pagination', 'keyset', 'guest'];
 const manualChecks = [
   { id: 'ui-search', title: 'Collection search and filters', detail: 'Search and use the filter chips; check that the results match.', href: '/instagram-bio-for-boys' },
   { id: 'ui-language', title: 'English, Hindi and Hinglish content', detail: 'Check readable examples in all three languages.', href: '/hinglish-bio' },
@@ -28,12 +28,12 @@ const passed = (detail: string): Result => ({ status: 'PASS', detail });
 const failed = (detail: string): Result => ({ status: 'FAIL', detail });
 const untested = (detail: string): Result => ({ status: 'NOT TESTED', detail });
 
-async function withTimeout<T>(operation: PromiseLike<T>): Promise<T> {
+async function withTimeout<T>(operation: PromiseLike<T>, timeoutMs = 20000): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
       Promise.resolve(operation),
-      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), 20000); }),
+      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('timeout')), timeoutMs); }),
     ]);
   } finally { if (timer) clearTimeout(timer); }
 }
@@ -100,6 +100,15 @@ async function runCheck(id: TestId): Promise<Result> {
       return first?.length === 5 && second?.length === 5 && uniqueIds.size === 10
         ? passed('Two five-row RPC pages returned distinct IDs. There is no collection pagination UI to test.')
         : failed('Two RPC pages did not return five distinct rows each.');
+    }
+    case 'keyset': {
+      const session = await withTimeout(supabase.auth.getSession());
+      if (session.error || session.data.session) return untested('Could not establish an anonymous client session.');
+      const result = await withTimeout(diagnoseCollectionKeyset('instagram-bio-for-boys'), 45000);
+      if (result.count <= 5) return untested('The sample collection has too few rows to exercise a second five-row page.');
+      return result.matches
+        ? passed(`${result.count} guest-visible rows matched in order between normal and five-row keyset reads. Concurrent changes and other collections are not covered.`)
+        : failed('Normal and five-row keyset reads differed. A concurrent data change may also cause this; retry.');
     }
     case 'guest': {
       const session = await withTimeout(supabase.auth.getSession());

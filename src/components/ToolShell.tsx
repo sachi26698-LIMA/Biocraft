@@ -74,12 +74,13 @@ export default function ToolShell() {
     }
   }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, isDiagnostics, collection]);
 
-  // On in-app navigation, start the font while the lazy page/tool is loading,
-  // rather than waiting for the first styled card to scroll into view.
+  // On client-side navigation, request only the small common-styles font when
+  // bundled collection content or a font gallery will use it. Other glyphs
+  // remain demand-loaded by CSS.
   useEffect(() => {
-    const hasStyledBios = collection?.bios.some((bio) => /[\u2100-\u214f\u{1d400}-\u{1d7ff}]/u.test(bio.text));
-    if ((hasStyledBios || path === '/stylish-name-generator' || path === '/fancy-font-generator') && document.fonts?.load) {
-      void document.fonts.load('400 1em "Noto Sans Math"', '𝒜').catch(() => {});
+    const hasCommonMath = collection?.bios.some((bio) => /[\u{1d400}-\u{1d433}\u{1d5d4}-\u{1d607}\u{1d670}-\u{1d6a3}]/u.test(bio.text));
+    if ((hasCommonMath || path === '/stylish-name-generator' || path === '/fancy-font-generator') && document.fonts?.load) {
+      void document.fonts.load('400 1em "Noto Sans Math"', '𝐀').catch(() => {});
     }
   }, [path, collection]);
 

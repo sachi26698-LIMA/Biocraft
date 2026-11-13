@@ -33,8 +33,8 @@ const SymbolGrid = memo(function SymbolGrid({ results, favs, copiedGlyph, onCopy
   results: SymbolResult[]; favs: Set<string>; copiedGlyph: string | null;
   onCopy: (glyph: string) => void; onToggle: (glyph: string) => void;
 }) {
-  return <ul className="symbol-grid">{results.map((symbol, index) => <SymbolCell
-    key={`${symbol.categoryId}-${index}-${symbol.glyph}`} symbol={symbol}
+  return <ul className="symbol-grid">{results.map((symbol) => <SymbolCell
+    key={`${symbol.categoryId}-${symbol.glyph}`} symbol={symbol}
     copied={copiedGlyph === symbol.glyph} favourite={favs.has(symbol.glyph)} onCopy={onCopy} onToggle={onToggle}
   />)}</ul>;
 });
@@ -63,13 +63,7 @@ export default function SymbolGenerator() {
   const results = useMemo(() => {
     if (activeCategory === 'favs') {
       const trimmed = deferredQuery.trim().toLowerCase();
-      const favbed = SYMBOL_CATEGORIES.flatMap((category) =>
-        category.symbols.map((symbol) => ({
-          ...symbol,
-          categoryId: category.id,
-          categoryLabel: category.label,
-        })),
-      ).filter((symbol) => favs.has(symbol.glyph));
+      const favbed = searchSymbols('', 'all').filter((symbol) => favs.has(symbol.glyph));
       if (!trimmed) return favbed;
       return favbed.filter((symbol) =>
         `${symbol.keywords} ${symbol.categoryLabel}`.toLowerCase().includes(trimmed),

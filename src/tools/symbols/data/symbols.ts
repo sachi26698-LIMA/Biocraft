@@ -359,27 +359,11 @@ export function searchSymbols(
   query: string,
   activeCategory: string,
 ): Array<{ glyph: string; keywords: string; categoryId: string; categoryLabel: string }> {
-  const q = query.trim().toLowerCase();
-  const matches =
-    activeCategory === 'all'
-      ? SYMBOL_CATEGORIES
-      : SYMBOL_CATEGORIES.filter((cat) => cat.id === activeCategory);
-
-  const results: Array<{ glyph: string; keywords: string; categoryId: string; categoryLabel: string }> = [];
-  for (const category of matches) {
-    for (const symbol of category.symbols) {
-      if (!q) {
-        results.push({ glyph: symbol.glyph, keywords: symbol.keywords, categoryId: category.id, categoryLabel: category.label });
-        continue;
-      }
-      const hindi = HINDI_ALIASES[symbol.glyph] ?? '';
-      const haystack = `${symbol.glyph} ${symbol.keywords} ${category.label} ${category.hiLabel} ${hindi}`.toLowerCase();
-      if (q.split(/\s+/).every((term) => haystack.includes(term))) {
-        results.push({ glyph: symbol.glyph, keywords: symbol.keywords, categoryId: category.id, categoryLabel: category.label });
-      }
-    }
-  }
-  return results;
+  const terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  return SYMBOL_INDEX.filter(({ entry, haystack }) =>
+    (activeCategory === 'all' || entry.categoryId === activeCategory) &&
+    terms.every((term) => haystack.includes(term)),
+  ).map(({ entry }) => entry);
 }
 
 /* ========== Expansion set: 10 studio categories (~15 entries each) ========== */
@@ -648,3 +632,11 @@ export const SYMBOL_COMBOS: readonly { label: string; text: string }[] = [
 ];
 
 export const TOTAL_SYMBOLS = SYMBOL_CATEGORIES.reduce((sum, cat) => sum + cat.symbols.length, 0);
+
+// The catalog is static. Reuse result objects and normalized search text so
+// filtering or changing a favourite does not invalidate every memoized cell.
+// Construct after the expansion categories have been added above.
+const SYMBOL_INDEX = SYMBOL_CATEGORIES.flatMap((category) => category.symbols.map((symbol) => ({
+  entry: { glyph: symbol.glyph, keywords: symbol.keywords, categoryId: category.id, categoryLabel: category.label },
+  haystack: `${symbol.glyph} ${symbol.keywords} ${category.label} ${category.hiLabel} ${HINDI_ALIASES[symbol.glyph] ?? ''}`.toLowerCase(),
+})));

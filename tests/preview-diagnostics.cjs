@@ -13,7 +13,7 @@ async function main() {
       build.onResolve({ filter: /\/lib\/biosRemote$/ }, () => ({ path: 'remote', namespace: 'mock-diag' }));
       build.onLoad({ filter: /.*/, namespace: 'mock-diag' }, ({ path }) => ({ contents: path === 'client'
         ? 'export const supabase = globalThis.__diagClient;'
-        : 'export const fetchCollectionBios = (...args) => globalThis.__diagFetch(...args); export const searchBios = (...args) => globalThis.__diagSearch(...args);', loader: 'js' }));
+        : 'export const fetchCollectionBios = (...args) => globalThis.__diagFetch(...args); export const searchBios = (...args) => globalThis.__diagSearch(...args); export const diagnoseCollectionKeyset = (...args) => globalThis.__diagKeyset(...args);', loader: 'js' }));
     } }],
   });
   const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/preview-diagnostics', pretendToBeVisual: true });
@@ -41,6 +41,7 @@ async function main() {
   };
   global.__diagFetch = async () => ({ source: 'supabase', bios: [{ text: 'test', lang: 'en' }] });
   global.__diagSearch = async ({ offset = 0, categorySlug }) => Array.from({ length: 5 }, (_, i) => ({ id: String(offset + i), category_slug: categorySlug ?? null }));
+  global.__diagKeyset = async () => ({ count: 30, matches: true });
   const Module = module.constructor;
   const m = new Module(path.join(process.cwd(), 'diag-test-bundle.cjs'), module); m.filename = path.join(process.cwd(), 'diag-test-bundle.cjs'); m.paths = module.paths; m._compile(output.outputFiles[0].text, m.filename);
   const { Page, React, act, createRoot } = m.exports;
@@ -53,8 +54,17 @@ async function main() {
   assert.match(document.body.textContent, /HTTP 200 · success/);
   assert.match(document.body.textContent, /English: 301 · Hindi: 75 · Hinglish: 130/);
   assert.match(document.body.textContent, /RLS active-read permission: PASS/);
-  assert.equal([...document.querySelectorAll('.preview-diag-status.status-pass')].length, 7);
-  assert.equal([...document.querySelectorAll('.preview-diag-status.status-not-tested')].length, 14);
+  assert.equal([...document.querySelectorAll('.preview-diag-status.status-pass')].length, 8);
+  const keysetCard = [...document.querySelectorAll('.preview-diag-card')].find((card) => card.querySelector('h3')?.textContent === 'Collection keyset pagination');
+  assert.match(keysetCard.textContent, /30 guest-visible rows matched/);
+  global.__diagKeyset = async () => ({ count: 30, matches: false });
+  await act(async () => { keysetCard.querySelector('button').click(); await new Promise((r) => setTimeout(r, 10)); });
+  assert.match(keysetCard.textContent, /FAIL/);
+  global.__diagKeyset = async () => ({ count: 5, matches: true });
+  await act(async () => { keysetCard.querySelector('button').click(); await new Promise((r) => setTimeout(r, 10)); });
+  assert.match(keysetCard.textContent, /NOT TESTED/);
+  assert.match(keysetCard.textContent, /too few rows/);
+  assert.equal([...document.querySelectorAll('.preview-diag-status.status-not-tested')].length, 15);
   global.__diagSearch = async ({ offset = 0 }) => Array.from({ length: 5 }, (_, i) => ({ id: String(offset + (offset === 0 && i === 4 ? 0 : i)) }));
   const paginationCard = [...document.querySelectorAll('.preview-diag-card')].find((card) => card.querySelector('h3')?.textContent === 'Pagination RPC');
   await act(async () => { paginationCard.querySelector('button').click(); await new Promise((r) => setTimeout(r, 10)); });

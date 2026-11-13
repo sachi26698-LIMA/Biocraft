@@ -41,13 +41,17 @@ async function main() {
   } };
   const Module = module.constructor;
   const m = new Module(path.join(process.cwd(), 'collection-pagination-bundle.cjs'), module); m.filename = path.join(process.cwd(), 'collection-pagination-bundle.cjs'); m.paths = module.paths; m._compile(output.outputFiles[0].text, m.filename);
-  const { fetchCollectionBios } = m.exports;
+  const { fetchCollectionBios, diagnoseCollectionKeyset } = m.exports;
   rows = makeRows(0); assert.deepEqual((await fetchCollectionBios('test')).bios, []); assert.equal(calls.length, 1);
   calls = []; rows = makeRows(500); assert.equal((await fetchCollectionBios('test')).bios.length, 500); assert.equal(calls.length, 1, 'full single page needs no speculative second request');
   calls = []; cap = 200; rows = makeRows(1005); const all = await fetchCollectionBios('test');
   assert.deepEqual(all.bios.map(x => x.text), rows.map(x => x.content));
   assert.equal(calls.length, 7, 'six capped pages and one final count');
   assert.ok(calls[calls.length - 1].options.head, 'verify count after multiple requests');
+  calls = []; cap = 500; rows = makeRows(12);
+  assert.deepEqual(await diagnoseCollectionKeyset('test'), { count: 12, matches: true });
+  assert.deepEqual(calls.map(call => call.limit), [500, 5, 5, 5, null], 'diagnostic exercises the real reader with multiple pages');
+  cap = 200; rows = makeRows(1005);
   calls = []; changeCount = true; await assert.rejects(fetchCollectionBios('test'), /changed/); changeCount = false;
   calls = []; failPage = true; await assert.rejects(fetchCollectionBios('test'), /offline/); failPage = false;
   assert.equal((await fetchCollectionBios('test')).bios.length, 1005, 'a failed read can retry');
