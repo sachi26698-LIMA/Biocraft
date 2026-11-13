@@ -118,3 +118,16 @@ fails before HTTP, so no hosted browser or API check has been performed. The
 Preview remains UI-only; `/admin/login` correctly reports the backend as
 unavailable because no schema, grants, database credential or Admin account
 exists yet. See `docs/MASTER_ADMIN_BACKEND.md`.
+
+### Local performance re-measurement (scripted Chromium, not field data)
+`AUDIT_BASE=http://127.0.0.1:4178 AUDIT_DIR=docs/admin-preview/perf npm run test:admin-performance` on the freshly built local Preview:
+
+| Profile | LCP | CLS | Longest task | DCL |
+|---|---|---|---|---|
+| Android-emulated (390×844, 4× CPU) | 520 ms | 0.00014 | 272 ms | 155 ms |
+| Tablet (820×1100) | 476 ms | 0 | 252 ms | 134 ms |
+| Desktop (1440×900) | 476 ms | 0.00060 | 195 ms | 163 ms |
+
+The 272 ms task is initial React render of the bundled catalogue. These are single
+local runs under emulation — no field/INP data, no backend latency and no
+physical-device claim.
