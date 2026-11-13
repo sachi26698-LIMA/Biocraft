@@ -99,6 +99,15 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     if(typeof body.grantId!=='string'||!uid.test(body.grantId))fail(422,'INVALID');
     const revoked=await recovery.revoke({identity,grantId:body.grantId,requestId:id});
     return json(200,{revoked,request_id:id});
+   } else if(url.pathname==='/api/admin/v1/staff/recovery/reset' && request.method==='POST') {
+    // Completes a recovery: the operator has deleted the stale factor at the
+    // provider, so the enrolment record can be cleared and the account returns to
+    // first-enrolment. Privileged, audited, and never a side effect of redeeming.
+    if(!recovery||typeof recovery.reset!=='function') fail(503,'UNAVAILABLE');
+    const body=await bodyJson(request);keys(body,['userId']);
+    if(typeof body.userId!=='string'||!uid.test(body.userId))fail(422,'INVALID');
+    const reset=await recovery.reset({identity,targetUserId:body.userId,requestId:id});
+    return json(200,{reset,request_id:id,next:reset?'re_enrol':'unchanged'});
    } else if(url.pathname==='/api/admin/v1/ops/cleanup' && request.method==='POST') {
     // Bounded maintenance. The target is validated again inside the SQL function,
     // which can only ever name the two operational tables.

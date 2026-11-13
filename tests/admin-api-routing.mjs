@@ -44,6 +44,7 @@ const cases = [
   ['staff', 'staff'],
   ['staff/recovery', 'staff/recovery'],
   ['staff/recovery/revoke', 'staff/recovery/revoke'],
+  ['staff/recovery/reset', 'staff/recovery/reset'],
   ['ops/cleanup', 'ops/cleanup'],
 ];
 for (const [path, expected] of cases) {
@@ -74,4 +75,4 @@ assert.match(backend, /export const ADMIN_BASE = '\/api\/admin\/v1'/, 'Admin bas
 const app = fs.readdirSync('src/pages').map(f => fs.readFileSync(`src/pages/${f}`, 'utf8')).join('\n');
 assert.ok(!/\/api\/admin/.test(app), 'public pages must not reference the Admin API');
 
-console.log('PASS Admin API routing: catch-all function rewrite, 19 URL round-trips, query preservation, traversal rejected, public app isolated');
+console.log('PASS Admin API routing: catch-all function rewrite, 20 URL round-trips, query preservation, traversal rejected, public app isolated');

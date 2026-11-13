@@ -40,7 +40,7 @@ try {
  bc_admin_v1.list_settings(integer,text),bc_admin_v1.update_setting(text,jsonb,bigint,uuid),bc_admin_v1.list_role_catalog(),
  bc_admin_v1.list_my_sessions(integer,timestamptz),bc_admin_v1.list_audit_logs(integer,bigint),bc_admin_v1.enrolment_eligible(uuid),
  bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),bc_admin_v1.revoke_recovery_grant(uuid,uuid),
- bc_admin_v1.consume_recovery_grant(bytea,uuid),bc_admin_v1.recovery_grant_state(uuid),
+ bc_admin_v1.consume_recovery_grant(bytea,uuid),bc_admin_v1.recovery_grant_state(uuid),bc_admin_v1.reset_factor_enrolment(uuid,uuid),
  bc_admin_v1.cleanup_expired(text,integer,uuid),bc_admin_v1.factor_gate(uuid) to bc_fixture_executor;
  -- Synthetic public rows so module reads have deterministic content.
  insert into public.platforms(name,slug,is_active,sort_order) values('Instagram','instagram',true,1),('Hidden','hidden',false,2);
@@ -243,6 +243,24 @@ try {
  assert.equal((await exec({identity:recovering,operation:'factorGate',args:[randomUUID()]}))[0].outcome,'denied');
  const gates=await admin.query("select details->>'outcome' o from bc_admin_v1.admin_audit_logs where action='auth.factor_gate' order by id");
  assert.deepEqual(gates.rows.map(r=>r.o),['enrol','recover','denied','denied','denied']);
+ // ---- D2 reset: the operator closes a recovery without reopening a bypass ----
+ // `reset_factor_enrolment` requires staff.manage inside the function, so an
+ // editor session is refused even though the executor holds EXECUTE on it.
+ await admin.query("update bc_admin_v1.admin_users set enabled=true where id=$1",[target]);
+ await assert.rejects(exec({identity:{userId:target,sessionId:tsid,assuranceLevel:'aal2',mfaVerifiedAt:Math.floor(Date.now()/1000)},operation:'factorReset',args:[target,randomUUID()]}),e=>e.code==='42501');
+ // A Super Admin cannot reset their own record, and only a Super Admin may reset.
+ await assert.rejects(RG.resetFactorEnrolment({execute:exec,identity:issuer,targetUserId:uid}),/FORBIDDEN/);
+ await assert.rejects(RG.resetFactorEnrolment({execute:exec,identity:{...issuer,assuranceLevel:'aal1'},targetUserId:target}),/FORBIDDEN/);
+ // The reset itself: clears the proof, returns the account to first enrolment,
+ // and is audited. The executor grant list is unchanged by it.
+ const restored=await RG.resetFactorEnrolment({execute:exec,identity:issuer,targetUserId:target});
+ assert.equal(restored,true);
+ assert.equal((await admin.query("select mfa_enrolled_at from bc_admin_v1.admin_users where id=$1",[target])).rows[0].mfa_enrolled_at,null);
+ await admin.query("insert into auth.sessions(id,user_id) values($1,$2)",[tsid,target]);
+ assert.equal((await exec({identity:recovering,operation:'factorGate',args:[randomUUID()]}))[0].outcome,'enrol');
+ assert.equal((await RG.resetFactorEnrolment({execute:exec,identity:issuer,targetUserId:target})),false);
+ const resetAudit=await admin.query("select details from bc_admin_v1.admin_audit_logs where action='auth.recovery.factor_reset' order by id");
+ assert.deepEqual(resetAudit.rows.map(r=>r.details.reset),[true,false]);
  // ---- cleanup: expired rows only, bounded, audited, never audit evidence ----
  const auditBefore=(await admin.query("select count(*)::int n from bc_admin_v1.admin_audit_logs")).rows[0].n;
  await admin.query("insert into bc_admin_v1.admin_login_flows(flow_hash,encrypted_data,expires_at) values(gen_random_bytes(32),gen_random_bytes(40),now()-interval '2 hours'),(gen_random_bytes(32),gen_random_bytes(40),now()+interval '1 hour')");
@@ -283,5 +301,5 @@ try {
  await admin.query("update bc_admin_v1.admin_users set enabled=false where id=$1",[target]);
  const dead=await RG.issueRecoveryGrant({execute:exec,identity:issuer,targetUserId:randomUUID()}).catch(e=>e);
  assert.equal(dead.code,'42501');
- console.log(`PASS PostgreSQL ${meta.rows[0].version}: fixture migrations, immutable concurrent bio edits, non-owner RBAC, session expiry, restrictive RLS, membership lock, concurrent limiter and atomic handoff and recovery revocation, 010 module reads/settings write and step-up freshness, 011 AAL1-only enrolment gate with audit, 012 Super-Admin-authorised single-use recovery (replay, supersession, five-attempt exhaustion, no session granted) and bounded locked cleanup that spares audit evidence. Provider Auth is mocked; no shared project used.`);
+ console.log(`PASS PostgreSQL ${meta.rows[0].version}: fixture migrations, immutable concurrent bio edits, non-owner RBAC, session expiry, restrictive RLS, membership lock, concurrent limiter and atomic handoff and recovery revocation, 010 module reads/settings write and step-up freshness, 011 AAL1-only enrolment gate with audit, 012 Super-Admin-authorised single-use recovery (replay, supersession, five-attempt exhaustion, no session granted), the privileged audited factor reset that returns an account to first enrolment, and bounded locked cleanup that spares audit evidence. Provider Auth is mocked; no shared project used.`);
 } finally {if(limited)await limited.end();await admin.end()}

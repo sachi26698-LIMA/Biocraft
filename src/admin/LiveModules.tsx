@@ -96,6 +96,21 @@ export default function LiveModules() {
     } catch { setRecoveryMessage('The grant could not be revoked.'); }
   }
 
+  // Completes a recovery: after the operator has deleted the stale factor at the
+  // provider, this clears the recorded enrolment so the account returns to the
+  // ordinary first-enrolment path. Never offered by the account being recovered.
+  async function resetEnrolment(userId: string) {
+    setRecoveryMessage('');
+    try {
+      const result = await request<{ reset: boolean }>('/staff/recovery/reset', { method: 'POST', body: JSON.stringify({ userId }) });
+      setRecoveryMessage(result.reset
+        ? 'Enrolment record cleared — the member can now set up a new authenticator at next sign-in.'
+        : 'Nothing to clear: that account has no recorded enrolment.');
+    } catch (error) {
+      setRecoveryMessage(error instanceof Error && 'code' in error ? `Enrolment was not cleared (${String((error as { code: unknown }).code)}).` : 'Enrolment was not cleared.');
+    }
+  }
+
   async function runCleanup(target: 'admin_login_flows' | 'admin_rate_limits') {
     setCleanupMessage('');
     try {
@@ -121,7 +136,10 @@ export default function LiveModules() {
       <div className="ad-panel-head"><div><h2>Staff and authenticator recovery</h2><p>Super Admin only. A recovery code is shown once and expires in 15 minutes.</p></div></div>
       <div className="ad-table-wrap" tabIndex={0} role="region" aria-label="Staff table"><table className="ad-table"><thead><tr><th>Member</th><th>Roles</th><th>Enabled</th><th>Recovery</th></tr></thead><tbody>
         {staff.map(row => <tr key={row.user_id}><td>{row.display_name ?? row.user_id}</td><td>{Array.isArray(row.roles) ? row.roles.join(', ') : '—'}</td><td>{row.enabled ? 'Yes' : 'No'}</td>
-          <td><button type="button" onClick={() => void issueRecovery(row.user_id)} disabled={!row.enabled}>Issue code</button></td></tr>)}
+          <td><div className="ad-action-row">
+            <button type="button" onClick={() => void issueRecovery(row.user_id)} disabled={!row.enabled}>Issue code</button>
+            <button type="button" onClick={() => void resetEnrolment(row.user_id)} disabled={!row.enabled}>Reset enrolment</button>
+          </div></td></tr>)}
       </tbody></table></div>
       {issuedCode && <div className="ad-auth-uri" role="status">
         <span>Recovery code for {staff.find(row => row.user_id === issuedFor)?.display_name ?? issuedFor}</span>

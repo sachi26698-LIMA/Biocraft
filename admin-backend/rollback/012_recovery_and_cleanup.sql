@@ -1,4 +1,4 @@
--- Rollback for 012. Drops only the four functions and the two tables created by
+-- Rollback for 012. Drops only the functions and the two tables created by
 -- 012. Refuses while recovery grants or cleanup evidence exist, because deleting
 -- either would remove security evidence; there is no CASCADE.
 begin;
@@ -19,6 +19,7 @@ drop function bc_admin_v1.factor_gate(uuid);
 drop function bc_admin_v1.recovery_grant_state(uuid);
 drop function bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid);
 drop function bc_admin_v1.revoke_recovery_grant(uuid,uuid);
+drop function bc_admin_v1.reset_factor_enrolment(uuid,uuid);
 drop function bc_admin_v1.cleanup_expired(text,integer,uuid);
 drop trigger admin_sessions_stamp_mfa on bc_admin_v1.admin_sessions;
 drop function bc_admin_v1.stamp_mfa_enrolled();

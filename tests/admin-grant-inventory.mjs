@@ -49,11 +49,11 @@ const granted = [...grants.matchAll(/bc_admin_v1\.([a-z0-9_]+)\(([^)]*)\)/g)]
 // 3. Numbers the review and the approval report must both state.
 assert.equal(tables.length, 19, `expected 19 tables, found ${tables.length}`);
 assert.equal(new Set(tables).size, 19, 'duplicate table definition');
-assert.equal(created.length, 38, `expected 38 functions, found ${created.length}`);
+assert.equal(created.length, 39, `expected 39 functions, found ${created.length}`);
 assert.equal(triggerBodies.length, 4, `expected 4 trigger bodies, found ${triggerBodies.length}`);
-assert.equal(granted.length, 34, `expected 34 granted signatures, found ${granted.length}`);
+assert.equal(granted.length, 35, `expected 35 granted signatures, found ${granted.length}`);
 assert.equal(new Set(granted).size, granted.length, 'duplicate grant');
-assert.equal(functions.length, 34, 'callable functions must equal the grant list');
+assert.equal(functions.length, 35, 'callable functions must equal the 35 grants');
 assert.equal(invoker.length, 0, `unexpected SECURITY INVOKER function: ${invoker.map(f => f.fn)}`);
 
 // 4. Every granted name exists in the migrations, and nothing else is granted.
@@ -104,4 +104,24 @@ for (const name of files) {
   assert.ok(!/\b(public|auth)\./i.test(rollback.replace(/--[^\n]*/g, '').replace(/auth\.(uid|jwt)\(\)/g, '')), `${name} rollback touches public/auth`);
 }
 
-console.log(`PASS grant inventory: ${tables.length} tables, ${created.length} functions = ${functions.length} callable SECURITY DEFINER (all ${granted.length} granted) + ${triggerBodies.length} trigger bodies (none granted), every search_path fixed, no public/auth writes, no CASCADE`);
+// 10. Documentation cannot drift from the files: every migration, rollback and
+//     the grant list must appear verbatim in the approval report, and every
+//     SHA-256 quoted for them must match the bytes on disk.
+import {createHash} from 'node:crypto';
+const approval = fs.readFileSync('docs/CONSOLIDATED_APPROVAL_REPORT.md', 'utf8');
+const review = fs.readFileSync('docs/FINAL_SECURITY_REVIEW.md', 'utf8');
+const sha = text => createHash('sha256').update(text).digest('hex');
+const sqlFiles = [
+  ...files.map(f => `admin-backend/migrations/${f}`),
+  ...files.map(f => `admin-backend/rollback/${f}`),
+  'admin-backend/grants/executor-grants.sql',
+];
+for (const file of sqlFiles) {
+  const body = fs.readFileSync(file, 'utf8').trimEnd();
+  assert.ok(approval.includes(body), `${file} is not reproduced verbatim in the approval report`);
+  const digest = sha(fs.readFileSync(file));
+  assert.ok(approval.includes(digest), `${file} SHA-256 ${digest} missing from the approval report`);
+  assert.ok(review.includes(digest), `${file} SHA-256 missing from the security review checklist`);
+}
+
+console.log(`PASS grant inventory: ${tables.length} tables, ${created.length} functions = ${functions.length} callable SECURITY DEFINER (all ${granted.length} granted) + ${triggerBodies.length} trigger bodies (none granted), every search_path fixed, no public/auth writes, no CASCADE; all ${sqlFiles.length} SQL files and their SHA-256 reproduced in both documents`);

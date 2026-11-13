@@ -1,7 +1,7 @@
 -- CANONICAL EXECUTOR GRANT LIST. Executed by a human with project access AFTER
 -- migrations 001–012, never by the application, and never as the executor itself.
 --
--- 34 signatures = 38 functions created by 001–012 minus the 4 trigger bodies
+-- 35 signatures = 39 functions created by 001–012 minus the 4 trigger bodies
 -- (reject_mutation, guard_draft, guard_approval, stamp_mfa_enrolled). Trigger
 -- functions are invoked by the trigger machinery as the table owner and must not
 -- be granted: a direct EXECUTE would widen the surface for no benefit.
@@ -44,6 +44,7 @@ grant execute on function
   bc_admin_v1.list_audit_logs(integer,bigint),
   bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),
   bc_admin_v1.revoke_recovery_grant(uuid,uuid),
+  bc_admin_v1.reset_factor_enrolment(uuid,uuid),
   bc_admin_v1.consume_recovery_grant(bytea,uuid),
   bc_admin_v1.recovery_grant_state(uuid),
   bc_admin_v1.cleanup_expired(text,integer,uuid)

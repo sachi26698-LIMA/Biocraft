@@ -3,7 +3,7 @@
 **Revision 3 — incorporates your D1–D4 decisions; the SQL package is now
 001–012 plus one canonical grant file.** Counts in this revision are derived from
 the files by `test:admin-grant-inventory`, not written by hand: **19 tables, 38
-functions (34 granted), 1 grant file, 24 SQL files with recorded SHA-256.**
+functions (35 granted), 1 grant file, 24 SQL files with recorded SHA-256.**
 
 **Status: awaiting your decision. Nothing in this report has been executed.** No
 schema, role, grant, Auth setting or account has been created in the shared
@@ -48,11 +48,11 @@ Everything is **additive and confined to a new schema**. Nothing in `public`,
 |---|---|---|
 | 1 | new schema `bc_admin_v1` | invisible to `anon`/`authenticated`; `REVOKE ALL ... FROM public, anon, authenticated` |
 | 2 | 19 new tables (15 in 001, 2 in 006, 2 in 012: recovery grants, cleanup runs) | none; RLS enabled with a restrictive `deny_clients` policy and all table privileges revoked |
-| 3 | 38 new functions, `search_path=pg_catalog` fixed on every one: 34 callable `SECURITY DEFINER` (all granted) + 4 trigger bodies (never granted: `reject_mutation`, `guard_draft`, `guard_approval`, `stamp_mfa_enrolled`) | none by default: every function ends with `REVOKE ALL ... FROM public, anon, authenticated` |
+| 3 | 39 new functions, `search_path=pg_catalog` fixed on every one: 35 callable `SECURITY DEFINER` (all granted) + 4 trigger bodies (never granted: `reject_mutation`, `guard_draft`, `guard_approval`, `stamp_mfa_enrolled`) | none by default: every function ends with `REVOKE ALL ... FROM public, anon, authenticated` |
 | 4 | triggers on the new tables only | none |
 | 5 | `ALTER DEFAULT PRIVILEGES IN SCHEMA bc_admin_v1 ...` | per-schema only, affects **future** `bc_admin_v1` objects created by the same role. Global default ACLs (which govern `public`) are **not** touched |
 | 6 | new login role `bc_admin_executor` | cannot log in to the API as a user; no table privileges; not a member of any privileged role |
-| 7 | grant: `USAGE` on schema + `EXECUTE` on 34 named functions to that role (`admin-backend/grants/executor-grants.sql`, SHA-256 `d47c519a…4de53e`) | the only new capability, and it is reachable only by that role |
+| 7 | grant: `USAGE` on schema + `EXECUTE` on 35 named functions to that role (`admin-backend/grants/executor-grants.sql`, SHA-256 `7c78b58f…dc035d`) | the only new capability, and it is reachable only by that role |
 | 8 | one nullable column `admin_users.mfa_enrolled_at` (012) | none on `public`; it is the enrol-vs-recover record for D2 |
 
 **Explicitly not changed:** `public.*` tables and their 10 RLS policies, guest
@@ -97,7 +97,7 @@ the reviewed functions. Alternatives considered and rejected:
 | Use the `service_role` key over PostgREST | `service_role` is `BYPASSRLS` with write access to every `public` table. A leak = full database takeover. Violates least privilege and your "no weakening" rule. |
 | Use `postgres` / DB password | Owner of every public table; same objection, larger blast radius. |
 | No database at all (UI only) | Cannot deliver CRUD/analytics/audit. |
-| **Dedicated `bc_admin_executor`** | Selected. No table grant, no schema CREATE, no role membership, EXECUTE on exactly 34 functions, and the server additionally refuses to start if the connected role is privileged (`assertLimitedRole`). |
+| **Dedicated `bc_admin_executor`** | Selected. No table grant, no schema CREATE, no role membership, EXECUTE on exactly 35 functions, and the server additionally refuses to start if the connected role is privileged (`assertLimitedRole`). |
 
 Creation is `CREATE ROLE ... LOGIN PASSWORD` (48 chars from a CSPRNG, D3) +
 `GRANT USAGE` + 34 `GRANT EXECUTE` from the single canonical grant file.
@@ -160,7 +160,7 @@ lets an account re-open itself: privilege must be granted out of band.
 | Level | Action | Effect |
 |---|---|---|
 | Instant off-switch | remove `ADMIN_BACKEND_ENABLED` in Vercel (Preview) | every `/api/admin/*` request returns 503; no database access |
-| Revoke executor | `REVOKE ALL ON FUNCTION ... FROM bc_admin_executor;` (the 34 listed) | backend loses all capability; grants are the only path |
+| Revoke executor | `REVOKE ALL ON FUNCTION ... FROM bc_admin_executor;` (the 35 listed) | backend loses all capability; grants are the only path |
 | Drop executor | `DROP OWNED BY bc_admin_executor; DROP ROLE bc_admin_executor;` | removes remaining privileges |
 | Full removal | `admin-backend/rollback/012→001` in reverse order | drops only `bc_admin_v1` objects; refuses if any Admin table holds rows — and 012 also refuses while any `mfa_enrolled_at` is set; never touches `public`/`auth` |
 | Credential rotation (D3) | `node scripts/admin-executor-credential.mjs --rotate` | two-role switch: successor created, env switched, old role retired only after the successor is proven |
@@ -183,13 +183,21 @@ bytes that passed the disposable PostgreSQL 17.11 suites.
 
 The grant list is not duplicated here: it is one canonical file,
 `admin-backend/grants/executor-grants.sql` (SHA-256
-`d47c519ac6eb8d94212e498544f9021c3d072d2633959c54a612fb4c7f4de53e`), reproduced
+`7c78b58f765d74d33336e7ec79a9777ee15f7662fe40fe5c3823b99258dc035d`), reproduced
 in full:
 
 ```sql
--- SHA-256 d47c519ac6eb8d94212e498544f9021c3d072d2633959c54a612fb4c7f4de53e
--- 34 signatures = 38 functions minus 4 trigger bodies (reject_mutation,
--- guard_draft, guard_approval, stamp_mfa_enrolled).
+-- CANONICAL EXECUTOR GRANT LIST. Executed by a human with project access AFTER
+-- migrations 001–012, never by the application, and never as the executor itself.
+--
+-- 35 signatures = 39 functions created by 001–012 minus the 4 trigger bodies
+-- (reject_mutation, guard_draft, guard_approval, stamp_mfa_enrolled). Trigger
+-- functions are invoked by the trigger machinery as the table owner and must not
+-- be granted: a direct EXECUTE would widen the surface for no benefit.
+--
+-- `tests/admin-grant-inventory.mjs` fails if this file and the migrations ever
+-- disagree, so a new function cannot be created without a decision about whether
+-- the executor may call it.
 
 grant usage on schema bc_admin_v1 to bc_admin_executor;
 
@@ -225,6 +233,7 @@ grant execute on function
   bc_admin_v1.list_audit_logs(integer,bigint),
   bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),
   bc_admin_v1.revoke_recovery_grant(uuid,uuid),
+  bc_admin_v1.reset_factor_enrolment(uuid,uuid),
   bc_admin_v1.consume_recovery_grant(bytea,uuid),
   bc_admin_v1.recovery_grant_state(uuid),
   bc_admin_v1.cleanup_expired(text,integer,uuid)
@@ -239,7 +248,7 @@ create role bc_admin_executor login password '<generated>'
   nosuperuser nocreatedb nocreaterole noreplication nobypassrls inherit;
 ```
 
-34 of the 38 functions are granted. The 4 trigger bodies — `guard_draft`,
+35 of the 39 functions are granted. The 4 trigger bodies — `guard_draft`,
 `guard_approval`, `reject_mutation` and `stamp_mfa_enrolled` — are never called by
 the server and get no grant. `stamp_mfa_enrolled` matters most: it writes the
 `mfa_enrolled_at` value that D2's enrol-vs-recover decision rests on, so no login
@@ -247,11 +256,51 @@ may invoke it directly.
 
 `require_actor(text)` is granted because the server calls it once per write as a
 defence-in-depth check before the operation's own function; every function also
-re-checks internally, so removing the grant would not widen access.
+re-checks internally, so removing the grant would widen access.
+
+`reset_factor_enrolment(uuid,uuid)` is granted **and** re-checks `staff.manage`
+inside the function, refuses self-reset, and audits every call. It is the one way
+to complete a recovery (§6d); without it an operator would need a hand-written
+`UPDATE`, which is exactly the kind of untracked privileged write this package
+replaces.
 
 No table, sequence, column or schema-`CREATE` privilege is granted.
 
-### 6b. Enrolment gate semantics (011)
+### 6b. SHA-256 of every file in the package
+
+25 files: 12 migrations, 12 rollbacks, 1 canonical grant file. Regenerate the same
+list with
+`sha256sum admin-backend/migrations/*.sql admin-backend/rollback/*.sql admin-backend/grants/executor-grants.sql`
+and compare; `test:admin-grant-inventory` fails if any value here, or in the
+security review, stops matching the bytes on disk.
+
+- `admin-backend/migrations/001_admin_foundation.sql` — `54d52c1f1d74cf492f431ee46f761313beefd6493e4ff2e918cde97ebb7c7db7`
+- `admin-backend/migrations/002_workflow_integrity.sql` — `b23d6e9519ccd5ab4cecf9cbe27c8903a6d6a84ae74b7006fce3e3b08383b822`
+- `admin-backend/migrations/003_permission_catalog.sql` — `37a839dc250d3a51622355e9cc03646d4e39ebeb821922d8117bffa2d5e6c3cb`
+- `admin-backend/migrations/004_private_draft_commands.sql` — `554631e23e6497ee6db5ce96d37d773f127eccc6054fd4b22ee4f5b2c48ef3fa`
+- `admin-backend/migrations/005_session_commands.sql` — `3b08b1446791796949fdbc61123f6b5ba59473dac79f2530261b23ed269899cb`
+- `admin-backend/migrations/006_auth_controls.sql` — `d4e20279bd722c2ff694bffbfde8897d63dda2235e088119457bbbf0a0b88adb`
+- `admin-backend/migrations/007_staff_commands.sql` — `d04c19d37acd213229a8f3088871fc51ae9b2f0b36602e40081437c8ef0b512d`
+- `admin-backend/migrations/008_bio_edit.sql` — `a4b594c7d3479fad588c026d21a11abe037bf2e4970fd97e8449674bf895c652`
+- `admin-backend/migrations/009_recovery_sessions.sql` — `7851eb4f03d97fbcdcd7f62cb00b54437233a2a064f12a911bd5d530b5c5a30b`
+- `admin-backend/migrations/010_admin_module_commands.sql` — `5ac31357267a496759aa47b6838baf6ec755ae95c8dd06d0a2616529c775023b`
+- `admin-backend/migrations/011_totp_enrolment.sql` — `4507ed36f5571c92e0d85f1ca017809997be760a05693d5c6306b5f0939ddb21`
+- `admin-backend/migrations/012_recovery_and_cleanup.sql` — `9311ebcbe76f9008d24c3841194a9c0d8770974e711591b250f3d616ff32d733`
+- `admin-backend/rollback/001_admin_foundation.sql` — `98b80fd0cd9d0bc3cc1e87da1352a27f29771fd5dd8016d84744dffe9bda1a77`
+- `admin-backend/rollback/002_workflow_integrity.sql` — `9a8b79d9fda725b9efda3cc052aab246dbcf5a5336d84ea8a692733b422b1097`
+- `admin-backend/rollback/003_permission_catalog.sql` — `2d589421922666f3bd93f0c3b0a6bb6f87f77a91c9c3c620f27f0df37f0c20d1`
+- `admin-backend/rollback/004_private_draft_commands.sql` — `59479d8343d2d85f7e64b9541451abed955f19d8abba95cac49723cfc718f625`
+- `admin-backend/rollback/005_session_commands.sql` — `14007468a63d0e99d5f4958d42f52b1c8653c83b310312741ea4072ef0ddb822`
+- `admin-backend/rollback/006_auth_controls.sql` — `50994d3db55adc9f6c96ed9db64d4468a9ccbb40a4b29955f135b78860906dec`
+- `admin-backend/rollback/007_staff_commands.sql` — `65f6473b705669f5d053f4901f41d4b5ba38948eb8cd2b9e3f536ae50e7d1d8a`
+- `admin-backend/rollback/008_bio_edit.sql` — `d788af5f302c37b0758536a88387a53f9f47b849de40fe46bb5f031b0d04b0ad`
+- `admin-backend/rollback/009_recovery_sessions.sql` — `8297b2e082d5e82a034274ba336bc1efb1d06b7502c33cbdc5a18405d2cc0ffa`
+- `admin-backend/rollback/010_admin_module_commands.sql` — `6b08e5d5895f11322e618a1aecd25ae7ff8600055d74a874964e07098c213e04`
+- `admin-backend/rollback/011_totp_enrolment.sql` — `89f59839ee62c9a5cf9436d8cf6a617f2878fb37cbcd701994d13db0d84ce980`
+- `admin-backend/rollback/012_recovery_and_cleanup.sql` — `10409bf3e639f59668d56f59fcadc04ac50d1fd440e8da2c665e5330f4a58bde`
+- `admin-backend/grants/executor-grants.sql` — `7c78b58f765d74d33336e7ec79a9777ee15f7662fe40fe5c3823b99258dc035d`
+
+### 6c. Enrolment gate semantics (011)
 
 `bc_admin_v1.enrolment_eligible(uuid)` is the only function callable before a
 second factor exists. It returns a boolean rather than raising, so that the
@@ -271,7 +320,7 @@ Consequences that the server must — and does — enforce:
 
 ---
 
-### 6c. Recovery (D2) and cleanup (D4) semantics — what 012 adds and why
+### 6d. Recovery (D2) and cleanup (D4) semantics — what 012 adds and why
 
 **D2 — no password-only re-enrolment.** The provider reports zero verified factors
 for both "never enrolled" and "lost the device", so the distinction is recorded in
@@ -296,6 +345,14 @@ Recovery needs a *second*, fully authenticated Super Admin:
 
 The code is 12 symbols of Crockford base32 (checksum included, vowels excluded),
 40 bits, shown once, stored only as `sha256(salt ‖ code)` with an 8-byte salt.
+
+**Completing a recovery.** Redemption itself changes nothing — no session, no
+cookie, no factor removal. The operator deletes the stale factor at the provider,
+then a Super Admin calls `POST /api/admin/v1/staff/recovery/reset {userId}`, which
+runs `reset_factor_enrolment(uuid,uuid)`: `require_actor('staff.manage')`,
+self-reset refused, one named account, `auth.recovery.factor_reset` audit row with
+`reset: true|false`. That returns the account to the ordinary first-enrolment path.
+The four steps — issue, redeem, reset, enrol — are four separate audit actions.
 
 **D4 — bounded cleanup.** `cleanup_expired(target, limit, request_id)` requires
 `settings.manage`, accepts only `admin_login_flows` (expired) and
@@ -1180,9 +1237,10 @@ commit;
 
 ### `012_recovery_and_cleanup.sql`
 
-SHA-256 `879bf5e64a276eff4e361e428c99f80af89ec184a4cd25b30f829f4619c12664`.
-Adds D2 (Super-Admin-authorised recovery) and D4 (bounded cleanup). One nullable
-column on `admin_users`, two tables, seven functions and one trigger.
+SHA-256 `9311ebcbe76f9008d24c3841194a9c0d8770974e711591b250f3d616ff32d733`.
+Adds D2 (Super-Admin-authorised recovery, plus the audited reset that completes it)
+and D4 (bounded cleanup). One nullable column on `admin_users`, two tables, eight
+functions and one trigger.
 
 ```sql
 -- LOCAL SYNTHETIC FIXTURES ONLY. Not approved for shared execution.
@@ -1355,6 +1413,36 @@ begin
  return changed > 0;
 end $$;
 
+-- Closes the D2 workflow wart. A completed recovery authorises the account but
+-- does not touch the factor: the operator deletes the stale factor at the
+-- provider, then a Super Admin clears this record through the Admin UI, which
+-- returns the account to the ordinary first-enrolment path. It is deliberately a
+-- separate privileged, audited, per-account action and never a side effect of
+-- redeeming a code: redemption still changes nothing, self-reset is refused, and
+-- only staff.manage (AAL2 Super Admin) can call it.
+create function bc_admin_v1.reset_factor_enrolment(p_user_id uuid, p_request_id uuid) returns boolean
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; changed integer;
+begin
+ actor := bc_admin_v1.require_actor('staff.manage');
+ if p_user_id is null or p_request_id is null then
+  raise exception 'invalid factor reset' using errcode='22023';
+ end if;
+ -- Self-reset is refused for the same reason self-recovery is: one account must
+ -- never be able to re-open its own mandatory enrolment.
+ if p_user_id = actor then
+  raise exception 'self factor reset refused' using errcode='42501';
+ end if;
+ update bc_admin_v1.admin_users u
+  set mfa_enrolled_at = null, updated_at = now()
+  where u.id = p_user_id and u.mfa_enrolled_at is not null;
+ get diagnostics changed = row_count;
+ insert into bc_admin_v1.admin_audit_logs(actor_id,request_id,action,target_type,target_id,details)
+ values (actor, p_request_id, 'auth.recovery.factor_reset', 'staff', p_user_id::text,
+         pg_catalog.jsonb_build_object('reset', changed > 0));
+ return changed > 0;
+end $$;
+
 -- Pre-MFA by necessity: the recovering account has lost its factor. It must have
 -- a live password (aal1) provider session, an enabled membership and at least one
 -- role, exactly like the first-factor enrolment gate in 011. It returns text
@@ -1479,6 +1567,7 @@ revoke all on function bc_admin_v1.factor_gate(uuid),
  bc_admin_v1.revoke_recovery_grant(uuid,uuid),
  bc_admin_v1.consume_recovery_grant(bytea,uuid),
  bc_admin_v1.recovery_grant_state(uuid),
+ bc_admin_v1.reset_factor_enrolment(uuid,uuid),
  bc_admin_v1.cleanup_expired(text,integer,uuid) from public,anon,authenticated;
 commit;
 ```
@@ -1650,14 +1739,14 @@ commit;
 
 ### `012_recovery_and_cleanup.sql`
 
-SHA-256 `dee97dc4d0960839553261ef279c47c3b967bd7729ced59da7f03cb832b433dd`.
+SHA-256 `10409bf3e639f59668d56f59fcadc04ac50d1fd440e8da2c665e5330f4a58bde`.
 Refuses while any recovery grant, cleanup run **or** `mfa_enrolled_at` value
 exists — the last check is deliberate: dropping the column would make an account
 that had proven a factor look like a first-time enroller, reopening the
 password-only enrolment path that 012 closes.
 
 ```sql
--- Rollback for 012. Drops only the four functions and the two tables created by
+-- Rollback for 012. Drops only the functions and the two tables created by
 -- 012. Refuses while recovery grants or cleanup evidence exist, because deleting
 -- either would remove security evidence; there is no CASCADE.
 begin;
@@ -1678,6 +1767,7 @@ drop function bc_admin_v1.factor_gate(uuid);
 drop function bc_admin_v1.recovery_grant_state(uuid);
 drop function bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid);
 drop function bc_admin_v1.revoke_recovery_grant(uuid,uuid);
+drop function bc_admin_v1.reset_factor_enrolment(uuid,uuid);
 drop function bc_admin_v1.cleanup_expired(text,integer,uuid);
 drop trigger admin_sessions_stamp_mfa on bc_admin_v1.admin_sessions;
 drop function bc_admin_v1.stamp_mfa_enrolled();

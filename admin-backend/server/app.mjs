@@ -14,7 +14,7 @@ import {randomUUID} from 'node:crypto';
 import {createProviderClient} from './identity.mjs';
 import {createAuthController} from './auth-controller.mjs';
 import {createRecoveryController} from './recovery-controller.mjs';
-import {issueRecoveryGrant,revokeRecoveryGrant,runCleanup,redeemRecoveryCode,factorGate,recoveryGrantState} from './recovery-grant.mjs';
+import {issueRecoveryGrant,revokeRecoveryGrant,runCleanup,redeemRecoveryCode,factorGate,recoveryGrantState,resetFactorEnrolment} from './recovery-grant.mjs';
 import {verifyProviderIdentity} from './identity.mjs';
 import {createCookieGateway} from './session-cookie.mjs';
 import {createAdminHandler} from './api.mjs';
@@ -91,6 +91,7 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  const recoveryService={
   issue:options=>issueRecoveryGrant({execute,...options}),
   revoke:options=>revokeRecoveryGrant({execute,...options}),
+  reset:options=>resetFactorEnrolment({execute,...options}),
   cleanup:options=>runCleanup({execute,...options})};
  const api=createAdminHandler({enabled:true,provider,execute,rateLimit,platformRules:PLATFORM_RULES,recovery:recoveryService});
  const recovery=createRecoveryController({enabled:true,origin,createClient:client,flowStore:storage,limiter:rateLimit,execute});

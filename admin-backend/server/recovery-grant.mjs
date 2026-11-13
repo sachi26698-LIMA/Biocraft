@@ -149,6 +149,23 @@ export async function redeemRecoveryCode({execute, identity, code, requestId = r
   return redeemWithSalt({execute, identity, code, salt: state.salt, requestId});
 }
 
+/**
+ * Close the D2 workflow wart: after a completed recovery the operator deletes the
+ * stale factor at the provider, then clears `mfa_enrolled_at` so the account goes
+ * back to the ordinary first-enrolment path. This is a separate, privileged,
+ * audited action on purpose — the database function refuses self-reset and the
+ * executor is never granted it, so the API cannot clear the record that
+ * distinguishes "never enrolled" from "lost factor".
+ */
+export async function resetFactorEnrolment({execute, identity, targetUserId, requestId = randomUUID()}) {
+  if (typeof execute !== 'function' || !identity || identity.assuranceLevel !== 'aal2') throw new AccessError('FORBIDDEN');
+  if (typeof targetUserId !== 'string' || !uuidRe.test(targetUserId)) throw new AccessError('INVALID');
+  if (targetUserId === identity.userId) throw new AccessError('FORBIDDEN');
+  const rows = await execute({identity, operation: 'factorReset', args: [targetUserId, requestId]});
+  if (!Array.isArray(rows) || rows.length !== 1) throw new AccessError('UNAVAILABLE');
+  return rows[0].reset === true;
+}
+
 /** Bounded cleanup. One target per call keeps the batch and the lock scope small;
  * the scheduler runs `admin_login_flows` then `admin_rate_limits`. Expired audit
  * evidence is never a target — the function can only name these two tables. */

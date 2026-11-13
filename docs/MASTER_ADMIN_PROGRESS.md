@@ -56,8 +56,8 @@ request, so no hosted interaction has ever been claimed.
   grant (migration 012, `factor_gate`, `stamp_mfa_enrolled`, recovery UI at
   `/admin/login`, Staff module issue/revoke); cleanup implemented as a bounded,
   locked, audited function; credential generator and two-role rotation scripted.
-  Counts are now derived by `test:admin-grant-inventory`: 19 tables, 38 functions
-  (34 granted, 4 trigger-only).
+  Counts are now derived by `test:admin-grant-inventory`: 19 tables, 39 functions
+  (35 granted, 4 trigger-only).
 ### Latest local implementation batch
 
 - **Pre-execution security review** (`docs/FINAL_SECURITY_REVIEW.md`): all 31

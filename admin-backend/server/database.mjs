@@ -59,6 +59,7 @@ const OPERATIONS = Object.freeze({
   // and re-check membership and a live provider session inside the function.
   recoveryIssue: {permission:'staff.manage',sql:'select bc_admin_v1.issue_recovery_grant($1::uuid,$2::bytea,$3::bytea,$4::interval,$5::uuid) as grant_id'},
   recoveryRevoke: {permission:'staff.manage',sql:'select bc_admin_v1.revoke_recovery_grant($1::uuid,$2::uuid) as revoked'},
+  factorReset: {permission:'staff.manage',sql:'select bc_admin_v1.reset_factor_enrolment($1::uuid,$2::uuid) as reset'},
   recoveryState: {permission:null,sql:'select * from bc_admin_v1.recovery_grant_state($1::uuid)'},
   recoveryRedeem: {permission:null,sql:'select bc_admin_v1.consume_recovery_grant($1::bytea,$2::uuid) as outcome'},
   // Cleanup (012) is bounded, locked and audited; settings.manage is Super Admin.
@@ -96,7 +97,7 @@ const OPERATIONS = Object.freeze({
 // event. Missing amr data fails closed. This is independent of, and does not
 // replace, per-row permission checks and locks inside the transaction.
 const PRE_AAL2 = new Set(['enrolmentEligible','factorGate','recoveryState','recoveryRedeem']);
-const STEP_UP = new Set(['create','draftUpdate','submit','reviewApprove','reviewReject','staffUpdate','sessionRevokeAll','settingUpdate','recoveryIssue','recoveryRevoke','cleanupExpired']);
+const STEP_UP = new Set(['create','draftUpdate','submit','reviewApprove','reviewReject','staffUpdate','sessionRevokeAll','settingUpdate','recoveryIssue','recoveryRevoke','factorReset','cleanupExpired']);
 export function createDatabaseExecutor(pool,{maxMfaAgeMs=10*60*1000,now=Date.now}={}) {
  if (!pool || typeof pool.connect !== 'function' || !Number.isSafeInteger(maxMfaAgeMs) || maxMfaAgeMs<60000 || typeof now!=='function') throw new Error('Database pool required');
  return async function execute({identity,operation,args}) {

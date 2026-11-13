@@ -168,6 +168,36 @@ begin
  return changed > 0;
 end $$;
 
+-- Closes the D2 workflow wart. A completed recovery authorises the account but
+-- does not touch the factor: the operator deletes the stale factor at the
+-- provider, then a Super Admin clears this record through the Admin UI, which
+-- returns the account to the ordinary first-enrolment path. It is deliberately a
+-- separate privileged, audited, per-account action and never a side effect of
+-- redeeming a code: redemption still changes nothing, self-reset is refused, and
+-- only staff.manage (AAL2 Super Admin) can call it.
+create function bc_admin_v1.reset_factor_enrolment(p_user_id uuid, p_request_id uuid) returns boolean
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; changed integer;
+begin
+ actor := bc_admin_v1.require_actor('staff.manage');
+ if p_user_id is null or p_request_id is null then
+  raise exception 'invalid factor reset' using errcode='22023';
+ end if;
+ -- Self-reset is refused for the same reason self-recovery is: one account must
+ -- never be able to re-open its own mandatory enrolment.
+ if p_user_id = actor then
+  raise exception 'self factor reset refused' using errcode='42501';
+ end if;
+ update bc_admin_v1.admin_users u
+  set mfa_enrolled_at = null, updated_at = now()
+  where u.id = p_user_id and u.mfa_enrolled_at is not null;
+ get diagnostics changed = row_count;
+ insert into bc_admin_v1.admin_audit_logs(actor_id,request_id,action,target_type,target_id,details)
+ values (actor, p_request_id, 'auth.recovery.factor_reset', 'staff', p_user_id::text,
+         pg_catalog.jsonb_build_object('reset', changed > 0));
+ return changed > 0;
+end $$;
+
 -- Pre-MFA by necessity: the recovering account has lost its factor. It must have
 -- a live password (aal1) provider session, an enabled membership and at least one
 -- role, exactly like the first-factor enrolment gate in 011. It returns text
@@ -292,5 +322,6 @@ revoke all on function bc_admin_v1.factor_gate(uuid),
  bc_admin_v1.revoke_recovery_grant(uuid,uuid),
  bc_admin_v1.consume_recovery_grant(bytea,uuid),
  bc_admin_v1.recovery_grant_state(uuid),
+ bc_admin_v1.reset_factor_enrolment(uuid,uuid),
  bc_admin_v1.cleanup_expired(text,integer,uuid) from public,anon,authenticated;
 commit;

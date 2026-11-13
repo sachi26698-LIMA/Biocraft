@@ -21,14 +21,14 @@ live project with a read-only query.
 **Headline result:** the SQL is sound and additive and no `public` or `auth`
 object is created, altered, dropped or re-granted. The four defects found in
 revision 1 are all resolved: **D1** fixed with a verified routing implementation
-and two regression tests, **D2** replaced by the recovery design in §12a, **D3**
-satisfied by the credential tooling in §12c, **D4** implemented and tested in
-§12d. Nothing below is executed.
+and two regression tests, **D2** replaced by the recovery design in §12 (D2), **D3**
+satisfied by the credential tooling in §12 (D3), **D4** implemented and tested in
+§12 (D4). Nothing below is executed.
 
 **Correction to earlier revisions:** the function and grant counts in revision 1
 (31 functions / 28 grants / 17 tables) were wrong. `test:admin-grant-inventory`
-now derives the truth from the migration files: **19 tables**, **38 functions** =
-**34 callable SECURITY DEFINER (all 34 granted)** + **4 trigger-only bodies** (no
+now derives the truth from the migration files: **19 tables**, **39 functions** =
+**35 callable SECURITY DEFINER (all 35 granted)** + **4 trigger-only bodies** (no
 grants). The trigger bodies are `reject_mutation`, `guard_draft`,
 `guard_approval` and `stamp_mfa_enrolled`.
 
@@ -36,7 +36,7 @@ Verified live at review time (read-only):
 
 | Check | Result |
 |---|---|
-| `public` tables | 10, all RLS-enabled, all owned by `postgres`, all `anon=r` (`SELECT`) only |
+| `public` tables | 10, all RLS-enabled, all owned by `postgres`, `anon=rxtm` and `authenticated=rxtm` — `SELECT` plus the Supabase-default `REFERENCES`/`TRIGGER`; **no** `INSERT`/`UPDATE`/`DELETE`/`TRUNCATE` for either role (re-verified 2026-11-09) |
 | `public` policies | 10 permissive `*_public_read` `FOR SELECT TO anon,authenticated USING (is_active)`; nothing else |
 | `bc_admin_v1` schema / `bc_admin_executor` role | **absent** (`0` / `0`) |
 | Data | bios 506 (all active), collections 20, categories 33, platforms 8, generators 12, seo_pages 48 |
@@ -119,7 +119,7 @@ the single largest residual risk in the design and is covered in §4 and §11.
 
 ---
 
-## 3. All 38 functions — SECURITY DEFINER matrix
+## 3. All 39 functions — SECURITY DEFINER matrix
 
 Every function below is created with an explicit `SET search_path = pg_catalog`,
 so no unqualified name can resolve to an attacker-controlled schema. There is no
@@ -172,6 +172,7 @@ migration.
 | 36 | `consume_recovery_grant(bytea,uuid)` | `postgres` | `pg_catalog` | **pre-`aal2` by design**: live grant only, `FOR UPDATE` so parallel guesses cannot bypass the 5-attempt cap, single use via `consumed_at`, auto-revokes at the cap; returns `'ok'/'mismatch'/'exhausted'/'no_grant'` (never raises, so the audit commits) | exec-role | **security-sensitive** |
 | 37 | `recovery_grant_state(uuid)` | `postgres` | `pg_catalog` | **pre-`aal2` by design**: returns the caller's own salt (not a secret) and remaining attempts only; no other account's grant is reachable and nothing here can consume one | exec-role | **security-sensitive** |
 | 38 | `cleanup_expired(text,integer,uuid)` | `postgres` | `pg_catalog` | `require_actor('settings.manage')`; target allow-list (`admin_login_flows`, `admin_rate_limits`), batch 1–1000, per-target advisory lock, records every run | exec-role | additive (deletes operational rows only) |
+| 39 | `reset_factor_enrolment(uuid,uuid)` | `postgres` | `pg_catalog` | `require_actor('staff.manage')` (AAL2 Super Admin); **self-reset refused**, one named account, audits `reset: true/false`; the only way to return a recovered account to first enrolment, and never a side effect of redeeming a code | exec-role, permission checked inside | **security-sensitive** |
 
 
 ### Why `SECURITY DEFINER` is mandatory here, and what that costs
@@ -209,7 +210,7 @@ That is exactly why `anon` and `authenticated` must never be able to reach these
 functions. Live verification confirms the current, and post-migration, state:
 
 - `anon` and `authenticated` have **no** `USAGE` on `bc_admin_v1` after `001`
-  (`revoke all on schema`), and **no** EXECUTE on any of the 38 functions.
+  (`revoke all on schema`), and **no** EXECUTE on any of the 39 functions.
 - `anon`/`authenticated` hold `USAGE` on the `auth` schema but **no** table
   privilege on `auth.users` or `auth.sessions`, so they cannot fabricate the
   `auth.sessions` row that `require_actor`, `open_admin_session`,
@@ -226,7 +227,7 @@ neither. This is the condition to re-verify after execution (§10).
 
 ## 4. Function ownership
 
-All 38 functions are owned by the role that runs the migration, i.e.
+All 39 functions are owned by the role that runs the migration, i.e.
 **`postgres`**. That role is **not** a superuser but **is** `BYPASSRLS` (verified
 live) and owns all 10 `public` tables.
 
@@ -254,14 +255,14 @@ Consequences, stated without softening:
 
 The `GRANT EXECUTE` block is **one reviewed statement executed after `012`**,
 outside the migration files, and lives in a single canonical file:
-**`admin-backend/grants/executor-grants.sql`**. It grants exactly 34 signatures —
+**`admin-backend/grants/executor-grants.sql`**. It grants exactly 35 signatures —
 every callable function in §3 and nothing else.
 
 Verified mechanically by `test:admin-grant-inventory`, which parses the
 migrations and the grant file and asserts:
 
-- 38 function definitions, 34 callable (all `SECURITY DEFINER`), 4 trigger bodies;
-- the 34 granted names are exactly the 34 callable functions — no definition is
+- 39 function definitions, 35 callable (all `SECURITY DEFINER`), 4 trigger bodies;
+- the 35 granted names are exactly the 35 callable functions — no definition is
   ungranted and no grant names a missing function;
 - the ungranted remainder is exactly `reject_mutation`, `guard_draft`,
   `guard_approval`, `stamp_mfa_enrolled`.
@@ -295,7 +296,7 @@ would not widen access, only change the error path.
 create role bc_admin_executor login password '<generated>'
   nosuperuser nocreatedb nocreaterole noreplication nobypassrls inherit;
 grant usage on schema bc_admin_v1 to bc_admin_executor;
-grant execute on function <34 signatures> to bc_admin_executor;  -- see admin-backend/grants/executor-grants.sql
+grant execute on function <35 signatures> to bc_admin_executor;  -- see admin-backend/grants/executor-grants.sql
 ```
 
 | Property | Value | Why |
@@ -413,11 +414,13 @@ real-PostgreSQL suite and two Chromium suites:
 4. The member submits it. They see *Recovery authorised* — no session, no password
    change.
 5. The operator deletes the stale authenticator for that user in the Auth
-   dashboard, **and** runs
-   `update bc_admin_v1.admin_users set mfa_enrolled_at = null where id = '<uuid>';`
-   so the next sign-in takes the ordinary first-enrolment path (§12, D2 note).
+   dashboard, then, as a Super Admin, calls **Staff → Reset enrolment** for that
+   account (`POST /api/admin/v1/staff/recovery/reset`). That clears
+   `mfa_enrolled_at` audited, and returns the account to the ordinary
+   first-enrolment path.
 6. The member signs in again and enrols a new factor. `mfa_enrolled_at` is stamped
-   again on the first successful session.
+   again on the first successful session. The whole sequence — issue, redeem,
+   reset, enrol — is four separate audit actions.
 
 ## 8. Auth settings changes and their effect on existing guests
 
@@ -449,7 +452,7 @@ and, even if that were granted, every table carries the restrictive deny policy.
 | Level | Action | Deletes existing data? |
 |---|---|---|
 | 0 | Remove `ADMIN_BACKEND_ENABLED` from Vercel Preview | **No.** Every route returns 503; no connection is opened |
-| 1 | `REVOKE ALL ON FUNCTION … FROM bc_admin_executor` (the 34) | No — capability only |
+| 1 | `REVOKE ALL ON FUNCTION … FROM bc_admin_executor` (the 35) | No — capability only |
 | 2 | `DROP OWNED BY bc_admin_executor; DROP ROLE bc_admin_executor;` | No — the role owns nothing |
 | 3 | `ROLLBACK 011 → 001` in reverse | **Guarded.** Each script refuses to proceed if the data it would destroy exists |
 
@@ -485,7 +488,7 @@ Two honest limitations:
 | Claim | How it was verified | Result |
 |---|---|---|
 | No `public` table is altered | Every file inspected for `alter table public`, `create … public`, `drop … public` | none; only `SELECT`s in `010` |
-| Guest `SELECT` unchanged | Live `anon` ACLs: `anon=rxtm/postgres` (`SELECT` only) on all 10 tables; policies unchanged | unchanged |
+| Guest `SELECT` unchanged | Live `anon` ACLs: `anon=rxtm/postgres` (`SELECT` + Supabase-default `REFERENCES`/`TRIGGER`, no DML) on all 10 tables; 10 `SELECT` policies unchanged; `SET ROLE anon` returns 506 bios / 506 active / 33 categories / 8 platforms (re-verified 2026-11-09) | unchanged |
 | Existing RLS untouched | Live: 10 permissive `*_public_read` policies, `USING (is_active)`; no file creates/alters/drops a `public` policy | unchanged |
 | Existing default ACLs untouched | `ALTER DEFAULT PRIVILEGES` statements are all scoped `IN SCHEMA bc_admin_v1` | unchanged |
 | Public site unaffected | The public app uses `anon` + PostgREST `SELECT` on `public.*`; no code path reads `bc_admin_v1`; `probeBackend` is the only Admin call and it is on `/admin*` only | unchanged |
@@ -494,7 +497,7 @@ Two honest limitations:
 
 One asymmetry worth recording: the *public* site's data is served from the same
 rows the Admin will read (`analytics_overview`, `list_collections`, etc.). The
-Admin can **read** them; nothing in the 34 callable functions can **write** to
+Admin can **read** them; nothing in the 35 callable functions can **write** to
 `public`.
 The only write targets are `bc_admin_v1` tables. Publishing to `public.bios` is
 deliberately unimplemented (`guard_draft` has no path to `queued`/`published`).
@@ -509,8 +512,8 @@ Legend: **A** additive · **B** potentially breaking · **S** security-sensitive
 |---|---|---|
 | `bc_admin_v1` schema + 19 tables + RLS + deny policies | **A** | invisible to clients; no `public` effect |
 | 3 indexes in 001, 1 in 006, 1 in 008, 2 in 012 | A | `bc_admin_v1` only |
-| 38 functions + 34 EXECUTE grants | **A + S** | the grants are the only new capability in the system |
-| `bc_admin_executor` role | **A + S** | can read Admin data through the 34 functions and nothing else |
+| 39 functions + 35 EXECUTE grants | **A + S** | the grants are the only new capability in the system |
+| `bc_admin_executor` role | **A + S** | can read Admin data through the 35 functions and nothing else |
 | 8 append-only triggers + 2 workflow triggers + 1 stamp trigger | A | prevent mutation; stamp the D2 fact; no `public` effect |
 | `admin_users.mfa_enrolled_at` (012) | **A + S** | nullable column, no default, no rewrite; it is the enrol-vs-recover record |
 | Permission catalog (003) | A | data only, no `public` effect |
@@ -578,22 +581,27 @@ vowels, no `0/1/I/L/O/U` ambiguity), shown once to the issuing Super Admin,
 transcribed out of band, stored only as `sha256(salt‖code)` with an 8-byte salt,
 valid at most 15 minutes. 40 bits of entropy, single use, five attempts.
 
-**One honest limitation you should know before approving.** Because the stale
-factor is removed by the operator rather than by this code, `mfa_enrolled_at`
-stays set — so after a completed recovery the account is still in the `'recover'`
-state, not the `'enrol'` state, and would need a *second* Super Admin grant to
-enrol. That is the safe failure (it cannot be exploited), but it is a workflow
-wart. Two clean ways to close it, both requiring an explicit write the operator
-makes at the same time as removing the factor:
+**The wart, and how it is closed.** Redeeming a code authorises recovery but
+deliberately touches nothing else, so `mfa_enrolled_at` stays set after a
+completed recovery. Without a way to clear it, the account would need a second
+grant just to enrol. Rather than leave that to a hand-written `UPDATE` (an
+untracked privileged write in a chat message — exactly what this package is meant
+to replace), the reset is a first-class, audited, per-account function:
 
-- **(a)** operator clears it: `update bc_admin_v1.admin_users set mfa_enrolled_at
-  = null where id = '<uuid>';` immediately after deleting the stale factor — the
-  next sign-in then takes the ordinary first-enrolment path; or
-- **(b)** add a 013 that lets a Super Admin clear it through an audited function.
+```sql
+-- 012: bc_admin_v1.reset_factor_enrolment(uuid,uuid)
+actor := require_actor('staff.manage');        -- AAL2 Super Admin only
+if p_user_id = actor then raise ... errcode '42501';  -- no self-reset, ever
+update admin_users set mfa_enrolled_at = null where id = p_user_id and mfa_enrolled_at is not null;
+-- one audit row: auth.recovery.factor_reset {reset: true|false}
+```
 
-I have documented (a) in the Super Admin procedure (§7) and have **not** built
-(b) unprompted, because it is a new privileged write and you asked for approval
-before expanding the privileged surface. Say the word and it becomes 013.
+Reachable as `POST /api/admin/v1/staff/recovery/reset` `{userId}`. The operator
+sequence is therefore: redeem → delete the stale factor at the provider → reset →
+the account signs in and takes the ordinary first-enrolment path. All four steps
+are audited, and the reset cannot be triggered by the recovering account itself.
+It is a new privileged write, so it is called out in §11 as **security-sensitive**
+and reproduced in the package for your approval.
 
 ### D3 — executor credential · **accepted**
 
@@ -640,9 +648,10 @@ configured and not claimed.
    attempt sequence on that account for 15 minutes. It is 40 bits, single use,
    five attempts, and audited — but it is a bearer credential, and the Super Admin
    handing it out is the trust boundary.
-2. **`mfa_enrolled_at` is the only record of "had a factor".** If the operator
-   never deletes a stale factor and simply waits, that account is permanently in
-   `'recover'`: safe, not convenient (see the D2 note).
+2. **`mfa_enrolled_at` is the only record of "had a factor",** so the operator must
+   clear it after deleting the stale factor (a Super Admin action in the Staff
+   module). If they forget, the account stays in `'recover'` — safe, not
+   convenient — until the next reset. Nothing else can set or clear it.
 3. **Cleanup is manual on the Preview.** Between runs the operational tables grow
    with traffic; bounded batches and the one-day floor make that slow, not wrong.
 4. Everything in revision 1's residual list still stands: `postgres` owns the
@@ -673,7 +682,7 @@ confers capability — the migrations only define the functions.
 | `009_recovery_sessions.sql` | `7851eb4f03d97fbcdcd7f62cb00b54437233a2a064f12a911bd5d530b5c5a30b` | yes |
 | `010_admin_module_commands.sql` | `5ac31357267a496759aa47b6838baf6ec755ae95c8dd06d0a2616529c775023b` | yes |
 | `011_totp_enrolment.sql` | `4507ed36f5571c92e0d85f1ca017809997be760a05693d5c6306b5f0939ddb21` | yes |
-| `012_recovery_and_cleanup.sql` | `879bf5e64a276eff4e361e428c99f80af89ec184a4cd25b30f829f4619c12664` | yes |
+| `012_recovery_and_cleanup.sql` | `9311ebcbe76f9008d24c3841194a9c0d8770974e711591b250f3d616ff32d733` | yes |
 | `rollback/001` | `98b80fd0cd9d0bc3cc1e87da1352a27f29771fd5dd8016d84744dffe9bda1a77` | yes |
 | `rollback/002` | `9a8b79d9fda725b9efda3cc052aab246dbcf5a5336d84ea8a692733b422b1097` | yes |
 | `rollback/003` | `2d589421922666f3bd93f0c3b0a6bb6f87f77a91c9c3c620f27f0df37f0c20d1` | yes |
@@ -685,8 +694,8 @@ confers capability — the migrations only define the functions.
 | `rollback/009` | `8297b2e082d5e82a034274ba336bc1efb1d06b7502c33cbdc5a18405d2cc0ffa` | yes |
 | `rollback/010` | `6b08e5d5895f11322e618a1aecd25ae7ff8600055d74a874964e07098c213e04` | yes |
 | `rollback/011` | `89f59839ee62c9a5cf9436d8cf6a617f2878fb37cbcd701994d13db0d84ce980` | yes |
-| `rollback/012` | `dee97dc4d0960839553261ef279c47c3b967bd7729ced59da7f03cb832b433dd` | yes |
-| `grants/executor-grants.sql` | `d47c519ac6eb8d94212e498544f9021c3d072d2633959c54a612fb4c7f4de53e` | yes |
+| `rollback/012` | `10409bf3e639f59668d56f59fcadc04ac50d1fd440e8da2c665e5330f4a58bde` | yes |
+| `grants/executor-grants.sql` | `7c78b58f765d74d33336e7ec79a9777ee15f7662fe40fe5c3823b99258dc035d` | yes |
 
 **B. Correctness and safety**
 
@@ -696,7 +705,7 @@ confers capability — the migrations only define the functions.
       active), `source_slug` **20**, categories **33**, platforms **8**,
       generators **12**, seo_pages **48**; guest `anon` sees 506/33/8.
 - [ ] `bc_admin_v1` and `bc_admin_executor` still absent.
-- [ ] 19 tables, 38 functions, 4 trigger bodies, 34 granted signatures confirmed
+- [ ] 19 tables, 39 functions, 4 trigger bodies, 35 granted signatures confirmed
       by catalogue query *after* execution (not by reading files), matching
       `npm run test:admin-grant-inventory` on the same commit.
 - [ ] Every function reports `prosecdef = true` **except** the three trigger
@@ -719,6 +728,9 @@ confers capability — the migrations only define the functions.
       revoked; the audit module shows the issue and the attempt.
 - [ ] `mfa_enrolled_at` is set for the enrolled account and `null` for an invited
       account that has never signed in.
+- [ ] A full recovery round trip: issue → redeem → operator deletes the factor →
+      `staff/recovery/reset` → the member enrols again; four audit actions visible
+      in the audit module, and the reset is refused for the operator's own account.
 - [ ] D3 credential stored Preview-only; the rotation procedure rehearsed on a
       disposable role before go-live is not claimed, only documented.
 - [ ] D4 cleanup run once per target on the Preview and both rows visible in
