@@ -81,9 +81,9 @@ the reviewed functions. Alternatives considered and rejected:
 | Use the `service_role` key over PostgREST | `service_role` is `BYPASSRLS` with write access to every `public` table. A leak = full database takeover. Violates least privilege and your "no weakening" rule. |
 | Use `postgres` / DB password | Owner of every public table; same objection, larger blast radius. |
 | No database at all (UI only) | Cannot deliver CRUD/analytics/audit. |
-| **Dedicated `bc_admin_executor`** | Selected. No table grant, no schema CREATE, no role membership, EXECUTE on exactly 25 functions, and the server additionally refuses to start if the connected role is privileged (`assertLimitedRole`). |
+| **Dedicated `bc_admin_executor`** | Selected. No table grant, no schema CREATE, no role membership, EXECUTE on exactly 28 functions, and the server additionally refuses to start if the connected role is privileged (`assertLimitedRole`). |
 
-Creation is `CREATE ROLE ... LOGIN PASSWORD` + `GRANT USAGE` + 25 `GRANT EXECUTE`.
+Creation is `CREATE ROLE ... LOGIN PASSWORD` + `GRANT USAGE` + 28 `GRANT EXECUTE`.
 The password never appears in this repository, in `VITE_*` variables or in chat;
 it goes straight into Vercel Preview env vars.
 
