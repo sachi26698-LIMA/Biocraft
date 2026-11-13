@@ -53,7 +53,12 @@ export async function verifyProviderIdentity({token, provider, now = Date.now()}
   let result;
   try { result = await provider.auth.getUser(token); } catch { denied('UNAVAILABLE'); }
   if (result?.error || !result?.data?.user || result.data.user.id !== claims.sub || result.data.user.is_anonymous === true) denied('UNAUTHENTICATED');
-  return Object.freeze({userId: claims.sub, sessionId: claims.session_id, assuranceLevel: 'aal2'});
+  // AAL2 does not itself prove fresh MFA. Extract only a provider-verified TOTP
+  // event with a non-future Unix timestamp; missing/unknown AMR fails closed
+  // for sensitive operations. Actual project claim semantics require live test.
+  const seconds=Math.floor(now/1000);
+  const times=Array.isArray(claims.amr)?claims.amr.filter(x=>x && x.method==='totp' && Number.isSafeInteger(x.timestamp) && x.timestamp>0 && x.timestamp<=seconds).map(x=>x.timestamp):[];
+  return Object.freeze({userId: claims.sub, sessionId: claims.session_id, assuranceLevel: 'aal2', mfaVerifiedAt:times.length?Math.max(...times):null});
 }
 /** Read-only guard; the resolver must query live membership and revocable session. */
 export async function authorizeRead({token, permission, provider, resolveSession, now = Date.now()}) {

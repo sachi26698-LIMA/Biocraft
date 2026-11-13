@@ -53,8 +53,16 @@ export function createAuthController({enabled=false,origin,key,createClient,flow
     catch(e){try{await client.auth.signOut({scope:'local'})}catch{};throw e;}
     // The verified identity and DB enabled membership/session check happen in
     // the session handler. No account is logged into Admin on its failure.
-    const now=Date.now(),providerExpiry=Number(session.expires_at)*1000;
-    if(!Number.isSafeInteger(providerExpiry)||providerExpiry<=now) {try{await client.auth.signOut({scope:'local'})}catch{};return out(503,{error:{code:'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)});}
+    // Supabase MFA verification returns expires_in, not necessarily expires_at.
+    // The JWT exp is only used to cap cookie lifetime; the session handler must
+    // still verify the token with the provider before any cookie is returned.
+    const now=Date.now();let providerExpiry;
+    try {const parts=session.access_token.split('.');if(parts.length!==3||!parts.every(p=>/^[A-Za-z0-9_-]+$/.test(p)))throw Error();
+     const exp=JSON.parse(Buffer.from(parts[1],'base64url').toString('utf8')).exp;
+     if(!Number.isSafeInteger(exp))throw Error();providerExpiry=exp*1000;
+     if(session.expires_at!==undefined){if(!Number.isSafeInteger(session.expires_at))throw Error();providerExpiry=Math.min(providerExpiry,session.expires_at*1000);}
+     if(!Number.isSafeInteger(providerExpiry)||providerExpiry<=now)throw Error();
+    }catch{try{await client.auth.signOut({scope:'local'})}catch{};return out(503,{error:{code:'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)});}
     const issued=issueSessionCookie({key,accessToken:session.access_token,expiresAt:Math.min(providerExpiry,now+15*60*1000),now});
     let verified;try{verified=await sessionHandler(new Request(`${origin}/api/admin/v1/session`,{method:'POST',headers:{Authorization:`Bearer ${session.access_token}`}}));}
     catch{try{await client.auth.signOut({scope:'local'})}catch{};return out(503,{error:{code:'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)});}
