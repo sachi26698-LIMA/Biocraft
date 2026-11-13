@@ -2,8 +2,9 @@
 
 ## Current checkpoint — backend complete in code, blocked on shared-project approval
 
-Latest pushed commit is `d8f34d1` on `arena/5e351ec3-biocraft`, plus the local
-changes listed under "Files in this checkpoint". The Admin backend is
+Latest pushed commit is `e130515` on `arena/5e351ec3-biocraft`. All ten console
+modules render live data against the real endpoints; the database package is
+still unapplied, which is the one open decision. The Admin backend is
 **implemented end to end in code**: SQL candidates `001`–`012`, identity and
 session boundary, password+TOTP login, **first-factor TOTP enrolment**, recovery,
 encrypted session cookie, CSRF gateway, rate limiting, step-up MFA freshness,

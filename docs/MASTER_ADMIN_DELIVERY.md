@@ -50,7 +50,7 @@ an independent review.
 https://biocraft-git-arena-5e351ec3-biocraft-sachi26698-6758s-projects.vercel.app/admin
 ```
 
-Deployment for this work: `dpl_EfbeVhci6ZWr1acBMzMM4Yt2ajMw` (commit `88039e2`).
+Deployment for this work: `dpl_33XY1ARodV3ZbrtLGrjF8TDSPSWX` (commit `e130515`).
 The project's SSO protection covers Preview deployments, so you may be asked to
 sign in to Vercel before the page loads — that is Vercel's gate, not this app's.
 
@@ -116,7 +116,7 @@ response shape, but its database half needs the approval above.
 | Analytics | Built + rendered | Real counts; explicitly states what is *not* measured |
 | Security | Built + rendered | Append-only audit trail, own sessions, revoke-all |
 | Settings | Built + rendered | Versioned values with conflict detection, backup history, bounded cleanup |
-| Categories / Platforms / Generators | Preview only | Read from bundled data; no live command exists, and the screen says so |
+| Categories / Platforms / Generators / SEO pages | Built + rendered | Live read of the registry, including disabled rows; states plainly that no registry command exists |
 
 ### Data layer
 
@@ -141,7 +141,7 @@ real PostgreSQL 17.11 server on a disposable local socket — not the shared pro
 | Grant inventory + document sync | **passed** (43→44 grants, both docs reproduce every file) |
 | Browser: interactions (3 viewports) | **passed**, 0 errors, 0 unexpected 4xx |
 | Browser: phase (workflow + axe WCAG 2.1 AA) | **passed** on phone, tablet, desktop |
-| Browser: live modules (new) | **passed** on 390 px and 1440 px |
+| Browser: live modules | **passed** on 390 px and 1440 px, all **10** live routes |
 | Browser: public regression, 48 routes | **passed** — byte-identical to the `7c9e904` baseline |
 
 Two real defects were found and fixed by these runs, which is the point of running
@@ -166,8 +166,8 @@ Measured in the locally served production build, desktop 1440×900, throttled to
 | DOMContentLoaded | 152 ms | 188 ms | 116 ms |
 | Largest contentful paint | 532 ms | 552 ms | 540 ms |
 | Cumulative layout shift | 0.0006 | 0 | 0.0001 |
-| Admin shell, JS | 109.75 kB (**27.46 kB gzipped**) | | |
-| Admin shell, total transfer | 107.8 kB | | |
+| Admin shell, JS | 116.9 kB (**29.08 kB gzipped**) | | |
+| Admin shell, CSS | 23.1 kB (5.17 kB gzipped) | | |
 
 No long task exceeded 289 ms. These are local numbers; the deployed Preview adds
 network latency I cannot measure from here (the sandbox cannot reach
