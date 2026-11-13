@@ -1,5 +1,5 @@
 import type { Language, PersonalFormValues } from '../../../types';
-import { generateCategoryBios, generatePersonalBios, generateSingleBio, type BioOptions } from './bioGenerator';
+import { generateCategoryBios, generatePersonalBios, generateSingleBio, generateCategoryBiosSteps, generatePersonalBiosSteps, type BioOptions } from './bioGenerator';
 
 export type GenerationJob = {
   mode: 'personal' | 'category';
@@ -20,4 +20,12 @@ export function executeGeneration(job: GenerationJob): string[] {
   return job.mode === 'personal'
     ? generatePersonalBios(job.values, job.language, job.emojis, job.options)
     : generateCategoryBios(job.categoryId, job.language, job.emojis, job.options);
+}
+
+/** Same algorithm as the worker, exposing checkpoints for the fallback. */
+export function generationSteps(job: GenerationJob): Generator<void, string[]> {
+  const options = job.exclude ? { ...job.options, count: 1, exclude: job.exclude } : job.options;
+  return job.mode === 'personal'
+    ? generatePersonalBiosSteps(job.values, job.language, job.emojis, options)
+    : generateCategoryBiosSteps(job.categoryId, job.language, job.emojis, options);
 }

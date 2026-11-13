@@ -116,7 +116,8 @@ const isUsable = (bio: string, limit: number): boolean =>
  * a deterministic enumeration is the backstop for the toughest constraint
  * sets (e.g. no-emoji Hindi with a long name).
  */
-function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT, count: number = BIO_COUNT, exclude: readonly string[] = []): string[] {
+function* composeBiosSteps(ctx: ComposeContext, limit: number = BIO_LIMIT, count: number = BIO_COUNT, exclude: readonly string[] = []): Generator<void, string[]> {
+  let work = 0;
   const seen = new Set<string>();
   const excluded = new Set(exclude.map((bio) => bio.toLowerCase()));
   const results: string[] = [];
@@ -125,6 +126,7 @@ function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT, count: numb
   let attempts = 0;
   while (results.length < count && attempts < 1200) {
     attempts += 1;
+    if (++work % 8 === 0) yield;
     const candidate = buildCandidate(ctx, limit);
     if (accept(candidate)) {
       seen.add(candidate);
@@ -135,6 +137,7 @@ function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT, count: numb
   if (results.length < count && limit <= 80) {
     outerShort: for (const identity of ctx.pools.identity) {
       if (results.length >= count) break outerShort;
+      if (++work % 8 === 0) yield;
       const candidate = assemble([fill(identity, ctx)]);
       if (accept(candidate)) {
         seen.add(candidate);
@@ -156,6 +159,7 @@ function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT, count: numb
         for (const location of locationChoices) {
           for (const cta of ctx.pools.cta) {
             if (results.length >= count) break outer;
+            if (++work % 8 === 0) yield;
             const rawLines = [identity, detail];
             if (location) rawLines.push(location);
             if (cta) rawLines.push(cta);
@@ -184,13 +188,24 @@ export interface BioOptions {
   exclude?: readonly string[];
 }
 
-/** Generates five unique personalized bios from the user's details. */
-export function generatePersonalBios(
+function finishSteps(steps: Generator<void, string[]>): string[] {
+  let step = steps.next();
+  while (!step.done) step = steps.next();
+  return step.value;
+}
+
+/** Generate synchronously where explicitly requested (normally in a worker). */
+export function generatePersonalBios(values: PersonalFormValues, language: Language, emojis: boolean, options: BioOptions = {}): string[] {
+  return finishSteps(generatePersonalBiosSteps(values, language, emojis, options));
+}
+
+/** Incremental composition for worker-unavailable environments. */
+export function* generatePersonalBiosSteps(
   values: PersonalFormValues,
   language: Language,
   emojis: boolean,
   options: BioOptions = {},
-): string[] {
+): Generator<void, string[]> {
   const limit = options.limit ?? BIO_LIMIT;
   const name = tidy(values.name);
   const role = tidy(values.role);
@@ -217,16 +232,20 @@ export function generatePersonalBios(
     pools: linkedIn ? getLinkedInPools(emojis) : getPools(language, emojis, 'personal'),
   };
 
-  return composeBios(ctx, limit, options.count, options.exclude);
+  return yield* composeBiosSteps(ctx, limit, options.count, options.exclude);
 }
 
 /** Generates unique bios for a category (no personal details needed). */
-export function generateCategoryBios(
+export function generateCategoryBios(categoryId: string, language: Language, emojis: boolean, options: BioOptions = {}): string[] {
+  return finishSteps(generateCategoryBiosSteps(categoryId, language, emojis, options));
+}
+
+export function* generateCategoryBiosSteps(
   categoryId: string,
   language: Language,
   emojis: boolean,
   options: BioOptions = {},
-): string[] {
+): Generator<void, string[]> {
   const limit = options.limit ?? BIO_LIMIT;
   const category = getCategory(categoryId);
   const content = language === 'hi' ? category.hi : category.en;
@@ -241,7 +260,7 @@ export function generateCategoryBios(
     pools: getPools(language, emojis, 'category'),
   };
 
-  return composeBios(ctx, limit, options.count, options.exclude);
+  return yield* composeBiosSteps(ctx, limit, options.count, options.exclude);
 }
 
 /**

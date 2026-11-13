@@ -93,13 +93,15 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
     fetchCollectionBios(slug)
       .then((result) => {
         if (cancelled) return;
-        if (result.source === 'supabase' && result.bios.length > 0) {
+        // An empty successful live result is authoritative too: resurrecting
+        // bundled rows would show stale content after all live rows are removed.
+        if (result.source === 'supabase') {
           setRemoteBios({ slug, bios: result.bios });
         }
       })
-      .catch((error: unknown) => {
+      .catch(() => {
         if (cancelled) return;
-        console.warn('Supabase unavailable — using the bundled collection.', error);
+        console.warn('Supabase unavailable — using the bundled collection.');
         setRemoteBios(null);
         setRemoteError(true);
       });
@@ -269,8 +271,8 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
           <BioGrid visible={visible} displayed={displayed} swaps={swaps} slug={collection.slug} name={collection.name} onRegenerate={regenerateAt} />
         ) : (
           <div className="empty-state" role="status">
-            <p className="empty-state-title">No bios match “{deferredQuery.trim()}”</p>
-            <p className="empty-state-text">Try fewer words, or clear the filter — Hindi minds like Hindi searches.</p>
+            <p className="empty-state-title">{sourceBios.length === 0 ? 'No live bios are available in this collection.' : `No bios match “${deferredQuery.trim()}”`}</p>
+            <p className="empty-state-text">{sourceBios.length === 0 ? 'Please check back later.' : 'Try fewer words, or clear the filter — Hindi minds like Hindi searches.'}</p>
             <button type="button" className="btn btn-secondary btn-small" onClick={() => { setQuery(''); setFilter('all'); }}>
               Reset filters
             </button>

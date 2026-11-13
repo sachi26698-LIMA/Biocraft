@@ -28,6 +28,15 @@ async function main() {
   const fresh = await runner.run({ ...job, exclude: fallback });
   assert.equal(fresh.length, 1); assert.ok(!fallback.some((bio) => bio.toLowerCase() === fresh[0].toLowerCase()));
   const cancelled = runner.run(job); runner.dispose(); assert.equal(await cancelled, null);
-  console.log('PASS worker cancellation, stale results, reuse, fallback, exclusion and disposal');
+
+  // The fallback yields before generating, so input/unmount can supersede it
+  // even where Worker is unavailable. It must not run work as a microtask.
+  const yielding = new GenerationRunner();
+  const inFlight = yielding.run({ ...job, values: { name: 'A'.repeat(40), role: 'B'.repeat(40), niche: 'C'.repeat(40), city: 'D'.repeat(40) }, options: { limit: 80, count: 20 } });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  yielding.cancel();
+  assert.equal(await inFlight, null, 'fallback can be cancelled after its first slice');
+  yielding.dispose();
+  console.log('PASS worker cancellation, stale results, reuse, yielding fallback, exclusion and disposal');
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; });

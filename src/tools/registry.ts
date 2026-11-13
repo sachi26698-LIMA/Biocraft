@@ -1,7 +1,7 @@
 import { lazy, type ComponentType } from 'react';
-// The default workspace remains in the initial bundle. Other tools are loaded
-// on demand, so their data and rendering code do not block every first visit.
-import BioTool from './bio/BioTool';
+// Load each tool on demand so unrelated data and rendering code do not block
+// the shell or the first paint. The workspace shows an accessible fallback.
+const BioTool = lazy(() => import('./bio/BioTool'));
 const StylishNameTool = lazy(() => import('./stylish/StylishNameTool'));
 const FancyFontTool = lazy(() => import('./fonts/FancyFontTool'));
 const DesignStudioTool = lazy(() => import('./design/DesignStudioTool'));

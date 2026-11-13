@@ -125,7 +125,8 @@ body {
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/noto-math/noto-sans-math-latin-400-normal.woff2') format('woff2');
+  /* Same mapped glyphs/metrics as the original, subset to this unicode-range. */
+  src: url('/fonts/noto-math/noto-sans-math-styles-400.woff2') format('woff2');
   unicode-range: U+2100-214F, U+1D400-1D7FF;
 }
 
@@ -3349,7 +3350,38 @@ img, svg, video, canvas { max-width: 100%; }
   .bio-card:not(.bio-design) { background-color: rgba(255, 255, 255, 0.94); }
   .laptop-float, .laptop-glow, .laptop-shadow, .home-star { animation: none; }
 }
+/* Animated inherited colors invalidate the live screen on every frame. Keep
+   the platform colors, but switch them directly on touch-first devices. */
+@media (hover: none) {
+  .platform-stage { transition: none; }
+  .laptop-glow, .laptop-shadow { animation: none; }
+}
 
 /* Reserve a modest loading area while an on-demand route or tool arrives. */
 .route-loading { min-height: 18rem; padding: 2rem 1rem; margin: 0 auto; max-width: 72rem; }
 .tool-loading { min-height: 12rem; padding-block: 1rem; }
+
+/* Let the browser defer layout/paint for offscreen content without removing it
+   from search, the DOM, keyboard navigation, or the accessibility tree. The
+   remembered intrinsic size avoids repeated jumps after a section is visited. */
+@supports (content-visibility: auto) {
+  .home-shell > section[aria-labelledby], .site-footer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 800px;
+  }
+  .home-shell > section[aria-labelledby='bio-collections-title'] { contain-intrinsic-size: auto 2300px; }
+  .home-shell > section[aria-labelledby='popular-categories-title'] { contain-intrinsic-size: auto 500px; }
+  .home-shell > section[aria-labelledby='faq-title'] { contain-intrinsic-size: auto 1000px; }
+  .site-footer { contain-intrinsic-size: auto 1500px; }
+  .bio-collection-page .bio-grid > .bio-card { content-visibility: auto; contain-intrinsic-size: auto 200px; }
+  @media (min-width: 640px) {
+    .home-shell > section[aria-labelledby='bio-collections-title'] { contain-intrinsic-size: auto 1200px; }
+    .home-shell > section[aria-labelledby='popular-categories-title'] { contain-intrinsic-size: auto 370px; }
+    .home-shell > section[aria-labelledby='faq-title'] { contain-intrinsic-size: auto 700px; }
+    .site-footer { contain-intrinsic-size: auto 850px; }
+  }
+  @media (min-width: 1100px) {
+    .home-shell > section[aria-labelledby='bio-collections-title'] { contain-intrinsic-size: auto 900px; }
+    .site-footer { contain-intrinsic-size: auto 450px; }
+  }
+}

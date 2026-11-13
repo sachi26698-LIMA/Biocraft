@@ -33,6 +33,8 @@ async function main() {
   assert.doesNotMatch(document.body.textContent, /REMOTE UNIQUE BOYS RESULT/, 'old remote bios persisted during navigation');
   await act(async () => { resolveSecond({ source: 'supabase', bios: [] }); });
   assert.doesNotMatch(document.body.textContent, /REMOTE UNIQUE BOYS RESULT/, 'empty remote result retained old bios');
+  assert.match(document.body.textContent, /No live bios are available in this collection/, 'an authoritative empty live result must not restore bundled rows');
+  assert.equal(document.querySelectorAll('.bio-grid > li').length, 0);
   await act(async () => root.unmount());
   console.log('PASS collection navigation: remote rows do not leak while loading or on empty result');
 }

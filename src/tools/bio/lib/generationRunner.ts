@@ -1,4 +1,4 @@
-import { executeGeneration, type GenerationJob } from './generationJobs';
+import { generationSteps, type GenerationJob } from './generationJobs';
 
 /** A single latest-wins worker, terminated when its pending job is superseded. */
 export class GenerationRunner {
@@ -43,10 +43,23 @@ export class GenerationRunner {
         if (this.pending?.id !== id) return;
         this.worker?.terminate();
         this.worker = null;
-        Promise.resolve().then(() => {
+        // Yield to input and rendering between short batches if workers are
+        // unavailable. A cancelled job stops at the next checkpoint.
+        let steps: Generator<void, string[]>;
+        try { steps = generationSteps(job); } catch { fail(); return; }
+        const slice = () => {
           if (this.pending?.id !== id) return;
-          try { finish(executeGeneration(job)); } catch { fail(); }
-        });
+          try {
+            const deadline = performance.now() + 5;
+            let step: IteratorResult<void, string[]>;
+            do {
+              step = steps.next();
+              if (step.done) { finish(step.value); return; }
+            } while (performance.now() < deadline);
+            setTimeout(slice, 0);
+          } catch { fail(); }
+        };
+        setTimeout(slice, 0);
       };
       try {
         if (typeof Worker === 'undefined') { fallback(); return; }

@@ -1,8 +1,14 @@
 import type { CSSProperties } from 'react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useToolkit } from '../lib/toolkit';
-import { platformById } from '../tools/platforms';
-import { PLATFORM_WIDE_MOCKS } from './stageMocks';
+import { platformById, type PlatformId } from '../tools/platforms';
+
+// The decorative screen is interactive, but it does not need to delay the
+// chassis, platform controls and shell. Load it once, then reuse the module.
+const MOCKS = Object.fromEntries(
+  (['instagram', 'facebook', 'threads', 'tiktok', 'x', 'linkedin', 'whatsapp', 'snapchat'] as const)
+    .map((id) => [id, lazy(() => import('./stageMocks').then((module) => ({ default: module.PLATFORM_WIDE_MOCKS[id] })))]),
+) as Record<PlatformId, ReturnType<typeof lazy>>;
 
 // The ticking clock must not re-render the entire platform illustration.
 function StageClock() {
@@ -36,18 +42,18 @@ export default function PlatformStage() {
   const screenRef = useRef<HTMLDivElement>(null);
   const { platform } = useToolkit();
   const config = platformById(platform);
-  const Mock = PLATFORM_WIDE_MOCKS[config.id];
+  const Mock = MOCKS[config.id];
   /* Scale the fixed 610×419 app-home canvas to fill the live display */
   const [mockScale, setMockScale] = useState(1);
-  useLayoutEffect(() => {
+  useEffect(() => {
     const el = screenRef.current;
     if (!el) return undefined;
-    const update = () => {
-      const { clientWidth, clientHeight } = el;
-      if (clientWidth > 0 && clientHeight > 0) setMockScale(Math.min(clientWidth / 610, clientHeight / 419));
-    };
-    update();
-    const ro = new ResizeObserver(update);
+    // Consume the browser's measured size instead of forcing a full-document
+    // synchronous layout from a React layout effect before the first paint.
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width > 0 && height > 0) setMockScale(Math.min(width / 610, height / 419));
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -135,13 +141,12 @@ export default function PlatformStage() {
                         {/* The live app home — full-bleed, no chrome, no search */}
                         <div
                           className="stage-slab-screen"
-                          key={config.id}
                           role="region"
                           aria-label={`Illustrative ${config.name} app home`}
                           ref={screenRef}
                           style={{ '--mock-scale': mockScale } as CSSProperties}
                         >
-                          <Mock />
+                          <Suspense fallback={null}><Mock key={config.id} /></Suspense>
                         </div>
 
                         {/* Screen footer: live date/time + system icons */}

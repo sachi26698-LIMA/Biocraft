@@ -436,11 +436,14 @@ const replaceOrThrow = (html, pattern, replacement, label) => {
 
 for (const route of ROUTES) {
   if (route.runAsTemplate) {
-    if (SITE_URL) {
-      const html = template.replace('</head>', () => `${canonicalFor(route.path)}  </head>`);
-      writeFileSync(join(dist, 'index.html'), html, 'utf8');
-      console.log('canonical injected into: dist/index.html (root)');
-    }
+    // The hero exists only on the homepage. Discover the same responsive image
+    // before React executes without downloading it on every other route.
+    // Some static hosts serve index.html as a fallback for clean URLs. Guard
+    // the hint by pathname so that those non-home routes do not fetch the hero.
+    const heroPreload = `  <script>if(location.pathname === '/'){const l=document.createElement('link');l.rel='preload';l.as='image';l.href='/laptop-hero-871.webp';l.imageSrcset='/laptop-hero-871.webp 871w, /laptop-hero.webp 1742w';l.imageSizes='(min-width: 1100px) 780px, (min-width: 600px) 560px, 330px';l.fetchPriority='high';document.head.appendChild(l)}</script>\n`;
+    const html = template.replace('<head>', () => `<head>\n${heroPreload}`).replace('</head>', () => `${canonicalFor(route.path)}  </head>`);
+    writeFileSync(join(dist, 'index.html'), html, 'utf8');
+    console.log('homepage hero preload injected into: dist/index.html');
     continue;
   }
   let html = template;
