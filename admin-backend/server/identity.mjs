@@ -42,11 +42,11 @@ export function createProviderClient(url, publishableKey) {
 }
 /** Verify identity with the actual Supabase Auth user endpoint before using any
  * untrusted claim. No Admin authorization or session revocation is implied. */
-export async function verifyProviderIdentity({token, provider, now = Date.now()}) {
+export async function verifyProviderIdentity({token, provider, now = Date.now(), allowAal1 = false}) {
   if (!provider?.auth?.getUser) denied('UNAVAILABLE');
   const claims = claimsFrom(token);
   if (claims.iss !== ISSUER || !(claims.aud === 'authenticated' || (Array.isArray(claims.aud) && claims.aud.includes('authenticated'))) ||
-      claims.role !== 'authenticated' || claims.aal !== 'aal2' || claims.is_anonymous !== false ||
+      claims.role !== 'authenticated' || !(claims.aal === 'aal2' || (allowAal1 && claims.aal === 'aal1')) || claims.is_anonymous !== false ||
       !uuid.test(claims.sub ?? '') || !uuid.test(claims.session_id ?? '') ||
       !Number.isSafeInteger(claims.exp) || claims.exp * 1000 <= now ||
       (claims.nbf !== undefined && (!Number.isSafeInteger(claims.nbf) || claims.nbf * 1000 > now))) denied('UNAUTHENTICATED');
@@ -58,7 +58,14 @@ export async function verifyProviderIdentity({token, provider, now = Date.now()}
   // for sensitive operations. Actual project claim semantics require live test.
   const seconds=Math.floor(now/1000);
   const times=Array.isArray(claims.amr)?claims.amr.filter(x=>x && x.method==='totp' && Number.isSafeInteger(x.timestamp) && x.timestamp>0 && x.timestamp<=seconds).map(x=>x.timestamp):[];
-  return Object.freeze({userId: claims.sub, sessionId: claims.session_id, assuranceLevel: 'aal2', mfaVerifiedAt:times.length?Math.max(...times):null});
+  return Object.freeze({userId: claims.sub, sessionId: claims.session_id, assuranceLevel: claims.aal, mfaVerifiedAt:times.length?Math.max(...times):null});
+}
+/** Enrolment-only verification: the account has a password session but may have
+ * no verified factor yet, so AAL1 is accepted. The caller must still require an
+ * enabled Admin membership and a live provider session inside the database
+ * before any factor is created. Never use this for ordinary admin operations. */
+export async function verifyEnrolmentIdentity({token, provider, now = Date.now()}) {
+  return verifyProviderIdentity({token, provider, now, allowAal1: true});
 }
 /** Read-only guard; the resolver must query live membership and revocable session. */
 export async function authorizeRead({token, permission, provider, resolveSession, now = Date.now()}) {

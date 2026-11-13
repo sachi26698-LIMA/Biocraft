@@ -2,27 +2,30 @@
 
 ## Current checkpoint — backend complete in code, blocked on shared-project approval
 
-Latest pushed commit is `5847171` on `arena/5e351ec3-biocraft`. The Admin backend
-is now **implemented end to end in code**: SQL candidates `001`–`010`, identity and
-session boundary, password+TOTP login, recovery, encrypted session cookie, CSRF
-gateway, rate limiting, step-up MFA freshness, server-side RBAC, the module APIs
-(bios, categories/collections, platforms, generators, SEO, analytics, audit,
-settings, staff, sessions), a fail-closed server composition, a Vercel Node entry
-and a sign-in UI.
+Latest pushed commit is `d8f34d1` on `arena/5e351ec3-biocraft`, plus the local
+changes listed under "Files in this checkpoint". The Admin backend is
+**implemented end to end in code**: SQL candidates `001`–`011`, identity and
+session boundary, password+TOTP login, **first-factor TOTP enrolment**, recovery,
+encrypted session cookie, CSRF gateway, rate limiting, step-up MFA freshness,
+server-side RBAC, the module APIs (bios, categories/collections, platforms,
+generators, SEO, analytics, audit, settings, staff, sessions), a fail-closed
+server composition, a Vercel Node entry and a sign-in/enrolment UI.
 
-It is **not deployed as functional Admin**: the shared problem is unchanged.
-`jvpadtzfsuekixrquzjv` needs the Admin schema + grants, a limited DB login and a
-first administrator; those are shared-security changes awaiting explicit
-approval (see `docs/MASTER_ADMIN_APPROVAL_REQUEST.md`). Until then every hosted
-`/api/admin/*` request returns 503 by design and `/admin/login` states that
-sign-in is unavailable. Hosted verification also remains impossible from this
-sandbox: TLS to the Vercel Preview URL fails before any HTTP request.
+It is **not deployed as functional Admin**: `jvpadtzfsuekixrquzjv` needs the Admin
+schema + grants, the limited DB login and a first administrator. All of that is
+one consolidated decision paper now — `docs/CONSOLIDATED_APPROVAL_REPORT.md`
+(supersedes `docs/MASTER_ADMIN_APPROVAL_REQUEST.md`) — with every statement, the
+exact SQL, the exact `GRANT` block, rollback SQL and the Super Admin procedure.
+Until approval, every hosted `/api/admin/*` request returns 503 by design and
+`/admin/login` states that sign-in is unavailable. Hosted verification remains
+impossible from this sandbox: TLS to the Vercel Preview URL fails before any HTTP
+request, so no hosted interaction has ever been claimed.
 
 | Phase | Status | Actual scope and remaining work |
 |---|---|---|
 | Shared boundary | Owner decision recorded | Existing shared project only; public site and Admin share Production-connected data and risk. No new project. |
-| Database | Partial, synthetic only | Candidate migrations 001–009 and rollbacks are local only and unapproved. Private draft/session, encrypted login handoff, rate-limit and staff routines have no live client or server grants. A local disposable PostgreSQL 17.11 cluster passed selected concurrency, ownership, grants and RLS tests; its synthetic auth fixtures cannot validate actual provider-owned `auth.sessions` semantics or live effective grants. |
-| Auth/RBAC | Implemented in code, disabled | Password→TOTP→encrypted cookie→session→private draft flow composed against mocked Auth/PGlite. CSRF retrieval now rechecks provider identity and live Admin session. SQL role-checks and RLS are defense in depth, not a privilege audit; SQL-capable callers can spoof JWT GUCs. Bootstrap, real provider integration, verified trusted proxy client-key extraction, distributed ingress protection, key rotation, MFA freshness, recovery, session refresh and security review remain. |
+| Database | Partial, synthetic only | Candidate migrations 001–011 and rollbacks are local only and unapproved. Private draft/session, encrypted login handoff, rate-limit and staff routines have no live client or server grants. A local disposable PostgreSQL 17.11 cluster passed selected concurrency, ownership, grants and RLS tests; its synthetic auth fixtures cannot validate actual provider-owned `auth.sessions` semantics or live effective grants. |
+| Auth/RBAC | Implemented in code, disabled | Password→TOTP→encrypted cookie→session→private draft flow composed against mocked Auth/PGlite, plus first-factor enrolment (single-use pending flow, AAL1 accepted only after the database membership gate, one audit row per attempt). CSRF retrieval now rechecks provider identity and live Admin session. SQL role-checks and RLS are defense in depth, not a privilege audit; SQL-capable callers can spoof JWT GUCs. Bootstrap, real provider integration, verified trusted proxy client-key extraction, distributed ingress protection, key rotation, MFA freshness, recovery, session refresh and security review remain. |
 | Modules | Implemented in code, blocked on grants | Private draft creation/list/detail/edit/submit/review, assigned review queue and staff listing/update candidates exist; staff update is not exposed via API, super-admin promotion disabled. No durable Admin UI or usable hosted APIs. Other requested modules are not implemented. |
 | Workflow | Partial, publishing disabled | Mock-only draft reviews and atomic success audit; no idempotency, actual content publishing, version rollback, outbox/receiver or public-content writes. |
 | Security | Not release assessed | Candidate storage has encrypted one-time handoffs and per-network/account/factor rate buckets, but no cleanup job, operational limits, real concurrency or security review. Login flow revokes local SDK state only on some failure paths; provider revocation semantics need testing. No production secrets or unreviewed grants used. |
@@ -39,7 +42,7 @@ sandbox: TLS to the Vercel Preview URL fails before any HTTP request.
 
 ## Files in this checkpoint
 
-- `admin-backend/migrations/001`–`009` and matching `admin-backend/rollback/` files: candidate DDL for synthetic targets only, no shared apply.
+- `admin-backend/migrations/001`–`011` and matching `admin-backend/rollback/` files: candidate DDL for synthetic targets only, no shared apply (011 is the first-factor TOTP enrolment gate).
 - `admin-backend/server/{identity,auth-flow,api,database,auth-controller,auth-storage,provider-logout,session-cookie}.mjs`: unmounted server-side candidates. Tests include synthetic complete flow and staff commands; no hosted endpoint or real Auth.
 - `src/admin/AdminApp.tsx` and `src/admin/backend.ts`: eight proposed role labels, no functionality enabled.
 - `docs/admin-preview/current/{desktop,tablet,mobile}.png`: local Chromium screenshots, not physical devices or hosted verification.
@@ -47,6 +50,21 @@ sandbox: TLS to the Vercel Preview URL fails before any HTTP request.
 - Nine `docs/MASTER_ADMIN_*.md` tracker and implementation records. Phase 3/4 uncommitted reviews and tests preserved.
 
 ### Latest local implementation batch
+
+- First-factor TOTP enrolment is implemented end to end and stays unmounted in
+  the same fail-closed composition: `POST /auth/enroll` and
+  `/auth/enroll-confirm`, a single-use pending flow, `catch` on every provider
+  error, the new `011_totp_enrolment.sql` gate (enabled membership + role + live
+  `auth.sessions` row, one audit row per attempt, no tokens), and a `Login.tsx`
+  enrolment stage that shows the setup key exactly once. `test:admin-totp-enrolment`
+  (11 groups) and the new real-PostgreSQL assertions in `test:admin-postgres-local`
+  pass; `test:admin-login-flow-browser` drives the shipped bundle through
+  password → enrol → confirm at 1440 px and 390 px with axe clean and no storage
+  writes. Auth is still mocked and the SQL is still unapplied.
+- Pool configuration hardened after review: only session-mode port 5432 is
+  accepted (transaction-mode 6543 fails closed in both the app wrapper and the
+  pool factory), the Supavisor hostname pattern now requires a real
+  multi-label region, and `ADMIN_DB_HOST`/`ADMIN_DB_PORT` paths are covered.
 
 - Added an unmounted recovery flow: provider recovery email and token-hash exchange, verified TOTP, server-side membership, audited Admin-session revocation before provider password change, and provider global sign-out. Synthetic SQL 009 is unapproved. Admin DB and provider cannot participate in one transaction; a password update or global sign-out failure is reported and requires operational recovery. Real email template/redirect setup, link handling, non-enumeration, real Auth and security review are not yet verified. Global sign-out affects that user's other Supabase sessions and must be disclosed in the eventual UI.
 - Fixed a real SDK compatibility error: Supabase MFA verification returns `expires_in` and does not guarantee `expires_at`; the unmounted login controller now caps its cookie using JWT expiration and verifies the token before releasing the cookie. `test:admin-auth-sdk-http` exercises the actual installed SDK via intercepted synthetic HTTP for password/TOTP/recovery, not live Supabase. Local real-Postgres recovery integration confirms audited revocation before mocked password update.

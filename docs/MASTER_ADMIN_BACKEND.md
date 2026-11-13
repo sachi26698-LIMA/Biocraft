@@ -39,8 +39,10 @@ the following do not exist and cannot be created without explicit approval:
 ADMIN_BACKEND_ENABLED=true
 ADMIN_ORIGIN=https://<exact deployment origin>
 ADMIN_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
-ADMIN_DB_USER=<dedicated limited role>
+ADMIN_DB_USER=<dedicated limited role>            # bc_admin_executor.<project-ref> on the pooler
 ADMIN_DB_PASSWORD=<secret>
+ADMIN_DB_HOST=<optional; aws-<n>-<region>.pooler.supabase.com>
+ADMIN_DB_PORT=<optional; only 5432 is accepted>
 ADMIN_COOKIE_KEY_HEX=<64 hex chars>
 ADMIN_FLOW_KEY_HEX=<64 hex chars, different>
 ADMIN_HASH_KEY_HEX=<64 hex chars, different again>
@@ -57,6 +59,11 @@ signature until redeployed.
 - `GET /api/admin/v1/health` — liveness only.
 - `POST /api/admin/v1/auth/login`, `POST /api/admin/v1/auth/mfa` — password +
   TOTP, encrypted single-use handoff, encrypted session cookie.
+- `POST /api/admin/v1/auth/enroll`, `POST /api/admin/v1/auth/enroll-confirm` —
+  first-factor enrolment for an account with no verified TOTP yet. The password
+  flow authorises exactly one attempt; the account must hold an enabled Admin
+  membership with a live provider session (`011_totp_enrolment.sql`), every
+  attempt is audited, and the secret is returned once and never stored.
 - `POST /api/admin/v1/auth/recovery/request|exchange|complete` — recovery with
   TOTP, Admin session revocation before the provider password change.
 - `GET /api/admin/v1/session`, `GET /api/admin/v1/csrf`, `DELETE /api/admin/v1/session`.

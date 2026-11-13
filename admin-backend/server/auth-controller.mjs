@@ -3,8 +3,9 @@
 // The injected limiter must be durable/shared and use a trusted client key.
 // Never log request bodies, cookies, access tokens, refresh tokens or OTPs.
 import {randomBytes,timingSafeEqual} from 'node:crypto';
-import {beginPasswordLogin,verifyTotp} from './auth-flow.mjs';
+import {beginPasswordLogin,verifyTotp,beginTotpEnrolment,confirmTotpEnrolment} from './auth-flow.mjs';
 import {issueSessionCookie} from './session-cookie.mjs';
+import {verifyEnrolmentIdentity} from './identity.mjs';
 const PENDING='__Host-biocraft-pending';
 const headers={'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'};
 const cookie=(value,seconds)=>`${PENDING}=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${seconds}`;
@@ -18,16 +19,35 @@ async function json(request) {
  if(!body||typeof body!=='object'||Array.isArray(body))throw Error('invalid');return body;
 }
 function pending(request) {
- const h=request.headers.get('cookie')??'';if(h.length>8192)throw Error('invalid');
+ // A missing, duplicated or malformed pending cookie is an authentication
+ // failure (401), never a server error, and never a 500.
+ const h=request.headers.get('cookie')??'';if(h.length>8192)return null;
  const all=h.split(';').map(s=>s.trim()).filter(s=>s.startsWith(`${PENDING}=`));
- if(all.length!==1)throw Error('invalid');const id=all[0].slice(PENDING.length+1);
- if(!/^[A-Za-z0-9_-]{43}$/.test(id))throw Error('invalid');return id;
+ if(all.length!==1)return null;const id=all[0].slice(PENDING.length+1);
+ if(!/^[A-Za-z0-9_-]{43}$/.test(id))return null;return id;
 }
 function same(a,b) {return typeof a==='string'&&typeof b==='string'&&/^[A-Za-z0-9_-]{43}$/.test(a)&&/^[A-Za-z0-9_-]{43}$/.test(b)&&timingSafeEqual(Buffer.from(a),Buffer.from(b));}
-export function createAuthController({enabled=false,origin,key,createClient,flowStore,limiter,sessionHandler}={}) {
+export function createAuthController({enabled=false,origin,key,createClient,flowStore,limiter,sessionHandler,enrolment}={}) {
  return async function(request,remoteKey) {
   if(!enabled || !Buffer.isBuffer(key)||key.length!==32 || typeof createClient!=='function' || typeof limiter!=='function' ||
      typeof flowStore?.put!=='function' || typeof flowStore?.take!=='function' || typeof sessionHandler!=='function')return out(503,{error:{code:'UNAVAILABLE'}});
+  // Establish the Admin session exactly as /auth/mfa does: bounded cookie plus a
+  // database session record, or fail closed and clear the browser cookie.
+  const establish=async session=>{
+   const now=Date.now();let providerExpiry;
+   try {const parts=session.access_token.split('.');
+    if(parts.length!==3||!parts.every(p=>/^[A-Za-z0-9_-]+$/.test(p)))throw Error();
+    providerExpiry=JSON.parse(Buffer.from(parts[1],'base64url').toString('utf8')).exp*1000;
+    if(!Number.isSafeInteger(providerExpiry)||providerExpiry<=now)throw Error();
+   } catch {return out(503,{error:{code:'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)});}
+   const issued=issueSessionCookie({key,accessToken:session.access_token,expiresAt:Math.min(providerExpiry,now+60*60*1000),now});
+   let verified;try{verified=await sessionHandler(new Request(`${origin}/api/admin/v1/session`,{method:'POST',headers:{Authorization:`Bearer ${session.access_token}`}}));}
+   catch{return out(503,{error:{code:'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)});}
+   if(verified.status!==200){const status=verified.status===401?401:verified.status===403?403:verified.status===429?429:503;
+    return out(status,{error:{code:status===401?'UNAUTHENTICATED':status===403?'FORBIDDEN':status===429?'RATE_LIMITED':'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)});}
+   const response=out(200,{ok:true,csrf:issued.csrf});
+   response.headers.append('Set-Cookie',cookie('',0));response.headers.append('Set-Cookie',issued.setCookie);return response;
+  };
   let url;try {url=new URL(request.url);const o=new URL(origin);if(o.protocol!=='https:'||o.origin!==origin||url.origin!==origin||request.headers.get('origin')!==origin||request.method!=='POST'||url.search)throw Error();}catch{return out(403,{error:{code:'FORBIDDEN'}})}
   if(typeof remoteKey!=='string'||remoteKey.length<1||remoteKey.length>200)return out(503,{error:{code:'UNAVAILABLE'}});
   try {
@@ -36,14 +56,55 @@ export function createAuthController({enabled=false,origin,key,createClient,flow
     if(Object.keys(body).sort().join(',')!=='email,password')return out(400,{error:{code:'INVALID'}});
     const client=createClient();
     const login=await beginPasswordLogin({client,email:body.email,password:body.password,limiter,rateKey:remoteKey});
+    const enrol=typeof enrolment==='function'?enrolment:null;
+    if (login.enrolmentRequired && !enrol) {try{await client.auth.signOut({scope:'local'})}catch{};return out(503,{error:{code:'UNAVAILABLE'}});}
     const id=randomBytes(32).toString('base64url'),csrf=randomBytes(32).toString('base64url');
     // Store must encrypt and TTL this record; no tokens returned to browser.
-    try {await flowStore.put(id,{session:login.session,factorId:login.factorIds[0],csrf},300);} catch(e) {try{await client.auth.signOut({scope:'local'})}catch{};throw e;}
-    return out(200,{mfa_required:true,csrf},{'Set-Cookie':cookie(id,300)});
+    try {await flowStore.put(id,{session:login.session,factorId:login.factorIds[0]??null,csrf,type:'password',enrolment:login.enrolmentRequired===true},300);}
+    catch(e) {try{await client.auth.signOut({scope:'local'})}catch{};throw e;}
+    return out(200,{mfa_required:!login.enrolmentRequired,enrolment:login.enrolmentRequired===true,csrf},{'Set-Cookie':cookie(id,300)});
+   }
+   const enrol=typeof enrolment==='function'?enrolment:null;
+   if(url.pathname==='/api/admin/v1/auth/enroll') {
+    if(!enrol)return out(503,{error:{code:'UNAVAILABLE'}});
+    // Enrolment is for an account that signed in with a password and has an
+    // enabled Admin membership but no verified factor yet. The pending flow is
+    // taken atomically, so a partial enrolment can never be replayed.
+    const body=await json(request);if(Object.keys(body).sort().join(',')!=='csrf')return out(400,{error:{code:'INVALID'}});
+    const flowId=pending(request);
+    const flow=flowId?await flowStore.take(flowId):null;
+    if(!flow||flow.type!=='password'||!same(body.csrf,flow.csrf))return out(401,{error:{code:'UNAUTHENTICATED'}},{'Set-Cookie':cookie('',0)});
+    const client=createClient();let identity;
+    try {identity=await verifyEnrolmentIdentity({token:flow.session.access_token,provider:client});}
+    catch {return out(401,{error:{code:'UNAUTHENTICATED'}},{'Set-Cookie':cookie('',0)});}
+    // Live membership and provider session are checked in the database, in one
+    // transaction, before any factor is created for the account.
+    try {await enrol(identity);}
+    catch {return out(403,{error:{code:'FORBIDDEN'}},{'Set-Cookie':cookie('',0)});}
+    const enrolmentResult=await beginTotpEnrolment({client,limiter,rateKey:remoteKey});
+    const id=randomBytes(32).toString('base64url'),csrf=randomBytes(32).toString('base64url');
+    await flowStore.put(id,{session:flow.session,factorId:enrolmentResult.factorId,csrf,type:'enrolment'},300);
+    return out(200,{mfa_required:false,enrolment:true,otpauth_uri:enrolmentResult.otpauthUri,csrf},{'Set-Cookie':cookie(id,300)});
+   }
+   if(url.pathname==='/api/admin/v1/auth/enroll-confirm') {
+    if(!enrol)return out(503,{error:{code:'UNAVAILABLE'}});
+    const body=await json(request);if(Object.keys(body).sort().join(',')!=='code,csrf')return out(400,{error:{code:'INVALID'}},{'Set-Cookie':cookie('',0)});
+    const flowId=pending(request);
+    const flow=flowId?await flowStore.take(flowId):null;
+    if(!flow||flow.type!=='enrolment'||!same(body.csrf,flow.csrf))return out(401,{error:{code:'UNAUTHENTICATED'}},{'Set-Cookie':cookie('',0)});
+    const client=createClient();let identity;
+    try {identity=await verifyEnrolmentIdentity({token:flow.session.access_token,provider:client});}
+    catch {return out(401,{error:{code:'UNAUTHENTICATED'}},{'Set-Cookie':cookie('',0)});}
+    try {await enrol(identity);}
+    catch {return out(403,{error:{code:'FORBIDDEN'}},{'Set-Cookie':cookie('',0)});}
+    const confirmed=await confirmTotpEnrolment({client,factorId:flow.factorId,code:body.code,limiter,rateKey:remoteKey});
+    // The confirming code yields a fresh AAL2 session for this account.
+    return establish(confirmed);
    }
    if(url.pathname==='/api/admin/v1/auth/mfa') {
     const body=await json(request);if(Object.keys(body).sort().join(',')!=='code,csrf')return out(400,{error:{code:'INVALID'}},{'Set-Cookie':cookie('',0)});
-    const flow=await flowStore.take(pending(request)); // MUST be atomic single use
+    const flowId=pending(request); // MUST be atomic single use
+    const flow=flowId?await flowStore.take(flowId):null;
     if(!flow||!same(body.csrf,flow.csrf))return out(401,{error:{code:'UNAUTHENTICATED'}},{'Set-Cookie':cookie('',0)});
     const client=createClient();let restored;
     try{restored=await client.auth.setSession({access_token:flow.session.access_token,refresh_token:flow.session.refresh_token});}catch{return out(503,{error:{code:'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)})}
@@ -53,22 +114,7 @@ export function createAuthController({enabled=false,origin,key,createClient,flow
     catch(e){try{await client.auth.signOut({scope:'local'})}catch{};throw e;}
     // The verified identity and DB enabled membership/session check happen in
     // the session handler. No account is logged into Admin on its failure.
-    // Supabase MFA verification returns expires_in, not necessarily expires_at.
-    // The JWT exp is only used to cap cookie lifetime; the session handler must
-    // still verify the token with the provider before any cookie is returned.
-    const now=Date.now();let providerExpiry;
-    try {const parts=session.access_token.split('.');if(parts.length!==3||!parts.every(p=>/^[A-Za-z0-9_-]+$/.test(p)))throw Error();
-     const exp=JSON.parse(Buffer.from(parts[1],'base64url').toString('utf8')).exp;
-     if(!Number.isSafeInteger(exp))throw Error();providerExpiry=exp*1000;
-     if(session.expires_at!==undefined){if(!Number.isSafeInteger(session.expires_at))throw Error();providerExpiry=Math.min(providerExpiry,session.expires_at*1000);}
-     if(!Number.isSafeInteger(providerExpiry)||providerExpiry<=now)throw Error();
-    }catch{try{await client.auth.signOut({scope:'local'})}catch{};return out(503,{error:{code:'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)});}
-    const issued=issueSessionCookie({key,accessToken:session.access_token,expiresAt:Math.min(providerExpiry,now+60*60*1000),now});
-    let verified;try{verified=await sessionHandler(new Request(`${origin}/api/admin/v1/session`,{method:'POST',headers:{Authorization:`Bearer ${session.access_token}`}}));}
-    catch{try{await client.auth.signOut({scope:'local'})}catch{};return out(503,{error:{code:'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)});}
-    if(verified.status!==200){try{await client.auth.signOut({scope:'local'})}catch{};const status=verified.status===401?401:verified.status===403?403:verified.status===429?429:503;return out(status,{error:{code:status===401?'UNAUTHENTICATED':status===403?'FORBIDDEN':status===429?'RATE_LIMITED':'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)});}
-    const response=out(200,{ok:true,csrf:issued.csrf});
-    response.headers.append('Set-Cookie',cookie('',0));response.headers.append('Set-Cookie',issued.setCookie);return response;
+    return establish(session);
    }
    return out(404,{error:{code:'NOT_FOUND'}});
   } catch(e) {

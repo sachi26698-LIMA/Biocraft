@@ -10,6 +10,7 @@
 //   any other path        -> 404 (no static file serving, no directory traversal)
 //
 // Failure is closed: missing configuration returns 503 for every route.
+import {randomUUID} from 'node:crypto';
 import {createProviderClient} from './identity.mjs';
 import {createAuthController} from './auth-controller.mjs';
 import {createRecoveryController} from './recovery-controller.mjs';
@@ -68,8 +69,13 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  // Direct connection by default; set ADMIN_DB_HOST to the Supavisor pooler host
  // (with a project-scoped ADMIN_DB_USER) when IPv4 egress is required.
  const dbHost=typeof env.ADMIN_DB_HOST==='string'&&env.ADMIN_DB_HOST?env.ADMIN_DB_HOST:'db.jvpadtzfsuekixrquzjv.supabase.co';
+ // Only session-mode 5432 is supported; an unparsable or other port fails closed
+ // here as well as in the pool factory, so a misconfigured deployment never
+ // starts with a transaction-mode or typo'd port.
+ const dbPort=env.ADMIN_DB_PORT===undefined||env.ADMIN_DB_PORT===''?undefined:/^\d{1,5}$/.test(env.ADMIN_DB_PORT)?Number(env.ADMIN_DB_PORT):NaN;
+ if(dbPort!==undefined&&dbPort!==5432) return fail('invalid database configuration');
  let pool;
- try {pool=poolFactory({host:dbHost,user:env.ADMIN_DB_USER,password:env.ADMIN_DB_PASSWORD});} catch {return fail('invalid database configuration');}
+ try {pool=poolFactory({host:dbHost,port:dbPort,user:env.ADMIN_DB_USER,password:env.ADMIN_DB_PASSWORD});} catch {return fail('invalid database configuration');}
  const execute=createDatabaseExecutor(pool,{now});
  const storage=createAuthStorage({pool,encryptionKey:flowKey,hashKey});
  // Supabase clients must be per-request so sessions never leak between requests.
@@ -78,7 +84,14 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  if (typeof storage.limit!=='function') return fail('invalid storage');
  const api=createAdminHandler({enabled:true,provider,execute,rateLimit,platformRules:PLATFORM_RULES});
  const recovery=createRecoveryController({enabled:true,origin,createClient:client,flowStore:storage,limiter:rateLimit,execute});
- const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:storage,limiter:rateLimit,sessionHandler:api});
+ // Enrolment gate: live Admin membership + provider session, checked in the DB
+ // before any TOTP factor is created. It is the only pre-AAL2 database call.
+ const enrolment=async identity=>{
+  try {const rows=await execute({identity,operation:'enrolmentEligible',args:[randomUUID()]});
+   if(!Array.isArray(rows)||rows.length!==1||rows[0].eligible!==true) throw new Error('Not eligible');
+  } catch {throw new Error('Not eligible');}
+ };
+ const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:storage,limiter:rateLimit,sessionHandler:api,enrolment});
  const gateway=createCookieGateway({key:cookieKey,origin,delegate:api,providerLogout:async()=>{const sessionClient=client();await providerLogout(sessionClient)}});
  const app=async function handle(request){
   const key=clientKey(request,{trustedHeader,ingressSecret});

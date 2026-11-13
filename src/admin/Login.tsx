@@ -5,9 +5,9 @@
  * form refuses to submit when the backend probe reports `unavailable`.
  */
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { probeBackend, type BackendStatus } from './backend';
+import { probeBackend, ADMIN_BASE, type BackendStatus } from './backend';
 
-type Stage = 'checking' | 'signin' | 'mfa' | 'done' | 'blocked';
+type Stage = 'checking' | 'signin' | 'enrol' | 'mfa' | 'done' | 'blocked';
 
 export default function Login({ onAuthenticated }: { onAuthenticated?: () => void }) {
   const [status, setStatus] = useState<BackendStatus>('unavailable');
@@ -17,6 +17,8 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
   const [code, setCode] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  // Shown once, only while enrolling a first factor; never stored or logged.
+  const [otpauthUri, setOtpauthUri] = useState('');
   const csrf = useRef<string>('');
   const mounted = useRef(true);
 
@@ -34,7 +36,7 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
   }, [onAuthenticated]);
 
   const post = useCallback(async (path: string, body: Record<string, string>) => {
-    const response = await fetch(`/api/admin/v1/auth/${path}`, {
+    const response = await fetch(`${ADMIN_BASE}/auth/${path}`, {
       method: 'POST', credentials: 'same-origin',
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify(body),
@@ -54,8 +56,41 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
         setMessage(messageFor(result.status, result.data?.error?.code)); return;
       }
       csrf.current = result.data.csrf;
-      setPassword(''); setStage('mfa');
+      setPassword('');
+      // Accounts without a verified factor must enrol one before any Admin
+      // session exists; the server decides that, never the client.
+      if (result.data?.enrolment === true) { setStage('enrol'); void beginEnrolment(result.data.csrf); return; }
+      setStage('mfa');
     } catch { if (mounted.current) setMessage('The Admin service could not be reached. Try again later.'); }
+    finally { if (mounted.current) setBusy(false); }
+  }
+
+  async function beginEnrolment(token: string) {
+    // The user already proved the password; the pending flow authorises exactly
+    // one enrolment attempt and is single-use.
+    setBusy(true);
+    try {
+      const result = await post('enroll', { csrf: token });
+      if (!mounted.current) return;
+      if (!result.ok || typeof result.data?.csrf !== 'string' || typeof result.data?.otpauth_uri !== 'string') {
+        setMessage(messageFor(result.status, result.data?.error?.code)); return;
+      }
+      csrf.current = result.data.csrf;
+      setOtpauthUri(result.data.otpauth_uri);
+    } catch { if (mounted.current) setMessage('Enrolment could not be started. Try again later.'); }
+    finally { if (mounted.current) setBusy(false); }
+  }
+
+  async function submitEnrolment(event: FormEvent) {
+    event.preventDefault();
+    if (stage !== 'enrol' || busy || !/^\d{6,8}$/.test(code) || !otpauthUri) return;
+    setBusy(true); setMessage('');
+    try {
+      const result = await post('enroll-confirm', { code, csrf: csrf.current });
+      if (!mounted.current) return;
+      if (!result.ok) { setMessage(messageFor(result.status, result.data?.error?.code)); setCode(''); return; }
+      setCode(''); csrf.current = ''; setOtpauthUri(''); setStage('done'); onAuthenticated?.();
+    } catch { if (mounted.current) setMessage('Enrolment could not be completed. Try again later.'); }
     finally { if (mounted.current) setBusy(false); }
   }
 
@@ -88,6 +123,25 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
     return <section className="ad-auth" aria-live="polite"><p role="status">Checking Admin service…</p></section>;
   }
 
+  if (stage === 'enrol') {
+    return <section className="ad-auth" aria-labelledby="admin-auth-title">
+      <h2 id="admin-auth-title">Set up your authenticator</h2>
+      {otpauthUri
+        ? <>
+            <p>Add this account to your authenticator app, then enter the 6-digit code it shows.</p>
+            <p className="ad-auth-uri"><span>Setup key</span><code>{setupKey(otpauthUri)}</code></p>
+            <form onSubmit={submitEnrolment} noValidate>
+              <label htmlFor="admin-code">6–8 digit code</label>
+              <input id="admin-code" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" required value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))} disabled={busy} autoFocus />
+              <button type="submit" disabled={busy || !/^\d{6,8}$/.test(code)}>{busy ? 'Confirming…' : 'Confirm and sign in'}</button>
+            </form>
+          </>
+        : <p role="status">{busy ? 'Preparing enrolment…' : 'Enrolment is unavailable for this account.'}</p>}
+      {message && <p className="ad-auth-error" role="alert">{message}</p>}
+      <p className="ad-auth-note">This is a one-time setup step. The key is shown only on this screen and is not stored in your browser.</p>
+    </section>;
+  }
+
   return <section className="ad-auth" aria-labelledby="admin-auth-title">
     <h2 id="admin-auth-title">{stage === 'mfa' ? 'Enter your authenticator code' : 'Admin sign-in'}</h2>
     {stage === 'signin'
@@ -106,6 +160,12 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
     {message && <p className="ad-auth-error" role="alert">{message}</p>}
     <p className="ad-auth-note">Password sign-in with authenticator-app verification is required. Sessions last at most one hour.</p>
   </section>;
+}
+
+// otpauth://totp/...?secret=XXXX — the only piece a user types by hand. It is
+// derived from the one-time URI the server returned and never persisted.
+function setupKey(uri: string): string {
+  try { return new URL(uri).searchParams.get('secret') ?? '—'; } catch { return '—'; }
 }
 
 function messageFor(status: number, code?: string): string {

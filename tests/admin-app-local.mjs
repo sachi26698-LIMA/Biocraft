@@ -17,6 +17,11 @@ try {
   {ADMIN_DB_PASSWORD:'',reason:'missing database credentials'},
   {ADMIN_TRUSTED_CLIENT_HEADER:'',reason:'missing trusted client header'},
   {ADMIN_INGRESS_SECRET_HEX:'abc',reason:'missing trusted client header'},
+
+  // Host allow-listing lives in createPostgresPool (admin-pool-config); the app
+  // wrapper itself rejects any port other than session-mode 5432.
+  {ADMIN_DB_PORT:'6543',reason:'invalid database configuration'},
+  {ADMIN_DB_PORT:'abc',reason:'invalid database configuration'},
  ];
  for(const patch of badConfigs){
   let opened=0;const spy=factory=>({...factory,connect:async()=>{opened++;throw Error('must not connect')}});

@@ -7,11 +7,16 @@ const client={auth:{signInWithPassword:async ()=>({data:{session:{access_token:'
  signOut:async({scope})=>{calls.push(`logout:${scope}`);return {error:null}}}};
 const login=await beginPasswordLogin({client,email:'test@example.com',password:'synthetic',limiter,rateKey:'fixture'});
 assert.deepEqual(login.factorIds,[f]);assert.equal(login.session.access_token,'fixture-access');
+assert.equal(login.enrolmentRequired,false);
 const result=await verifyTotp({client,factorId:f,code:'123456',limiter,rateKey:'fixture'});assert.equal(result.access_token,'aal2-access');
 await assert.rejects(verifyTotp({client,factorId:f,code:'123456',rateKey:'fixture'}),e=>e.code==='UNAVAILABLE');
 await assert.rejects(verifyTotp({client,factorId:f,code:'bad',limiter,rateKey:'fixture'}),e=>e.code==='UNAUTHENTICATED');
 await assert.rejects(beginPasswordLogin({client,email:'test@example.com',password:'synthetic',limiter:async()=>false,rateKey:'fixture'}),e=>e.code==='RATE_LIMITED');
-const none={auth:{...client.auth,mfa:{...client.auth.mfa,listFactors:async()=>({data:{totp:[]}})}}};
-await assert.rejects(beginPasswordLogin({client:none,email:'test@example.com',password:'synthetic',limiter,rateKey:'fixture'}),e=>e.code==='MFA_REQUIRED');
-await providerLogout(client);assert(calls.includes('logout:local'));assert(calls.includes('logout:global'));
+// No verified factor yet is not an error: the flow is handed to first-factor
+// enrolment, which the caller must gate on live membership.
+const none={auth:{...client.auth,mfa:{...client.auth.mfa,listFactors:async()=>({data:{totp:[{id:f,status:'unverified'}]}})}}};
+const pendingEnrolment=await beginPasswordLogin({client:none,email:'test@example.com',password:'synthetic',limiter,rateKey:'fixture'});
+assert.equal(pendingEnrolment.enrolmentRequired,true);assert.deepEqual(pendingEnrolment.factorIds,[]);
+assert.equal(pendingEnrolment.session.access_token,'fixture-access');
+await providerLogout(client);assert(calls.includes('logout:global'));
 console.log('PASS mocked provider password/TOTP/logout building blocks; no real sessions, limiter, token store, HTTP endpoint or live Auth tested');

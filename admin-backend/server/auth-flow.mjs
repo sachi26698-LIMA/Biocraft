@@ -35,9 +35,35 @@ export async function beginPasswordLogin({client,email,password,limiter,rateKey}
   try {await client.auth.signOut({scope:'local'});} catch {} unavailable();
  }
  const verified=factors.data.totp.filter(f=>f.status==='verified' && typeof f.id==='string' && uuid.test(f.id));
- if (!verified.length) { try {await client.auth.signOut({scope:'local'});} catch {} throw new AccessError('MFA_REQUIRED'); }
+ // No verified factor yet: the password session may only be used for first-factor
+ // enrolment, and only after the membership gate accepts it. Tokens stay here.
+ if (!verified.length) return {session:login.data.session,factorIds:[],enrolmentRequired:true};
  // Trusted-server value only, including tokens. Caller must protect and expire it.
- return {session:login.data.session,factorIds:verified.map(f=>f.id)};
+ return {session:login.data.session,factorIds:verified.map(f=>f.id),enrolmentRequired:false};
+}
+/** Enrol a TOTP factor for the current session and return the otpauth URI.
+ * Returned secrets are server-only and must never be logged or sent back after
+ * confirmation. The caller must require a fresh AAL2 session plus an enabled
+ * Admin membership, and must store the factor only after verifyEnrolment. */
+export async function beginTotpEnrolment({client,limiter,rateKey}) {
+ if(typeof rateKey!=='string'||rateKey.length<1||rateKey.length>200) unavailable();
+ await limit(limiter,'totp-verify',keyDigest('enrol',rateKey));
+ if (!client?.auth?.mfa?.enroll) unavailable();
+ let result;try{result=await client.auth.mfa.enroll({factorType:'totp'});}catch{unavailable();}
+ const id=result?.data?.id,uri=result?.data?.totp?.qr_code,secret=result?.data?.totp?.secret;
+ if(result?.error||!id||!uuid.test(id)||typeof uri!=='string'||typeof secret!=='string')unavailable();
+ return {factorId:id,otpauthUri:uri};
+}
+/** Confirm a TOTP enrolment with the first code. On success the factor becomes
+ * verified and the provider issues an AAL2 session for this client. */
+export async function confirmTotpEnrolment({client,factorId,code,limiter,rateKey}) {
+ if(typeof rateKey!=='string'||rateKey.length<1||rateKey.length>200) unavailable();
+ await limit(limiter,'totp-verify',keyDigest('enrol-confirm',rateKey));
+ if (typeof factorId!=='string' || !uuid.test(factorId) || typeof code!=='string' || !/^\d{6,8}$/.test(code)) invalid();
+ if (!client?.auth?.mfa?.challengeAndVerify) unavailable();
+ let response;try{response=await client.auth.mfa.challengeAndVerify({factorId,code});}catch{unavailable();}
+ if(response.error||!response.data?.access_token||!response.data?.refresh_token)invalid();
+ return response.data;
 }
 /** Challenge and verify an existing verified factor. The resulting AAL2 session
  * is not Admin authorization: verify identity and membership separately. */

@@ -44,8 +44,10 @@
     "test:admin-http-smoke": "node tests/admin-http-smoke.mjs",
     "test:admin-node-adapter": "node tests/admin-node-adapter.mjs",
     "test:admin-login-browser": "node tests/admin-login-browser.cjs",
+    "test:admin-login-flow-browser": "node tests/admin-login-flow-browser.cjs",
     "test:admin-platform-rules": "node tests/platform-rules-sync.cjs",
-    "test:admin-pool-config": "node tests/admin-pool-config.mjs"
+    "test:admin-pool-config": "node tests/admin-pool-config.mjs",
+    "test:admin-totp-enrolment": "node tests/admin-totp-enrolment.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

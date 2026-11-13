@@ -17,15 +17,19 @@ const PROJECT_REF='jvpadtzfsuekixrquzjv';
 // Supavisor session pooler (Vercel egress is IPv4-only, so the pooler is the
 // realistic production path). Any other host is refused.
 const DIRECT=`db.${PROJECT_REF}.supabase.co`;
-const POOLER=/^aws-[0-9]+-[a-z0-9-]+\.pooler\.supabase\.com$/;
+// Supavisor hostname shape: aws-<index>-<region>.pooler.supabase.com, where the
+// region is a real multi-label region code (ap-southeast-2, us-east-1, ...).
+const POOLER=/^aws-[0-9]{1,3}-[a-z]{2}-[a-z]{3,20}(?:-[a-z]{3,20})?-[0-9]{1,2}\.pooler\.supabase\.com$/;
 export function createPostgresPool({host,user,password,ca,port}={}) {
  if(typeof host!=='string'||(host!==DIRECT && !POOLER.test(host)) || typeof user!=='string' || !user || typeof password!=='string' || !password || (ca!==undefined && typeof ca!=='string')) throw new Error('Invalid database configuration');
  // A pooler login must be scoped to the project (postgres.<ref>) or explicit
  // project role (role.<ref>); a direct login must not carry a project suffix.
  const expected=host===DIRECT?/^[a-z_][a-z0-9_]{0,62}$/:new RegExp(`^[a-z_][a-z0-9_]{0,62}\\.${PROJECT_REF}$`);
  if(!expected.test(user)) throw new Error('Invalid database configuration');
- const resolvedPort=port===undefined?(host===DIRECT?5432:5432):port;
- if(!Number.isSafeInteger(resolvedPort)||resolvedPort<1||resolvedPort>65535) throw new Error('Invalid database configuration');
+ // Only the session-mode port is accepted. Transaction mode (6543) breaks the
+ // session-scoped assumptions this adapter relies on, so it is refused outright.
+ const resolvedPort=port===undefined?5432:port;
+ if(resolvedPort!==5432) throw new Error('Invalid database configuration');
  return new Pool({host,port:resolvedPort,user,password,database:'postgres',ssl:{rejectUnauthorized:true,...(ca?{ca}:{})},max:3,connectionTimeoutMillis:5000,idleTimeoutMillis:10000});
 }
 export async function assertLimitedRole(client) {
@@ -44,6 +48,9 @@ export async function assertLimitedRole(client) {
 }
 const OPERATIONS = Object.freeze({
   sessionOpen: {permission:null,sql:'select bc_admin_v1.open_admin_session($1::uuid) as expires_at'},
+  // Pre-MFA gate: requires an enabled membership and live provider session but
+  // not aal2, because the account has no verified factor yet.
+  enrolmentEligible: {permission:null,sql:'select bc_admin_v1.enrolment_eligible($1::uuid) as eligible'},
   sessionRevoke: {permission:'dashboard.read',sql:'select bc_admin_v1.revoke_admin_session($1::uuid)'},
   sessionRevokeAll: {permission:'dashboard.read',sql:'select bc_admin_v1.revoke_my_sessions($1::uuid) as revoked'},
   sessionCheck: {permission:'dashboard.read',sql:'select true as active'},
@@ -81,7 +88,8 @@ export function createDatabaseExecutor(pool,{maxMfaAgeMs=10*60*1000,now=Date.now
  if (!pool || typeof pool.connect !== 'function' || !Number.isSafeInteger(maxMfaAgeMs) || maxMfaAgeMs<60000 || typeof now!=='function') throw new Error('Database pool required');
  return async function execute({identity,operation,args}) {
   const op=OPERATIONS[operation];
-  if (!op || !identity || identity.assuranceLevel !== 'aal2' || !Array.isArray(args)) throw new Error('Invalid operation');
+  const preAal2 = operation==='enrolmentEligible';
+  if (!op || !identity || ((!preAal2) && identity.assuranceLevel !== 'aal2') || !Array.isArray(args)) throw new Error('Invalid operation');
   if (STEP_UP.has(operation) && (!Number.isSafeInteger(identity.mfaVerifiedAt) || identity.mfaVerifiedAt*1000 > now() || identity.mfaVerifiedAt*1000 <= now()-maxMfaAgeMs)) {const e=new Error('Step-up authentication required');e.code='28000';throw e;}
   const client=await pool.connect(); let inTransaction=false;
   try {
@@ -91,7 +99,8 @@ export function createDatabaseExecutor(pool,{maxMfaAgeMs=10*60*1000,now=Date.now
    await assertLimitedRole(client);
    // Only whitelisted identity fields produced after provider verification;
    // never copy client-provided claims or raw JWT into database context.
-   const claims=JSON.stringify({sub:identity.userId,session_id:identity.sessionId,aal:'aal2'});
+   // Enrolment is the only pre-AAL2 operation; every other operation is AAL2.
+   const claims=JSON.stringify({sub:identity.userId,session_id:identity.sessionId,aal:preAal2?identity.assuranceLevel:'aal2'});
    await client.query("select set_config('request.jwt.claims',$1,true)",[claims]);
    if(op.permission!==null) {
     const auth=await client.query('select bc_admin_v1.require_actor($1) as user_id',[op.permission]);

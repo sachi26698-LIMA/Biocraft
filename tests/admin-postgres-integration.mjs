@@ -25,7 +25,7 @@ try {
  create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
  create function auth.uid() returns uuid language sql stable as $$select nullif(auth.jwt()->>'sub','')::uuid$$;`);
  await admin.query(fs.readFileSync('supabase/migrations/0001_initial_schema.sql','utf8'));
- for(const name of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','007_staff_commands.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql'])
+ for(const name of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','007_staff_commands.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql','011_totp_enrolment.sql'])
   await admin.query(fs.readFileSync(`admin-backend/migrations/${name}`,'utf8'));
  await admin.query(fs.readFileSync('supabase/migrations/0002_rls_policies.sql','utf8'));
  await admin.query(`insert into auth.users values('${uid}'); insert into auth.sessions values('${sid}','${uid}');
@@ -36,7 +36,7 @@ try {
  bc_admin_v1.list_platforms(integer,uuid),bc_admin_v1.list_categories(integer,uuid),bc_admin_v1.list_collections(integer,text),
  bc_admin_v1.list_generators(integer,uuid),bc_admin_v1.list_seo_pages(integer,uuid),bc_admin_v1.analytics_overview(),
  bc_admin_v1.list_settings(integer,text),bc_admin_v1.update_setting(text,jsonb,bigint,uuid),bc_admin_v1.list_role_catalog(),
- bc_admin_v1.list_my_sessions(integer,timestamptz),bc_admin_v1.list_audit_logs(integer,bigint) to bc_fixture_executor;
+ bc_admin_v1.list_my_sessions(integer,timestamptz),bc_admin_v1.list_audit_logs(integer,bigint),bc_admin_v1.enrolment_eligible(uuid) to bc_fixture_executor;
  -- Synthetic public rows so module reads have deterministic content.
  insert into public.platforms(name,slug,is_active,sort_order) values('Instagram','instagram',true,1),('Hidden','hidden',false,2);
  insert into public.categories(name,slug,is_active,sort_order,platform_id) select 'Tech','tech',true,1,id from public.platforms where slug='instagram';
@@ -142,5 +142,28 @@ try {
  const stale={...identity,mfaVerifiedAt:Math.floor(Date.now()/1000)-3600};
  await assert.rejects(exec({identity:{...stale,sessionId:activeSid},operation:'create',args:['stale',JSON.stringify({content:'x',language:'en',platform:'instagram',active:true,featured:false}),randomUUID()]}),e=>e.code==='28000');
  await assert.rejects(exec({identity:{...active,mfaVerifiedAt:null},operation:'create',args:['none',JSON.stringify({content:'x',language:'en',platform:'instagram',active:true,featured:false}),randomUUID()]}),e=>e.code==='28000');
- console.log(`PASS PostgreSQL ${meta.rows[0].version}: fixture migrations, immutable concurrent bio edits, non-owner RBAC, session expiry, restrictive RLS, membership lock, concurrent limiter and atomic handoff and recovery revocation, 010 module reads/settings write and step-up freshness. Provider Auth is mocked; no shared project used.`);
+ // 011 enrolment gate: an AAL1 password session is enough only for enrolment,
+ // and only while the membership is enabled, roled and the provider session lives.
+ const aal1={...identity,assuranceLevel:'aal1',mfaVerifiedAt:Math.floor(Date.now()/1000)};
+ assert.deepEqual(await exec({identity:aal1,operation:'enrolmentEligible',args:[randomUUID()]}),[{eligible:true}]);
+ await assert.rejects(exec({identity:aal1,operation:'create',args:['aal1',JSON.stringify({content:'x',language:'en',platform:'instagram',active:true,featured:false}),randomUUID()]}),/Invalid operation/);
+ await admin.query('delete from auth.sessions where user_id=$1',[uid]);
+ assert.deepEqual(await exec({identity:aal1,operation:'enrolmentEligible',args:[randomUUID()]}),[{eligible:false}]);
+ await admin.query('insert into auth.sessions(id,user_id) values($1,$2)',[activeSid,uid]);
+ await admin.query('update bc_admin_v1.admin_users set enabled=false where id=$1',[uid]);
+ assert.deepEqual(await exec({identity:aal1,operation:'enrolmentEligible',args:[randomUUID()]}),[{eligible:false}]);
+ await admin.query('update bc_admin_v1.admin_users set enabled=true where id=$1',[uid]);
+ await admin.query('delete from bc_admin_v1.admin_user_roles where user_id=$1',[uid]);
+ assert.deepEqual(await exec({identity:aal1,operation:'enrolmentEligible',args:[randomUUID()]}),[{eligible:false}]);
+ await admin.query("insert into bc_admin_v1.admin_user_roles(user_id,role_id) values($1,'editor')",[uid]);
+ // AAL2 sessions pass the same gate (re-enrolment after a lost device).
+ assert.deepEqual(await exec({identity:{...aal1,sessionId:activeSid,assuranceLevel:'aal2'},operation:'enrolmentEligible',args:[randomUUID()]}),[{eligible:true}]);
+ // Every attempt commits an audit row, and no token material is stored.
+ const audits=await admin.query("select actor_id,details from bc_admin_v1.admin_audit_logs where action='auth.enrolment_attempt' order by id");
+ assert.equal(audits.rows.length,5);
+ assert.deepEqual(audits.rows.map(r=>r.details.eligible),[true,false,false,false,true]);
+ assert.equal(audits.rows.filter(r=>r.actor_id===null).length,3);
+ assert.equal(JSON.stringify(audits.rows).includes('eyJ'),false);
+ await assert.rejects(exec({identity:aal1,operation:'enrolmentEligible',args:[null]}),e=>e.code==='22023');
+ console.log(`PASS PostgreSQL ${meta.rows[0].version}: fixture migrations, immutable concurrent bio edits, non-owner RBAC, session expiry, restrictive RLS, membership lock, concurrent limiter and atomic handoff and recovery revocation, 010 module reads/settings write and step-up freshness, 011 AAL1-only enrolment gate with audit. Provider Auth is mocked; no shared project used.`);
 } finally {if(limited)await limited.end();await admin.end()}
