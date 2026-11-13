@@ -13,4 +13,14 @@ for(const [route,buttons] of [['users',['Invite user','Export users']],['analyti
 if(opts.isMobile){await page.getByRole('button',{name:'Open navigation'}).click();assert.equal(await page.evaluate(()=>document.body.style.overflow),'hidden');await page.getByRole('button',{name:'Close navigation'}).click({position:{x:380,y:30}});assert.notEqual(await page.evaluate(()=>document.body.style.overflow),'hidden');}
 for(const route of ['/admin','/admin/users','/admin/bios','/admin/categories','/admin/platforms','/admin/generators','/admin/content','/admin/analytics','/admin/security','/admin/settings']){await page.goto(`${base}${route}`,{waitUntil:'networkidle'});const dims=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));assert.ok(dims.scroll<=dims.width,`${name} ${route} overflow ${JSON.stringify(dims)}`);}
 if(opts.isMobile){await page.setViewportSize({width:320,height:700});for(const route of ['/admin','/admin/bios','/admin/categories','/admin/platforms','/admin/generators','/admin/content','/admin/security']){await page.goto(`${base}${route}`,{waitUntil:'networkidle'});const dims=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));assert.ok(dims.scroll<=dims.width,`320px ${route} overflow ${JSON.stringify(dims)}`);}}
-assert.deepEqual(errors,[]);assert.deepEqual(bad,[]);assert.deepEqual(fail,[]);assert.deepEqual(requests,[]);results.push({name,localDraftOperations:'pass',inventoryControls:'pass',blockedActions:'pass',selectedAxeRules:'pass',errors:errors.length,failedRequests:fail.length,privilegedRequests:requests.length});await context.close();}console.log(JSON.stringify(results,null,2));}finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});
+// One fail-closed probe is expected on a static host (see admin-interaction-audit).
+ const isProbe=url=>/\/api\/admin\/v1\/health$/.test(url);
+ assert.deepEqual(errors.filter(e=>!/status of 404/.test(e)),[],`${name} console errors`);
+ assert.deepEqual(bad.filter(line=>!isProbe(line.split(' ')[1])),[],`${name} http errors`);
+ assert.deepEqual(fail.filter(line=>!(isProbe(line.split(' ')[0])&&/ERR_ABORTED/.test(line))),[],`${name} failed requests`);
+ assert.deepEqual(requests.filter(url=>!isProbe(url)),[],`${name} privileged requests`);
+ assert.ok(bad.every(line=>isProbe(line.split(' ')[1])),`${name} unexpected 4xx`);results.push({name,localDraftOperations:'pass',inventoryControls:'pass',blockedActions:'pass',selectedAxeRules:'pass',
+  errors:errors.filter(e=>!/status of 404/.test(e)).length,
+  failedRequests:fail.filter(line=>!(isProbe(line.split(' ')[0])&&/ERR_ABORTED/.test(line))).length,
+  privilegedRequests:requests.filter(url=>!isProbe(url)).length,
+  failClosedProbes:bad.length});await context.close();}console.log(JSON.stringify(results,null,2));}finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});

@@ -13,7 +13,7 @@ const socket = process.env.BIOCRAFT_TEST_PG_SOCKET;
 if (!socket) throw new Error('BIOCRAFT_TEST_PG_SOCKET is required');
 const user = process.env.USER ?? 'postgres';
 const db = 'biocraft_rollback_cycle';
-const migrations = ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','007_staff_commands.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql','011_totp_enrolment.sql','012_recovery_and_cleanup.sql'];
+const migrations = ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','007_staff_commands.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql','011_totp_enrolment.sql','012_recovery_and_cleanup.sql','013_publication_bridge.sql','014_module_read_surface.sql'];
 
 const root = new pg.Client({host: socket, database: 'postgres', user});
 await root.connect();
@@ -71,7 +71,18 @@ try {
   await client.query('commit');
   assert.equal(gate.rows[0].eligible, true, 'the restored 011 gate must work after rollback/012');
 
-  // 3. Full teardown in reverse order leaves no schema at all.
+  // 3. 013's rollback must not touch public.bios: the rows a publication created
+  //    stay exactly as they are, because reversing a grant is not deleting data.
+  const biosBefore = (await client.query('select count(*)::int n from public.bios')).rows[0].n;
+  await client.query(fs.readFileSync('admin-backend/rollback/013_publication_bridge.sql','utf8'));
+  assert.equal((await client.query('select count(*)::int n from public.bios')).rows[0].n, biosBefore, 'rollback/013 must not delete published bios');
+  assert.equal((await client.query("select count(*)::int n from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='bc_admin_v1' and p.proname in ('publish_bio_draft','list_bio_publications','create_revert_draft')")).rows[0].n, 0);
+  // With the bridge gone, the guard from 002 must refuse publication again.
+  await client.query('begin');
+  await client.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:uid,session_id:sid,aal:'aal2',role:'authenticated'})]);
+  await client.query('rollback');
+
+  // 4. Full teardown in reverse order leaves no schema at all.
   // Audit rows are append-only by trigger (that is the point of 002), so the
   // teardown removes the guard with the evidence it protects: in a real project
   // this is a deliberate, reviewed drop, never something the application can do.
@@ -89,6 +100,8 @@ try {
   for (const table of ['admin_user_roles','admin_role_permissions','admin_users','admin_roles','admin_permissions','admin_sessions','admin_settings','admin_notifications','admin_backup_records']) {
     await client.query(`delete from bc_admin_v1.${table}`);
   }
+  // 014 first (newest), then 013: 014's triggers reference 013's table.
+  await client.query(fs.readFileSync('admin-backend/rollback/014_module_read_surface.sql','utf8'));
   for (const name of ['011_totp_enrolment.sql','010_admin_module_commands.sql','009_recovery_sessions.sql','008_bio_edit.sql','007_staff_commands.sql','006_auth_controls.sql','005_session_commands.sql','004_private_draft_commands.sql','003_permission_catalog.sql','002_workflow_integrity.sql','001_admin_foundation.sql']) {
     await client.query(fs.readFileSync(`admin-backend/rollback/${name}`,'utf8'));
   }
@@ -96,13 +109,13 @@ try {
   const leftovers = await client.query("select count(*)::int n from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='bc_admin_v1'");
   assert.equal(leftovers.rows[0].n, 0);
 
-  // 4. Reinstall reproduces the published counts.
+  // 5. Reinstall reproduces the published counts.
   for (const name of migrations) await client.query(fs.readFileSync(`admin-backend/migrations/${name}`,'utf8'));
   const counts = await client.query("select (select count(*)::int from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='bc_admin_v1' and c.relkind='r') tables, (select count(*)::int from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='bc_admin_v1') functions");
-  assert.equal(counts.rows[0].tables, 19);
-  assert.equal(counts.rows[0].functions, 39);
+  assert.equal(counts.rows[0].tables, 20);
+  assert.equal(counts.rows[0].functions, 48);
 
-  console.log('PASS rollback cycle (fresh database): all three 012 guards refuse before touching anything, rollback/012 restores a working 011 gate after dropping mfa_enrolled_at, full reverse teardown leaves no schema or function, and a clean reinstall recreates 19 tables and 39 functions');
+  console.log('PASS rollback cycle (fresh database): all three 012 guards refuse before touching anything, rollback/012 restores a working 011 gate after dropping mfa_enrolled_at, rollback/013 removes the bridge without touching public.bios, rollback/014 drops the notification triggers before their function, full reverse teardown leaves no schema or function, and a clean reinstall recreates 20 tables and 48 functions');
 } finally {
   await client.end();
   const cleanup = new pg.Client({host: socket, database: 'postgres', user});

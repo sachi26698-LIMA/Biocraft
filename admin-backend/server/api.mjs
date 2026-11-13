@@ -35,6 +35,8 @@ function paging(url,allowed,expect={}) {
   if(type==='bigint'&&! /^\d{1,18}$/.test(value))fail(422,'INVALID');
   if(type==='slug'&&!/^[a-z0-9][a-z0-9-]{0,199}$/.test(value))fail(422,'INVALID');
   if(type==='uuid'&&!uid.test(value))fail(422,'INVALID');
+  if(type==='text'&&value.length>120)fail(422,'INVALID');
+  if(type==='boolean'&&value!=='true'&&value!=='false')fail(422,'INVALID');
  }
 }
 export function createAdminHandler({provider,execute,rateLimit,platformRules,recovery=null,enabled=false}={}) {
@@ -64,6 +66,25 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
    } else if(url.pathname==='/api/admin/v1/audit-logs' && request.method==='GET') {
     paging(url,['limit','before'],{before:'bigint'});
     operation='auditLogs';args=[pageLimit(url),url.searchParams.get('before')===null?null:Number(url.searchParams.get('before'))];
+   } else if(url.pathname==='/api/admin/v1/notifications' && request.method==='GET') {
+    // The caller's own inbox. The recipient is the session, never a parameter.
+    paging(url,['limit','before'],{before:'time'});
+    operation='notificationList';args=[pageLimit(url),url.searchParams.get('before')];
+   } else if(url.pathname==='/api/admin/v1/notifications/read' && request.method==='POST' && !url.search) {
+    const body=await bodyJson(request);keys(body,['before']);
+    if(body.before!==undefined&&body.before!==null&&(typeof body.before!=='string'||Number.isNaN(Date.parse(body.before))))fail(422,'INVALID');
+    operation='notificationRead';args=[body.before??null];
+   } else if(url.pathname==='/api/admin/v1/publication-jobs' && request.method==='GET') {
+    paging(url,['limit','before'],{before:'uuid'});
+    operation='publicationJobList';args=[pageLimit(url),url.searchParams.get('before')];
+   } else if(url.pathname==='/api/admin/v1/backups' && request.method==='GET') {
+    paging(url,['limit','before'],{before:'time'});
+    operation='backupList';args=[pageLimit(url),url.searchParams.get('before')];
+   } else if(url.pathname==='/api/admin/v1/bios' && request.method==='GET') {
+    paging(url,['limit','after','search','language','active'],{after:'uuid',search:'text',language:'text',active:'boolean'});
+    operation='bioList';
+    args=[pageLimit(url),url.searchParams.get('after'),url.searchParams.get('search'),url.searchParams.get('language'),
+      url.searchParams.get('active')===null?null:url.searchParams.get('active')==='true'];
    } else if(url.pathname==='/api/admin/v1/analytics' && request.method==='GET' && !url.search) {
     operation='analytics';args=[];
    } else if(['/api/admin/v1/platforms','/api/admin/v1/categories','/api/admin/v1/generators','/api/admin/v1/seo-pages'].includes(url.pathname) && request.method==='GET') {
@@ -84,6 +105,16 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     const raw=url.searchParams.get('limit')??'50',after=url.searchParams.get('after');
     if(!/^\d{1,3}$/.test(raw)||(after!==null&&!uid.test(after)))fail(422,'INVALID');
     operation='staffList';args=[integer(Number(raw),1,100),after];
+   } else if(url.pathname==='/api/admin/v1/staff' && request.method==='PATCH' && !url.search) {
+    // Membership administration (007). The SQL refuses a self-edit, a super-admin
+    // promotion, the last super-admin demotion and a stale version, so this route
+    // only has to validate shape.
+    const body=await bodyJson(request);keys(body,['userId','expectedVersion','enabled','roles']);
+    if(typeof body.userId!=='string'||!uid.test(body.userId))fail(422,'INVALID');
+    integer(body.expectedVersion,1,Number.MAX_SAFE_INTEGER);
+    if(typeof body.enabled!=='boolean')fail(422,'INVALID');
+    if(!Array.isArray(body.roles)||body.roles.length<1||body.roles.length>8||body.roles.some(r=>typeof r!=='string'||!/^[a-z][a-z0-9_]{1,40}$/.test(r)))fail(422,'INVALID');
+    operation='staffUpdate';args=[body.userId,body.expectedVersion,body.enabled,body.roles,id];
    } else if(url.pathname==='/api/admin/v1/staff/recovery' && request.method==='POST') {
     // Super Admin authorises one account, one time. The code is generated and
     // hashed outside the SQL call, so this route needs the recovery service.
@@ -123,6 +154,15 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     const time=url.searchParams.get('before_time'),beforeId=url.searchParams.get('before_id');
     if((time===null)!==(beforeId===null) || (time!==null && (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?Z$/.test(time) || !Number.isFinite(Date.parse(time)) || !uid.test(beforeId))))fail(422,'INVALID');
     operation=url.pathname.endsWith('bio-drafts')?'list':'reviewQueue';args=[limit,time,beforeId];
+   } else if(url.pathname==='/api/admin/v1/publications' && request.method==='GET') {
+    // Publication history for one bio (013). Newest first, keyset paged.
+    if([...url.searchParams.keys()].some(k=>!['bio_id','limit','before'].includes(k)) || [...new Set(url.searchParams.keys())].some(k=>url.searchParams.getAll(k).length!==1))fail(400,'INVALID');
+    const bioId=url.searchParams.get('bio_id');
+    if(bioId===null||!uid.test(bioId))fail(422,'INVALID');
+    const raw=url.searchParams.get('limit')??'50';if(!/^\d{1,3}$/.test(raw))fail(422,'INVALID');
+    const before=url.searchParams.get('before');
+    if(before!==null&&!/^\d{1,18}$/.test(before))fail(422,'INVALID');
+    operation='publications';args=[bioId,integer(Number(raw),1,100),before===null?null:Number(before)];
    } else if(url.pathname==='/api/admin/v1/bio-drafts' && request.method==='POST') {
     const body=await bodyJson(request);keys(body,['key','bio']);
     if(typeof body.key!=='string'||!/^[a-z0-9][a-z0-9_-]{0,99}$/.test(body.key))fail(422,'INVALID');
@@ -135,6 +175,24 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     else {const body=await bodyJson(request);keys(body,['expectedVersion','bio']);integer(body.expectedVersion,1,Number.MAX_SAFE_INTEGER);
      const {count,...payload}=validateBio(body.bio,platformRules);void count;
      operation='draftUpdate';args=[draftId,body.expectedVersion,JSON.stringify(payload),id];}
+   } else if((url.pathname.match(/^\/api\/admin\/v1\/bio-drafts\/[0-9a-f-]{36}\/(publish|revert)$/i)) && request.method==='POST' && !url.search) {
+    // Two reviewed operations with different bodies, so they are checked apart.
+    const action=url.pathname.split('/').at(-1);
+    const draftId=url.pathname.split('/').at(-2);
+    if(!uid.test(draftId))fail(422,'INVALID');
+    const body=await bodyJson(request);
+    integer(body.expectedVersion,1,Number.MAX_SAFE_INTEGER);
+    if(action==='publish') {
+     keys(body,['expectedVersion','bioId']);
+     if(body.bioId!==null&&body.bioId!==undefined&&(typeof body.bioId!=='string'||!uid.test(body.bioId)))fail(422,'INVALID');
+     operation='publish';args=[draftId,body.expectedVersion,body.bioId??null,id];
+    } else {
+     // A revert is anchored on the draft being reverted, so the body also names
+     // the publication whose payload is being restored.
+     keys(body,['expectedVersion','publicationId']);
+     if(!Number.isSafeInteger(body.publicationId)||body.publicationId<1)fail(422,'INVALID');
+     operation='revert';args=[body.publicationId,id];
+    }
    } else {
     const path=url.pathname.match(/^\/api\/admin\/v1\/bio-drafts\/([0-9a-f-]{36})\/(submit|review)$/i);
     if(!path || request.method!=='POST' || url.search)fail(404,'NOT_FOUND');
@@ -157,7 +215,21 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     if(rows.length!==1 || !expiry || !Number.isFinite(Date.parse(expiry)))fail(503,'UNAVAILABLE');
     return json(200,{expires_at:new Date(expiry).toISOString(),request_id:id});
    }
-   if(['list','staffList','reviewQueue','platformList','categoryList','collectionList','generatorList','seoList','settingList','mySessions','auditLogs','roleCatalog'].includes(operation))return json(200,{items:rows,request_id:id});
+   if(['list','staffList','reviewQueue','platformList','categoryList','collectionList','generatorList','seoList','settingList','mySessions','auditLogs','roleCatalog','publications','notificationList','publicationJobList','backupList','bioList'].includes(operation))return json(200,{items:rows,request_id:id});
+   if(operation==='notificationRead'){
+    // An UPDATE with no matching rows still returns exactly one row, so the count
+    // is read from a single value column rather than inferred from row count.
+    if(rows.length!==1)fail(503,'UNAVAILABLE');
+    const marked=Number(rows[0]?.marked);
+    if(!Number.isSafeInteger(marked)||marked<0)fail(503,'UNAVAILABLE');
+    return json(200,{marked,request_id:id});
+   }
+   if(operation==='staffUpdate'){if(rows.length!==1||!Number.isSafeInteger(Number(rows[0]?.row_version)))fail(503,'UNAVAILABLE');return json(200,{row_version:Number(rows[0].row_version),request_id:id});}
+   if(operation==='publish'){
+    if(rows.length!==1||typeof rows[0]?.bio_id!=='string'||!['created','updated','archived','restored'].includes(rows[0]?.action))fail(503,'UNAVAILABLE');
+    return json(200,{bio_id:rows[0].bio_id,action:rows[0].action,request_id:id});
+   }
+   if(operation==='revert'){if(rows.length!==1||typeof rows[0]?.revert_draft!=='string'||!uid.test(rows[0].revert_draft))fail(503,'UNAVAILABLE');return json(201,{draft_id:rows[0].revert_draft,request_id:id});}
    if(operation==='analytics')return json(200,{metrics:rows,request_id:id});
 
    if(operation==='settingUpdate'){if(rows.length!==1||!Number.isSafeInteger(rows[0]?.version))fail(503,'UNAVAILABLE');return json(200,{version:rows[0].version,request_id:id});}
@@ -177,6 +249,8 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
    if(code==='40001'||code==='23505')return json(409,{error:{code:'CONFLICT',request_id:id}});
    if(code==='22023'||code==='23514')return json(422,{error:{code:'INVALID',request_id:id}});
    if(code==='28000')return json(403,{error:{code:'STEP_UP_REQUIRED',request_id:id}});
+   // P0002: the named resource does not exist (as opposed to a malformed one).
+   if(code==='P0002')return json(404,{error:{code:'NOT_FOUND',request_id:id}});
    return json(503,{error:{code:'UNAVAILABLE',request_id:id}});
   }
  };

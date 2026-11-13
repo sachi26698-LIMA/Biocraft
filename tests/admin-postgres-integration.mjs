@@ -27,7 +27,7 @@ try {
  create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
  create function auth.uid() returns uuid language sql stable as $$select nullif(auth.jwt()->>'sub','')::uuid$$;`);
  await admin.query(fs.readFileSync('supabase/migrations/0001_initial_schema.sql','utf8'));
- for(const name of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','007_staff_commands.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql','011_totp_enrolment.sql','012_recovery_and_cleanup.sql'])
+ for(const name of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','007_staff_commands.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql','011_totp_enrolment.sql','012_recovery_and_cleanup.sql','013_publication_bridge.sql','014_module_read_surface.sql'])
   await admin.query(fs.readFileSync(`admin-backend/migrations/${name}`,'utf8'));
  await admin.query(fs.readFileSync('supabase/migrations/0002_rls_policies.sql','utf8'));
  await admin.query(`insert into auth.users values('${uid}'); insert into auth.sessions values('${sid}','${uid}');
@@ -41,6 +41,9 @@ try {
  bc_admin_v1.list_my_sessions(integer,timestamptz),bc_admin_v1.list_audit_logs(integer,bigint),bc_admin_v1.enrolment_eligible(uuid),
  bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),bc_admin_v1.revoke_recovery_grant(uuid,uuid),
  bc_admin_v1.consume_recovery_grant(bytea,uuid),bc_admin_v1.recovery_grant_state(uuid),bc_admin_v1.reset_factor_enrolment(uuid,uuid),
+ bc_admin_v1.publish_bio_draft(uuid,bigint,uuid,uuid),bc_admin_v1.list_bio_publications(uuid,integer,bigint),bc_admin_v1.create_revert_draft(bigint,uuid),
+ bc_admin_v1.list_my_notifications(integer,timestamptz),bc_admin_v1.mark_notifications_read(timestamptz),bc_admin_v1.list_publication_jobs(integer,uuid),
+ bc_admin_v1.list_backup_records(integer,timestamptz),bc_admin_v1.list_public_bios(integer,uuid,text,text,boolean),
  bc_admin_v1.cleanup_expired(text,integer,uuid),bc_admin_v1.factor_gate(uuid) to bc_fixture_executor;
  -- Synthetic public rows so module reads have deterministic content.
  insert into public.platforms(name,slug,is_active,sort_order) values('Instagram','instagram',true,1),('Hidden','hidden',false,2);
@@ -270,6 +273,166 @@ try {
  assert.equal((await RG.resetFactorEnrolment({execute:exec,identity:issuer,targetUserId:target})),false);
  const resetAudit=await admin.query("select details from bc_admin_v1.admin_audit_logs where action='auth.recovery.factor_reset' order by id");
  assert.deepEqual(resetAudit.rows.map(r=>r.details.reset),[true,false]);
+ // ---- 013: the reviewed publication bridge, end to end ----
+ // Three distinct acting identities: an author, an independent reviewer and an
+ // independent publisher. The bridge must refuse any two of them collapsing.
+ const author='33333333-3333-4333-8333-333333333333', reviewer='44444444-4444-4444-8444-444444444444',
+       publisher='55555555-5555-4555-8555-555555555555', asid='cccccccc-cccc-4ccc-8ccc-cccccccccc01',
+       rsid='cccccccc-cccc-4ccc-8ccc-cccccccccc02', psid='cccccccc-cccc-4ccc-8ccc-cccccccccc03';
+ for (const [person, session] of [[author,asid],[reviewer,rsid],[publisher,psid]]) {
+  await admin.query('insert into auth.users(id) values($1) on conflict do nothing',[person]);
+  await admin.query('insert into auth.sessions(id,user_id) values($1,$2) on conflict do nothing',[session,person]);
+  await admin.query('insert into bc_admin_v1.admin_users(id,enabled) values($1,true) on conflict do nothing',[person]);
+ }
+ // The author needs content.draft only; the reviewer must be able to approve;
+ // the publisher needs content.publish and must be a third identity — so the
+ // publisher is admin (which also holds content.draft, needed below to open a
+ // revert) while the reviewer stays content_manager.
+ for (const [person, role] of [[author,'editor'],[reviewer,'content_manager'],[publisher,'admin']]) {
+  await admin.query('delete from bc_admin_v1.admin_user_roles where user_id=$1',[person]);
+  await admin.query('insert into bc_admin_v1.admin_user_roles(user_id,role_id) values($1,$2)',[person,role]);
+ }
+
+ const idFor = (person) => ({identity:{userId:person,sessionId:{[author]:asid,[reviewer]:rsid,[publisher]:psid}[person],assuranceLevel:'aal2',mfaVerifiedAt:Math.floor(Date.now()/1000)}});
+ const asAuthor = idFor(author), asReviewer = idFor(reviewer), asPublisher = idFor(publisher);
+ // require_actor also demands a live Admin session row, so each acting identity
+ // opens one exactly as the real login flow does.
+ for (const identity of [asAuthor, asReviewer, asPublisher]) await tryOpen(identity);
+ // A draft with a real payload, created by the author.
+ const payload = Object.freeze({content:'Published through the reviewed bridge',language:'en',platform:'instagram',active:true,featured:false});
+ const pubDraft = (await exec({...asAuthor,operation:'create',args:['publication-test',JSON.stringify(payload),randomUUID()]}))[0].draft_id;
+ // Not approved yet: publication is refused, and it is refused for everyone.
+ await assert.rejects(exec({...asPublisher,operation:'publish',args:[pubDraft,1,null,randomUUID()]}),e=>e.code==='42501');
+ // Submit, then review. The reviewer must be independent of the author.
+ await exec({...asAuthor,operation:'submit',args:[pubDraft,1,reviewer,randomUUID()]});
+ await exec({...asReviewer,operation:'reviewApprove',args:[pubDraft,2,randomUUID()]});
+ // Three refusals: a stale version, the author publishing their own work, and a
+ // publisher who was also the approver. Each fails on a distinct rule.
+ await assert.rejects(exec({...asPublisher,operation:'publish',args:[pubDraft,1,null,randomUUID()]}),e=>e.code==='40001');
+ await assert.rejects(exec({...asAuthor,operation:'publish',args:[pubDraft,3,null,randomUUID()]}),e=>e.code==='42501');
+ await assert.rejects(exec({...asReviewer,operation:'publish',args:[pubDraft,3,null,randomUUID()]}),e=>e.code==='42501');
+ // The real publication: one new row in public.bios, one draft now published.
+ const before = (await admin.query('select count(*)::int n from public.bios')).rows[0].n;
+ const published = (await exec({...asPublisher,operation:'publish',args:[pubDraft,3,null,randomUUID()]}))[0];
+ assert.equal(published.action,'created');
+ assert.equal((await admin.query('select count(*)::int n from public.bios')).rows[0].n, before+1);
+ const row = await admin.query('select b.id,b.content,b.language,b.source_slug,b.is_active,p.slug platform from public.bios b join public.platforms p on p.id=b.platform_id where b.id=$1',[published.bio_id]);
+ assert.equal(row.rows[0].content,payload.content);
+ assert.equal(row.rows[0].source_slug,'publication-test');
+ assert.equal(row.rows[0].platform,'instagram');
+ assert.equal((await admin.query('select state from bc_admin_v1.admin_drafts where id=$1',[pubDraft])).rows[0].state,'published');
+ // Publishing is single-shot: the draft is no longer approved, so a replay fails.
+ await assert.rejects(exec({...asPublisher,operation:'publish',args:[pubDraft,4,null,randomUUID()]}),e=>e.code==='42501');
+ // Idempotency: the same text in a new draft of the same key cannot duplicate a row.
+ const again = (await exec({...asAuthor,operation:'create',args:['publication-test',JSON.stringify(payload),randomUUID()]}))[0].draft_id;
+ await exec({...asAuthor,operation:'submit',args:[again,1,reviewer,randomUUID()]});
+ await exec({...asReviewer,operation:'reviewApprove',args:[again,2,randomUUID()]});
+ const republished = (await exec({...asPublisher,operation:'publish',args:[again,3,null,randomUUID()]}))[0];
+ assert.equal(republished.action,'restored');
+ assert.equal(republished.bio_id,published.bio_id);
+ assert.equal((await admin.query('select count(*)::int n from public.bios where source_slug=$1 and md5(content)=md5($2)',['publication-test',payload.content])).rows[0].n,1);
+ // Archive through the same reviewed path: is_active false, and the row survives.
+ const archivedDraft = (await exec({...asAuthor,operation:'create',args:['publication-test-archive',JSON.stringify({...payload,content:'Archive me',active:true}),randomUUID()]}))[0].draft_id;
+ await exec({...asAuthor,operation:'submit',args:[archivedDraft,1,reviewer,randomUUID()]});
+ await exec({...asReviewer,operation:'reviewApprove',args:[archivedDraft,2,randomUUID()]});
+ const created = (await exec({...asPublisher,operation:'publish',args:[archivedDraft,3,null,randomUUID()]}))[0];
+ const hideDraft = (await exec({...asAuthor,operation:'create',args:['publication-test-archive',JSON.stringify({...payload,content:'Archive me',active:false}),randomUUID()]}))[0].draft_id;
+ await exec({...asAuthor,operation:'submit',args:[hideDraft,1,reviewer,randomUUID()]});
+ await exec({...asReviewer,operation:'reviewApprove',args:[hideDraft,2,randomUUID()]});
+ const hidden = (await exec({...asPublisher,operation:'publish',args:[hideDraft,3,created.bio_id,randomUUID()]}))[0];
+ assert.equal(hidden.action,'archived');
+ assert.equal((await admin.query('select is_active from public.bios where id=$1',[created.bio_id])).rows[0].is_active,false);
+ assert.equal((await admin.query('select count(*)::int n from public.bios where id=$1',[created.bio_id])).rows[0].n,1);
+ // History is readable, append-only, and names the actor and the version.
+ const history = await exec({...asPublisher,operation:'publications',args:[created.bio_id,50,null]});
+ assert.equal(history.length,2);
+ assert.deepEqual(history.map(r=>r.action),['archived','created']);
+ await assert.rejects(admin.query("update bc_admin_v1.admin_bio_publications set action='updated' where bio_id=$1",[created.bio_id]),/append-only/);
+ await assert.rejects(admin.query('delete from bc_admin_v1.admin_bio_publications where bio_id=$1',[created.bio_id]),/append-only/);
+ // Rollback opens a reviewed revert draft; it does not silently rewrite the row.
+ const revert = (await exec({...asPublisher,operation:'revert',args:[history[1].id,randomUUID()]}))[0].revert_draft;
+ const reverting = await admin.query("select d.state,v.payload from bc_admin_v1.admin_drafts d join bc_admin_v1.admin_content_versions v on v.id=d.version_id where d.id=$1",[revert]);
+ assert.equal(reverting.rows[0].state,'draft');
+ assert.equal(reverting.rows[0].payload.content,'Archive me');
+ assert.equal((await admin.query('select is_active from public.bios where id=$1',[created.bio_id])).rows[0].is_active,false,'a revert must not change the published row until it is itself reviewed and published');
+ // An executor that is not a member of anything cannot reach the bridge at all.
+ await assert.rejects(exec({identity:{userId:randomUUID(),sessionId:psid,assuranceLevel:'aal2',mfaVerifiedAt:Math.floor(Date.now()/1000)},operation:'publish',args:[pubDraft,3,null,randomUUID()]}),e=>e.code==='42501');
+ // And audit evidence exists for every publication attempt that succeeded.
+ const publishAudit=await admin.query("select details from bc_admin_v1.admin_audit_logs where action='draft.published' order by id");
+ // Four successful publications: two new rows (the deduplicated re-publish is a
+ // 'restored', not a second 'created'), then the reviewed archive.
+ assert.equal(publishAudit.rows.length,4);
+ assert.deepEqual(publishAudit.rows.map(r=>r.details.publication),['created','restored','created','archived']);
+
+ // ---- 014: module read surface and the notification writer ----
+ // The inbox only ever shows the caller's rows, and the writer records the three
+ // events that matter: assigned, decided, published.
+ const inboxAuthor = await exec({...asAuthor,operation:'notificationList',args:[50,null]});
+ // Four drafts were published above, each producing one decision and exactly one
+ // publication notice. Counted per category, not by row order: the two rows of a
+ // single draft share a timestamp, so their relative order is not a contract.
+ const byCategory = (rows) => rows.reduce((acc,row)=>({...acc,[row.category]:(acc[row.category]??0)+1}),{});
+ assert.deepEqual(byCategory(inboxAuthor),{'content.published':4,'review.decided':4});
+ assert.equal(inboxAuthor.every(n=>n.unread),true);
+ assert.equal(inboxAuthor.every(n=>n.message.length>0 && n.message.length<=1000),true);
+ const inboxReviewer = await exec({...asReviewer,operation:'notificationList',args:[50,null]});
+ // One assignment per submission (four), and the reviewer is never notified of a
+ // decision it made itself.
+ assert.deepEqual(byCategory(inboxReviewer),{'review.assigned':4});
+ // Reading and marking are scoped to the session, so one member cannot clear
+ // another member's inbox: the marked count is this caller's rows only.
+ const marked = Number((await exec({...asReviewer,operation:'notificationRead',args:[null]}))[0].marked);
+ assert.equal(marked,4);
+ assert.equal((await exec({...asReviewer,operation:'notificationList',args:[50,null]})).every(n=>!n.unread),true);
+ assert.equal((await exec({...asAuthor,operation:'notificationList',args:[50,null]})).every(n=>n.unread),true,'marking must not cross accounts');
+ // Keyset paging walks backwards without repeating or skipping.
+ const newest = await exec({...asAuthor,operation:'notificationList',args:[1,null]});
+ const older = await exec({...asAuthor,operation:'notificationList',args:[50,newest[0].created_at]});
+ assert.ok(older.every(n=>new Date(n.created_at)<=new Date(newest[0].created_at)));
+ assert.ok(!older.some(n=>n.id===newest[0].id),'the cursor row must not repeat');
+ // A notification can never block the workflow step that produced it.
+ await admin.query("alter table bc_admin_v1.admin_notifications add constraint test_only_block check (message <> 'never')");
+ // Publication jobs are evidence, readable with content.read, newest first by id.
+ // `admin_publication_jobs.id` defaults to gen_random_uuid(), so id order is not
+ // creation order; the assertion is about completeness and shape, not order.
+ const jobs = await exec({...asAuthor,operation:'publicationJobList',args:[50,null]});
+ assert.equal(jobs.length,4);
+ assert.equal(jobs.every(j=>j.state==='succeeded'),true);
+ assert.deepEqual([...new Set(jobs.map(j=>j.resource_key))].sort(),['publication-test','publication-test-archive']);
+ // 013 publishes into public.bios in the same database the public site reads, so
+ // the job record says 'production'. That label is the honest one: a publication
+ // is visible to guests immediately. It is not a preview copy.
+ assert.equal(jobs.every(j=>j.target_environment==='production'),true);
+ // Backup history is empty and says so honestly rather than erroring.
+ assert.deepEqual(await exec({...asPublisher,operation:'backupList',args:[50,null]}),[]);
+ // The live bio library sees inactive rows and pages by id.
+ const lib = await exec({...asAuthor,operation:'bioList',args:[100,null,null,null,null]});
+ assert.ok(lib.length>=2);
+ assert.ok(lib.some(b=>b.is_active===false),'the library must include archived rows');
+ assert.deepEqual((await exec({...asAuthor,operation:'bioList',args:[100,null,null,null,true]})).every(b=>b.is_active),true);
+ // Search is an escaped, case-insensitive substring match over title and content.
+ // A distinctive phrase keeps the assertion about the feature, not about words
+ // that an unrelated fixture row happens to contain.
+ const hits = await exec({...asAuthor,operation:'bioList',args:[100,null,'archive me',null,null]});
+ assert.equal(hits.length,1);
+ assert.equal(hits[0].source_slug,'publication-test-archive');
+ // '%' and '_' are ordinary characters, not wildcards: no fixture content contains
+ // a literal percent sign or underscore, so neither may match everything.
+ assert.deepEqual(await exec({...asAuthor,operation:'bioList',args:[100,null,'%',null,null]}),[]);
+ assert.deepEqual(await exec({...asAuthor,operation:'bioList',args:[100,null,'_',null,null]}),[]);
+ // Case-insensitive, and an empty search is "everything", not "nothing".
+ assert.equal((await exec({...asAuthor,operation:'bioList',args:[100,null,'ARCHIVE ME',null,null]})).length,1);
+ assert.equal((await exec({...asAuthor,operation:'bioList',args:[100,null,'',null,null]})).length,lib.length);
+ assert.equal((await exec({...asAuthor,operation:'bioList',args:[100,null,null,'en',null]})).every(b=>b.language==='en'),true);
+ // Bad paging is refused, not silently clamped.
+ await assert.rejects(exec({...asAuthor,operation:'bioList',args:[101,null,null,null,null]}),e=>e.code==='22023');
+ await assert.rejects(exec({...asAuthor,operation:'bioList',args:[10,null,null,'xx',null]}),e=>e.code==='22023');
+ // An account with no membership reads nothing at all.
+ const stranger='66666666-6666-4666-8666-666666666666';
+ await admin.query('insert into auth.users(id) values($1) on conflict do nothing',[stranger]);
+ await admin.query('insert into bc_admin_v1.admin_users(id,enabled) values($1,false) on conflict do nothing',[stranger]);
+ await assert.rejects(exec({identity:{userId:stranger,sessionId:psid,assuranceLevel:'aal2',mfaVerifiedAt:Math.floor(Date.now()/1000)},operation:'notificationList',args:[50,null]}),e=>e.code==='42501');
+
  // ---- cleanup: expired rows only, bounded, audited, never audit evidence ----
  const auditBefore=(await admin.query("select count(*)::int n from bc_admin_v1.admin_audit_logs")).rows[0].n;
  await admin.query("insert into bc_admin_v1.admin_login_flows(flow_hash,encrypted_data,expires_at) values(gen_random_bytes(32),gen_random_bytes(40),now()-interval '2 hours'),(gen_random_bytes(32),gen_random_bytes(40),now()+interval '1 hour')");

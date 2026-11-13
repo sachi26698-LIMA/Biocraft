@@ -64,6 +64,19 @@ const OPERATIONS = Object.freeze({
   recoveryRedeem: {permission:null,sql:'select bc_admin_v1.consume_recovery_grant($1::bytea,$2::uuid) as outcome'},
   // Cleanup (012) is bounded, locked and audited; settings.manage is Super Admin.
   cleanupExpired: {permission:'settings.manage',sql:'select bc_admin_v1.cleanup_expired($1,$2::integer,$3::uuid) as deleted'},
+  // 013 publication bridge. All three re-check their own permission inside SQL;
+  // the declaration here is defence in depth, not the only check.
+  publish: {permission:'content.publish',sql:'select * from bc_admin_v1.publish_bio_draft($1::uuid,$2::bigint,$3::uuid,$4::uuid)'},
+  publications: {permission:'content.read',sql:'select * from bc_admin_v1.list_bio_publications($1::uuid,$2::integer,$3::bigint)'},
+  revert: {permission:'content.draft',sql:'select bc_admin_v1.create_revert_draft($1::bigint,$2::uuid) as revert_draft'},
+  // 007 staff administration was implemented in SQL but had no route until now.
+  staffUpdate: {permission:'staff.manage',sql:'select bc_admin_v1.update_staff($1::uuid,$2::bigint,$3::boolean,$4::text[],$5::uuid) as row_version'},
+  // 014: read surface for the modules that had tables but no command.
+  notificationList: {permission:'dashboard.read',sql:'select * from bc_admin_v1.list_my_notifications($1::integer,$2::timestamptz)'},
+  notificationRead: {permission:'dashboard.read',sql:'select bc_admin_v1.mark_notifications_read($1::timestamptz) as marked'},
+  publicationJobList: {permission:'content.read',sql:'select * from bc_admin_v1.list_publication_jobs($1::integer,$2::uuid)'},
+  backupList: {permission:'settings.read',sql:'select * from bc_admin_v1.list_backup_records($1::integer,$2::timestamptz)'},
+  bioList: {permission:'content.read',sql:'select * from bc_admin_v1.list_public_bios($1::integer,$2::uuid,$3::text,$4::text,$5::boolean)'},
   sessionRevoke: {permission:'dashboard.read',sql:'select bc_admin_v1.revoke_admin_session($1::uuid)'},
   sessionRevokeAll: {permission:'dashboard.read',sql:'select bc_admin_v1.revoke_my_sessions($1::uuid) as revoked'},
   sessionCheck: {permission:'dashboard.read',sql:'select true as active'},
@@ -97,7 +110,7 @@ const OPERATIONS = Object.freeze({
 // event. Missing amr data fails closed. This is independent of, and does not
 // replace, per-row permission checks and locks inside the transaction.
 const PRE_AAL2 = new Set(['enrolmentEligible','factorGate','recoveryState','recoveryRedeem']);
-const STEP_UP = new Set(['create','draftUpdate','submit','reviewApprove','reviewReject','staffUpdate','sessionRevokeAll','settingUpdate','recoveryIssue','recoveryRevoke','factorReset','cleanupExpired']);
+const STEP_UP = new Set(['create','draftUpdate','submit','reviewApprove','reviewReject','staffUpdate','sessionRevokeAll','settingUpdate','recoveryIssue','recoveryRevoke','factorReset','cleanupExpired','publish','revert']);
 export function createDatabaseExecutor(pool,{maxMfaAgeMs=10*60*1000,now=Date.now}={}) {
  if (!pool || typeof pool.connect !== 'function' || !Number.isSafeInteger(maxMfaAgeMs) || maxMfaAgeMs<60000 || typeof now!=='function') throw new Error('Database pool required');
  return async function execute({identity,operation,args}) {

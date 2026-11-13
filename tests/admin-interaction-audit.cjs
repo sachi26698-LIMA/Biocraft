@@ -26,4 +26,24 @@ if(label==='desktop'){
  await p.goto(`${base}/admin/generators`,{waitUntil:'networkidle'});let hrefs=await p.locator('tbody tr a').evaluateAll(as=>as.map(a=>a.getAttribute('href')));
  for(const href of hrefs){await p.goto(`${base}/admin/generators`,{waitUntil:'networkidle'});await p.locator(`tbody a[href="${href}"]`).click();await p.waitForLoadState('networkidle');assert.equal(new URL(p.url()).pathname,href);assert.equal(await p.locator('.ad-app').count(),0);toolLinks++;}
 }
-assert.deepEqual(errors,[]);assert.deepEqual(failures,[]);assert.deepEqual(badResponses,[]);assert.deepEqual(requests,[]);output.push({label,sidebarLinks:nav.length,toolLinks,stickyTop:sticky.y,pageErrors:errors.length,failedRequests:failures.length,httpErrors:badResponses.length,privilegedOrSupabaseRequests:requests.length});await context.close();}console.log(JSON.stringify(output,null,2));}finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});
+// The shell probes /api/admin/v1/health exactly once so it can fail closed, and a
+ // static preview host has no such route, so the browser logs one 404 for it. That
+ // is the designed outcome; the assertion is that the probe is the *only* API call
+ // and the *only* 4xx, so a real broken request still fails this test.
+const isProbe=url=>/\/api\/admin\/v1\/health$/.test(url);
+assert.deepEqual(errors.filter(e=>!/status of 404/.test(e)),[]);
+assert.deepEqual(failures.filter(r=>!(isProbe(r.url)&&/ERR_ABORTED/.test(r.failure))),[]);
+assert.deepEqual(badResponses.filter(r=>!isProbe(r.url)),[]);
+assert.deepEqual(requests.filter(url=>!isProbe(url)),[]);
+// The probe may run more than once (a remount re-probes); what matters is that
+ // every 4xx is that probe and nothing else.
+ assert.ok(badResponses.length>=1,'the shell must probe the backend so it can fail closed');
+assert.ok(requests.every(isProbe),'a privileged endpoint was called from the preview shell');// Counted honestly: probes are reported separately from real faults, so a
+ // passing run cannot look like a failing one in the JSON.
+ const probeCount=badResponses.length;
+ output.push({label,sidebarLinks:nav.length,toolLinks,stickyTop:sticky.y,
+  pageErrors:errors.filter(e=>!/status of 404/.test(e)).length,
+  failedRequests:failures.filter(r=>!(isProbe(r.url)&&/ERR_ABORTED/.test(r.failure))).length,
+  httpErrors:badResponses.filter(r=>!isProbe(r.url)).length,
+  privilegedOrSupabaseRequests:requests.filter(url=>!isProbe(url)).length,
+  failClosedProbes:probeCount});await context.close();}console.log(JSON.stringify(output,null,2));}finally{await browser.close()}})().catch(e=>{console.error(e);process.exit(1)});

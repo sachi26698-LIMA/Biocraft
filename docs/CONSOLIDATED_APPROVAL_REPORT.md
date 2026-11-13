@@ -275,12 +275,16 @@ No table, sequence, column or schema-`CREATE` privilege is granted.
 
 ### 6b. SHA-256 of every file in the package
 
-25 files: 12 migrations, 12 rollbacks, 1 canonical grant file. Regenerate the same
-list with
+<!-- admin-sync:totals:start -->
+20 tables. 48 functions = 43 callable SECURITY DEFINER + 5 trigger bodies. 43 granted signatures. 14 forward migrations, 14 rollbacks and 1 grant file (`29` SQL files).
+<!-- admin-sync:totals:end -->
+
+Regenerate the same list with
 `sha256sum admin-backend/migrations/*.sql admin-backend/rollback/*.sql admin-backend/grants/executor-grants.sql`
 and compare; `test:admin-grant-inventory` fails if any value here, or in the
 security review, stops matching the bytes on disk.
 
+<!-- admin-sync:checksums:start -->
 - `admin-backend/migrations/001_admin_foundation.sql` — `54d52c1f1d74cf492f431ee46f761313beefd6493e4ff2e918cde97ebb7c7db7`
 - `admin-backend/migrations/002_workflow_integrity.sql` — `b23d6e9519ccd5ab4cecf9cbe27c8903a6d6a84ae74b7006fce3e3b08383b822`
 - `admin-backend/migrations/003_permission_catalog.sql` — `37a839dc250d3a51622355e9cc03646d4e39ebeb821922d8117bffa2d5e6c3cb`
@@ -293,6 +297,8 @@ security review, stops matching the bytes on disk.
 - `admin-backend/migrations/010_admin_module_commands.sql` — `5ac31357267a496759aa47b6838baf6ec755ae95c8dd06d0a2616529c775023b`
 - `admin-backend/migrations/011_totp_enrolment.sql` — `4507ed36f5571c92e0d85f1ca017809997be760a05693d5c6306b5f0939ddb21`
 - `admin-backend/migrations/012_recovery_and_cleanup.sql` — `81848c310f3ea16b4aa5bee279660b7d919e2dfd795136dbcfac958332f84f2a`
+- `admin-backend/migrations/013_publication_bridge.sql` — `8c9148fc9ce2fe086daf46ad6700dc16d1327165aa1f9221a90b366a1a506d9c`
+- `admin-backend/migrations/014_module_read_surface.sql` — `5f3a026c8a63a7f28ed24cbddefbb46f3e61517fe0995e6f1519aa97db3ff895`
 - `admin-backend/rollback/001_admin_foundation.sql` — `98b80fd0cd9d0bc3cc1e87da1352a27f29771fd5dd8016d84744dffe9bda1a77`
 - `admin-backend/rollback/002_workflow_integrity.sql` — `9a8b79d9fda725b9efda3cc052aab246dbcf5a5336d84ea8a692733b422b1097`
 - `admin-backend/rollback/003_permission_catalog.sql` — `2d589421922666f3bd93f0c3b0a6bb6f87f77a91c9c3c620f27f0df37f0c20d1`
@@ -305,7 +311,10 @@ security review, stops matching the bytes on disk.
 - `admin-backend/rollback/010_admin_module_commands.sql` — `6b08e5d5895f11322e618a1aecd25ae7ff8600055d74a874964e07098c213e04`
 - `admin-backend/rollback/011_totp_enrolment.sql` — `89f59839ee62c9a5cf9436d8cf6a617f2878fb37cbcd701994d13db0d84ce980`
 - `admin-backend/rollback/012_recovery_and_cleanup.sql` — `99823ea75d85f1a10ba871d1435bb29f9830c745fef010aeef2c85d928fcde96`
-- `admin-backend/grants/executor-grants.sql` — `7c78b58f765d74d33336e7ec79a9777ee15f7662fe40fe5c3823b99258dc035d`
+- `admin-backend/rollback/013_publication_bridge.sql` — `433221b5573aa45e863c81222f2dc41c93fe00684332ab1ee724f1803d187785`
+- `admin-backend/rollback/014_module_read_surface.sql` — `71ee002073871c890d46229648eb6a5e017e5cb4bbb0274b4185436c6072bb06`
+- `admin-backend/grants/executor-grants.sql` — `867811ecec89578f8a90a8295c162911610390d91b0e8902ec4f09fb07206ffe`
+<!-- admin-sync:checksums:end -->
 
 ### 6c. Enrolment gate semantics (011, hardened by 012)
 
@@ -380,7 +389,17 @@ Vercel Cron targets Production only and Production is out of scope.
 
 ## 7. Full SQL (exact bytes to be executed)
 
+Everything the package would execute, verbatim: the twelve forward migrations, then
+their rollbacks, then the single grant statement that actually confers capability.
+Generated from the files themselves by `node scripts/admin-sync-docs.mjs`, so a
+hand-edited copy cannot survive a test run.
+
+<!-- admin-sync:sql:start -->
+## Appendix A — forward migrations, verbatim
+
 ### `001_admin_foundation.sql`
+
+SHA-256 `54d52c1f1d74cf492f431ee46f761313beefd6493e4ff2e918cde97ebb7c7db7`.
 
 ```sql
 -- ISOLATED ADMIN DATABASE ONLY. Never apply to the existing public project.
@@ -560,6 +579,8 @@ commit;
 
 ### `002_workflow_integrity.sql`
 
+SHA-256 `b23d6e9519ccd5ab4cecf9cbe27c8903a6d6a84ae74b7006fce3e3b08383b822`.
+
 ```sql
 -- ISOLATED ADMIN DATABASE ONLY. Candidate integrity guards; no authorization,
 -- identity verification, permission enforcement, audit commands or API grants.
@@ -621,6 +642,8 @@ commit;
 
 ### `003_permission_catalog.sql`
 
+SHA-256 `37a839dc250d3a51622355e9cc03646d4e39ebeb821922d8117bffa2d5e6c3cb`.
+
 ```sql
 -- ISOLATED ADMIN DATABASE ONLY. Permission catalog, not an authorization API.
 -- No user memberships, client grants, or privileges are created. Subject to
@@ -660,6 +683,8 @@ commit;
 ```
 
 ### `004_private_draft_commands.sql`
+
+SHA-256 `554631e23e6497ee6db5ce96d37d773f127eccc6054fd4b22ee4f5b2c48ef3fa`.
 
 ```sql
 -- LOCAL SYNTHETIC FIXTURES ONLY. NOT APPROVED FOR SHARED PROJECT EXECUTION.
@@ -774,6 +799,8 @@ commit;
 
 ### `005_session_commands.sql`
 
+SHA-256 `3b08b1446791796949fdbc61123f6b5ba59473dac79f2530261b23ed269899cb`.
+
 ```sql
 -- LOCAL SYNTHETIC FIXTURES ONLY. NOT APPROVED FOR SHARED PROJECT EXECUTION.
 -- Requires reviewed server-only gateway/SQL roles and confirmed provider
@@ -823,6 +850,8 @@ commit;
 ```
 
 ### `006_auth_controls.sql`
+
+SHA-256 `d4e20279bd722c2ff694bffbfde8897d63dda2235e088119457bbbf0a0b88adb`.
 
 ```sql
 -- LOCAL SYNTHETIC FIXTURES ONLY. No client grants, do not apply to shared DB.
@@ -883,6 +912,8 @@ commit;
 
 ### `007_staff_commands.sql`
 
+SHA-256 `d04c19d37acd213229a8f3088871fc51ae9b2f0b36602e40081437c8ef0b512d`.
+
 ```sql
 -- LOCAL SYNTHETIC FIXTURES ONLY. No client grants. Not approved for shared DB.
 -- Staff role updates use one advisory lock before membership-row locks. Any future
@@ -935,6 +966,8 @@ commit;
 ```
 
 ### `008_bio_edit.sql`
+
+SHA-256 `a4b594c7d3479fad588c026d21a11abe037bf2e4970fd97e8449674bf895c652`.
 
 ```sql
 -- LOCAL DISPOSABLE FIXTURES ONLY; unapproved for the shared project.
@@ -1002,6 +1035,8 @@ commit;
 
 ### `009_recovery_sessions.sql`
 
+SHA-256 `7851eb4f03d97fbcdcd7f62cb00b54437233a2a064f12a911bd5d530b5c5a30b`.
+
 ```sql
 -- LOCAL DISPOSABLE FIXTURES ONLY. Not approved for shared execution.
 -- Must be called only by a verified recovery gateway after successful TOTP.
@@ -1026,6 +1061,8 @@ commit;
 ```
 
 ### `010_admin_module_commands.sql`
+
+SHA-256 `5ac31357267a496759aa47b6838baf6ec755ae95c8dd06d0a2616529c775023b`.
 
 ```sql
 -- LOCAL SYNTHETIC FIXTURES ONLY. NOT APPROVED FOR SHARED PROJECT EXECUTION.
@@ -1208,6 +1245,8 @@ commit;
 
 ### `011_totp_enrolment.sql`
 
+SHA-256 `4507ed36f5571c92e0d85f1ca017809997be760a05693d5c6306b5f0939ddb21`.
+
 ```sql
 -- LOCAL SYNTHETIC FIXTURES ONLY. Not approved for shared execution.
 -- First-factor (TOTP) enrolment gate for an account that has a password session
@@ -1246,14 +1285,9 @@ revoke all on function bc_admin_v1.enrolment_eligible(uuid) from public,anon,aut
 commit;
 ```
 
----
-
 ### `012_recovery_and_cleanup.sql`
 
 SHA-256 `81848c310f3ea16b4aa5bee279660b7d919e2dfd795136dbcfac958332f84f2a`.
-Adds D2 (Super-Admin-authorised recovery, the audited reset that completes it, and
-a hardened replacement for 011's enrolment gate) and D4 (bounded cleanup). One
-nullable column on `admin_users`, two tables, eight functions and one trigger.
 
 ```sql
 -- LOCAL SYNTHETIC FIXTURES ONLY. Not approved for shared execution.
@@ -1614,9 +1648,445 @@ revoke all on function bc_admin_v1.enrolment_eligible(uuid),
 commit;
 ```
 
-## 8. Full rollback SQL
+### `013_publication_bridge.sql`
+
+SHA-256 `8c9148fc9ce2fe086daf46ad6700dc16d1327165aa1f9221a90b366a1a506d9c`.
+
+```sql
+-- CANDIDATE FOR THE SHARED PROJECT. Not executed anywhere yet.
+-- 013: the reviewed publication bridge, plus the history needed to roll a
+-- published bio back.
+--
+-- Until this file, a draft could be created, edited, submitted and approved —
+-- and then stop. `guard_draft` deliberately refused every transition to
+-- queued/published because no reviewed bridge existed. That left the workflow
+-- honest but incomplete: "approve" produced nothing a visitor could see.
+--
+-- This file adds exactly one way for approved content to reach `public.bios`,
+-- with the properties the review demanded:
+--
+--   * two independent people: the publisher may not be the author, and a
+--     matching approval by a third identity must exist;
+--   * approved state only: `draft`, `in_review` or `rejected` cannot publish;
+--   * optimistic concurrency: a stale row_version refuses;
+--   * one transaction: the `public.bios` write, the draft state change, the
+--     publication record and the audit row all commit or none do;
+--   * no deletion: archiving is an `is_active = false` update, never a DELETE,
+--     so the 506 existing bios can be hidden but never destroyed;
+--   * full history: every publication records the bio, the draft, the exact
+--     content version and the actor, so a rollback can name what it restores.
+--
+-- Nothing here alters `public` schema, grants, RLS or policies. The only writes
+-- to `public.bios` are row INSERT/UPDATE performed by this SECURITY DEFINER
+-- function, which is itself reachable only by the limited executor role and only
+-- after `require_actor('content.publish')` succeeds.
+begin;
+
+-- 002's guard refuses every transition to queued/published because no reviewed
+-- bridge existed. The bridge is in this file, so the guard is replaced here with
+-- the one additional edge it needs: approved -> published, and nothing else. It
+-- stays a trigger enforced in the database, so a future command cannot skip it.
+-- The transition is only reachable through publish_bio_draft below, which is the
+-- only function that writes state='published'.
+create or replace function bc_admin_v1.guard_draft() returns trigger
+language plpgsql set search_path=pg_catalog as $$
+declare author uuid; decision text; old_kind text; old_key text; new_kind text; new_key text;
+begin
+ if tg_op='DELETE' then raise exception 'drafts cannot be deleted' using errcode='23514'; end if;
+ select created_by into author from bc_admin_v1.admin_content_versions where id=new.version_id;
+ if author is distinct from new.author_id then raise exception 'version author mismatch' using errcode='23514'; end if;
+ if tg_op='INSERT' then
+  if new.state <> 'draft' or new.row_version <> 1 then raise exception 'must start as draft' using errcode='23514'; end if;
+  return new;
+ end if;
+ if new.id is distinct from old.id or new.author_id is distinct from old.author_id
+    or new.created_at is distinct from old.created_at or new.row_version <> old.row_version+1 then
+  raise exception 'invalid draft identity or version' using errcode='23514';
+ end if;
+ if old.state='draft' and new.state in ('draft','in_review') then
+  select resource_type,resource_key into old_kind,old_key from bc_admin_v1.admin_content_versions where id=old.version_id;
+  select resource_type,resource_key into new_kind,new_key from bc_admin_v1.admin_content_versions where id=new.version_id;
+  if new_kind is distinct from old_kind or new_key is distinct from old_key then
+   raise exception 'draft resource cannot change' using errcode='23514'; end if;
+  if new.state='in_review' and new.assigned_reviewer_id is null then raise exception 'reviewer required' using errcode='23514'; end if;
+ elsif old.state='in_review' and new.state in ('approved','rejected') then
+  if new.version_id is distinct from old.version_id or new.assigned_reviewer_id is distinct from old.assigned_reviewer_id then
+   raise exception 'reviewed version must not change' using errcode='23514'; end if;
+  select a.decision into decision from bc_admin_v1.admin_approvals a
+    where a.draft_id=old.id and a.reviewer_id=old.assigned_reviewer_id;
+  if decision is distinct from new.state then raise exception 'matching decision required' using errcode='23514'; end if;
+ elsif old.state='approved' and new.state='published' then
+  -- 013: the publication bridge. The version and reviewer are frozen, exactly as
+  -- for a review decision; the bridge itself checks separation of duties.
+  if new.version_id is distinct from old.version_id or new.assigned_reviewer_id is distinct from old.assigned_reviewer_id then
+   raise exception 'published version must not change' using errcode='23514'; end if;
+ else
+  raise exception 'invalid or unavailable transition' using errcode='23514';
+ end if;
+ return new;
+end $$;
+
+-- One row per publication event. Append-only, like every other evidence table.
+create table bc_admin_v1.admin_bio_publications (
+ id bigint generated always as identity primary key,
+ bio_id uuid not null,
+ draft_id uuid not null references bc_admin_v1.admin_drafts(id) on delete restrict,
+ version_id uuid not null references bc_admin_v1.admin_content_versions(id) on delete restrict,
+ action text not null check (action in ('created','updated','archived','restored')),
+ actor_id uuid not null references bc_admin_v1.admin_users(id) on delete restrict,
+ published_at timestamptz not null default now(),
+ -- The payload as published, so a later revert restores exactly those bytes even
+ -- if the version row is superseded by newer edits.
+ payload jsonb not null check (jsonb_typeof(payload) = 'object')
+);
+create index admin_bio_publications_bio_idx on bc_admin_v1.admin_bio_publications(bio_id, id desc);
+alter table bc_admin_v1.admin_bio_publications enable row level security;
+create policy deny_clients on bc_admin_v1.admin_bio_publications as restrictive for all to anon, authenticated using (false) with check (false);
+revoke all on bc_admin_v1.admin_bio_publications from public, anon, authenticated;
+-- Publication records are evidence: refuse UPDATE and DELETE outright.
+create trigger publication_no_change before update or delete on bc_admin_v1.admin_bio_publications
+ for each row execute function bc_admin_v1.reject_mutation();
+create trigger publication_no_truncate before truncate on bc_admin_v1.admin_bio_publications
+ for each statement execute function bc_admin_v1.reject_mutation();
+
+-- The bridge. p_bio_id null creates a new row; a value updates that exact row
+-- (edit or archive). Both paths require the same approved two-person state.
+create function bc_admin_v1.publish_bio_draft(p_draft uuid, p_expected bigint, p_bio_id uuid, p_request_id uuid)
+returns table(bio_id uuid, action text)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; d bc_admin_v1.admin_drafts%rowtype; v bc_admin_v1.admin_content_versions%rowtype;
+ p jsonb; target uuid; act text; platform uuid; key_count integer;
+begin
+ if p_draft is null or p_expected is null or p_request_id is null then
+  raise exception 'invalid publication request' using errcode='22023';
+ end if;
+ -- Publish capability is separate from review: an author cannot self-publish.
+ actor := bc_admin_v1.require_actor('content.publish');
+
+ select * into d from bc_admin_v1.admin_drafts where id = p_draft for update;
+ if not found or d.state <> 'approved' then raise exception 'not authorized' using errcode='42501'; end if;
+ if d.row_version <> p_expected then raise exception 'stale version' using errcode='40001'; end if;
+ -- Separation of duties, checked here rather than trusted from the client: the
+ -- publisher is not the author, and an approval by a third identity exists.
+ if d.author_id = actor then raise exception 'self publication refused' using errcode='42501'; end if;
+ if not exists (
+   select 1 from bc_admin_v1.admin_approvals a
+   where a.draft_id = d.id and a.decision = 'approved'
+     and a.reviewer_id <> d.author_id and a.reviewer_id <> actor
+ ) then raise exception 'independent approval required' using errcode='42501'; end if;
+
+ select * into v from bc_admin_v1.admin_content_versions where id = d.version_id;
+ if v.resource_type <> 'bio' then raise exception 'not authorized' using errcode='42501'; end if;
+ p := v.payload;
+ select count(*) into key_count from jsonb_object_keys(p);
+ if key_count <> 5 or not (p ?& array['content','language','platform','active','featured']) then
+  raise exception 'invalid bio payload' using errcode='22023';
+ end if;
+ -- The platform slug is resolved against the live table, so a draft cannot
+ -- introduce a platform that does not exist, and the row keeps its foreign key.
+ select pl.id into platform from public.platforms pl where pl.slug = p->>'platform';
+ if platform is null then raise exception 'unknown platform' using errcode='22023'; end if;
+
+ -- Serialize publication for one logical collection, matching the key the draft
+ -- commands lock, so two publishers cannot race the same source_slug.
+ perform pg_advisory_xact_lock(hashtextextended('bc_admin_v1:bio:' || v.resource_key, 0));
+
+ if p_bio_id is null then
+  -- New row. The unique (source_slug, md5(content)) index makes this idempotent:
+  -- publishing the same text twice adds nothing rather than duplicating.
+  insert into public.bios(platform_id, content, language, is_active, is_featured, source_slug)
+  values (platform, p->>'content', p->>'language', (p->>'active')::boolean, (p->>'featured')::boolean, v.resource_key)
+  on conflict (source_slug, md5(content)) do nothing
+  returning id into target;
+  if target is null then
+   select b.id into target from public.bios b
+    where b.source_slug = v.resource_key and md5(b.content) = md5(p->>'content');
+   act := 'restored';
+  else
+   act := 'created';
+  end if;
+ else
+  -- Existing row: edit or archive. `is_active` comes from the reviewed payload,
+  -- so archiving is a reviewed act too, and no row is ever deleted.
+  update public.bios b
+   set platform_id = platform,
+       content = p->>'content',
+       language = p->>'language',
+       is_active = (p->>'active')::boolean,
+       is_featured = (p->>'featured')::boolean,
+       source_slug = coalesce(b.source_slug, v.resource_key)
+   where b.id = p_bio_id
+   returning b.id into target;
+  if target is null then raise exception 'unknown bio' using errcode='22023'; end if;
+  act := case when (p->>'active')::boolean then 'updated' else 'archived' end;
+ end if;
+
+ update bc_admin_v1.admin_drafts
+  set state = 'published', row_version = row_version + 1, updated_at = now()
+  where id = d.id;
+ insert into bc_admin_v1.admin_bio_publications(bio_id, draft_id, version_id, action, actor_id, payload)
+ values (target, d.id, d.version_id, act, actor, p);
+ insert into bc_admin_v1.admin_publication_jobs(draft_id, target_environment, state, request_hash, scheduled_at, completed_at)
+ values (d.id, 'production', 'succeeded', sha256(convert_to(p::text, 'UTF8')), now(), now());
+ insert into bc_admin_v1.admin_audit_logs(actor_id, request_id, action, target_type, target_id, details)
+ values (actor, p_request_id, 'draft.published', 'bio', target::text,
+         jsonb_build_object('draft_id', d.id, 'version_id', d.version_id, 'publication', act));
+ return query select target, act;
+end $$;
+
+-- Publication history for one bio, newest first: what the rollback screen reads.
+create function bc_admin_v1.list_bio_publications(p_bio_id uuid, p_limit integer, p_before_id bigint)
+returns table(id bigint, bio_id uuid, draft_id uuid, version_id uuid, action text,
+              actor_id uuid, published_at timestamptz, payload jsonb)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid;
+begin
+ actor := bc_admin_v1.require_actor('content.read');
+ if p_bio_id is null or p_limit is null or p_limit < 1 or p_limit > 100
+    or (p_before_id is not null and p_before_id < 0) then
+  raise exception 'invalid page' using errcode='22023';
+ end if;
+ return query select pb.id, pb.bio_id, pb.draft_id, pb.version_id, pb.action,
+                     pb.actor_id, pb.published_at, pb.payload
+  from bc_admin_v1.admin_bio_publications pb
+  where pb.bio_id = p_bio_id and (p_before_id is null or pb.id < p_before_id)
+  order by pb.id desc limit p_limit;
+end $$;
+
+-- Rollback, done the safe way: it does not rewrite history, it opens a new draft
+-- containing the older payload, which then needs the ordinary submit → review →
+-- publish path. So a revert is reviewed by the same two people as any edit.
+create function bc_admin_v1.create_revert_draft(p_publication_id bigint, p_request_id uuid) returns uuid
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; pb bc_admin_v1.admin_bio_publications%rowtype;
+ key text; version_no bigint; vid uuid; did uuid;
+begin
+ actor := bc_admin_v1.require_actor('content.draft');
+ if p_publication_id is null or p_request_id is null then
+  raise exception 'invalid revert request' using errcode='22023';
+ end if;
+ select * into pb from bc_admin_v1.admin_bio_publications where id = p_publication_id;
+ -- P0002 is the project-wide "no such resource" signal, so the HTTP layer can
+ -- answer 404 instead of a vague 422. A malformed id stays 422 above.
+ if not found then raise exception 'unknown publication' using errcode='P0002'; end if;
+ -- The logical key comes from the version that was published, so a revert lands
+ -- in the same collection as the original.
+ select resource_key into key from bc_admin_v1.admin_content_versions where id = pb.version_id;
+ if key is null then raise exception 'unknown publication' using errcode='P0002'; end if;
+ perform pg_advisory_xact_lock(hashtextextended('bc_admin_v1:bio:' || key, 0));
+ select coalesce(max(version_number), 0) + 1 into version_no
+  from bc_admin_v1.admin_content_versions where resource_type = 'bio' and resource_key = key;
+ insert into bc_admin_v1.admin_content_versions(resource_type, resource_key, version_number, payload, payload_sha256, created_by)
+ values ('bio', key, version_no, pb.payload, sha256(convert_to(pb.payload::text, 'UTF8')), actor)
+ returning id into vid;
+ insert into bc_admin_v1.admin_drafts(version_id, author_id) values (vid, actor) returning id into did;
+ insert into bc_admin_v1.admin_audit_logs(actor_id, request_id, action, target_type, target_id, details)
+ values (actor, p_request_id, 'draft.revert_opened', 'draft', did::text,
+         jsonb_build_object('publication_id', pb.id, 'bio_id', pb.bio_id, 'restored_version', pb.version_id));
+ return did;
+end $$;
+
+revoke all on function bc_admin_v1.publish_bio_draft(uuid,bigint,uuid,uuid),
+ bc_admin_v1.list_bio_publications(uuid,integer,bigint),
+ bc_admin_v1.create_revert_draft(bigint,uuid) from public, anon, authenticated;
+commit;
+```
+
+### `014_module_read_surface.sql`
+
+SHA-256 `5f3a026c8a63a7f28ed24cbddefbb46f3e61517fe0995e6f1519aa97db3ff895`.
+
+```sql
+-- 014. Read surface for the modules that had tables but no command: publication
+-- jobs, the notification inbox, backup records, and the live bio library.
+--
+-- Scope discipline: this file creates no table, changes no policy, and grants
+-- nothing to a client. Every read is security definer, revokes EXECUTE from
+-- PUBLIC/anon/authenticated, and re-checks its own permission inside SQL. Nothing
+-- here writes to public.* — publication still goes through 013's reviewed bridge.
+--
+-- The one behavioural addition is the notification writer. `admin_notifications`
+-- existed since 001 with no producer, which would have made an inbox that can
+-- never receive anything — an empty screen pretending to be a working feature. A
+-- trigger now records the three events an administrator actually needs to hear
+-- about: a review was assigned to you, your draft was decided, your work was
+-- published. Notifications are per-recipient rows and are read only by their
+-- owner.
+begin;
+
+-- ---------------------------------------------------------------------------
+-- Notification writer. Trigger-only: EXECUTE is revoked from clients below, so
+-- it cannot be called directly with someone else's recipient.
+-- ---------------------------------------------------------------------------
+create function bc_admin_v1.notify_draft_event() returns trigger
+language plpgsql security definer set search_path=pg_catalog as $$
+declare recipient uuid; kind text; body text; author_of_draft uuid; next_state text;
+begin
+ if tg_table_name = 'admin_bio_publications' then
+  -- Publication is recorded after the draft has moved to 'published', so the
+  -- author is resolved from the publication row itself.
+  select created_by into recipient from bc_admin_v1.admin_content_versions where id = new.version_id;
+  if recipient is null then return null; end if;
+  kind := 'content.published';
+  body := 'Your draft was published (' || new.action || ').';
+ elsif tg_table_name = 'admin_drafts' then
+  -- Publication is notified by the publications trigger below, not here: the
+  -- draft row moves to 'published' inside the same transaction that inserts the
+  -- publication, so notifying from both places would deliver it twice.
+  next_state := new.state;
+  if old.state = next_state or next_state = 'published' then return null; end if;
+  author_of_draft := new.author_id;
+  if old.state = 'draft' and new.state = 'in_review' then
+   recipient := new.assigned_reviewer_id;
+   kind := 'review.assigned';
+   body := 'A draft is waiting for your review.';
+  elsif old.state = 'in_review' and new.state in ('approved','rejected') then
+   recipient := new.author_id;
+   kind := 'review.decided';
+   body := 'Your draft was ' || new.state || '.';
+  else
+   return null;
+  end if;
+ else
+  return null;
+ end if;
+ if recipient is null then return null; end if;
+ -- Self-notification is noise, but only for the case where it is genuinely
+ -- redundant: an author assigned as their own reviewer already knows they wrote
+ -- it. An author being told their own draft was decided is the whole point of the
+ -- inbox, so it is never suppressed.
+ if tg_table_name = 'admin_drafts' and next_state = 'in_review' and recipient = author_of_draft then
+  return null;
+ end if;
+ -- The inbox must never be able to block a workflow step. A notification that
+ -- cannot be stored is dropped rather than rolling back the review or publish.
+ begin
+  insert into bc_admin_v1.admin_notifications(user_id, category, message) values (recipient, kind, left(body, 1000));
+ exception when others then null;
+ end;
+ return null;
+end $$;
+
+revoke all on function bc_admin_v1.notify_draft_event() from public, anon, authenticated;
+
+create trigger admin_drafts_notify after update on bc_admin_v1.admin_drafts
+ for each row execute function bc_admin_v1.notify_draft_event();
+create trigger admin_publications_notify after insert on bc_admin_v1.admin_bio_publications
+ for each row execute function bc_admin_v1.notify_draft_event();
+
+-- ---------------------------------------------------------------------------
+-- Reads.
+-- ---------------------------------------------------------------------------
+
+-- The caller's own inbox, newest first. Nobody can read another member's rows:
+-- the recipient is the authenticated actor, never a parameter.
+create function bc_admin_v1.list_my_notifications(p_limit integer,p_before timestamptz)
+returns table(id uuid,category text,message text,created_at timestamptz,read_at timestamptz,unread boolean)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid;
+begin
+ actor := bc_admin_v1.require_actor('dashboard.read');
+ if p_limit is null or p_limit<1 or p_limit>100 then raise exception 'invalid page' using errcode='22023'; end if;
+ return query select n.id,n.category,n.message,n.created_at,n.read_at,(n.read_at is null)
+  from bc_admin_v1.admin_notifications n
+  where n.user_id = actor and (p_before is null or n.created_at < p_before)
+  order by n.created_at desc, n.id desc limit p_limit;
+end $$;
+
+-- Marking read is a self-service action on the caller's own rows, so it needs no
+-- elevated permission and cannot touch anyone else's message. Bounded by an age
+-- window so a stray call cannot rewrite the whole history.
+create function bc_admin_v1.mark_notifications_read(p_before timestamptz) returns integer
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; changed integer;
+begin
+ actor := bc_admin_v1.require_actor('dashboard.read');
+ if p_before is not null and p_before > now() then raise exception 'invalid window' using errcode='22023'; end if;
+ update bc_admin_v1.admin_notifications set read_at = now()
+  where user_id = actor and read_at is null and (p_before is null or created_at <= p_before);
+ get diagnostics changed = row_count;
+ if changed > 0 then
+  insert into bc_admin_v1.admin_audit_logs(actor_id, request_id, action, target_type, target_id, details)
+  values (actor, gen_random_uuid(), 'notifications.read', 'inbox', actor::text, jsonb_build_object('count', changed));
+ end if;
+ return changed;
+end $$;
+
+-- Publication queue. Read-only: 013 publishes synchronously inside its own
+-- transaction, so a job row here is evidence of what happened, not a work item
+-- that this console can push along. The distinction is stated in the response so
+-- the UI cannot imply a control it does not have.
+create function bc_admin_v1.list_publication_jobs(p_limit integer,p_before uuid)
+returns table(id uuid,draft_id uuid,resource_key text,target_environment text,state text,scheduled_at timestamptz,created_at timestamptz,completed_at timestamptz)
+language plpgsql security definer set search_path=pg_catalog as $$
+begin
+ perform bc_admin_v1.require_actor('content.read');
+ if p_limit is null or p_limit<1 or p_limit>100 then raise exception 'invalid page' using errcode='22023'; end if;
+ return query select j.id,j.draft_id,v.resource_key,j.target_environment,j.state,j.scheduled_at,j.created_at,j.completed_at
+  from bc_admin_v1.admin_publication_jobs j
+  join bc_admin_v1.admin_drafts d on d.id = j.draft_id
+  join bc_admin_v1.admin_content_versions v on v.id = d.version_id
+  where p_before is null or j.id < p_before
+  order by j.id desc limit p_limit;
+end $$;
+
+-- Backup history. These are provider references, never credentials; the console
+-- shows what was requested and whether a restore was verified, nothing more.
+create function bc_admin_v1.list_backup_records(p_limit integer,p_before timestamptz)
+returns table(id uuid,environment text,provider_reference text,state text,requested_at timestamptz,verified_at timestamptz)
+language plpgsql security definer set search_path=pg_catalog as $$
+begin
+ perform bc_admin_v1.require_actor('settings.read');
+ if p_limit is null or p_limit<1 or p_limit>100 then raise exception 'invalid page' using errcode='22023'; end if;
+ return query select b.id,b.environment,b.provider_reference,b.state,b.requested_at,b.verified_at
+  from bc_admin_v1.admin_backup_records b
+  where p_before is null or b.requested_at < p_before
+  order by b.requested_at desc, b.id limit p_limit;
+end $$;
+
+-- The live bio library: every row, active or not, with its platform and category.
+-- Search is a plain case-insensitive substring test (`strpos`), not a LIKE pattern.
+-- That choice is deliberate: a search box that treats `%` or `_` as wildcards lets
+-- a user write a query the operator did not intend, and the escaping dance around
+-- LIKE is exactly where that mistake lives. `strpos` has no pattern language, so
+-- the term can only ever match itself.
+create function bc_admin_v1.list_public_bios(p_limit integer,p_after uuid,p_search text,p_language text,p_active boolean)
+returns table(id uuid,title text,language text,platform_slug text,category_name text,is_active boolean,is_featured boolean,is_trending boolean,character_count integer,source_slug text,created_at timestamptz,updated_at timestamptz)
+language plpgsql security definer set search_path=pg_catalog as $$
+begin
+ perform bc_admin_v1.require_actor('content.read');
+ if p_limit is null or p_limit<1 or p_limit>100 then raise exception 'invalid page' using errcode='22023'; end if;
+ if p_language is not null and p_language not in ('en','hi','hg') then raise exception 'invalid language' using errcode='22023'; end if;
+ if p_search is not null and length(p_search) > 120 then raise exception 'invalid search' using errcode='22023'; end if;
+ return query
+  select b.id,b.title,b.language,p.slug,c.name,b.is_active,b.is_featured,b.is_trending,
+         b.character_count,b.source_slug,b.created_at,b.updated_at
+  from public.bios b
+  left join public.platforms p on p.id = b.platform_id
+  left join public.categories c on c.id = b.category_id
+  where (p_after is null or b.id > p_after)
+    and (p_language is null or b.language = p_language)
+    and (p_active is null or b.is_active = p_active)
+    and (p_search is null
+         or strpos(lower(coalesce(b.title,'')), lower(p_search)) > 0
+         or strpos(lower(b.content), lower(p_search)) > 0)
+  order by b.id limit p_limit;
+end $$;
+
+revoke all on function bc_admin_v1.list_my_notifications(integer,timestamptz),
+ bc_admin_v1.mark_notifications_read(timestamptz),
+ bc_admin_v1.list_publication_jobs(integer,uuid),
+ bc_admin_v1.list_backup_records(integer,timestamptz),
+ bc_admin_v1.list_public_bios(integer,uuid,text,text,boolean) from public, anon, authenticated;
+
+commit;
+```
+
+## Appendix B — rollbacks, verbatim
 
 ### `001_admin_foundation.sql`
+
+SHA-256 `98b80fd0cd9d0bc3cc1e87da1352a27f29771fd5dd8016d84744dffe9bda1a77`.
 
 ```sql
 -- ISOLATED SYNTHETIC ENVIRONMENTS ONLY. DESTRUCTIVE; NEVER RUN ON PRODUCTION.
@@ -1653,6 +2123,8 @@ commit;
 
 ### `002_workflow_integrity.sql`
 
+SHA-256 `9a8b79d9fda725b9efda3cc052aab246dbcf5a5336d84ea8a692733b422b1097`.
+
 ```sql
 -- ISOLATED SYNTHETIC ENVIRONMENTS ONLY. No content is removed.
 begin;
@@ -1665,6 +2137,8 @@ commit;
 ```
 
 ### `003_permission_catalog.sql`
+
+SHA-256 `2d589421922666f3bd93f0c3b0a6bb6f87f77a91c9c3c620f27f0df37f0c20d1`.
 
 ```sql
 -- ISOLATED SYNTHETIC ENVIRONMENTS ONLY. Refuse removal if any membership exists.
@@ -1682,6 +2156,8 @@ commit;
 
 ### `004_private_draft_commands.sql`
 
+SHA-256 `59479d8343d2d85f7e64b9541451abed955f19d8abba95cac49723cfc718f625`.
+
 ```sql
 -- Synthetic fixture only. No content or audit rows are deleted.
 begin;
@@ -1695,6 +2171,8 @@ commit;
 
 ### `005_session_commands.sql`
 
+SHA-256 `14007468a63d0e99d5f4958d42f52b1c8653c83b310312741ea4072ef0ddb822`.
+
 ```sql
 -- Synthetic fixture only. Sessions and audit records are retained.
 begin;
@@ -1704,6 +2182,8 @@ commit;
 ```
 
 ### `006_auth_controls.sql`
+
+SHA-256 `50994d3db55adc9f6c96ed9db64d4468a9ccbb40a4b29955f135b78860906dec`.
 
 ```sql
 -- Synthetic fixtures only; refuses destruction of non-empty rate/flow data.
@@ -1722,6 +2202,8 @@ commit;
 
 ### `007_staff_commands.sql`
 
+SHA-256 `65f6473b705669f5d053f4901f41d4b5ba38948eb8cd2b9e3f536ae50e7d1d8a`.
+
 ```sql
 -- Synthetic fixtures only. Memberships and audits are retained.
 begin;
@@ -1731,6 +2213,8 @@ commit;
 ```
 
 ### `008_bio_edit.sql`
+
+SHA-256 `d788af5f302c37b0758536a88387a53f9f47b849de40fe46bb5f031b0d04b0ad`.
 
 ```sql
 -- Synthetic fixture rollback only; preserves immutable versions and audit data.
@@ -1744,6 +2228,8 @@ commit;
 
 ### `009_recovery_sessions.sql`
 
+SHA-256 `8297b2e082d5e82a034274ba336bc1efb1d06b7502c33cbdc5a18405d2cc0ffa`.
+
 ```sql
 -- Synthetic fixture rollback only; retains sessions and audits.
 begin;
@@ -1752,6 +2238,8 @@ commit;
 ```
 
 ### `010_admin_module_commands.sql`
+
+SHA-256 `6b08e5d5895f11322e618a1aecd25ae7ff8600055d74a874964e07098c213e04`.
 
 ```sql
 -- Local rollback for 010 candidate. Disposable synthetic clusters only.
@@ -1772,6 +2260,8 @@ commit;
 
 ### `011_totp_enrolment.sql`
 
+SHA-256 `89f59839ee62c9a5cf9436d8cf6a617f2878fb37cbcd701994d13db0d84ce980`.
+
 ```sql
 -- Local rollback for 011. Disposable synthetic clusters only.
 begin;
@@ -1782,11 +2272,6 @@ commit;
 ### `012_recovery_and_cleanup.sql`
 
 SHA-256 `99823ea75d85f1a10ba871d1435bb29f9830c745fef010aeef2c85d928fcde96`.
-Refuses while any recovery grant, cleanup run **or** `mfa_enrolled_at` value
-exists — the last check is deliberate: dropping the column would make an account
-that had proven a factor look like a first-time enroller, reopening the
-password-only enrolment path that 012 closes. Before dropping the column it
-restores 011's gate, so the surviving function never references a missing column.
 
 ```sql
 -- Rollback for 012. Drops only the functions and the two tables created by
@@ -1844,3 +2329,163 @@ drop table bc_admin_v1.admin_cleanup_runs;
 alter table bc_admin_v1.admin_users drop column mfa_enrolled_at;
 commit;
 ```
+
+### `013_publication_bridge.sql`
+
+SHA-256 `433221b5573aa45e863c81222f2dc41c93fe00684332ab1ee724f1803d187785`.
+
+```sql
+-- Rollback for 013. Drops only the three functions and the table this file
+-- creates. It never touches `public.bios`: rows that were published stay exactly
+-- as they are, because reversing a permission is not the same as deleting a
+-- visitor's content. If an operator wants a published row hidden, that is an
+-- ordinary reviewed archive (is_active = false), not a rollback side effect.
+--
+-- It refuses while publication history exists, because that history is the only
+-- record of which bio came from which draft and by whose approval.
+begin;
+do $$
+declare n integer;
+begin
+ select count(*) into n from bc_admin_v1.admin_bio_publications;
+ if n > 0 then raise exception 'refusing rollback: % publication records exist', n; end if;
+end $$;
+drop function bc_admin_v1.create_revert_draft(bigint,uuid);
+drop function bc_admin_v1.list_bio_publications(uuid,integer,bigint);
+drop function bc_admin_v1.publish_bio_draft(uuid,bigint,uuid,uuid);
+drop table bc_admin_v1.admin_bio_publications;
+-- Restore 002's guard, which refused every transition to queued/published. Doing
+-- this before the function that performs the transition is dropped would leave a
+-- window where nothing can publish but the state remains reachable; doing it here
+-- leaves the schema exactly as 001-012 describe it.
+create or replace function bc_admin_v1.guard_draft() returns trigger
+language plpgsql set search_path=pg_catalog as $$
+declare author uuid; decision text; old_kind text; old_key text; new_kind text; new_key text;
+begin
+ if tg_op='DELETE' then raise exception 'drafts cannot be deleted' using errcode='23514'; end if;
+ select created_by into author from bc_admin_v1.admin_content_versions where id=new.version_id;
+ if author is distinct from new.author_id then raise exception 'version author mismatch' using errcode='23514'; end if;
+ if tg_op='INSERT' then
+  if new.state <> 'draft' or new.row_version <> 1 then raise exception 'must start as draft' using errcode='23514'; end if;
+  return new;
+ end if;
+ if new.id is distinct from old.id or new.author_id is distinct from old.author_id
+    or new.created_at is distinct from old.created_at or new.row_version <> old.row_version+1 then
+  raise exception 'invalid draft identity or version' using errcode='23514';
+ end if;
+ if old.state='draft' and new.state in ('draft','in_review') then
+  select resource_type,resource_key into old_kind,old_key from bc_admin_v1.admin_content_versions where id=old.version_id;
+  select resource_type,resource_key into new_kind,new_key from bc_admin_v1.admin_content_versions where id=new.version_id;
+  if new_kind is distinct from old_kind or new_key is distinct from old_key then
+   raise exception 'draft resource cannot change' using errcode='23514'; end if;
+  if new.state='in_review' and new.assigned_reviewer_id is null then raise exception 'reviewer required' using errcode='23514'; end if;
+ elsif old.state='in_review' and new.state in ('approved','rejected') then
+  if new.version_id is distinct from old.version_id or new.assigned_reviewer_id is distinct from old.assigned_reviewer_id then
+   raise exception 'reviewed version must not change' using errcode='23514'; end if;
+  select a.decision into decision from bc_admin_v1.admin_approvals a
+    where a.draft_id=old.id and a.reviewer_id=old.assigned_reviewer_id;
+  if decision is distinct from new.state then raise exception 'matching decision required' using errcode='23514'; end if;
+ else
+  -- No transition to queued/published without the bridge from 013.
+  raise exception 'invalid or unavailable transition' using errcode='23514';
+ end if;
+ return new;
+end $$;
+commit;
+```
+
+### `014_module_read_surface.sql`
+
+SHA-256 `71ee002073871c890d46229648eb6a5e017e5cb4bbb0274b4185436c6072bb06`.
+
+```sql
+-- Rollback for 014. Removes the triggers first so no event can call a function
+-- that is about to disappear, then the five read functions. Rows in
+-- admin_notifications are left in place: they are ordinary records, not schema.
+begin;
+drop trigger if exists admin_publications_notify on bc_admin_v1.admin_bio_publications;
+drop trigger if exists admin_drafts_notify on bc_admin_v1.admin_drafts;
+drop function bc_admin_v1.notify_draft_event();
+drop function bc_admin_v1.list_public_bios(integer,uuid,text,text,boolean);
+drop function bc_admin_v1.list_backup_records(integer,timestamptz);
+drop function bc_admin_v1.list_publication_jobs(integer,uuid);
+drop function bc_admin_v1.mark_notifications_read(timestamptz);
+drop function bc_admin_v1.list_my_notifications(integer,timestamptz);
+commit;
+```
+
+## Appendix C — executor grants, verbatim
+
+### `executor-grants.sql`
+
+SHA-256 `867811ecec89578f8a90a8295c162911610390d91b0e8902ec4f09fb07206ffe`.
+
+```sql
+-- CANONICAL EXECUTOR GRANT LIST. Executed by a human with project access AFTER
+-- migrations 001–012, never by the application, and never as the executor itself.
+--
+-- 43 signatures = 48 functions created by 001–014 minus the 5 trigger bodies
+-- (reject_mutation, guard_draft, guard_approval, stamp_mfa_enrolled). Trigger
+-- functions are invoked by the trigger machinery as the table owner and must not
+-- be granted: a direct EXECUTE would widen the surface for no benefit.
+--
+-- `tests/admin-grant-inventory.mjs` fails if this file and the migrations ever
+-- disagree, so a new function cannot be created without a decision about whether
+-- the executor may call it.
+
+grant usage on schema bc_admin_v1 to bc_admin_executor;
+
+grant execute on function
+  bc_admin_v1.require_actor(text),
+  bc_admin_v1.enrolment_eligible(uuid),
+  bc_admin_v1.factor_gate(uuid),
+  bc_admin_v1.open_admin_session(uuid),
+  bc_admin_v1.revoke_admin_session(uuid),
+  bc_admin_v1.revoke_my_sessions(uuid),
+  bc_admin_v1.store_login_flow(bytea,bytea,integer),
+  bc_admin_v1.take_login_flow(bytea),
+  bc_admin_v1.consume_rate_limit(text,bytea),
+  bc_admin_v1.list_staff(integer,uuid),
+  bc_admin_v1.update_staff(uuid,bigint,boolean,text[],uuid),
+  bc_admin_v1.create_bio_draft(text,jsonb,uuid),
+  bc_admin_v1.update_bio_draft(uuid,bigint,jsonb,uuid),
+  bc_admin_v1.get_bio_draft(uuid),
+  bc_admin_v1.submit_draft(uuid,bigint,uuid,uuid),
+  bc_admin_v1.review_draft(uuid,bigint,boolean,uuid),
+  bc_admin_v1.list_my_bio_drafts(integer,timestamptz,uuid),
+  bc_admin_v1.list_bio_review_queue(integer,timestamptz,uuid),
+  bc_admin_v1.list_platforms(integer,uuid),
+  bc_admin_v1.list_categories(integer,uuid),
+  bc_admin_v1.list_collections(integer,text),
+  bc_admin_v1.list_generators(integer,uuid),
+  bc_admin_v1.list_seo_pages(integer,uuid),
+  bc_admin_v1.analytics_overview(),
+  bc_admin_v1.list_settings(integer,text),
+  bc_admin_v1.update_setting(text,jsonb,bigint,uuid),
+  bc_admin_v1.list_role_catalog(),
+  bc_admin_v1.list_my_sessions(integer,timestamptz),
+  bc_admin_v1.list_audit_logs(integer,bigint),
+  bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),
+  bc_admin_v1.revoke_recovery_grant(uuid,uuid),
+  bc_admin_v1.reset_factor_enrolment(uuid,uuid),
+  bc_admin_v1.consume_recovery_grant(bytea,uuid),
+  bc_admin_v1.recovery_grant_state(uuid),
+  bc_admin_v1.cleanup_expired(text,integer,uuid),
+  bc_admin_v1.publish_bio_draft(uuid,bigint,uuid,uuid),
+  bc_admin_v1.list_bio_publications(uuid,integer,bigint),
+  bc_admin_v1.create_revert_draft(bigint,uuid),
+  bc_admin_v1.list_my_notifications(integer,timestamptz),
+  bc_admin_v1.mark_notifications_read(timestamptz),
+  bc_admin_v1.list_publication_jobs(integer,uuid),
+  bc_admin_v1.list_backup_records(integer,timestamptz),
+  bc_admin_v1.list_public_bios(integer,uuid,text,text,boolean)
+ to bc_admin_executor;
+```
+<!-- admin-sync:sql:end -->
+
+## 8. What was removed from this appendix
+
+Section 8 previously repeated rollbacks and grants in a second, manually
+maintained appendix. That duplication is gone: one generated appendix is the only
+copy, so there is exactly one place that can drift — and it is checked by
+`test:admin-grant-inventory` on every run.

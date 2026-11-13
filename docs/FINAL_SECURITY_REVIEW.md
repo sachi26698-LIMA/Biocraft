@@ -669,8 +669,40 @@ configured and not claimed.
 Tick each line before authorising execution. SHA-256 is of the exact bytes to be
 executed; verify with
 `sha256sum admin-backend/migrations/*.sql admin-backend/rollback/*.sql admin-backend/grants/executor-grants.sql`
-and compare. All 25 files are listed: **12 migrations, 12 rollbacks, 1 grant
-file**. The grant file is included because it is the statement that actually
+and compare.
+
+<!-- admin-sync:checksums:start -->
+- `admin-backend/migrations/001_admin_foundation.sql` — `54d52c1f1d74cf492f431ee46f761313beefd6493e4ff2e918cde97ebb7c7db7`
+- `admin-backend/migrations/002_workflow_integrity.sql` — `b23d6e9519ccd5ab4cecf9cbe27c8903a6d6a84ae74b7006fce3e3b08383b822`
+- `admin-backend/migrations/003_permission_catalog.sql` — `37a839dc250d3a51622355e9cc03646d4e39ebeb821922d8117bffa2d5e6c3cb`
+- `admin-backend/migrations/004_private_draft_commands.sql` — `554631e23e6497ee6db5ce96d37d773f127eccc6054fd4b22ee4f5b2c48ef3fa`
+- `admin-backend/migrations/005_session_commands.sql` — `3b08b1446791796949fdbc61123f6b5ba59473dac79f2530261b23ed269899cb`
+- `admin-backend/migrations/006_auth_controls.sql` — `d4e20279bd722c2ff694bffbfde8897d63dda2235e088119457bbbf0a0b88adb`
+- `admin-backend/migrations/007_staff_commands.sql` — `d04c19d37acd213229a8f3088871fc51ae9b2f0b36602e40081437c8ef0b512d`
+- `admin-backend/migrations/008_bio_edit.sql` — `a4b594c7d3479fad588c026d21a11abe037bf2e4970fd97e8449674bf895c652`
+- `admin-backend/migrations/009_recovery_sessions.sql` — `7851eb4f03d97fbcdcd7f62cb00b54437233a2a064f12a911bd5d530b5c5a30b`
+- `admin-backend/migrations/010_admin_module_commands.sql` — `5ac31357267a496759aa47b6838baf6ec755ae95c8dd06d0a2616529c775023b`
+- `admin-backend/migrations/011_totp_enrolment.sql` — `4507ed36f5571c92e0d85f1ca017809997be760a05693d5c6306b5f0939ddb21`
+- `admin-backend/migrations/012_recovery_and_cleanup.sql` — `81848c310f3ea16b4aa5bee279660b7d919e2dfd795136dbcfac958332f84f2a`
+- `admin-backend/migrations/013_publication_bridge.sql` — `8c9148fc9ce2fe086daf46ad6700dc16d1327165aa1f9221a90b366a1a506d9c`
+- `admin-backend/migrations/014_module_read_surface.sql` — `5f3a026c8a63a7f28ed24cbddefbb46f3e61517fe0995e6f1519aa97db3ff895`
+- `admin-backend/rollback/001_admin_foundation.sql` — `98b80fd0cd9d0bc3cc1e87da1352a27f29771fd5dd8016d84744dffe9bda1a77`
+- `admin-backend/rollback/002_workflow_integrity.sql` — `9a8b79d9fda725b9efda3cc052aab246dbcf5a5336d84ea8a692733b422b1097`
+- `admin-backend/rollback/003_permission_catalog.sql` — `2d589421922666f3bd93f0c3b0a6bb6f87f77a91c9c3c620f27f0df37f0c20d1`
+- `admin-backend/rollback/004_private_draft_commands.sql` — `59479d8343d2d85f7e64b9541451abed955f19d8abba95cac49723cfc718f625`
+- `admin-backend/rollback/005_session_commands.sql` — `14007468a63d0e99d5f4958d42f52b1c8653c83b310312741ea4072ef0ddb822`
+- `admin-backend/rollback/006_auth_controls.sql` — `50994d3db55adc9f6c96ed9db64d4468a9ccbb40a4b29955f135b78860906dec`
+- `admin-backend/rollback/007_staff_commands.sql` — `65f6473b705669f5d053f4901f41d4b5ba38948eb8cd2b9e3f536ae50e7d1d8a`
+- `admin-backend/rollback/008_bio_edit.sql` — `d788af5f302c37b0758536a88387a53f9f47b849de40fe46bb5f031b0d04b0ad`
+- `admin-backend/rollback/009_recovery_sessions.sql` — `8297b2e082d5e82a034274ba336bc1efb1d06b7502c33cbdc5a18405d2cc0ffa`
+- `admin-backend/rollback/010_admin_module_commands.sql` — `6b08e5d5895f11322e618a1aecd25ae7ff8600055d74a874964e07098c213e04`
+- `admin-backend/rollback/011_totp_enrolment.sql` — `89f59839ee62c9a5cf9436d8cf6a617f2878fb37cbcd701994d13db0d84ce980`
+- `admin-backend/rollback/012_recovery_and_cleanup.sql` — `99823ea75d85f1a10ba871d1435bb29f9830c745fef010aeef2c85d928fcde96`
+- `admin-backend/rollback/013_publication_bridge.sql` — `433221b5573aa45e863c81222f2dc41c93fe00684332ab1ee724f1803d187785`
+- `admin-backend/rollback/014_module_read_surface.sql` — `71ee002073871c890d46229648eb6a5e017e5cb4bbb0274b4185436c6072bb06`
+- `admin-backend/grants/executor-grants.sql` — `867811ecec89578f8a90a8295c162911610390d91b0e8902ec4f09fb07206ffe`
+<!-- admin-sync:checksums:end -->
+ The grant file is included because it is the statement that actually
 confers capability — the migrations only define the functions.
 
 **A. Integrity**
