@@ -51,7 +51,7 @@ export function clientKey(request,{trustedHeader,ingressSecret}={}) {
  *   ADMIN_ALLOWED_EMAILS=comma-separated (bootstrap allow-list, optional)
  */
 export function createAdminApp({env=process.env,poolFactory=createPostgresPool,now=()=>Date.now()}={}) {
- const fail=reason=>{const app=()=>new Response(JSON.stringify({error:{code:'UNAVAILABLE'}}),{status:503,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}});app.configuration={enabled:false,reason};return app;};
+ const fail=reason=>{const app=()=>new Response(JSON.stringify({error:{code:'UNAVAILABLE'}}),{status:503,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}});app.configuration={enabled:false,reason};app.shutdown=async()=>{};return app;};
  if (env.ADMIN_BACKEND_ENABLED!=='true') return fail('disabled');
  const origin=env.ADMIN_ORIGIN;
  if (typeof origin!=='string'||!/^https:\/\/[a-z0-9.-]{1,200}$/i.test(origin)) return fail('invalid origin');

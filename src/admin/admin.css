@@ -42,3 +42,18 @@ html.admin-document,html.admin-document body,html.admin-document #root{margin:0;
 @media(max-width:700px) and (prefers-reduced-motion:reduce){.ad-sidebar,.ad-sidebar:not(.ad-sidebar-open){transition:none}}
 .ad-detail-language{display:contents}
 .ad-skeleton i{display:block;height:12px;border-radius:8px;background:var(--ad-soft);margin-top:12px}.ad-skeleton i:nth-of-type(1){width:55%}.ad-skeleton i:nth-of-type(2){width:90%}.ad-skeleton i:nth-of-type(3){width:32%}
+
+/* Admin sign-in: server-side only. No credentials are stored or logged. */
+.ad-sidebar-card a + a{margin-top:7px}
+.ad-auth{max-width:420px;border:1px solid var(--ad-line);border-radius:14px;background:var(--ad-card);padding:22px 20px;display:grid;gap:12px}
+.ad-auth h2{font-size:18px;letter-spacing:-.4px;margin:0}
+.ad-auth p{margin:0;font-size:13px;line-height:1.6;color:var(--ad-muted)}
+.ad-auth form{display:grid;gap:8px}
+.ad-auth label{font-size:11px;font-weight:750;letter-spacing:.5px;text-transform:uppercase;color:var(--ad-muted)}
+.ad-auth input{height:42px;padding:0 12px;border:1px solid var(--ad-line);border-radius:9px;background:var(--ad-soft);color:var(--ad-text);font-size:14px}
+.ad-auth input:focus-visible{outline:2px solid var(--ad-purple);outline-offset:1px}
+.ad-auth button{height:42px;border:0;border-radius:9px;background:#7c5bd0;color:#fff;font-weight:700;font-size:13px;cursor:pointer}
+.ad-auth button:disabled{opacity:.55;cursor:not-allowed}
+.ad-auth-error{color:#b3261e;font-weight:600}
+.ad-dark .ad-auth-error{color:#ffb4ab}
+.ad-auth-note{font-size:11.5px}

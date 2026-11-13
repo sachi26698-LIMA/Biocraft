@@ -41,7 +41,9 @@
     "test:admin-postgres-local": "node tests/run-admin-postgres.mjs",
     "test:admin-auth-sdk-http": "node tests/admin-auth-sdk-http.mjs",
     "test:admin-app-local": "node tests/admin-app-local.mjs",
-    "test:admin-http-smoke": "node tests/admin-http-smoke.mjs"
+    "test:admin-http-smoke": "node tests/admin-http-smoke.mjs",
+    "test:admin-node-adapter": "node tests/admin-node-adapter.mjs",
+    "test:admin-login-browser": "node tests/admin-login-browser.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
