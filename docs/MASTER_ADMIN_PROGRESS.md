@@ -131,3 +131,15 @@ exists yet. See `docs/MASTER_ADMIN_BACKEND.md`.
 The 272 ms task is initial React render of the bundled catalogue. These are single
 local runs under emulation — no field/INP data, no backend latency and no
 physical-device claim.
+
+## Batch — live module wiring in the Admin UI
+
+- `src/admin/LiveModules.tsx` renders database-backed analytics, platforms and
+  categories on the Overview page **only when the Admin API reports an
+  authenticated live session**. With no backend it renders nothing (no
+  placeholder numbers, no fabricated rows) and the page remains the static
+  bundled preview. Failure states are explicit ("Live data unavailable").
+- `tests/admin-preview-browser.cjs` now allows at most one same-origin
+  `/api/admin/v1/health` probe and still forbids every other privileged or
+  Supabase request; desktop/tablet/mobile runs pass with zero console errors and
+  no horizontal overflow.

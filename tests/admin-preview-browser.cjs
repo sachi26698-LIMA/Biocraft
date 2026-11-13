@@ -15,5 +15,10 @@ await page.goto(`${base}/admin/platforms`,{waitUntil:'networkidle'});await page.
 await page.goto(`${base}/admin/categories`,{waitUntil:'networkidle'});await page.getByRole('searchbox',{name:'Search collections'}).fill('gamer');assert.equal(await page.getByRole('region',{name:'Scrollable collections table'}).locator('tbody tr').count(),1);await page.getByRole('searchbox',{name:'Search generator categories'}).fill('developer');assert.equal(await page.getByRole('region',{name:'Scrollable generator categories table'}).locator('tbody tr').count(),1);
 await page.goto(`${base}/admin/generators`,{waitUntil:'networkidle'});await page.getByRole('searchbox',{name:'Search tools'}).fill('headline');assert.equal(await page.locator('tbody tr').count(),1);
 await page.goto(`${base}/`,{waitUntil:'networkidle'});assert.equal(await page.locator('.ad-app').count(),0);assert.equal(await page.locator('header').count()>0,true);
-assert.deepEqual(errors,[]);assert.deepEqual(requests,[]);results.push({name,width,height,overflow,errors,adminOrSupabaseRequests:requests.length});await page.close();}
+// The overview now probes the same-origin Admin health endpoint exactly once and
+// renders nothing when it is unavailable. No Supabase client and no other
+// privileged request may occur.
+assert.deepEqual(errors,[]);assert.deepEqual(requests.filter(u=>!/^http:\/\/127\.0\.0\.1:4178\/api\/admin\/v1\/health$/.test(u)),[]);
+assert.ok(requests.length<=1,`unexpected probes: ${JSON.stringify(requests)}`);
+results.push({name,width,height,overflow,errors,adminOrSupabaseRequests:requests.length});await page.close();}
 await browser.close();console.log(JSON.stringify(results,null,2));})().catch(e=>{console.error(e);process.exit(1)});
