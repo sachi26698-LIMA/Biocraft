@@ -51,6 +51,17 @@ request, so no hosted interaction has ever been claimed.
 
 ### Latest local implementation batch
 
+- **Pre-execution security review** (`docs/FINAL_SECURITY_REVIEW.md`): all 31
+  functions mapped to owner / fixed `search_path` / internal authorization /
+  grants, the `anon`-spoofing analysis checked against live grant facts, every
+  change classified, rollback data-protection audited, and a SHA-256 checklist
+  for all 22 files. It found **D1** the Preview could not reach the Admin API at
+  all (only the fixed `/api/admin/v1/proxy` path was rewritten while the UI calls
+  `/api/admin/v1/*`), **D2** a lost TOTP factor cannot be re-enrolled, **D3** the
+  executor password/rotation policy is unspecified and **D4** the flow/rate-limit
+  tables have no cleanup job. D1 is fixed and locked by two new tests; D2–D4
+  need a decision and are recorded, not silently patched.
+
 - First-factor TOTP enrolment is implemented end to end and stays unmounted in
   the same fail-closed composition: `POST /auth/enroll` and
   `/auth/enroll-confirm`, a single-use pending flow, `catch` on every provider

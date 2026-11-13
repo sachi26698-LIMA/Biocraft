@@ -443,13 +443,14 @@ activated").** `src/admin/backend.ts` calls `/api/admin/v1/*`, but `vercel.json`
 only rewrites the single fixed path `/api/admin/v1/proxy` to the function. Every
 other Admin path is served by the filesystem (a 404 HTML page), so the UI's
 `health`, `session`, `auth/*`, `csrf` and module calls would never reach the
-server. Corrected plan for execution: route `/api/admin/v1/(.*)` (and the auth
-sub-paths) to the function via a catch-all function file or a `:path*` rewrite,
-and have the entry re-attach the original path. **Fixed in this branch**
+server. **Fixed in this branch**
 (`api/admin/handler.mjs` rebuilds the original path from the rewrite marker;
 `vercel.json` now routes `/api/admin/v1/:path*` to the function;
-`test:admin-api-routing` locks the contract). Hosted proof is still required —
-a local test cannot prove Vercel's rewrite semantics.
+`test:admin-api-routing` locks the contract; `test:admin-rewrite-sim` reproduces
+both hops and asserts 7 Admin API paths reach the function instead of a static
+page). Hosted proof is still required — a local test cannot prove Vercel's
+rewrite semantics, and the public Preview is SSO-protected, so the first hosted
+check must be done by you in a signed-in browser (§13 B).
 
 **D2 — a lost TOTP factor cannot be re-enrolled (functional + operational).**
 The enrolment route is reachable only from the password (`aal1`) flow, and that
