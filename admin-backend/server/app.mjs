@@ -19,6 +19,7 @@ import {createDatabaseExecutor,createPostgresPool,assertLimitedRole} from './dat
 import {createAuthStorage} from './auth-storage.mjs';
 import {providerLogout} from './auth-flow.mjs';
 import {createHash,createHmac,timingSafeEqual} from 'node:crypto';
+import {PLATFORM_RULES} from '../domain/platform-rules.mjs';
 
 const PROJECT_URL='https://jvpadtzfsuekixrquzjv.supabase.co';
 const HEX64=/^[0-9a-f]{64}$/;
@@ -93,19 +94,6 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  function bad(status){return new Response(JSON.stringify({error:{code:status===404?'NOT_FOUND':'FORBIDDEN'}}),{status,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}})}
  function health(){return new Response(JSON.stringify({ok:true}),{status:200,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}})}
 }
-
-// Server-side platform limits used for draft text validation. These mirror the
-// public app configuration and are NOT a request input.
-export const PLATFORM_RULES=Object.freeze({
- instagram:{count:'unicode_code_points',max:150},
- twitter:{count:'unicode_code_points',max:160},
- facebook:{count:'unicode_code_points',max:101},
- linkedin:{count:'unicode_code_points',max:220},
- youtube:{count:'unicode_code_points',max:1000},
- tiktok:{count:'unicode_code_points',max:80},
- snapchat:{count:'unicode_code_points',max:250},
- whatsapp:{count:'unicode_code_points',max:139}
-});
 
 /** Verify the configured database role really is limited. Call once at startup
  * so a misconfigured login fails before serving any request. */

@@ -19,6 +19,15 @@ for(const [name,width,height] of [['desktop',1440,900],['tablet',820,1100],['mob
  const audit=await page.evaluate(()=>window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}}));
  assert.deepEqual(audit.violations.map(v=>v.id),[],`${name} accessibility`);
  assert.deepEqual(errors,[]);assert.deepEqual(requests,[]);assert.deepEqual(posted,[]);
+ // Theme toggle and navigation still work on this route, and the page never
+ // advertises a credential form.
+ assert.equal(await page.locator('form').count(),0);
+ await page.getByRole('button',{name:'Switch to dark mode'}).click();assert.equal(await page.locator('.ad-dark').count(),1);
+ await page.getByRole('button',{name:'Switch to light mode'}).click();
+ // On narrow viewports the sidebar is collapsed, so the in-page route link is
+ // asserted instead of a sidebar entry.
+ if(width>=700) await page.locator('.ad-sidebar').getByRole('link',{name:'Admin sign-in'}).waitFor();
+ else await page.locator('.ad-main h1').waitFor();
  console.log(JSON.stringify({name,width,height,overflow,failClosed:true}));await page.close();
 }
 // The sign-in surface must never be published to the public app.

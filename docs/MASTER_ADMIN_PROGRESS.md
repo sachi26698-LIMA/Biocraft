@@ -89,3 +89,32 @@ Test separation: mocked-provider/PGlite suites (`admin-full-flow`, `admin-api-in
 ### Session lifetime correction and evidence
 - Read-only `get_auth_config` (no changes made): project `jvpadtzfsuekixrquzjv` has `jwt_exp=3600`, TOTP enroll/verify enabled, refresh-token rotation on, `site_url=http://localhost:3000` and an **empty** redirect allow-list, signup **enabled**, password minimum length 6, `security_update_password_require_reauthentication=false`, and no SMTP provider configured (so recovery e-mail delivery is unverified). These are blockers for real Admin auth and are recorded, not changed — auth configuration is shared production surface and requires approval.
 - Consequence applied locally: Admin sessions and the encrypted session cookie are now capped at one hour and must not outlive the provider token; `issueSessionCookie`/`decodeCookie` read the token `exp` and reject a cookie that exceeds it. Candidate `005` records a one-hour Admin session. No refresh flow exists, so a user re-authenticates hourly.
+
+## Batch — UI sign-in, serverless entry, platform-rule sync, proxy signature
+
+- `src/admin/backend.ts` now contains a real same-origin client (health probe,
+  `/session`, `/csrf`, CSRF-protected writes). It never handles provider tokens.
+- `src/admin/Login.tsx` + `/admin/login` route: password → TOTP → session, with
+  rate-limit, unavailable and unauthorized messaging. **Fails closed**: with no
+  configured backend the page renders "Sign-in is not available", renders no
+  credential form and issues no privileged request (verified by Chromium at
+  1440/820/390 with zero `/api/admin` POSTs and zero console errors).
+- `api/admin/handler.mjs` + `admin-backend/server/node-adapter.mjs` +
+  `admin-backend/server/handler.mjs`: Vercel Node entry reachable only via the
+  `/api/admin/v1/proxy` rewrite. It is **disabled by default** and returns 503
+  until a reviewed configuration exists; inbound signature headers are stripped
+  and a trusted client key is re-derived from the platform IP header.
+- `vercel.json`: no-store + noindex for `/api/admin/*`; the Admin API rewrite is
+  fixed-path only.
+- `admin-backend/domain/platform-rules.mjs` centralizes the eight platform bio
+  limits mirrored from `src/tools/platforms.ts`; `test:admin-platform-rules`
+  fails on drift. The app wrapper imports it instead of duplicating limits.
+- New tests: `test:admin-app-local`, `test:admin-http-smoke`,
+  `test:admin-node-adapter`, `test:admin-platform-rules`,
+  `test:admin-login-browser` (Chromium, local build only).
+
+Hosted status is unchanged and **unverified**: sandbox TLS to the Vercel preview
+fails before HTTP, so no hosted browser or API check has been performed. The
+Preview remains UI-only; `/admin/login` correctly reports the backend as
+unavailable because no schema, grants, database credential or Admin account
+exists yet. See `docs/MASTER_ADMIN_BACKEND.md`.

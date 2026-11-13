@@ -45,6 +45,8 @@ html.admin-document,html.admin-document body,html.admin-document #root{margin:0;
 
 /* Admin sign-in: server-side only. No credentials are stored or logged. */
 .ad-sidebar-card a + a{margin-top:7px}
+/* Fail-closed state: no form is rendered when the server is absent. */
+.ad-auth[aria-labelledby] h2+.ad-auth-note{margin-top:2px}
 .ad-auth{max-width:420px;border:1px solid var(--ad-line);border-radius:14px;background:var(--ad-card);padding:22px 20px;display:grid;gap:12px}
 .ad-auth h2{font-size:18px;letter-spacing:-.4px;margin:0}
 .ad-auth p{margin:0;font-size:13px;line-height:1.6;color:var(--ad-muted)}
