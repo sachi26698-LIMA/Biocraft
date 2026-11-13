@@ -48,6 +48,7 @@
     "test:admin-platform-rules": "node tests/platform-rules-sync.cjs",
     "test:admin-pool-config": "node tests/admin-pool-config.mjs",
     "test:admin-api-routing": "node tests/admin-api-routing.mjs",
+    "test:admin-rewrite-sim": "node tests/admin-rewrite-sim.mjs",
     "test:admin-totp-enrolment": "node tests/admin-totp-enrolment.mjs"
   },
   "dependencies": {
