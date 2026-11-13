@@ -5,6 +5,11 @@ schema, role, grant, Auth setting or account has been created in the shared
 project. This file supersedes `docs/MASTER_ADMIN_APPROVAL_REQUEST.md` as the
 single approval artefact; the full per-file SQL is shown at the end.
 
+**A separate pre-execution security review is `docs/FINAL_SECURITY_REVIEW.md`**
+(per-function `SECURITY DEFINER` matrix, ownership, grants, classification and
+the approval checklist). Read it together with this report; where the two differ,
+the review's findings D1–D4 take precedence.
+
 Re-verified at the end of this work (read-only queries only): `bc_admin_v1`
 schema **absent**, `bc_admin_executor` role **absent**, guest `anon` still sees
 506 bios / 33 categories / 8 platforms — identical to owner counts. No shared

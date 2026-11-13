@@ -1,18 +1,42 @@
 // Vercel Node function entry for the Admin API.
 //
-// Vercel rewrites only the fixed path `/api/admin/v1/proxy` here, so the
-// function cannot be reached at arbitrary URLs. The original Admin API path is
-// re-attached below. With no reviewed configuration (ADMIN_BACKEND_ENABLED
-// unset) every request receives 503 and no database or provider client is
-// created. No secret is read at module scope.
+// Vercel's filesystem routing cannot express `/api/admin/v1/<anything>` with a
+// single file outside Next.js, so `vercel.json` rewrites every Admin API path to
+// this function and forwards the remainder of the path in `__admin_path`.
+// This module rebuilds the original request path and strips the marker, so the
+// application sees exactly the URL the browser called (including its query
+// string, which the API validates strictly).
+//
+// With no reviewed configuration (ADMIN_BACKEND_ENABLED unset) every request
+// receives 503 and no database or provider client is created. No secret is read
+// at module scope, and nothing here can serve a file from disk.
 import handler from '../../admin-backend/server/handler.mjs';
 
-export default function entry(req, res) {
-  // Only the query string is preserved from the rewrite target; the Admin API
-  // currently uses none, and the app rejects any unexpected query on auth routes.
-  if (req.url?.startsWith('/api/admin/v1/proxy')) {
-    const query = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
-    req.url = '/api/admin/v1' + query;
+const PREFIX = '/api/admin/v1';
+const MARKER = '__admin_path';
+
+/** Rebuild the browser-facing URL from the rewrite marker.
+ * `/api/admin/handler?__admin_path=health` -> `/api/admin/v1/health`.
+ * Client query parameters are preserved; the marker never reaches the app. */
+export function restoreAdminUrl(url) {
+  const raw = typeof url === 'string' ? url : '';
+  const index = raw.indexOf('?');
+  const query = index === -1 ? '' : raw.slice(index + 1);
+  const params = new URLSearchParams(query);
+  const forwarded = params.get(MARKER);
+  if (forwarded === null) {
+    // No rewrite marker: the legacy single-path rewrite is in use.
+    return raw.startsWith(`${PREFIX}/proxy`) ? PREFIX + raw.slice(PREFIX.length + '/proxy'.length) : raw;
   }
+  params.delete(MARKER);
+  // A captured path is a relative remainder and must never escape the prefix.
+  const remainder = forwarded.replace(/^\/+/, '');
+  if (remainder.split('/').some(segment => segment === '..' || segment === '.')) return `${PREFIX}/`;
+  const search = params.toString();
+  return `${PREFIX}/${remainder}${search ? `?${search}` : ''}`;
+}
+
+export default function entry(req, res) {
+  try { req.url = restoreAdminUrl(req.url); } catch { req.url = `${PREFIX}/`; }
   return handler(req, res);
 }

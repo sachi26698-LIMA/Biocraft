@@ -34,8 +34,8 @@
   ],
   "rewrites": [
     {
-      "source": "/api/admin/v1/proxy",
-      "destination": "/api/admin/handler"
+      "source": "/api/admin/v1/:path*",
+      "destination": "/api/admin/handler?__admin_path=:path*"
     },
     {
       "source": "/admin",
