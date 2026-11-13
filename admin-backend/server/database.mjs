@@ -51,6 +51,18 @@ const OPERATIONS = Object.freeze({
   // Pre-MFA gate: requires an enabled membership and live provider session but
   // not aal2, because the account has no verified factor yet.
   enrolmentEligible: {permission:null,sql:'select bc_admin_v1.enrolment_eligible($1::uuid) as eligible'},
+  // 'enrol' | 'recover' | 'denied' for a password session with no verified factor
+  // (012). Replaces the boolean gate for the D2 decision; the audit row is inside.
+  factorGate: {permission:null,sql:'select bc_admin_v1.factor_gate($1::uuid) as outcome'},
+  // Recovery (012). Issue/revoke need an AAL2 Super Admin with staff.manage; the
+  // two pre-MFA calls below are reachable only from an aal1/aal2 password session
+  // and re-check membership and a live provider session inside the function.
+  recoveryIssue: {permission:'staff.manage',sql:'select bc_admin_v1.issue_recovery_grant($1::uuid,$2::bytea,$3::bytea,$4::interval,$5::uuid) as grant_id'},
+  recoveryRevoke: {permission:'staff.manage',sql:'select bc_admin_v1.revoke_recovery_grant($1::uuid,$2::uuid) as revoked'},
+  recoveryState: {permission:null,sql:'select * from bc_admin_v1.recovery_grant_state($1::uuid)'},
+  recoveryRedeem: {permission:null,sql:'select bc_admin_v1.consume_recovery_grant($1::bytea,$2::uuid) as outcome'},
+  // Cleanup (012) is bounded, locked and audited; settings.manage is Super Admin.
+  cleanupExpired: {permission:'settings.manage',sql:'select bc_admin_v1.cleanup_expired($1,$2::integer,$3::uuid) as deleted'},
   sessionRevoke: {permission:'dashboard.read',sql:'select bc_admin_v1.revoke_admin_session($1::uuid)'},
   sessionRevokeAll: {permission:'dashboard.read',sql:'select bc_admin_v1.revoke_my_sessions($1::uuid) as revoked'},
   sessionCheck: {permission:'dashboard.read',sql:'select true as active'},
@@ -83,12 +95,16 @@ const OPERATIONS = Object.freeze({
 // Sensitive commands additionally require a recent, provider-observed TOTP
 // event. Missing amr data fails closed. This is independent of, and does not
 // replace, per-row permission checks and locks inside the transaction.
-const STEP_UP = new Set(['create','draftUpdate','submit','reviewApprove','reviewReject','staffUpdate','sessionRevokeAll','settingUpdate']);
+const PRE_AAL2 = new Set(['enrolmentEligible','factorGate','recoveryState','recoveryRedeem']);
+const STEP_UP = new Set(['create','draftUpdate','submit','reviewApprove','reviewReject','staffUpdate','sessionRevokeAll','settingUpdate','recoveryIssue','recoveryRevoke','cleanupExpired']);
 export function createDatabaseExecutor(pool,{maxMfaAgeMs=10*60*1000,now=Date.now}={}) {
  if (!pool || typeof pool.connect !== 'function' || !Number.isSafeInteger(maxMfaAgeMs) || maxMfaAgeMs<60000 || typeof now!=='function') throw new Error('Database pool required');
  return async function execute({identity,operation,args}) {
   const op=OPERATIONS[operation];
-  const preAal2 = operation==='enrolmentEligible';
+  // The only operations reachable before a second factor: first-factor enrolment
+// and the Super-Admin-authorised recovery handshake. Both re-check membership and
+// a live provider session inside the database; neither can write admin content.
+const preAal2 = PRE_AAL2.has(operation);
   if (!op || !identity || ((!preAal2) && identity.assuranceLevel !== 'aal2') || !Array.isArray(args)) throw new Error('Invalid operation');
   if (STEP_UP.has(operation) && (!Number.isSafeInteger(identity.mfaVerifiedAt) || identity.mfaVerifiedAt*1000 > now() || identity.mfaVerifiedAt*1000 <= now()-maxMfaAgeMs)) {const e=new Error('Step-up authentication required');e.code='28000';throw e;}
   const client=await pool.connect(); let inTransaction=false;
@@ -100,6 +116,8 @@ export function createDatabaseExecutor(pool,{maxMfaAgeMs=10*60*1000,now=Date.now
    // Only whitelisted identity fields produced after provider verification;
    // never copy client-provided claims or raw JWT into database context.
    // Enrolment is the only pre-AAL2 operation; every other operation is AAL2.
+   // A pre-AAL2 call forwards the level it actually has (aal1 or aal2) so the
+   // database cannot be told an assurance the session does not hold.
    const claims=JSON.stringify({sub:identity.userId,session_id:identity.sessionId,aal:preAal2?identity.assuranceLevel:'aal2'});
    await client.query("select set_config('request.jwt.claims',$1,true)",[claims]);
    if(op.permission!==null) {

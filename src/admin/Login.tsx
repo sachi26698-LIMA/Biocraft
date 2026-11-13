@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { probeBackend, ADMIN_BASE, type BackendStatus } from './backend';
 
-type Stage = 'checking' | 'signin' | 'enrol' | 'mfa' | 'done' | 'blocked';
+type Stage = 'checking' | 'signin' | 'enrol' | 'mfa' | 'recover' | 'recovered' | 'done' | 'blocked';
 
 export default function Login({ onAuthenticated }: { onAuthenticated?: () => void }) {
   const [status, setStatus] = useState<BackendStatus>('unavailable');
@@ -19,6 +19,9 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
   const [busy, setBusy] = useState(false);
   // Shown once, only while enrolling a first factor; never stored or logged.
   const [otpauthUri, setOtpauthUri] = useState('');
+  // D2 recovery: a single-use, Super-Admin-issued code. It is never pre-filled,
+  // never stored and never sent anywhere except the same-origin Admin server.
+  const [recoveryCode, setRecoveryCode] = useState('');
   const csrf = useRef<string>('');
   const mounted = useRef(true);
 
@@ -60,6 +63,9 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
       // Accounts without a verified factor must enrol one before any Admin
       // session exists; the server decides that, never the client.
       if (result.data?.enrolment === true) { setStage('enrol'); void beginEnrolment(result.data.csrf); return; }
+      // The account had a factor and no longer has one: only a Super-Admin
+      // authorised recovery code can restore access. The password alone cannot.
+      if (result.data?.recovery === true) { setStage('recover'); return; }
       setStage('mfa');
     } catch { if (mounted.current) setMessage('The Admin service could not be reached. Try again later.'); }
     finally { if (mounted.current) setBusy(false); }
@@ -94,6 +100,20 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
     finally { if (mounted.current) setBusy(false); }
   }
 
+  async function submitRecovery(event: FormEvent) {
+    event.preventDefault();
+    if (stage !== 'recover' || busy || !/^[0-9a-z]{4}-?[0-9a-z]{4}-?[0-9a-z]{4}$/i.test(recoveryCode.trim())) return;
+    setBusy(true); setMessage('');
+    try {
+      const result = await post('recovery/complete', { code: recoveryCode.trim(), csrf: csrf.current });
+      if (!mounted.current) return;
+      setRecoveryCode(''); csrf.current = '';
+      if (!result.ok) { setMessage(messageFor(result.status, result.data?.error?.code)); return; }
+      setStage('recovered');
+    } catch { if (mounted.current) setMessage('Recovery could not be completed. Try again later.'); }
+    finally { if (mounted.current) setBusy(false); }
+  }
+
   async function submitCode(event: FormEvent) {
     event.preventDefault();
     if (stage !== 'mfa' || busy || !/^\d{6,8}$/.test(code)) return;
@@ -121,6 +141,29 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
 
   if (stage === 'checking') {
     return <section className="ad-auth" aria-live="polite"><p role="status">Checking Admin service…</p></section>;
+  }
+
+  if (stage === 'recover') {
+    return <section className="ad-auth" aria-labelledby="admin-auth-title">
+      <h2 id="admin-auth-title">Authenticator recovery</h2>
+      <p>This account has an authenticator that is no longer available. A Super Admin must authorise recovery before a code can be used, and the code works once.</p>
+      <form onSubmit={submitRecovery} noValidate>
+        <label htmlFor="admin-recovery-code">Recovery code</label>
+        <input id="admin-recovery-code" name="recovery-code" autoComplete="off" spellCheck={false} maxLength={14} required
+          value={recoveryCode} onChange={e => setRecoveryCode(e.target.value.replace(/[^0-9a-z-]/gi, '').slice(0, 14))} disabled={busy} autoFocus />
+        <button type="submit" disabled={busy || !/^[0-9a-z]{4}-?[0-9a-z]{4}-?[0-9a-z]{4}$/i.test(recoveryCode.trim())}>{busy ? 'Submitting…' : 'Submit recovery code'}</button>
+      </form>
+      <p className="ad-auth-note">No code, or an expired one? Ask a Super Admin to issue a new recovery code. Sign-in stays closed until then.</p>
+      {message && <p className="ad-auth-error" role="alert">{message}</p>}
+    </section>;
+  }
+
+  if (stage === 'recovered') {
+    return <section className="ad-auth" aria-live="polite">
+      <h2>Recovery authorised</h2>
+      <p>Your recovery was recorded. An operator must now remove the lost authenticator from the account; after that, sign in again to enrol a new one.</p>
+      <p className="ad-auth-note">No session was created by this step, and your password has not changed.</p>
+    </section>;
   }
 
   if (stage === 'enrol') {

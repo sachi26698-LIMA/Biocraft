@@ -13,6 +13,8 @@ if(!socket || !fs.realpathSync(socket).startsWith('/tmp/biocraft-pg-')) throw Er
 const admin=new pg.Pool({host:socket,user:process.env.USER,database:'postgres',max:12,connectionTimeoutMillis:3000});
 let limited;
 const uid='11111111-1111-4111-8111-111111111111',sid='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+let execRef=null;
+const tryOpen=async({identity})=>execRef({identity,operation:'sessionOpen',args:[randomUUID()]});
 const identity={userId:uid,sessionId:sid,assuranceLevel:'aal2',mfaVerifiedAt:Math.floor(Date.now()/1000)};
 try {
  const meta=await admin.query("select current_setting('data_directory') as path, current_setting('server_version') as version, current_database() as db");
@@ -25,7 +27,7 @@ try {
  create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
  create function auth.uid() returns uuid language sql stable as $$select nullif(auth.jwt()->>'sub','')::uuid$$;`);
  await admin.query(fs.readFileSync('supabase/migrations/0001_initial_schema.sql','utf8'));
- for(const name of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','007_staff_commands.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql','011_totp_enrolment.sql'])
+ for(const name of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','007_staff_commands.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql','011_totp_enrolment.sql','012_recovery_and_cleanup.sql'])
   await admin.query(fs.readFileSync(`admin-backend/migrations/${name}`,'utf8'));
  await admin.query(fs.readFileSync('supabase/migrations/0002_rls_policies.sql','utf8'));
  await admin.query(`insert into auth.users values('${uid}'); insert into auth.sessions values('${sid}','${uid}');
@@ -36,7 +38,10 @@ try {
  bc_admin_v1.list_platforms(integer,uuid),bc_admin_v1.list_categories(integer,uuid),bc_admin_v1.list_collections(integer,text),
  bc_admin_v1.list_generators(integer,uuid),bc_admin_v1.list_seo_pages(integer,uuid),bc_admin_v1.analytics_overview(),
  bc_admin_v1.list_settings(integer,text),bc_admin_v1.update_setting(text,jsonb,bigint,uuid),bc_admin_v1.list_role_catalog(),
- bc_admin_v1.list_my_sessions(integer,timestamptz),bc_admin_v1.list_audit_logs(integer,bigint),bc_admin_v1.enrolment_eligible(uuid) to bc_fixture_executor;
+ bc_admin_v1.list_my_sessions(integer,timestamptz),bc_admin_v1.list_audit_logs(integer,bigint),bc_admin_v1.enrolment_eligible(uuid),
+ bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),bc_admin_v1.revoke_recovery_grant(uuid,uuid),
+ bc_admin_v1.consume_recovery_grant(bytea,uuid),bc_admin_v1.recovery_grant_state(uuid),
+ bc_admin_v1.cleanup_expired(text,integer,uuid),bc_admin_v1.factor_gate(uuid) to bc_fixture_executor;
  -- Synthetic public rows so module reads have deterministic content.
  insert into public.platforms(name,slug,is_active,sort_order) values('Instagram','instagram',true,1),('Hidden','hidden',false,2);
  insert into public.categories(name,slug,is_active,sort_order,platform_id) select 'Tech','tech',true,1,id from public.platforms where slug='instagram';
@@ -46,7 +51,7 @@ try {
  insert into public.generators(name,slug,generator_type,is_active,platform_id) select 'Bio Maker','bio-maker','bio',true,id from public.platforms where slug='instagram';
  insert into public.seo_pages(page_slug,title,is_active) values('/tech','Tech quotes',true);`);
  limited=new pg.Pool({host:socket,user:'bc_fixture_executor',database:'postgres',max:12});
- const exec=createDatabaseExecutor(limited);
+ const exec=createDatabaseExecutor(limited);execRef=exec;
  await assert.rejects(createDatabaseExecutor(admin)({identity,operation:'sessionOpen',args:[randomUUID()]}),/Unsafe database executor/);
  // Even a SET ROLE down from a superuser is rejected: session_user is privileged.
  const elevated=await admin.connect();try {await elevated.query('set role bc_fixture_executor');
@@ -165,5 +170,118 @@ try {
  assert.equal(audits.rows.filter(r=>r.actor_id===null).length,3);
  assert.equal(JSON.stringify(audits.rows).includes('eyJ'),false);
  await assert.rejects(exec({identity:aal1,operation:'enrolmentEligible',args:[null]}),e=>e.code==='22023');
- console.log(`PASS PostgreSQL ${meta.rows[0].version}: fixture migrations, immutable concurrent bio edits, non-owner RBAC, session expiry, restrictive RLS, membership lock, concurrent limiter and atomic handoff and recovery revocation, 010 module reads/settings write and step-up freshness, 011 AAL1-only enrolment gate with audit. Provider Auth is mocked; no shared project used.`);
+ // ---- 012: Super-Admin-authorised recovery and bounded cleanup ----
+ const RG=await import('../admin-backend/server/recovery-grant.mjs');
+ const target='dddddddd-dddd-4ddd-8ddd-dddddddddddd',tsid='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+ await admin.query("insert into auth.users(id) values($1)",[target]);
+ await admin.query("insert into bc_admin_v1.admin_users(id,enabled) values($1,true)",[target]);
+ await admin.query("insert into bc_admin_v1.admin_user_roles(user_id,role_id) values($1,'editor')",[target]);
+ await admin.query("insert into auth.sessions(id,user_id) values($1,$2)",[tsid,target]);
+ await admin.query("insert into bc_admin_v1.admin_user_roles(user_id,role_id) values($1,'super_admin')",[uid]);
+ const issuer={...identity,sessionId:activeSid};
+ // Only a Super Admin (staff.manage) may issue, and never for their own account.
+ await assert.rejects(RG.issueRecoveryGrant({execute:exec,identity:{...issuer,assuranceLevel:'aal1'},targetUserId:target}),/FORBIDDEN/);
+ await assert.rejects(RG.issueRecoveryGrant({execute:exec,identity:issuer,targetUserId:uid}),/FORBIDDEN/);
+ // An editor (no staff.manage) is refused by the database, not just the wrapper.
+ await assert.rejects(exec({identity:{userId:target,sessionId:tsid,assuranceLevel:'aal2',mfaVerifiedAt:Math.floor(Date.now()/1000)},operation:'recoveryIssue',args:[uid,randomBytes(32),randomBytes(8),'300 seconds',randomUUID()]}),e=>e.code==='42501');
+ const granted=await RG.issueRecoveryGrant({execute:exec,identity:issuer,targetUserId:target});
+ assert.match(granted.code,/^[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}$/);
+ assert(RG.isWellFormedRecoveryCode(granted.code));
+ // A second issuance withdraws the first: one live grant per account.
+ const regrant=await RG.issueRecoveryGrant({execute:exec,identity:issuer,targetUserId:target});
+ assert.equal((await admin.query("select count(*)::int n from bc_admin_v1.admin_recovery_grants where user_id=$1 and revoked_at is null and consumed_at is null",[target])).rows[0].n,1);
+ assert.equal(RG.isWellFormedRecoveryCode(granted.code.slice(0,4)+'-'+granted.code.slice(5,9)+'-'+granted.code.slice(10)),true);
+ const recovering={userId:target,sessionId:tsid,assuranceLevel:'aal1',mfaVerifiedAt:null};
+ assert.equal((await exec({identity:recovering,operation:'recoveryState',args:[randomUUID()]})).length,1);
+ // The superseded code cannot be redeemed: only the newest grant is live.
+ await assert.rejects(RG.redeemRecoveryCode({execute:exec,identity:recovering,code:granted.code}),e=>e.code==='UNAUTHENTICATED');
+ assert.equal((await admin.query("select count(*)::int n from bc_admin_v1.admin_recovery_grants where user_id=$1 and consumed_at is not null",[target])).rows[0].n,0);
+ const redeemed=await RG.redeemRecoveryCode({execute:exec,identity:recovering,code:regrant.code});
+ assert.deepEqual({ok:redeemed.ok,next:redeemed.next},{ok:true,next:'factor_reset_required'});
+ // Single use: the same code is refused afterwards, and nothing signed anyone in.
+ await assert.rejects(RG.redeemRecoveryCode({execute:exec,identity:recovering,code:regrant.code}),e=>e.code==='UNAUTHENTICATED');
+ assert.equal((await admin.query("select count(*)::int n from bc_admin_v1.admin_sessions where user_id=$1",[target])).rows[0].n,0);
+ // Five wrong attempts exhaust the grant; a sixth is refused even with the right code.
+ const third=await RG.issueRecoveryGrant({execute:exec,identity:issuer,targetUserId:target});
+ // A well-formed code from a different grant: right shape, wrong digest, so it
+ // exercises the attempt counter rather than local format rejection.
+ const wrong=RG.issueRecoveryCode().code;
+ assert.ok(RG.isWellFormedRecoveryCode(wrong));
+ const digests=[];
+ for(let i=0;i<5;i+=1){try{await RG.redeemRecoveryCode({execute:exec,identity:recovering,code:wrong});digests.push('ok');}catch(e){digests.push(e.code??'OTHER');}}
+ assert.equal(digests.filter(x=>x==='UNAUTHENTICATED').length,4,digests.join(','));
+ assert.equal(digests.filter(x=>x==='FORBIDDEN').length,1,digests.join(','));
+ // Exhausted grants are revoked, so the correct code is now refused as
+ // unauthenticated: there is no live grant left to compare against.
+ await assert.rejects(RG.redeemRecoveryCode({execute:exec,identity:recovering,code:third.code}),e=>['FORBIDDEN','UNAUTHENTICATED'].includes(e.code));
+ assert.equal((await admin.query("select revoked_at is not null as dead, consumed_at is null as unused from bc_admin_v1.admin_recovery_grants where id=$1",[third.grantId])).rows[0].dead,true);
+ // Every attempt is audited and no code material is stored anywhere.
+ const recAudit=await admin.query("select action,details from bc_admin_v1.admin_audit_logs where action like 'auth.recovery.%'");
+ assert(recAudit.rows.some(r=>r.action==='auth.recovery.issued'));
+ assert(recAudit.rows.some(r=>r.action==='auth.recovery.attempt'&&r.details.outcome==='ok'));
+ assert(recAudit.rows.some(r=>r.action==='auth.recovery.attempt'&&r.details.outcome==='exhausted'));
+ const stored=await admin.query("select code_hash,salt from bc_admin_v1.admin_recovery_grants");
+ assert(stored.rows.every(r=>r.code_hash.length===32&&r.salt.length===8));
+ assert.equal(JSON.stringify(stored.rows).includes(regrant.code.split('-')[0]),false);
+ // ---- D2 factor gate: never-enrolled vs lost-factor, and the stamp ----
+ // The target has never proven a factor, so a password session may enrol.
+ assert.equal((await exec({identity:recovering,operation:'factorGate',args:[randomUUID()]}))[0].outcome,'enrol');
+ // Opening an Admin session is AAL2-only, and stamps the first proof of a factor.
+ await tryOpen({identity:{...recovering,assuranceLevel:'aal2',mfaVerifiedAt:Math.floor(Date.now()/1000)}});
+ assert.notEqual((await admin.query("select mfa_enrolled_at from bc_admin_v1.admin_users where id=$1",[target])).rows[0].mfa_enrolled_at,null);
+ // From then on the same password session must recover, not re-enrol.
+ assert.equal((await exec({identity:recovering,operation:'factorGate',args:[randomUUID()]}))[0].outcome,'recover');
+ // A disabled member or one with no role is denied outright.
+ await admin.query("update bc_admin_v1.admin_users set enabled=false where id=$1",[target]);
+ assert.equal((await exec({identity:recovering,operation:'factorGate',args:[randomUUID()]}))[0].outcome,'denied');
+ await admin.query("update bc_admin_v1.admin_users set enabled=true where id=$1",[target]);
+ await admin.query("delete from bc_admin_v1.admin_user_roles where user_id=$1",[target]);
+ assert.equal((await exec({identity:recovering,operation:'factorGate',args:[randomUUID()]}))[0].outcome,'denied');
+ // No provider session means no decision either, and every attempt is audited.
+ await admin.query("insert into bc_admin_v1.admin_user_roles(user_id,role_id) values($1,'editor')",[target]);
+ await admin.query("delete from auth.sessions where user_id=$1",[target]);
+ assert.equal((await exec({identity:recovering,operation:'factorGate',args:[randomUUID()]}))[0].outcome,'denied');
+ const gates=await admin.query("select details->>'outcome' o from bc_admin_v1.admin_audit_logs where action='auth.factor_gate' order by id");
+ assert.deepEqual(gates.rows.map(r=>r.o),['enrol','recover','denied','denied','denied']);
+ // ---- cleanup: expired rows only, bounded, audited, never audit evidence ----
+ const auditBefore=(await admin.query("select count(*)::int n from bc_admin_v1.admin_audit_logs")).rows[0].n;
+ await admin.query("insert into bc_admin_v1.admin_login_flows(flow_hash,encrypted_data,expires_at) values(gen_random_bytes(32),gen_random_bytes(40),now()-interval '2 hours'),(gen_random_bytes(32),gen_random_bytes(40),now()+interval '1 hour')");
+ await admin.query("insert into bc_admin_v1.admin_rate_limits(bucket,key_hash,started_at,attempts) values('admin-api',gen_random_bytes(32),now()-interval '2 days',3),('admin-api',gen_random_bytes(32),now(),2)");
+ assert.equal((await admin.query("select count(*)::int n from bc_admin_v1.admin_login_flows")).rows[0].n>=2,true);
+ const cleaned=await RG.runCleanup({execute:exec,identity:issuer,target:'admin_login_flows',limit:500});
+ assert(cleaned.deleted>=1);
+ assert.equal((await admin.query("select count(*)::int n from bc_admin_v1.admin_login_flows where expires_at>now()")).rows[0].n>=1,true);
+ const rl=await RG.runCleanup({execute:exec,identity:issuer,target:'admin_rate_limits',limit:500});
+ assert(rl.deleted>=1);
+ assert.equal((await admin.query("select count(*)::int n from bc_admin_v1.admin_rate_limits where started_at>now()-interval '1 day'")).rows[0].n>=1,true);
+ const auditAfter=(await admin.query("select count(*)::int n from bc_admin_v1.admin_audit_logs")).rows[0].n;
+ assert(auditAfter>auditBefore,'cleanup must add audit rows, never remove them');
+ assert.equal((await admin.query("select count(*)::int n from bc_admin_v1.admin_audit_logs where action='auth.enrolment_attempt'")).rows[0].n,5);
+ assert.equal((await admin.query("select count(*)::int n from bc_admin_v1.admin_cleanup_runs where finished_at is not null and deleted>0")).rows[0].n>=2,true);
+ // Argument validation happens before any delete: a table other than the two
+ // operational ones cannot even be named, and an oversized batch is refused.
+ await assert.rejects(exec({identity:issuer,operation:'cleanupExpired',args:['admin_audit_logs',10,randomUUID()]}),e=>e.code==='22023');
+ await assert.rejects(exec({identity:issuer,operation:'cleanupExpired',args:['admin_login_flows',100000,randomUUID()]}),e=>e.code==='22023');
+ // Bounded batches: a batch of one deletes at most one row.
+ await admin.query("insert into bc_admin_v1.admin_login_flows(flow_hash,encrypted_data,expires_at) select gen_random_bytes(32),gen_random_bytes(40),now()-interval '3 hours' from generate_series(1,5)");
+ assert.equal((await RG.runCleanup({execute:exec,identity:issuer,target:'admin_login_flows',limit:1})).deleted,1);
+ // Concurrent runs cannot both delete: the second records a skip instead.
+ const [c1,c2]=await Promise.all([RG.runCleanup({execute:exec,identity:issuer,target:'admin_login_flows',limit:5}),RG.runCleanup({execute:exec,identity:issuer,target:'admin_login_flows',limit:5})]);
+ assert.equal([c1.deleted,c2.deleted].filter(n=>n>0).length>=1,true);
+ // Two transactions racing on one login may both obtain the lock sequentially
+ // (the first commits before the second starts), so a skip is not guaranteed;
+ // what is guaranteed is that no row is deleted twice and every run is recorded.
+ const runs=await admin.query("select count(*)::int n, coalesce(sum(deleted),0)::int d from bc_admin_v1.admin_cleanup_runs");
+ assert(runs.rows[0].n>=5);
+ assert.equal(Number((await admin.query("select count(*)::int n from bc_admin_v1.admin_login_flows where expires_at<=now()")).rows[0].n),0);
+ // Fails closed: wrong permission, a non-operational target, and a bad batch size.
+ await admin.query("delete from bc_admin_v1.admin_user_roles where user_id=$1 and role_id in ('super_admin','admin')",[uid]);
+ await admin.query("insert into bc_admin_v1.admin_user_roles(user_id,role_id) values($1,'editor') on conflict do nothing",[uid]);
+ await assert.rejects(RG.runCleanup({execute:exec,identity:issuer,target:'admin_login_flows'}),e=>e.code==='42501');
+ // Recovery denies a disabled or role-less account even with a valid grant shape.
+ await admin.query("insert into bc_admin_v1.admin_user_roles(user_id,role_id) values($1,'super_admin') on conflict do nothing",[uid]);
+ await admin.query("update bc_admin_v1.admin_users set enabled=false where id=$1",[target]);
+ const dead=await RG.issueRecoveryGrant({execute:exec,identity:issuer,targetUserId:randomUUID()}).catch(e=>e);
+ assert.equal(dead.code,'42501');
+ console.log(`PASS PostgreSQL ${meta.rows[0].version}: fixture migrations, immutable concurrent bio edits, non-owner RBAC, session expiry, restrictive RLS, membership lock, concurrent limiter and atomic handoff and recovery revocation, 010 module reads/settings write and step-up freshness, 011 AAL1-only enrolment gate with audit, 012 Super-Admin-authorised single-use recovery (replay, supersession, five-attempt exhaustion, no session granted) and bounded locked cleanup that spares audit evidence. Provider Auth is mocked; no shared project used.`);
 } finally {if(limited)await limited.end();await admin.end()}

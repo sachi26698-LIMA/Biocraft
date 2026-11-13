@@ -64,3 +64,6 @@ html.admin-document,html.admin-document body,html.admin-document #root{margin:0;
 .ad-auth-uri{display:grid;gap:4px;border:1px solid var(--ad-line);border-radius:9px;background:var(--ad-soft);padding:10px 12px}
 .ad-auth-uri span{font-size:10.5px;font-weight:750;letter-spacing:.5px;text-transform:uppercase;color:var(--ad-muted)}
 .ad-auth-uri code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;letter-spacing:1.5px;overflow-wrap:anywhere;color:var(--ad-text)}
+/* Recovery (D2): the code is typed from an out-of-band message, so the field is
+monospaced and letter-spaced like the setup key, and never autofilled. */
+#admin-recovery-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:1px;text-transform:lowercase}

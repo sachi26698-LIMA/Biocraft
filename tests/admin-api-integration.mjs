@@ -19,7 +19,7 @@ try {
  create table public.generators(id uuid primary key default gen_random_uuid(),name text not null,slug text not null unique,generator_type text not null,character_limit integer,is_active boolean not null default true,platform_id uuid);
  create table public.seo_pages(id uuid primary key default gen_random_uuid(),page_slug text not null unique,title text not null,meta_description text,robots text not null default 'index,follow',is_active boolean not null default true,updated_at timestamptz not null default now());
  -- gen_random_uuid() is built into PostgreSQL 13+; PGlite provides it too.`);
- for(const f of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','008_bio_edit.sql','010_admin_module_commands.sql']) await db.exec(fs.readFileSync(`admin-backend/migrations/${f}`,'utf8'));
+ for(const f of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','008_bio_edit.sql','010_admin_module_commands.sql','012_recovery_and_cleanup.sql']) await db.exec(fs.readFileSync(`admin-backend/migrations/${f}`,'utf8'));
  await db.exec(`insert into auth.users values('${a}'),('${b}'),('${outsider}');insert into bc_admin_v1.admin_users(id,enabled) values('${a}',true),('${b}',true);
  insert into auth.sessions(id,user_id) values('${sa}','${a}'),('${sb}','${b}');
  insert into bc_admin_v1.admin_user_roles(user_id,role_id) values('${a}','editor'),('${b}','admin');`);
@@ -29,7 +29,7 @@ try {
  bc_admin_v1.list_platforms(integer,uuid),bc_admin_v1.list_categories(integer,uuid),bc_admin_v1.list_collections(integer,text),
  bc_admin_v1.list_generators(integer,uuid),bc_admin_v1.list_seo_pages(integer,uuid),bc_admin_v1.analytics_overview(),
  bc_admin_v1.list_settings(integer,text),bc_admin_v1.update_setting(text,jsonb,bigint,uuid),bc_admin_v1.list_role_catalog(),
- bc_admin_v1.list_my_sessions(integer,timestamptz),bc_admin_v1.list_audit_logs(integer,bigint) to fixture_executor;`);
+ bc_admin_v1.list_my_sessions(integer,timestamptz),bc_admin_v1.list_audit_logs(integer,bigint),bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),bc_admin_v1.revoke_recovery_grant(uuid,uuid),bc_admin_v1.cleanup_expired(text,integer,uuid) to fixture_executor;`);
  // PGlite has one login: session_user comparison is simulated here; real
  // session-user and role privilege checks run in admin-postgres-integration.
  const pool={connect:async()=>{await db.exec('set role fixture_executor');return {query:(text,params)=>db.query(text.replace('session_user=current_user','true'),params),release:async()=>{await db.exec('reset role')}}}};
@@ -87,10 +87,43 @@ try {
  const auditPage=await moduleGet('/api/admin/v1/audit-logs');assert.equal(auditPage.status,200);assert(Array.isArray((await auditPage.json()).items));
  // Editor 'a' lacks settings.manage.
  assert.equal((await call('/api/admin/v1/settings','PUT',{key:'site.title',value:{a:1},expectedVersion:1},token(a,sa))).status,403);
+ // 012 HTTP surface: recovery authorisation and bounded cleanup. A super_admin
+ // membership is granted through the fixture only; no bootstrap endpoint exists.
+ await db.exec("insert into bc_admin_v1.admin_user_roles(user_id,role_id) values('"+b+"','super_admin') on conflict do nothing");
+ const RG=await import('../admin-backend/server/recovery-grant.mjs');
+ const recoverHandler=createAdminHandler({enabled:true,provider,execute,rateLimit:async()=>true,platformRules:rules,
+  recovery:{issue:x=>RG.issueRecoveryGrant({execute,...x}),revoke:x=>RG.revokeRecoveryGrant({execute,...x}),cleanup:x=>RG.runCleanup({execute,...x})}});
+ // B's Admin session was revoked by the earlier DELETE, and 005's insert uses
+ // ON CONFLICT DO NOTHING, so the revoked row must be removed before reopening.
+ await db.exec("delete from bc_admin_v1.admin_sessions where id='"+sb+"'");
+ const recCall=(path,method,body,tk=token(b,sb))=>recoverHandler(new Request(`https://admin.example${path}`,{method,headers:{Authorization:`Bearer ${tk}`,'Content-Type':'application/json'},...(body!==undefined?{body:JSON.stringify(body)}:{})}));
+ assert.equal((await call('/api/admin/v1/session','POST',undefined,token(b,sb))).status,200);
+ const issued=await recCall('/api/admin/v1/staff/recovery','POST',{userId:a});
+ assert.equal(issued.status,201);
+ assert.match(issued.headers.get('cache-control'),/no-store/);
+ const grantedCode=(await issued.json()).code;
+ assert(RG.isWellFormedRecoveryCode(grantedCode));
+ // The editor cannot authorise anyone, and nobody can authorise themselves.
+ assert.equal((await recCall('/api/admin/v1/staff/recovery','POST',{userId:b},token(a,sa))).status,403);
+ assert.equal((await recCall('/api/admin/v1/staff/recovery','POST',{userId:b})).status,403);
+ assert.equal((await recCall('/api/admin/v1/staff/recovery','POST',{userId:b,ttlSeconds:30})).status,422);
+ assert.equal((await recCall('/api/admin/v1/staff/recovery/revoke','POST',{grantId:'nope'})).status,422);
+ assert.equal((await recCall('/api/admin/v1/ops/cleanup','POST',{target:'admin_audit_logs'})).status,422);
+ // Argument checks reach the database: an unknown target and an oversized batch.
+ assert.equal((await recCall('/api/admin/v1/ops/cleanup','POST',{target:'admin_login_flows',limit:5000})).status,422);
+ const clean=await recCall('/api/admin/v1/ops/cleanup','POST',{target:'admin_login_flows',limit:10});
+ assert.equal(clean.status,200);assert.equal(typeof (await clean.json()).deleted,'number');
+ // The audit trail records the issuance with the actor and the target.
+ const recRows=await db.query("select action,target_id from bc_admin_v1.admin_audit_logs where action like 'auth.recovery.%' or action='ops.cleanup'");
+ assert(recRows.rows.some(r=>r.action==='auth.recovery.issued'&&r.target_id===a));
+ assert(recRows.rows.some(r=>r.action==='ops.cleanup'));
+ // The code itself is never persisted: only a 32-byte digest and an 8-byte salt.
+ const stored=await db.query('select octet_length(code_hash) h, octet_length(salt) s from bc_admin_v1.admin_recovery_grants');
+ assert.deepEqual(stored.rows.map(r=>({h:Number(r.h),s:Number(r.s)})),[{h:32,s:8}]);
  const unsafe=createDatabaseExecutor({connect:async()=>({query:(text,params)=>db.query(text,params),release:()=>{}})});
  await assert.rejects(unsafe({identity:{userId:a,sessionId:sa,assuranceLevel:'aal2'},operation:'list',args:[10,null,null]}),/Unsafe database executor role/);
  assert.equal((await createAdminHandler({enabled:true,provider,execute,rateLimit:async()=>false,platformRules:rules})(new Request('https://admin.example/api/admin/v1/bio-drafts',{headers:{Authorization:`Bearer ${token(b,sb)}`}}))).status,429);
  assert.throws(()=>createPostgresPool({host:'other.example',user:'limited',password:'fixture'}));
  const realPool=createPostgresPool({host:'db.jvpadtzfsuekixrquzjv.supabase.co',user:'limited',password:'fixture'});await realPool.end(); // no connection opened
- console.log('PASS local API-to-PGlite draft workflow plus 010 module reads, settings/audit authorization, paging validation and step-up denial; mocked provider and fixture-only limited-role grants');
+ console.log('PASS local API-to-PGlite draft workflow plus 010 module reads, settings/audit authorization, paging validation, step-up denial, 012 recovery authorisation and bounded cleanup routes; mocked provider and fixture-only limited-role grants');
 } finally {await db.close()}

@@ -37,7 +37,7 @@ function paging(url,allowed,expect={}) {
   if(type==='uuid'&&!uid.test(value))fail(422,'INVALID');
  }
 }
-export function createAdminHandler({provider,execute,rateLimit,platformRules,enabled=false}={}) {
+export function createAdminHandler({provider,execute,rateLimit,platformRules,recovery=null,enabled=false}={}) {
  return async function handle(request) {
   const id=requestId();
   try {
@@ -84,6 +84,30 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,ena
     const raw=url.searchParams.get('limit')??'50',after=url.searchParams.get('after');
     if(!/^\d{1,3}$/.test(raw)||(after!==null&&!uid.test(after)))fail(422,'INVALID');
     operation='staffList';args=[integer(Number(raw),1,100),after];
+   } else if(url.pathname==='/api/admin/v1/staff/recovery' && request.method==='POST') {
+    // Super Admin authorises one account, one time. The code is generated and
+    // hashed outside the SQL call, so this route needs the recovery service.
+    if(!recovery) fail(503,'UNAVAILABLE');
+    const body=await bodyJson(request);keys(body,['userId','ttlSeconds']);
+    if(typeof body.userId!=='string'||!uid.test(body.userId))fail(422,'INVALID');
+    const ttl=body.ttlSeconds===undefined?900:integer(body.ttlSeconds,60,900);
+    const issued=await recovery.issue({identity,targetUserId:body.userId,ttlSeconds:ttl,requestId:id});
+    return new Response(JSON.stringify({grant_id:issued.grantId,code:issued.code,expires_in_seconds:issued.expiresInSeconds,request_id:id}),{status:201,headers:{...head,'Cache-Control':'no-store, no-cache, must-revalidate','Pragma':'no-cache'}});
+   } else if(url.pathname==='/api/admin/v1/staff/recovery/revoke' && request.method==='POST') {
+    if(!recovery) fail(503,'UNAVAILABLE');
+    const body=await bodyJson(request);keys(body,['grantId']);
+    if(typeof body.grantId!=='string'||!uid.test(body.grantId))fail(422,'INVALID');
+    const revoked=await recovery.revoke({identity,grantId:body.grantId,requestId:id});
+    return json(200,{revoked,request_id:id});
+   } else if(url.pathname==='/api/admin/v1/ops/cleanup' && request.method==='POST') {
+    // Bounded maintenance. The target is validated again inside the SQL function,
+    // which can only ever name the two operational tables.
+    if(!recovery) fail(503,'UNAVAILABLE');
+    const body=await bodyJson(request);keys(body,['target','limit']);
+    if(!['admin_login_flows','admin_rate_limits'].includes(body.target))fail(422,'INVALID');
+    const limit=body.limit===undefined?500:integer(body.limit,1,1000);
+    const cleaned=await recovery.cleanup({identity,target:body.target,limit,requestId:id});
+    return json(200,{deleted:cleaned.deleted,request_id:id});
    } else if(['/api/admin/v1/bio-drafts','/api/admin/v1/bio-review-queue'].includes(url.pathname) && request.method==='GET') {
     if([...url.searchParams.keys()].some(k=>!['limit','before_time','before_id'].includes(k)) || [...new Set(url.searchParams.keys())].some(k=>url.searchParams.getAll(k).length!==1))fail(400,'INVALID');
     const raw=url.searchParams.get('limit')??'20';if(!/^\d{1,3}$/.test(raw))fail(422,'INVALID');const limit=integer(Number(raw),1,100);
@@ -126,6 +150,7 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,ena
    }
    if(['list','staffList','reviewQueue','platformList','categoryList','collectionList','generatorList','seoList','settingList','mySessions','auditLogs','roleCatalog'].includes(operation))return json(200,{items:rows,request_id:id});
    if(operation==='analytics')return json(200,{metrics:rows,request_id:id});
+
    if(operation==='settingUpdate'){if(rows.length!==1||!Number.isSafeInteger(rows[0]?.version))fail(503,'UNAVAILABLE');return json(200,{version:rows[0].version,request_id:id});}
    if(operation==='draftGet'){if(rows.length!==1)fail(404,'NOT_FOUND');return json(200,{item:rows[0],request_id:id});}
    if(operation==='draftUpdate'){if(rows.length!==1)fail(503,'UNAVAILABLE');return json(200,{row_version:rows[0].row_version,request_id:id});}

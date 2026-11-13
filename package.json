@@ -49,7 +49,10 @@
     "test:admin-pool-config": "node tests/admin-pool-config.mjs",
     "test:admin-api-routing": "node tests/admin-api-routing.mjs",
     "test:admin-rewrite-sim": "node tests/admin-rewrite-sim.mjs",
-    "test:admin-totp-enrolment": "node tests/admin-totp-enrolment.mjs"
+    "test:admin-recovery-browser": "node tests/admin-recovery-browser.cjs",
+    "test:admin-grant-inventory": "node tests/admin-grant-inventory.mjs",
+    "test:admin-totp-enrolment": "node tests/admin-totp-enrolment.mjs",
+    "test:admin-totp-recovery": "node tests/admin-totp-recovery.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

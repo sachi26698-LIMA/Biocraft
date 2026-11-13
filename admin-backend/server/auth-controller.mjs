@@ -27,7 +27,7 @@ function pending(request) {
  if(!/^[A-Za-z0-9_-]{43}$/.test(id))return null;return id;
 }
 function same(a,b) {return typeof a==='string'&&typeof b==='string'&&/^[A-Za-z0-9_-]{43}$/.test(a)&&/^[A-Za-z0-9_-]{43}$/.test(b)&&timingSafeEqual(Buffer.from(a),Buffer.from(b));}
-export function createAuthController({enabled=false,origin,key,createClient,flowStore,limiter,sessionHandler,enrolment}={}) {
+export function createAuthController({enabled=false,origin,key,createClient,flowStore,limiter,sessionHandler,enrolment,recovery,factorGate}={}) {
  return async function(request,remoteKey) {
   if(!enabled || !Buffer.isBuffer(key)||key.length!==32 || typeof createClient!=='function' || typeof limiter!=='function' ||
      typeof flowStore?.put!=='function' || typeof flowStore?.take!=='function' || typeof sessionHandler!=='function')return out(503,{error:{code:'UNAVAILABLE'}});
@@ -51,18 +51,51 @@ export function createAuthController({enabled=false,origin,key,createClient,flow
   let url;try {url=new URL(request.url);const o=new URL(origin);if(o.protocol!=='https:'||o.origin!==origin||url.origin!==origin||request.headers.get('origin')!==origin||request.method!=='POST'||url.search)throw Error();}catch{return out(403,{error:{code:'FORBIDDEN'}})}
   if(typeof remoteKey!=='string'||remoteKey.length<1||remoteKey.length>200)return out(503,{error:{code:'UNAVAILABLE'}});
   try {
+   const enrolHook=typeof enrolment==='function'?enrolment:null;
+   const recoverHook=typeof recovery==='function'?recovery:null;
    if(url.pathname==='/api/admin/v1/auth/login') {
     const body=await json(request);
     if(Object.keys(body).sort().join(',')!=='email,password')return out(400,{error:{code:'INVALID'}});
     const client=createClient();
     const login=await beginPasswordLogin({client,email:body.email,password:body.password,limiter,rateKey:remoteKey});
     const enrol=typeof enrolment==='function'?enrolment:null;
-    if (login.enrolmentRequired && !enrol) {try{await client.auth.signOut({scope:'local'})}catch{};return out(503,{error:{code:'UNAVAILABLE'}});}
+    // D2 hooks: `recovery` opens the Super-Admin-authorised path; `factorGate`
+    // asks the database whether this account may enrol or must recover.
+    const recover=recoverHook;
+    const gate=typeof factorGate==='function'?factorGate:null;
+    // D2: a password session with no verified factor may do exactly one of two
+    // things, and the database decides which. 'enrol' means the account has never
+    // proven a factor (genuinely new administrator); 'recover' means it had one
+    // and lost it, which requires a Super-Admin-issued grant. Anything else fails
+    // closed, so a password alone never creates a replacement factor.
+    if (login.enrolmentRequired) {
+     let decision=null;
+     if(typeof gate==='function'){try{decision=await gate({session:login.session,attempt:'factor'});}catch{decision=null;}}
+     if (decision==='enrol' && enrol) {
+      const eid=randomBytes(32).toString('base64url'),ecsrf=randomBytes(32).toString('base64url');
+      try {await flowStore.put(eid,{session:login.session,csrf:ecsrf,type:'password',enrolment:true},300);}
+      catch {try{await client.auth.signOut({scope:'local'})}catch{};return out(503,{error:{code:'UNAVAILABLE'}});}
+      return out(200,{mfa_required:false,enrolment:true,csrf:ecsrf},{'Set-Cookie':cookie(eid,300)});
+     }
+     if (decision==='recover' && recover) {
+      // A recover decision is only actionable with a live grant; the hook proves
+      // it before the pending flow is stored.
+      let live=false;
+      try {live=await recover({session:login.session,factorIds:login.factorIds});} catch {live=false;}
+      if (!live) {try{await client.auth.signOut({scope:'local'})}catch{};return out(403,{error:{code:'FORBIDDEN'}},{'Set-Cookie':cookie('',0)});}
+      const rid=randomBytes(32).toString('base64url'),rcsrf=randomBytes(32).toString('base64url');
+      try {await flowStore.put(rid,{session:login.session,csrf:rcsrf,type:'recovery'},300);}
+      catch {try{await client.auth.signOut({scope:'local'})}catch{};return out(503,{error:{code:'UNAVAILABLE'}});}
+      return out(200,{mfa_required:false,enrolment:false,recovery:true,csrf:rcsrf},{'Set-Cookie':cookie(rid,300)});
+     }
+     try{await client.auth.signOut({scope:'local'})}catch{}
+     return out(403,{error:{code:'FORBIDDEN'}},{'Set-Cookie':cookie('',0)});
+    }
     const id=randomBytes(32).toString('base64url'),csrf=randomBytes(32).toString('base64url');
     // Store must encrypt and TTL this record; no tokens returned to browser.
-    try {await flowStore.put(id,{session:login.session,factorId:login.factorIds[0]??null,csrf,type:'password',enrolment:login.enrolmentRequired===true},300);}
+    try {await flowStore.put(id,{session:login.session,factorId:login.factorIds[0]??null,csrf,type:'password',enrolment:false},300);}
     catch(e) {try{await client.auth.signOut({scope:'local'})}catch{};throw e;}
-    return out(200,{mfa_required:!login.enrolmentRequired,enrolment:login.enrolmentRequired===true,csrf},{'Set-Cookie':cookie(id,300)});
+    return out(200,{mfa_required:true,enrolment:false,csrf},{'Set-Cookie':cookie(id,300)});
    }
    const enrol=typeof enrolment==='function'?enrolment:null;
    if(url.pathname==='/api/admin/v1/auth/enroll') {
@@ -100,6 +133,30 @@ export function createAuthController({enabled=false,origin,key,createClient,flow
     const confirmed=await confirmTotpEnrolment({client,factorId:flow.factorId,code:body.code,limiter,rateKey:remoteKey});
     // The confirming code yields a fresh AAL2 session for this account.
     return establish(confirmed);
+   }
+   if(url.pathname==='/api/admin/v1/auth/recovery/complete') {
+    // Redeem the single-use recovery code. On success the account is told to
+    // re-enrol on its next sign-in: no session is minted, no factor is removed by
+    // this route, and the stale factor stays until the operator clears it.
+    if(!recoverHook)return out(503,{error:{code:'UNAVAILABLE'}});
+    const recover=recoverHook;
+    const body=await json(request);
+    if(Object.keys(body).sort().join(',')!=='code,csrf')return out(400,{error:{code:'INVALID'}},{'Set-Cookie':cookie('',0)});
+    const flowId=pending(request);
+    const flow=flowId?await flowStore.take(flowId):null;
+    if(!flow||flow.type!=='recovery'||!same(body.csrf,flow.csrf))return out(401,{error:{code:'UNAUTHENTICATED'}},{'Set-Cookie':cookie('',0)});
+    const client=createClient();let identity;
+    try {identity=await verifyEnrolmentIdentity({token:flow.session.access_token,provider:client});}
+    catch {return out(401,{error:{code:'UNAUTHENTICATED'}},{'Set-Cookie':cookie('',0)});}
+    // A wrong or exhausted code is an authentication failure (401); a refusal
+    // that the database reports as a definite denial is 403. Both clear the
+    // pending flow, so neither can be retried without the cookie.
+    let outcome;
+    try {outcome=await recover({redeem:true,identity,code:body.code});}
+    catch (e) {const denied=e?.code==='FORBIDDEN';return out(denied?403:401,{error:{code:denied?'FORBIDDEN':'UNAUTHENTICATED'}},{'Set-Cookie':cookie('',0)});}
+    if(outcome!==true){try{await client.auth.signOut({scope:'local'})}catch{};return out(401,{error:{code:'UNAUTHENTICATED'}},{'Set-Cookie':cookie('',0)});}
+    try{await client.auth.signOut({scope:'global'});}catch{/* authorisation already recorded */}
+    return out(200,{ok:true,next:'contact_operator'},{'Set-Cookie':cookie('',0)});
    }
    if(url.pathname==='/api/admin/v1/auth/mfa') {
     const body=await json(request);if(Object.keys(body).sort().join(',')!=='code,csrf')return out(400,{error:{code:'INVALID'}},{'Set-Cookie':cookie('',0)});

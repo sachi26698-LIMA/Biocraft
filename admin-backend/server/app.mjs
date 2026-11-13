@@ -14,6 +14,8 @@ import {randomUUID} from 'node:crypto';
 import {createProviderClient} from './identity.mjs';
 import {createAuthController} from './auth-controller.mjs';
 import {createRecoveryController} from './recovery-controller.mjs';
+import {issueRecoveryGrant,revokeRecoveryGrant,runCleanup,redeemRecoveryCode,factorGate,recoveryGrantState} from './recovery-grant.mjs';
+import {verifyProviderIdentity} from './identity.mjs';
 import {createCookieGateway} from './session-cookie.mjs';
 import {createAdminHandler} from './api.mjs';
 import {createDatabaseExecutor,createPostgresPool,assertLimitedRole} from './database.mjs';
@@ -82,7 +84,15 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  const client=()=>createProviderClient(PROJECT_URL,env.ADMIN_SUPABASE_PUBLISHABLE_KEY);
  const rateLimit=({bucket,key})=>storage.limit({bucket,key});
  if (typeof storage.limit!=='function') return fail('invalid storage');
- const api=createAdminHandler({enabled:true,provider,execute,rateLimit,platformRules:PLATFORM_RULES});
+ // Recovery authorisation and bounded cleanup (012). The service is injected so
+ // the API routes cannot mint a code without the database check that runs first.
+ // `execute` is bound here, never supplied by a request, so a route cannot reach
+ // the database with an identity the gateway did not verify.
+ const recoveryService={
+  issue:options=>issueRecoveryGrant({execute,...options}),
+  revoke:options=>revokeRecoveryGrant({execute,...options}),
+  cleanup:options=>runCleanup({execute,...options})};
+ const api=createAdminHandler({enabled:true,provider,execute,rateLimit,platformRules:PLATFORM_RULES,recovery:recoveryService});
  const recovery=createRecoveryController({enabled:true,origin,createClient:client,flowStore:storage,limiter:rateLimit,execute});
  // Enrolment gate: live Admin membership + provider session, checked in the DB
  // before any TOTP factor is created. It is the only pre-AAL2 database call.
@@ -91,7 +101,35 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    if(!Array.isArray(rows)||rows.length!==1||rows[0].eligible!==true) throw new Error('Not eligible');
   } catch {throw new Error('Not eligible');}
  };
- const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:storage,limiter:rateLimit,sessionHandler:api,enrolment});
+ // D2 decision point. Three request shapes, all fail-closed:
+ //   {attempt:'factor'}  -> 'enrol' (never had a factor) or 'recover' (had one),
+ //     decided from a database record, not from the browser;
+ //   {session, factorIds} -> legacy pre-check kept for the recovery handshake;
+ //   {redeem, identity, code} -> redeem a code; the database enforces attempts,
+ //     expiry and single use, and issues no session.
+ const factorDecision=async request=>{
+  try {
+   if (request && request.redeem === true) {
+    const result=await redeemRecoveryCode({execute,identity:request.identity,code:request.code});
+    return result.ok === true;
+   }
+   // The password step decides enrol vs recover from a database record, never
+   // from what the browser claims. A 'recover' answer still needs a live grant
+   // before the handshake opens, so recovery cannot be self-started.
+   if (request && (request.session?.access_token) && request.attempt !== 'factor' && request.redeem !== true) {
+    // A recovery handshake still requires a live grant.
+    const identity=await verifyProviderIdentity({token:request.session.access_token,provider:createClient(),allowAal1:true});
+    const state=await recoveryGrantState({execute,identity});
+    return state!==null && state.attemptsRemaining>0;
+   }
+   if (request && request.attempt === 'factor' && request.session?.access_token) {
+    const identity=await verifyProviderIdentity({token:request.session.access_token,provider:createClient(),allowAal1:true});
+    return await factorGate({execute,identity});
+   }
+   return false;
+  } catch { return false; }
+ };
+ const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:storage,limiter:rateLimit,sessionHandler:api,enrolment,recovery:factorDecision,factorGate:factorDecision});
  const gateway=createCookieGateway({key:cookieKey,origin,delegate:api,providerLogout:async()=>{const sessionClient=client();await providerLogout(sessionClient)}});
  const app=async function handle(request){
   const key=clientKey(request,{trustedHeader,ingressSecret});

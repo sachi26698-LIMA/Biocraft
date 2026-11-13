@@ -13,7 +13,7 @@ const token=(claims)=>{const exp=Math.floor(Date.now()/1000)+3600;const header=b
 const aal1=token({aal:'aal1'}),aal2=token({aal:'aal2'});
 const flowStore=()=>{const map=new Map();return {put:async(id,v)=>{map.set(id,JSON.parse(JSON.stringify(v)))},take:async id=>{const v=map.get(id);map.delete(id);return v},peek:id=>map.get(id)}};
 const enrollmentResults=[true,false,Error('db down')];
-function build({enrolment='allow',sessionStatus=200,factor}){
+function build({enrolment='allow',sessionStatus=200,factor,gate='enrol'}){
  const store=flowStore();let enrolled=0,confirmed=0;
  const client={auth:{
   setSession:async()=>({data:{session:{access_token:aal1}},error:null}),
@@ -25,7 +25,11 @@ function build({enrolment='allow',sessionStatus=200,factor}){
  }};
  const app=createAuthController({enabled:true,origin,key,createClient:()=>client,flowStore:store,limiter:async()=>true,
   sessionHandler:async()=>new Response(JSON.stringify({ok:true}),{status:sessionStatus}),
-  enrolment:async()=>{if(enrolment==='allow')return true;if(enrolment==='deny')throw Error('no');throw Error('down')}});
+  enrolment:async()=>{if(enrolment==='allow')return true;if(enrolment==='deny')throw Error('no');throw Error('down')},
+  factorGate:async()=>gate,
+  recovery:async()=>true,
+  // A password login in these fixtures always lands on the no-factor branch.
+  });
  const post=(path,body,cookie)=>{const headers={'content-type':'application/json',origin};if(cookie)headers.cookie=cookie;
   return app(new Request(`${origin}/api/admin/v1/auth/${path}`,{method:'POST',headers,body:JSON.stringify(body)}),'1.2.3.4')};
  return {post,store,counters:()=>({enrolled,confirmed})};
