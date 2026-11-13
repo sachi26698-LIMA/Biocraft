@@ -4,11 +4,15 @@
 // delegate must verify provider identity and check live DB session on every call.
 import {createCipheriv,createDecipheriv,randomBytes,timingSafeEqual} from 'node:crypto';
 const COOKIE='__Host-biocraft-admin'; const AAD=Buffer.from('biocraft-admin-cookie-v1');
-const maxAgeMs=15*60*1000;
+// Cookie lifetime is bounded by the provider token and by this hard cap.
+const maxAgeMs=60*60*1000;
+function providerTokenExpiry(token){const parts=typeof token==='string'?token.split('.'):[];if(parts.length!==3||!parts.every(p=>/^[A-Za-z0-9_-]+$/.test(p)))return null;try{const exp=JSON.parse(Buffer.from(parts[1],'base64url').toString('utf8')).exp;return Number.isSafeInteger(exp)?exp:null}catch{return null}}
 function keyValid(key){return Buffer.isBuffer(key)&&key.length===32}
 function header(value,maxAge){return `${COOKIE}=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`}
 export function issueSessionCookie({key,accessToken,expiresAt,now=Date.now()}) {
  if(!keyValid(key)||typeof accessToken!=='string'||accessToken.length<1||accessToken.length>2200 || !Number.isSafeInteger(expiresAt) || expiresAt<=now || expiresAt>now+maxAgeMs) throw new Error('Invalid session');
+ // Never mint a cookie that outlives the provider token it carries.
+ const tokenExp=providerTokenExpiry(accessToken);if(tokenExp===null||expiresAt>tokenExp*1000)throw new Error('Invalid session');
  const csrf=randomBytes(32).toString('base64url'),iv=randomBytes(12),cipher=createCipheriv('aes-256-gcm',key,iv);cipher.setAAD(AAD);
  const data=Buffer.concat([cipher.update(JSON.stringify({accessToken,expiresAt,csrf}),'utf8'),cipher.final()]);
  const value=Buffer.concat([iv,cipher.getAuthTag(),data]).toString('base64url');
@@ -25,6 +29,9 @@ function decodeCookie(request,key,now) {
  const decipher=createDecipheriv('aes-256-gcm',key,bytes.subarray(0,12));decipher.setAAD(AAD);decipher.setAuthTag(bytes.subarray(12,28));
  const object=JSON.parse(Buffer.concat([decipher.update(bytes.subarray(28)),decipher.final()]).toString('utf8'));
  if(!object || typeof object.accessToken!=='string'||object.accessToken.length>2200||!Number.isSafeInteger(object.expiresAt)||object.expiresAt<=now || object.expiresAt>now+maxAgeMs || typeof object.csrf!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(object.csrf))throw new Error('Invalid cookie');
+ // The provider token must still be valid for the whole cookie lifetime.
+ const exp=providerTokenExpiry(object.accessToken);
+ if(exp===null||exp*1000<=now||object.expiresAt>exp*1000)throw new Error('Invalid cookie');
  return object;
 }
 const response=(status,code)=>new Response(JSON.stringify({error:{code}}),{status,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}});

@@ -16,10 +16,13 @@ begin
     or not exists(select 1 from auth.sessions where id=sid and user_id=uid) then
   raise exception 'not authorized' using errcode='42501'; end if;
  -- A revoked or expired Admin session can never be reopened under the same ID.
- insert into bc_admin_v1.admin_sessions(id,user_id,expires_at) values(sid,uid,now()+interval '8 hours')
+ -- Admin session lifetime is capped to one hour so it never outlives the
+ -- provider access token (JWT exp 1h for this project). The provider session is
+ -- re-verified on every request; this row only records the Admin-side grant.
+ insert into bc_admin_v1.admin_sessions(id,user_id,expires_at) values(sid,uid,now()+interval '1 hour')
  on conflict(id) do nothing;
  inserted:=found;
- select s.expires_at into expiry from bc_admin_v1.admin_sessions s
+ select least(s.expires_at,now()+interval '1 hour') into expiry from bc_admin_v1.admin_sessions s
   where s.id=sid and s.user_id=uid and s.revoked_at is null and s.expires_at>now() for update;
  if not found then raise exception 'not authorized' using errcode='42501'; end if;
  if inserted then

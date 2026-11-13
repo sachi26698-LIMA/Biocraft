@@ -63,7 +63,7 @@ export function createAuthController({enabled=false,origin,key,createClient,flow
      if(session.expires_at!==undefined){if(!Number.isSafeInteger(session.expires_at))throw Error();providerExpiry=Math.min(providerExpiry,session.expires_at*1000);}
      if(!Number.isSafeInteger(providerExpiry)||providerExpiry<=now)throw Error();
     }catch{try{await client.auth.signOut({scope:'local'})}catch{};return out(503,{error:{code:'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)});}
-    const issued=issueSessionCookie({key,accessToken:session.access_token,expiresAt:Math.min(providerExpiry,now+15*60*1000),now});
+    const issued=issueSessionCookie({key,accessToken:session.access_token,expiresAt:Math.min(providerExpiry,now+60*60*1000),now});
     let verified;try{verified=await sessionHandler(new Request(`${origin}/api/admin/v1/session`,{method:'POST',headers:{Authorization:`Bearer ${session.access_token}`}}));}
     catch{try{await client.auth.signOut({scope:'local'})}catch{};return out(503,{error:{code:'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)});}
     if(verified.status!==200){try{await client.auth.signOut({scope:'local'})}catch{};const status=verified.status===401?401:verified.status===403?403:verified.status===429?429:503;return out(status,{error:{code:status===401?'UNAUTHENTICATED':status===403?'FORBIDDEN':status===429?'RATE_LIMITED':'UNAVAILABLE'}},{'Set-Cookie':cookie('',0)});}
