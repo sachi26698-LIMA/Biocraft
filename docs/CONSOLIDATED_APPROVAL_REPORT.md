@@ -5,6 +5,11 @@ schema, role, grant, Auth setting or account has been created in the shared
 project. This file supersedes `docs/MASTER_ADMIN_APPROVAL_REQUEST.md` as the
 single approval artefact; the full per-file SQL is shown at the end.
 
+Re-verified at the end of this work (read-only queries only): `bc_admin_v1`
+schema **absent**, `bc_admin_executor` role **absent**, guest `anon` still sees
+506 bios / 33 categories / 8 platforms — identical to owner counts. No shared
+change of any kind has been made.
+
 Verified live state at the time of writing (read-only queries only):
 
 | Fact | Value |
@@ -110,11 +115,18 @@ Run **after** approval, in this order:
 1. **Create the user** (Supabase Dashboard → Authentication → Users → *Add user*).
    Use the owner's real e-mail, *Auto Confirm User*, and a unique strong password.
    Copy the user UUID.
-2. **Enrol TOTP** — first sign-in at `https://<origin>/admin/login`. The current
-   UI only accepts an existing factor, so enrolment is done once via the
-   Supabase-authenticated flow or the dashboard MFA panel; the code that performs
-   `mfa.enroll` will be run only after that step is reviewed. The factor must
-   show `verified` before the account can be used.
+2. **Enrol TOTP** — first sign-in at `https://<origin>/admin/login`. Because the
+   account has a password but no verified factor yet, the server answers the
+   password step with `enrolment: true` and the UI shows a one-time setup key.
+   Enter it in an authenticator app, then the 6-digit code; that call is gated by
+   `bc_admin_v1.enrolment_eligible(uuid)` (enabled membership + role + live
+   provider session, audited), and only then is an Admin session issued. The
+   factor must show `verified` before the account can be used. Step 3
+   (membership) must therefore be run **before** the first browser sign-in.
+
+   Note the ordering: create the user (1), grant membership (3) and only then
+   enrol (2). Enrolment deliberately refuses an account with no membership, so
+   nothing can be enrolled by an uninvited user.
 3. **Grant membership + role** (SQL Editor, exact statements):
 
    ```sql
