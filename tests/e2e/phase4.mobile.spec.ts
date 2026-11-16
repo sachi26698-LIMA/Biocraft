@@ -298,6 +298,8 @@ test('every tool supports its mobile workflow, editable output, copy/download, a
   await hashtagOutput.fill('#phasefour #edited');
   await copyAndVerify(page, page.locator('.hashtag-actions button').first(), '#phasefour #edited');
   await verifyDownload(page, page.locator('.results-actions button').filter({ hasText: 'Download' }).first());
+  await page.getByRole('button', { name: 'Advanced', exact: true }).click();
+  await expect(page.locator('#hashtag-keywords')).toBeVisible();
   await page.locator('#hashtag-keywords').fill('!!!');
   await page.locator('.generate-button').click();
   await expect(page.locator('#hashtag-keywords-error')).toBeVisible();
@@ -407,9 +409,11 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   const page = await context.newPage();
   await page.addInitScript(() => {
     type ShiftDetail = { value: number; startTime: number; scrollY: number; sources: string[] };
-    type MetricWindow = Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: ShiftDetail[] } };
+    type ScrollDetail = { timeMs: number; y: number };
+    type MetricWindow = Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: ShiftDetail[]; scrollEvents: ScrollDetail[] } };
     const target = window as MetricWindow;
-    target.__phase4Metrics = { lcpMs: null, cls: 0, inpCandidateMs: null, longTasks: [], layoutShifts: [] };
+    target.__phase4Metrics = { lcpMs: null, cls: 0, inpCandidateMs: null, longTasks: [], layoutShifts: [], scrollEvents: [] };
+    window.addEventListener('scroll', () => target.__phase4Metrics!.scrollEvents.push({ timeMs: performance.now(), y: window.scrollY }), { passive: true });
     const supported = PerformanceObserver.supportedEntryTypes;
     const observe = (type: string, callback: (entries: PerformanceEntry[]) => void, options: PerformanceObserverInit = {}) => {
       if (!supported.includes(type)) return;
@@ -471,7 +475,7 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   const browserMetrics = await page.evaluate((interactionStart) => {
     const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-    const metrics = (window as Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: { value: number; startTime: number; scrollY: number; sources: string[] }[] } }).__phase4Metrics;
+    const metrics = (window as Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: { value: number; startTime: number; scrollY: number; sources: string[] }[]; scrollEvents: { timeMs: number; y: number }[] } }).__phase4Metrics;
     const allLayoutShifts = metrics?.layoutShifts ?? [];
     const loadLayoutShifts = allLayoutShifts.filter((entry) => entry.startTime < interactionStart);
     return {
@@ -485,6 +489,7 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
       longTaskTotalMs: metrics?.longTasks.reduce((sum, duration) => sum + duration, 0) ?? 0,
       layoutShiftEvents: allLayoutShifts,
       loadPhaseLayoutShiftEvents: loadLayoutShifts,
+      scrollEvents: metrics?.scrollEvents ?? [],
       symbolsShownAfterSearch: document.querySelectorAll('.symbol-grid .symbol-button').length,
     };
   }, interactionStartMs);

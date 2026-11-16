@@ -55,6 +55,7 @@ if (existsSync(metricPath)) {
     cls: metrics.cls,
     clsNote: 'Layout-shift sum before the scripted click/keyboard interaction; synthetic page-load sample.',
     layoutShiftEvents: (metrics.loadPhaseLayoutShiftEvents ?? metrics.layoutShiftEvents ?? []).slice(0, 5),
+    scrollEvents: (metrics.scrollEvents ?? []).slice(0, 10),
     inpCandidateMs: metrics.inpCandidateMs,
     inpNote: 'Maximum observed Event Timing duration with interactionId during this lab interaction; not field INP.',
     longTaskCount: metrics.longTaskCount,
