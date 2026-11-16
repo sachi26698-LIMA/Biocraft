@@ -212,6 +212,22 @@ async function runTool(browser, tool) {
   if (small.length) fail(`${tool.key}: ${small.length} control(s) under 24px: ` + JSON.stringify(small.slice(0, 4)));
   else ok(`${tool.key}: no undersized controls at 390px`);
 
+  // Anything scrolled to must clear the sticky header, or the first line of a
+  // result sits underneath it. Only meaningful once the page is tall enough to
+  // scroll and there is a sticky header to clear.
+  const clearance = await page.evaluate(async () => {
+    const header = document.querySelector('.site-header');
+    if (!header || document.documentElement.scrollHeight <= window.innerHeight) return null;
+    const target = document.querySelector('.bio-card, .result-card, .chip-row, [role=region] > *');
+    if (!target) return null;
+    target.scrollIntoView({ block: 'start', behavior: 'instant' });
+    await new Promise((r) => setTimeout(r, 250));
+    return Math.round(header.getBoundingClientRect().bottom - target.getBoundingClientRect().top);
+  });
+  if (clearance !== null && clearance > 0) {
+    fail(`${tool.key}: scrolled-to element sits ${clearance}px behind the sticky header`);
+  }
+
   if (errors.length) fail(`${tool.key}: console/page errors: ` + JSON.stringify(errors.slice(0, 3)));
   if (badResponses.length) fail(`${tool.key}: failed requests: ` + JSON.stringify(badResponses.slice(0, 3)));
 

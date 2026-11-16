@@ -53,8 +53,15 @@
   --glow-cta: 0 14px 34px rgba(139, 75, 192, 0.34);
   --focus-ring: 0 0 0 3px rgba(139, 75, 192, 0.32);
 
+  /* The emoji families are named explicitly rather than left to implicit
+     fallback. Generated bios and captions contain emoji by design, and implicit
+     fallback only works when the platform has a colour emoji font at the level
+     the text renderer reaches — a stripped-down renderer draws them as tofu
+     boxes instead. Named families cost nothing when absent and are used
+     automatically when present. */
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Math', sans-serif;
+    'Helvetica Neue', Arial, 'Noto Sans', 'Noto Sans Devanagari', 'Noto Sans Math',
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', sans-serif;
   --font-display: 'Baloo 2', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
@@ -64,6 +71,13 @@ html {
   color-scheme: light;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  /* The header is sticky (62px tall, offset 0.65rem from the top). Without this,
+     anything scrolled into view — a result card focused by keyboard, a hash
+     target, an in-page "jump to results" link — settles flush against the
+     viewport top and the first line sits underneath the header. One global
+     offset covers every target instead of relying on each component
+     remembering its own scroll-margin. */
+  scroll-padding-top: 5.5rem;
 }
 
 body {
