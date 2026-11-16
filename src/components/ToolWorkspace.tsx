@@ -101,7 +101,16 @@ export default function ToolWorkspace({
                 </button>
               </div>
             </header>
-            <Suspense fallback={<div className="tool-loading" role="status" aria-live="polite">Loading this tool…</div>}>
+            <Suspense fallback={
+              <div className={`tool-loading tool-loading-${effectiveKey}`} role="status" aria-live="polite">
+                Loading this tool…
+                {effectiveKey === 'symbols' && (
+                  <span className="tool-loading-skeleton" aria-hidden="true">
+                    {Array.from({ length: 48 }, (_, index) => <i key={index} />)}
+                  </span>
+                )}
+              </div>
+            }>
               <Panel key={resetKey} />
             </Suspense>
           </div>
