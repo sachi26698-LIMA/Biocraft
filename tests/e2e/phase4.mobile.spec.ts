@@ -609,7 +609,7 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   writeFileSync(path.join(ROOT, 'phase4-artifacts', 'performance.json'), `${JSON.stringify(report, null, 2)}\n`);
   expect(response?.ok()).toBeTruthy();
   expect(browserMetrics.lcpMs, 'LCP observer should record the page content').not.toBeNull();
-  expect(browserMetrics.cls).not.toBeNull();
+  expect(browserMetrics.cls, 'synthetic initial-load CLS should remain in the good range').toBeLessThan(0.1);
   expect(browserMetrics.longTaskCount).not.toBeNull();
   await context.close();
 });
