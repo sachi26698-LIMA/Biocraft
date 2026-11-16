@@ -202,6 +202,73 @@ test('requested phone, tablet and desktop widths have no horizontal overflow on 
   await page.setViewportSize({ width: 390, height: 844 });
 });
 
+test('mobile tool actions meet 44px targets and text inputs remain reachable in a reduced viewport', async ({ page }) => {
+  for (const route of TOOLS) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openTool(page, route);
+
+    const undersizedButtons = await page.locator(
+      '.toolkit-workspace button:visible:not(.switch), .bio-editor-page button:visible:not(.switch)',
+    ).evaluateAll((buttons) => buttons.flatMap((button) => {
+      const rect = button.getBoundingClientRect();
+      return rect.width < 44 || rect.height < 44
+        ? [{ label: (button.textContent ?? '').trim().slice(0, 50), width: rect.width, height: rect.height }]
+        : [];
+    }));
+    expect(undersizedButtons, `${route} visible coarse-pointer buttons below 44 CSS px`).toEqual([]);
+
+    const switchTargets = await page.locator('.toolkit-workspace button.switch:visible').evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const rect = button.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      }),
+    );
+    expect(switchTargets.every(({ width, height }) => width >= 44 && height >= 24), `${route} switch targets`).toBeTruthy();
+
+    // Shrinking the emulated viewport approximates the space left above an
+    // on-screen keyboard. It is not a native keyboard/device test.
+    let input = page.locator('input:visible:not([type="hidden"]), textarea:visible').first();
+    if (await input.count() === 0) {
+      await page.locator('.generate-button').click();
+      input = page.locator('input:visible:not([type="hidden"]), textarea:visible').first();
+    }
+    await expect(input, `${route} first editable field`).toBeVisible();
+    await input.focus();
+    await page.setViewportSize({ width: 390, height: 560 });
+    await input.evaluate((element) => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
+    const focusedField = await input.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        focused: document.activeElement === element,
+        top: rect.top,
+        bottom: rect.bottom,
+        viewportHeight: window.innerHeight,
+      };
+    });
+    expect(focusedField.focused, `${route} retains input focus`).toBeTruthy();
+    expect(focusedField.top, `${route} focused field is not above the viewport`).toBeGreaterThanOrEqual(0);
+    expect(focusedField.bottom, `${route} focused field clears the simulated keyboard area`).toBeLessThanOrEqual(focusedField.viewportHeight);
+
+    if (route === '/bio-editor') {
+      const previewPosition = await page.locator('.bio-editor-preview-col').evaluate((element) => getComputedStyle(element).position);
+      expect(previewPosition, 'Bio Editor preview should not remain sticky on phones').toBe('static');
+    }
+  }
+});
+
+test('mobile header remains sticky while the tool workspace scrolls', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openTool(page, '/bio-generator');
+  await page.evaluate(() => window.scrollTo(0, Math.max(400, document.documentElement.scrollHeight / 2)));
+  const header = await page.locator('.site-header').evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { position: getComputedStyle(element).position, top: rect.top };
+  });
+  expect(header.position).toBe('sticky');
+  expect(header.top).toBeGreaterThanOrEqual(0);
+  expect(header.top).toBeLessThanOrEqual(16);
+});
+
 test('all 13 public tools and editor pass browser axe accessibility scans', async ({ page }) => {
   for (const route of TOOLS) {
     await openTool(page, route);

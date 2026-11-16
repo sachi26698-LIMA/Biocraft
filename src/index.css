@@ -1892,11 +1892,17 @@ select:focus-visible, [tabindex]:focus-visible {
 
 @media (pointer: coarse) {
   .copy-button { min-height: 44px; padding: 0 1rem; }
-  .chip { min-height: 42px; }
+  .chip { min-height: 44px; }
   .tool-tab { min-height: 44px; }
   .segmented-option { min-height: 44px; }
   .menu-toggle { width: 46px; height: 46px; }
-  .favourite-btn { width: 40px; height: 40px; }
+  .favourite-btn { width: 44px; height: 44px; }
+  .toolkit-workspace button:not(.switch), .bio-editor-page button:not(.switch) {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .bc-search-clear { width: 44px; height: 44px; }
+  .bc-nav-chip, .footer-link { min-height: 44px; }
 }
 
 /* ---------- Overflow safety nets (root-cause helpers, not global clips) ---------- */
