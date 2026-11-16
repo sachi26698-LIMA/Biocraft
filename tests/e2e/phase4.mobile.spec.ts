@@ -50,13 +50,15 @@ async function openTool(page: Page, route: string) {
 async function verifyModeSwitch(page: Page) {
   const basic = page.getByRole('button', { name: 'Basic', exact: true });
   const advanced = page.getByRole('button', { name: 'Advanced', exact: true });
-  await expect(basic).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('[data-tool-mode="basic"]')).toBeVisible();
+  const current = await page.locator('[data-tool-mode]').first().getAttribute('data-tool-mode');
+  expect(current === 'basic' || current === 'advanced').toBeTruthy();
+  await expect(current === 'basic' ? basic : advanced).toHaveAttribute('aria-pressed', 'true');
   await advanced.click();
   await expect(page.locator('[data-tool-mode="advanced"]')).toBeVisible();
   await expect(advanced).toHaveAttribute('aria-pressed', 'true');
   await basic.click();
   await expect(page.locator('[data-tool-mode="basic"]')).toBeVisible();
+  await expect(basic).toHaveAttribute('aria-pressed', 'true');
 }
 
 async function copyAndVerify(page: Page, button: ReturnType<Page['locator']>, expected?: string) {
@@ -114,8 +116,16 @@ test('all 48 direct routes hydrate with their own page content and route metadat
   for (const route of routes) {
     const response = await page.goto(route, { waitUntil: 'domcontentloaded' });
     expect(response?.status(), `${route} HTTP status`).toBe(200);
+    const html = await response!.text();
+    const titleMatch = html.match(/<title>(.*?)<\/title>/is);
+    expect(titleMatch, `${route} static route title`).not.toBeNull();
+    const expectedTitle = await page.evaluate((encodedTitle) => {
+      const title = document.createElement('title');
+      title.innerHTML = encodedTitle;
+      return title.textContent;
+    }, titleMatch![1]);
+    await expect.poll(() => page.title(), { message: `${route} route-specific title` }).toBe(expectedTitle);
     await expect.poll(() => page.locator('#root').evaluate((root) => root.childElementCount), { message: `${route} React mount` }).toBeGreaterThan(0);
-    await expect(page.locator('title'), `${route} title`).not.toHaveText('');
     await expect(page.locator('meta[name="description"]'), `${route} description`).toHaveAttribute('content', /.+/);
     await expect(page.locator('h1').first(), `${route} primary heading`).toHaveCount(1);
     await expect(page.locator('h1').first()).not.toHaveText('');
@@ -168,9 +178,13 @@ test('mode preference survives reload; app navigation and browser Back restore t
 });
 
 test('every tool supports its mobile workflow, editable output, copy/download, and mode behavior', async ({ page }) => {
+  // A clean browser starts in Basic mode; preference persistence is covered
+  // separately below, so this explicit setup cannot inherit stale state.
+  await page.addInitScript(() => localStorage.removeItem('biocraft:tool-mode'));
   // Bio Generator: required-field validation, generation, editable output,
   // clipboard, download, regeneration, remembered mode, mobile screenshot.
   await openTool(page, '/bio-generator');
+  await expect(page.getByRole('button', { name: 'Basic', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await verifyModeSwitch(page);
   await page.locator('#field-name').fill('Asha');
   await page.locator('.generate-button').click();
@@ -382,21 +396,32 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   });
   const page = await context.newPage();
   await page.addInitScript(() => {
-    type MetricWindow = Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[] } };
+    type ShiftDetail = { value: number; startTime: number; sources: string[] };
+    type MetricWindow = Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: ShiftDetail[] } };
     const target = window as MetricWindow;
-    target.__phase4Metrics = { lcpMs: null, cls: 0, inpCandidateMs: null, longTasks: [] };
+    target.__phase4Metrics = { lcpMs: null, cls: 0, inpCandidateMs: null, longTasks: [], layoutShifts: [] };
     const supported = PerformanceObserver.supportedEntryTypes;
-    const observe = (type: string, callback: (entries: PerformanceEntry[]) => void) => {
+    const observe = (type: string, callback: (entries: PerformanceEntry[]) => void, options: PerformanceObserverInit = {}) => {
       if (!supported.includes(type)) return;
       const observer = new PerformanceObserver((list) => callback(list.getEntries()));
-      observer.observe({ type, buffered: true } as PerformanceObserverInit);
+      observer.observe({ type, buffered: true, ...options } as PerformanceObserverInit);
     };
     observe('largest-contentful-paint', (entries) => {
       for (const entry of entries) target.__phase4Metrics!.lcpMs = entry.startTime;
     });
     observe('layout-shift', (entries) => {
-      for (const entry of entries as (PerformanceEntry & { value: number; hadRecentInput: boolean })[]) {
-        if (!entry.hadRecentInput) target.__phase4Metrics!.cls += entry.value;
+      for (const entry of entries as (PerformanceEntry & { value: number; hadRecentInput: boolean; sources?: { node: Node; previousRect: DOMRectReadOnly; currentRect: DOMRectReadOnly }[] })[]) {
+        if (entry.hadRecentInput) continue;
+        target.__phase4Metrics!.cls += entry.value;
+        target.__phase4Metrics!.layoutShifts.push({
+          value: entry.value,
+          startTime: entry.startTime,
+          sources: (entry.sources ?? []).map((source) => {
+            const node = source.node instanceof Element ? source.node : source.node.parentElement;
+            const description = node ? `${node.tagName.toLowerCase()}${node.id ? `#${node.id}` : ''}` : 'unknown';
+            return `${description} y:${source.previousRect.y.toFixed(1)}→${source.currentRect.y.toFixed(1)}`;
+          }),
+        });
       }
     });
     observe('longtask', (entries) => {
@@ -430,7 +455,7 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   const browserMetrics = await page.evaluate(() => {
     const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-    const metrics = (window as Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[] } }).__phase4Metrics;
+    const metrics = (window as Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: { value: number; startTime: number; sources: string[] }[] } }).__phase4Metrics;
     return {
       route: location.pathname,
       navigationLoadEventEndMs: navigation?.loadEventEnd ?? null,
@@ -440,6 +465,7 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
       longTaskCount: metrics?.longTasks.length ?? 0,
       longTaskMaxMs: metrics?.longTasks.length ? Math.max(...metrics.longTasks) : 0,
       longTaskTotalMs: metrics?.longTasks.reduce((sum, duration) => sum + duration, 0) ?? 0,
+      layoutShiftEvents: metrics?.layoutShifts ?? [],
       symbolsShownAfterSearch: document.querySelectorAll('.symbol-grid .symbol-button').length,
     };
   });
