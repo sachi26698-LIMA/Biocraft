@@ -407,20 +407,28 @@ const ROUTES = [
 ];
 
 // Direct links to the temporary diagnostic and admin shells exist only in Preview builds.
-const PREVIEW_BRANCHES = new Set([
-  'arena/5e351ec3-biocraft',
-  'arena/805e3bf3-biocraft',
-]);
-// The console is emitted when an operator turns it on for the scope being built.
-// Production is opt-in through BIOCRAFT_ADMIN_PRODUCTION so a normal public
-// deploy can never grow an Admin entry by accident, while the branch Preview
-// keeps working as before.
+// The Admin console is emitted into whichever scope has been explicitly enabled.
+//
+// This used to be a hardcoded set of two branch names, which meant every new work
+// branch produced a Preview with no Admin entry at all: /admin served a shell that
+// referenced a chunk that was never built, i.e. a blank page with a 404. A branch
+// list is a trap the next branch always falls into, so the decision is now a flag
+// per scope and nothing else.
+//
+//   BIOCRAFT_ADMIN_ENABLED=true  -> build the console in preview AND production
+//   BIOCRAFT_ADMIN_PRODUCTION=true -> production only (kept for compatibility)
+//   BIOCRAFT_ADMIN_PREVIEW=true  -> preview only (kept for local work)
+//
+// With no flag set nothing is built, so a plain public deploy can never grow an
+// Admin entry by accident.
+const envFlag = name => process.env[name] === 'true';
+const adminInPreview = envFlag('BIOCRAFT_ADMIN_ENABLED') || envFlag('BIOCRAFT_ADMIN_PREVIEW');
+const adminInProduction =
+  envFlag('BIOCRAFT_ADMIN_ENABLED') || envFlag('BIOCRAFT_ADMIN_PRODUCTION');
+// Local builds (no VERCEL_ENV) follow the preview flag so `npm run build` can be
+// exercised without pretending to be Vercel.
 const adminPreview =
-  process.env.BIOCRAFT_ADMIN_PREVIEW === 'true' ||
-  (process.env.VERCEL_ENV === 'preview' &&
-    PREVIEW_BRANCHES.has(process.env.VERCEL_GIT_COMMIT_REF ?? '')) ||
-  (process.env.VERCEL_ENV === 'production' &&
-    process.env.BIOCRAFT_ADMIN_PRODUCTION === 'true');
+  (process.env.VERCEL_ENV === 'production' ? adminInProduction : adminInPreview);
 if (adminPreview) {
   ROUTES.push({
     path: '/preview-diagnostics',

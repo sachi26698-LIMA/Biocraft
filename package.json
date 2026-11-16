@@ -2,7 +2,7 @@
   "name": "biocraft",
   "private": true,
   "version": "1.0.0",
-  "description": "BioCraft \u2014 All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
+  "description": "BioCraft — All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -57,7 +57,9 @@
     "test:tools-browser": "node tests/tools-workflow-browser.cjs",
     "test:admin-csv-export": "node tests/admin-csv-export-browser.cjs",
     "test:build-admin-entry": "node tests/build-admin-entry.cjs",
-    "test:admin-allowlist": "node tests/admin-allowlist.mjs"
+    "test:admin-allowlist": "node tests/admin-allowlist.mjs",
+    "test:admin-build-matrix": "node tests/admin-build-matrix.mjs",
+    "test:admin-routes-14": "node tests/admin-routes-14-browser.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
