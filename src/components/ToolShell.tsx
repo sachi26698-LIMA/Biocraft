@@ -1,16 +1,16 @@
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { handleAnchorClick, navigate, usePath } from '../lib/router';
 import ToolWorkspace from './ToolWorkspace';
 import Breadcrumbs from './Breadcrumbs';
 import { TOOLS, toolForPath } from '../tools/registry';
 import { useRecentlyUsed } from '../lib/toolbox';
-import HomePage from '../pages/HomePage';
-import InfoPage from '../pages/InfoPage';
-import FeaturesPage from '../pages/FeaturesPage';
-import CategoriesPage from '../pages/CategoriesPage';
-import BioCollectionsPage from '../pages/BioCollectionsPage';
-import BioCollectionPage from '../pages/BioCollectionPage';
-import BioEditorPage from '../pages/BioEditorPage';
+const HomePage = lazy(() => import('../pages/HomePage'));
+const InfoPage = lazy(() => import('../pages/InfoPage'));
+const FeaturesPage = lazy(() => import('../pages/FeaturesPage'));
+const CategoriesPage = lazy(() => import('../pages/CategoriesPage'));
+const BioCollectionsPage = lazy(() => import('../pages/BioCollectionsPage'));
+const BioCollectionPage = lazy(() => import('../pages/BioCollectionPage'));
+const BioEditorPage = lazy(() => import('../pages/BioEditorPage'));
 import { infoPageForPath } from '../pages/info';
 import { collectionForPath } from '../lib/bioCollections';
 
@@ -18,6 +18,10 @@ const TOOL_PATHS = new Set(TOOLS.map((tool) => tool.path));
 const COLLECTIONS_INDEX = '/bio-collections';
 const BIO_EDITOR = '/bio-editor';
 const HOME = '/';
+
+function RouteLoading() {
+  return <div className="tool-loading" role="status" aria-live="polite">Loading page…</div>;
+}
 
 /**
  * Route dispatcher.
@@ -96,11 +100,11 @@ export default function ToolShell() {
     }
   }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, collection, tool]);
 
-  if (isHome) return <HomePage />;
-  if (isCategories) return <CategoriesPage />;
-  if (isCollectionsIndex) return <BioCollectionsPage />;
-  if (isBioEditor) return <BioEditorPage />;
-  if (collection) return <BioCollectionPage slug={collection.slug} />;
+  if (isHome) return <Suspense fallback={<RouteLoading />}><HomePage /></Suspense>;
+  if (isCategories) return <Suspense fallback={<RouteLoading />}><CategoriesPage /></Suspense>;
+  if (isCollectionsIndex) return <Suspense fallback={<RouteLoading />}><BioCollectionsPage /></Suspense>;
+  if (isBioEditor) return <Suspense fallback={<RouteLoading />}><BioEditorPage /></Suspense>;
+  if (collection) return <Suspense fallback={<RouteLoading />}><BioCollectionPage slug={collection.slug} /></Suspense>;
   if (isToolRoute) {
     return (
       <section className="tool-page">
@@ -126,7 +130,7 @@ export default function ToolShell() {
       </section>
     );
   }
-  if (path === '/features') return <FeaturesPage />;
-  if (infoPage) return <InfoPage path={path} />;
-  return <HomePage />; // transient state while the replace-navigation lands
+  if (path === '/features') return <Suspense fallback={<RouteLoading />}><FeaturesPage /></Suspense>;
+  if (infoPage) return <Suspense fallback={<RouteLoading />}><InfoPage path={path} /></Suspense>;
+  return <Suspense fallback={<RouteLoading />}><HomePage /></Suspense>; // transient state while the replace-navigation lands
 }
