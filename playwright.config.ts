@@ -12,6 +12,7 @@ export default defineConfig({
   reporter: [
     ['list'],
     ['html', { outputFolder: 'phase4-artifacts/playwright-report', open: 'never' }],
+    ['json', { outputFile: 'phase4-artifacts/playwright-results.json' }],
   ],
   use: {
     baseURL: 'http://127.0.0.1:4173',

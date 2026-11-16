@@ -35,7 +35,12 @@ jobs:
       - name: Run responsive cascade checks
         run: npm run test:responsive
       - name: Run real-browser route, interaction, screenshot and lab-metric checks
+        id: browser
+        continue-on-error: true
         run: npm run test:browser
+      - name: Publish test failures and lab metrics to the workflow summary
+        if: always()
+        run: node scripts/summarize-playwright.mjs
       - name: Upload mobile screenshots, browser trace and metrics
         if: always()
         uses: actions/upload-artifact@v4
@@ -44,3 +49,6 @@ jobs:
           path: phase4-artifacts/
           if-no-files-found: warn
           retention-days: 7
+      - name: Fail the run if browser checks failed
+        if: steps.browser.outcome == 'failure'
+        run: exit 1
