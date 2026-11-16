@@ -455,7 +455,7 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   const page = await context.newPage();
   await page.addInitScript(() => {
     type GeometryDetail = { selector: string; top: number; height: number; display: string; position: string };
-    type GeometryFrame = { timeMs: number; pathname: string; title: string; scrollY: number; toolFoot: { top: number; height: number } | null; workspace: { top: number; height: number } | null; loading: boolean };
+    type GeometryFrame = { timeMs: number; pathname: string; title: string; scrollY: number; visualViewport: { top: number; height: number } | null; activeElement: string; toolFoot: { top: number; height: number } | null; workspace: { top: number; height: number } | null; loading: boolean };
     type ShiftDetail = { value: number; startTime: number; scrollY: number; pathname: string; title: string; geometry: GeometryDetail[]; sources: string[] };
     type ScrollDetail = { timeMs: number; y: number };
     type MetricWindow = Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: ShiftDetail[]; scrollEvents: ScrollDetail[]; geometryTimeline: GeometryFrame[] } };
@@ -470,16 +470,20 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
         const rect = element.getBoundingClientRect();
         return { top: Number(rect.top.toFixed(1)), height: Number(rect.height.toFixed(1)) };
       };
+      const viewport = window.visualViewport;
+      const active = document.activeElement;
       const frame = {
         timeMs: Number(performance.now().toFixed(1)),
         pathname: location.pathname,
         title: document.title,
         scrollY: window.scrollY,
+        visualViewport: viewport ? { top: Number(viewport.offsetTop.toFixed(1)), height: Number(viewport.height.toFixed(1)) } : null,
+        activeElement: active instanceof HTMLElement ? `${active.tagName.toLowerCase()}${active.id ? `#${active.id}` : ''}` : 'none',
         toolFoot: rectFor('.tool-foot'),
         workspace: rectFor('#workspace'),
         loading: Boolean(document.querySelector('.tool-loading')),
       };
-      const signature = JSON.stringify(frame);
+      const signature = JSON.stringify({ ...frame, timeMs: undefined });
       if (signature !== lastGeometry && target.__phase4Metrics!.geometryTimeline.length < 80) {
         target.__phase4Metrics!.geometryTimeline.push(frame);
         lastGeometry = signature;
@@ -558,7 +562,7 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   const browserMetrics = await page.evaluate((interactionStart) => {
     const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-    const metrics = (window as Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: { value: number; startTime: number; scrollY: number; pathname: string; title: string; geometry: { selector: string; top: number; height: number; display: string; position: string }[]; sources: string[] }[]; scrollEvents: { timeMs: number; y: number }[]; geometryTimeline: { timeMs: number; pathname: string; title: string; scrollY: number; toolFoot: { top: number; height: number } | null; workspace: { top: number; height: number } | null; loading: boolean }[] } }).__phase4Metrics;
+    const metrics = (window as Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: { value: number; startTime: number; scrollY: number; pathname: string; title: string; geometry: { selector: string; top: number; height: number; display: string; position: string }[]; sources: string[] }[]; scrollEvents: { timeMs: number; y: number }[]; geometryTimeline: { timeMs: number; pathname: string; title: string; scrollY: number; visualViewport: { top: number; height: number } | null; activeElement: string; toolFoot: { top: number; height: number } | null; workspace: { top: number; height: number } | null; loading: boolean }[] } }).__phase4Metrics;
     const allLayoutShifts = metrics?.layoutShifts ?? [];
     const loadLayoutShifts = allLayoutShifts.filter((entry) => entry.startTime < interactionStart);
     return {
