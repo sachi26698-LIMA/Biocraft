@@ -3,7 +3,7 @@
 // The injected limiter must be durable/shared and use a trusted client key.
 // Never log request bodies, cookies, access tokens, refresh tokens or OTPs.
 import {randomBytes,timingSafeEqual} from 'node:crypto';
-import {beginPasswordLogin,verifyTotp,beginTotpEnrolment,confirmTotpEnrolment} from './auth-flow.mjs';
+import {beginPasswordLogin,verifyTotp,beginTotpEnrolment,confirmTotpEnrolment,isEmailAllowed} from './auth-flow.mjs';
 import {issueSessionCookie} from './session-cookie.mjs';
 import {verifyEnrolmentIdentity} from './identity.mjs';
 const PENDING='__Host-biocraft-pending';
@@ -27,7 +27,7 @@ function pending(request) {
  if(!/^[A-Za-z0-9_-]{43}$/.test(id))return null;return id;
 }
 function same(a,b) {return typeof a==='string'&&typeof b==='string'&&/^[A-Za-z0-9_-]{43}$/.test(a)&&/^[A-Za-z0-9_-]{43}$/.test(b)&&timingSafeEqual(Buffer.from(a),Buffer.from(b));}
-export function createAuthController({enabled=false,origin,key,createClient,flowStore,limiter,sessionHandler,enrolment,recovery,factorGate}={}) {
+export function createAuthController({enabled=false,origin,key,createClient,flowStore,limiter,sessionHandler,enrolment,recovery,factorGate,allowList=''}={}) {
  return async function(request,remoteKey) {
   if(!enabled || !Buffer.isBuffer(key)||key.length!==32 || typeof createClient!=='function' || typeof limiter!=='function' ||
      typeof flowStore?.put!=='function' || typeof flowStore?.take!=='function' || typeof sessionHandler!=='function')return out(503,{error:{code:'UNAVAILABLE'}});
@@ -56,6 +56,11 @@ export function createAuthController({enabled=false,origin,key,createClient,flow
    if(url.pathname==='/api/admin/v1/auth/login') {
     const body=await json(request);
     if(Object.keys(body).sort().join(',')!=='email,password')return out(400,{error:{code:'INVALID'}});
+    // Allow-list gate runs BEFORE the provider call. A non-admin address must not
+    // get its password tested against Supabase, must not consume the account
+    // rate-limit bucket of a real admin, and must not be distinguishable from a
+    // wrong password. Denials are answered as UNAUTHENTICATED for that reason.
+    if(!isEmailAllowed(body.email,allowList))return out(401,{error:{code:'UNAUTHENTICATED'}});
     const client=createClient();
     const login=await beginPasswordLogin({client,email:body.email,password:body.password,limiter,rateKey:remoteKey});
     const enrol=typeof enrolment==='function'?enrolment:null;

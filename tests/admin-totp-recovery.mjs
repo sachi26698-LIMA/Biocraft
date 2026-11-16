@@ -28,7 +28,7 @@ function build({hasFactor=true,grantLive=true,redeem='ok',sessionStatus=200,gate
   mfa:{listFactors:async()=>({data:{totp:hasFactor?[{id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',status:'verified'}]:[]}}),
        enroll:async()=>({data:{id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',totp:{qr_code:'otpauth://totp/x?secret=ABCD',secret:'ABCD'}},error:null}),
        challengeAndVerify:async()=>({data:{access_token:aal2,refresh_token:'r'.repeat(30)},error:null})}}};
- const controller=createAuthController({enabled:true,origin,key,createClient:()=>client,flowStore:store,limiter:async()=>true,
+ const controller=createAuthController({enabled:true,origin,key,createClient:()=>client,flowStore:store,limiter:async()=>true,allowList:'admin@example.com',
   sessionHandler:async()=>new Response(JSON.stringify({ok:true}),{status:sessionStatus}),
   enrolment:async()=>true,
   // The database decides enrol vs recover; `gate` overrides for denial cases.

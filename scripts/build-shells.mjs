@@ -411,10 +411,16 @@ const PREVIEW_BRANCHES = new Set([
   'arena/5e351ec3-biocraft',
   'arena/805e3bf3-biocraft',
 ]);
-const adminPreview = process.env.BIOCRAFT_ADMIN_PREVIEW === 'true' || (
-  process.env.VERCEL_ENV === 'preview' &&
-  PREVIEW_BRANCHES.has(process.env.VERCEL_GIT_COMMIT_REF ?? '')
-);
+// The console is emitted when an operator turns it on for the scope being built.
+// Production is opt-in through BIOCRAFT_ADMIN_PRODUCTION so a normal public
+// deploy can never grow an Admin entry by accident, while the branch Preview
+// keeps working as before.
+const adminPreview =
+  process.env.BIOCRAFT_ADMIN_PREVIEW === 'true' ||
+  (process.env.VERCEL_ENV === 'preview' &&
+    PREVIEW_BRANCHES.has(process.env.VERCEL_GIT_COMMIT_REF ?? '')) ||
+  (process.env.VERCEL_ENV === 'production' &&
+    process.env.BIOCRAFT_ADMIN_PRODUCTION === 'true');
 if (adminPreview) {
   ROUTES.push({
     path: '/preview-diagnostics',

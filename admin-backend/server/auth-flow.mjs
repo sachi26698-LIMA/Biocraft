@@ -17,6 +17,28 @@ function unavailable() {throw new AccessError('UNAVAILABLE');}
 function invalid() {throw new AccessError('UNAUTHENTICATED');}
 /** Stage password login and enumerate verified TOTP factors, using a provider
  * client dedicated to this attempt. It does not establish an admin session. */
+/** Normalise an allow-list entry. Comparison happens on the normalised forms.
+ * A non-string result always throws instead of silently widening the rule. */
+export function normaliseEmail(value) {
+ return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+/** True when `email` is present in the comma-separated allow-list.
+ *
+ * An empty or unset list denies everybody: this is a fail-closed gate, so a
+ * deployment that forgets the variable cannot accidentally open Admin login.
+ * Comparison is case-insensitive because email local-parts are matched that way
+ * by the provider as well. */
+export function isEmailAllowed(email, allowList) {
+ const target = normaliseEmail(email);
+ if (!target) return false;
+ if (typeof allowList !== 'string' || !allowList.trim()) return false;
+ return allowList
+  .split(',')
+  .map(normaliseEmail)
+  .some(entry => entry !== '' && entry === target);
+}
+
 export async function beginPasswordLogin({client,email,password,limiter,rateKey}) {
  if(typeof rateKey!=='string'||rateKey.length<1||rateKey.length>200) unavailable();
  await limit(limiter,'password-login',keyDigest('network',rateKey));

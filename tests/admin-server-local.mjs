@@ -21,6 +21,7 @@ const app=createAdminApp({env:{
  ADMIN_COOKIE_KEY_HEX:randomBytes(32).toString('hex'),ADMIN_FLOW_KEY_HEX:randomBytes(32).toString('hex'),
  ADMIN_HASH_KEY_HEX:randomBytes(32).toString('hex'),ADMIN_TRUSTED_CLIENT_HEADER:'x-forwarded-for',
  ADMIN_INGRESS_SECRET_HEX:secret,
+ ADMIN_ALLOWED_EMAILS:process.env.ADMIN_ALLOWED_EMAILS??'fixture.admin@example.test',
 },poolFactory:()=>pool});
 if(!app.configuration.enabled){console.error('App disabled:',app.configuration.reason);process.exit(1)}
 const server=http.createServer(async (req,res)=>{

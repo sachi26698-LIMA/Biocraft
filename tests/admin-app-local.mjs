@@ -5,7 +5,7 @@ import {createAdminApp,clientKey} from '../admin-backend/server/app.mjs';
 const socket=process.env.BIOCRAFT_TEST_PG_SOCKET;
 if(!socket||!fs.realpathSync(socket).startsWith('/tmp/biocraft-pg-'))throw Error('Disposable local socket required');
 const keys={ADMIN_COOKIE_KEY_HEX:randomBytes(32).toString('hex'),ADMIN_FLOW_KEY_HEX:randomBytes(32).toString('hex'),ADMIN_HASH_KEY_HEX:randomBytes(32).toString('hex'),ADMIN_INGRESS_SECRET_HEX:randomBytes(32).toString('hex')};
-const base={ADMIN_BACKEND_ENABLED:'true',ADMIN_ORIGIN:'https://preview.example',ADMIN_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_local_fixture',ADMIN_DB_USER:'fixture',ADMIN_DB_PASSWORD:'fixture',ADMIN_TRUSTED_CLIENT_HEADER:'x-forwarded-for',...keys};
+const base={ADMIN_BACKEND_ENABLED:'true',ADMIN_ORIGIN:'https://preview.example',ADMIN_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_local_fixture',ADMIN_DB_USER:'fixture',ADMIN_DB_PASSWORD:'fixture',ADMIN_TRUSTED_CLIENT_HEADER:'x-forwarded-for',ADMIN_ALLOWED_EMAILS:'fixture.admin@example.test',...keys};
 const pool=new pg.Pool({host:socket,user:process.env.USER,database:'postgres'});
 try {
  // Every misconfiguration must fail closed with 503 and never open a connection.
@@ -17,6 +17,12 @@ try {
   {ADMIN_DB_PASSWORD:'',reason:'missing database credentials'},
   {ADMIN_TRUSTED_CLIENT_HEADER:'',reason:'missing trusted client header'},
   {ADMIN_INGRESS_SECRET_HEX:'abc',reason:'missing trusted client header'},
+
+  // Sign-in must fail closed when no account is named, so an operator cannot
+  // open the console to every Supabase user by forgetting one variable.
+  {ADMIN_ALLOWED_EMAILS:'',reason:'missing admin allow-list'},
+  {ADMIN_ALLOWED_EMAILS:'   ',reason:'missing admin allow-list'},
+  {ADMIN_ALLOWED_EMAILS:undefined,reason:'missing admin allow-list'},
 
   // Host allow-listing lives in createPostgresPool (admin-pool-config); the app
   // wrapper itself rejects any port other than session-mode 5432.
