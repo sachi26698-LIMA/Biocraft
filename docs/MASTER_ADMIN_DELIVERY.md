@@ -156,10 +156,14 @@ the pooler has IPv4 — the path the code already documents for Vercel egress.
 https://biocraft-git-arena-5e351ec3-biocraft-sachi26698-6758s-projects.vercel.app/admin
 ```
 
-Current deployment carrying the backend configuration: **`dpl_36M1Ez65KwZnshekSVUbGHtEs2dR`**
-(commit `e2005ec`) — `READY`, 60 route shells, branch alias assigned. The twelve
-`ADMIN_*` variables are scoped to
-`arena/5e351ec3-biocraft`, so only Preview deployments of this branch receive them.
+The branch alias is the canonical address: whatever is pushed to
+`arena/5e351ec3-biocraft` becomes the deployment it points at. At the time of
+writing the newest `READY` deployment was `dpl_3JtoxPZBvra7yTEhT39ByLKFPCJ6`; the
+last commit that changed runtime code was `e2005ec` (`dpl_36M1Ez65KwZnshekSVUbGHtEs2dR`),
+and only documentation commits followed it. Each deployment builds 60 route
+shells. The twelve `ADMIN_*` variables (11 backend keys plus `ADMIN_ORIGIN`) are
+scoped to `arena/5e351ec3-biocraft`, so only Preview deployments of this branch
+receive them.
 
 Verified on that URL: it answers **Vercel's SSO login page** ("Protected
 Deployment – Vercel") for every path, including `/api/admin/v1/health`. That is
