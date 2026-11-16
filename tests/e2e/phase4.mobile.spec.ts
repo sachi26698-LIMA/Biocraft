@@ -34,12 +34,29 @@ const EXPECTED_TOOL_HEADINGS: Record<string, string> = {
   '/caption-generator': 'Caption Generator',
   '/linkedin-headline-generator': 'Professional Headline Generator',
   '/linkedin-summary-generator': 'Professional Summary Generator',
+  '/whatsapp-status-generator': 'WhatsApp Status Generator',
+  '/snapchat-caption-generator': 'Snapchat Caption Generator',
 };
 const ROUTE_PLATFORM: Record<string, string> = {
   '/linkedin-headline-generator': 'LinkedIn',
   '/linkedin-summary-generator': 'LinkedIn',
   '/whatsapp-status-generator': 'WhatsApp',
   '/snapchat-caption-generator': 'Snapchat',
+};
+const TOOL_READY_SELECTOR: Record<string, string> = {
+  '/bio-generator': '#field-name',
+  '/stylish-name-generator': '#stylish-name-input',
+  '/fancy-font-generator': '#fancy-font-input',
+  '/design-studio': '#design-studio-input',
+  '/username-generator': '#username-name',
+  '/emoji-symbol-generator': '#symbol-search-input',
+  '/hashtag-generator': '.generate-button',
+  '/caption-generator': '.generate-button',
+  '/linkedin-headline-generator': '#linkedin-headline-role',
+  '/linkedin-summary-generator': '#linkedin-summary-role',
+  '/whatsapp-status-generator': '.generate-button',
+  '/snapchat-caption-generator': '.generate-button',
+  '/bio-editor': '#bio-editor-input',
 };
 const browserErrors = new WeakMap<Page, string[]>();
 const browserConsoleErrors = new WeakMap<Page, string[]>();
@@ -70,6 +87,7 @@ async function openTool(page: Page, route: string) {
   } else {
     await expect(page.locator('#tool-heading')).toContainText(EXPECTED_TOOL_HEADINGS[route]);
   }
+  await page.locator(TOOL_READY_SELECTOR[route]).waitFor({ state: 'visible', timeout: 20_000 });
 }
 
 async function verifyModeSwitch(page: Page) {
