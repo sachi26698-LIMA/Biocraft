@@ -19,7 +19,7 @@ try{
   mfa:{listFactors:async()=>({data:{totp:[{id:factor,status:'verified'}]}}),challengeAndVerify:async({code})=>code==='123456'?{data:{access_token:token,refresh_token:'secret-refresh',expires_in:300,token_type:'bearer'}}:{error:{},data:{}}}}});
  const cookieKey=randomBytes(32),store=createAuthStorage({pool,encryptionKey:randomBytes(32),hashKey:randomBytes(32)}),executor=createDatabaseExecutor(pool);
  const admin=createAdminHandler({enabled:true,provider:client(),execute:executor,rateLimit:store.limit,platformRules:{instagram:{count:'unicode_code_points',max:150}}});
- const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:store,limiter:store.limit,sessionHandler:admin});
+ const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:store,limiter:store.limit,sessionHandler:admin,allowList:'staff@example.com'});
  const req=(path,body,cookie)=>new Request(origin+path,{method:'POST',headers:{origin,'Content-Type':'application/json',...(cookie?{cookie}:{})},body:JSON.stringify(body)});
  assert.equal((await auth(req('/api/admin/v1/auth/login',{email:'staff@example.com',password:'wrong'}),'other-ip')).status,401);
  assert.equal((await auth(new Request(origin+'/api/admin/v1/auth/login',{method:'POST',headers:{origin:'https://attacker.example','Content-Type':'application/json'},body:'{}'}),'other-ip')).status,403);
