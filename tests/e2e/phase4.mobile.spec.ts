@@ -455,12 +455,37 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   const page = await context.newPage();
   await page.addInitScript(() => {
     type GeometryDetail = { selector: string; top: number; height: number; display: string; position: string };
+    type GeometryFrame = { timeMs: number; pathname: string; title: string; scrollY: number; toolFoot: { top: number; height: number } | null; workspace: { top: number; height: number } | null; loading: boolean };
     type ShiftDetail = { value: number; startTime: number; scrollY: number; pathname: string; title: string; geometry: GeometryDetail[]; sources: string[] };
     type ScrollDetail = { timeMs: number; y: number };
-    type MetricWindow = Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: ShiftDetail[]; scrollEvents: ScrollDetail[] } };
+    type MetricWindow = Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: ShiftDetail[]; scrollEvents: ScrollDetail[]; geometryTimeline: GeometryFrame[] } };
     const target = window as MetricWindow;
-    target.__phase4Metrics = { lcpMs: null, cls: 0, inpCandidateMs: null, longTasks: [], layoutShifts: [], scrollEvents: [] };
+    target.__phase4Metrics = { lcpMs: null, cls: 0, inpCandidateMs: null, longTasks: [], layoutShifts: [], scrollEvents: [], geometryTimeline: [] };
     window.addEventListener('scroll', () => target.__phase4Metrics!.scrollEvents.push({ timeMs: performance.now(), y: window.scrollY }), { passive: true });
+    let lastGeometry = '';
+    const geometryTimer = window.setInterval(() => {
+      const rectFor = (selector: string) => {
+        const element = document.querySelector(selector);
+        if (!(element instanceof HTMLElement)) return null;
+        const rect = element.getBoundingClientRect();
+        return { top: Number(rect.top.toFixed(1)), height: Number(rect.height.toFixed(1)) };
+      };
+      const frame = {
+        timeMs: Number(performance.now().toFixed(1)),
+        pathname: location.pathname,
+        title: document.title,
+        scrollY: window.scrollY,
+        toolFoot: rectFor('.tool-foot'),
+        workspace: rectFor('#workspace'),
+        loading: Boolean(document.querySelector('.tool-loading')),
+      };
+      const signature = JSON.stringify(frame);
+      if (signature !== lastGeometry && target.__phase4Metrics!.geometryTimeline.length < 80) {
+        target.__phase4Metrics!.geometryTimeline.push(frame);
+        lastGeometry = signature;
+      }
+      if (frame.timeMs > 10_000) window.clearInterval(geometryTimer);
+    }, 50);
     const supported = PerformanceObserver.supportedEntryTypes;
     const observe = (type: string, callback: (entries: PerformanceEntry[]) => void, options: PerformanceObserverInit = {}) => {
       if (!supported.includes(type)) return;
@@ -533,7 +558,7 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   const browserMetrics = await page.evaluate((interactionStart) => {
     const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-    const metrics = (window as Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: { value: number; startTime: number; scrollY: number; pathname: string; title: string; geometry: { selector: string; top: number; height: number; display: string; position: string }[]; sources: string[] }[]; scrollEvents: { timeMs: number; y: number }[] } }).__phase4Metrics;
+    const metrics = (window as Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: { value: number; startTime: number; scrollY: number; pathname: string; title: string; geometry: { selector: string; top: number; height: number; display: string; position: string }[]; sources: string[] }[]; scrollEvents: { timeMs: number; y: number }[]; geometryTimeline: { timeMs: number; pathname: string; title: string; scrollY: number; toolFoot: { top: number; height: number } | null; workspace: { top: number; height: number } | null; loading: boolean }[] } }).__phase4Metrics;
     const allLayoutShifts = metrics?.layoutShifts ?? [];
     const loadLayoutShifts = allLayoutShifts.filter((entry) => entry.startTime < interactionStart);
     return {
@@ -548,6 +573,7 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
       layoutShiftEvents: allLayoutShifts,
       loadPhaseLayoutShiftEvents: loadLayoutShifts,
       scrollEvents: metrics?.scrollEvents ?? [],
+      geometryTimeline: metrics?.geometryTimeline ?? [],
       symbolsShownAfterSearch: document.querySelectorAll('.symbol-grid .symbol-button').length,
     };
   }, interactionStartMs);
