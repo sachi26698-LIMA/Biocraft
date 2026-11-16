@@ -96,7 +96,7 @@ export default function ToolWorkspace({
               {config.englishOnlyNote && bio && <p className="tool-note" role="note">{config.englishOnlyNote}</p>}
               <div className="workspace-tool-actions">
                 <ToolModeToggle />
-                <button type="button" className="workspace-reset btn btn-secondary btn-small" onClick={() => setResetKey((value) => value + 1)} aria-label={`Reset ${effectiveTool.heading} inputs and results`}>
+                <button type="button" className="workspace-reset btn btn-secondary btn-small" onClick={() => setResetKey((value) => value + 1)} aria-label={`Reset tool — ${effectiveTool.heading} inputs and results`}>
                   Reset tool
                 </button>
               </div>
