@@ -115,6 +115,14 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   return body as T;
 }
 
+export async function logoutSession(): Promise<void> {
+  try {
+    await request('/session', { method: 'DELETE' });
+  } finally {
+    csrfToken = null;
+  }
+}
+
 /** The Admin UI keeps every privileged module disabled until the server is
  * reachable, configured for this exact origin and the caller holds a session. */
 export const adminBackend = {
@@ -123,4 +131,5 @@ export const adminBackend = {
   probe: probeBackend,
   session: currentSession,
   request,
+  logout: logoutSession,
 } as const;
