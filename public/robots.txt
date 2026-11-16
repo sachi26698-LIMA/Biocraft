@@ -1,2 +1,10 @@
 User-agent: *
 Allow: /
+
+# The Master Admin console is private by design: it is never linked from a public
+# page and must never be indexed or crawled. Authorization is enforced server-side;
+# this file only keeps discovery engines away.
+User-agent: *
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/admin/

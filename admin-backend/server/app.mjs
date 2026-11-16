@@ -63,6 +63,11 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  if (!cookieKey||!flowKey||!hashKey||cookieKey.equals(flowKey)||cookieKey.equals(hashKey)||flowKey.equals(hashKey)) return fail('invalid keys');
  if (typeof env.ADMIN_SUPABASE_PUBLISHABLE_KEY!=='string'||!env.ADMIN_SUPABASE_PUBLISHABLE_KEY) return fail('missing publishable key');
  if (typeof env.ADMIN_DB_USER!=='string'||!env.ADMIN_DB_USER||typeof env.ADMIN_DB_PASSWORD!=='string'||!env.ADMIN_DB_PASSWORD) return fail('missing database credentials');
+ // Sign-in is closed to everyone unless an operator names the permitted accounts.
+ // Failing here is deliberate: a missing allow-list is a configuration error, not
+ // an invitation to fall back to "any Supabase user may try the Admin console".
+ const allowList=typeof env.ADMIN_ALLOWED_EMAILS==='string'?env.ADMIN_ALLOWED_EMAILS:'';
+ if (!allowList.trim()) return fail('missing admin allow-list');
  const trustedHeader=typeof env.ADMIN_TRUSTED_CLIENT_HEADER==='string'&&/^[a-z0-9-]{1,64}$/.test(env.ADMIN_TRUSTED_CLIENT_HEADER)?env.ADMIN_TRUSTED_CLIENT_HEADER:null;
  const ingressSecret=key32(env.ADMIN_INGRESS_SECRET_HEX);
  if (!trustedHeader||!ingressSecret) return fail('missing trusted client header');
@@ -130,7 +135,7 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    return false;
   } catch { return false; }
  };
- const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:storage,limiter:rateLimit,sessionHandler:api,enrolment,recovery:factorDecision,factorGate:factorDecision});
+ const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:storage,limiter:rateLimit,sessionHandler:api,enrolment,recovery:factorDecision,factorGate:factorDecision,allowList});
  const gateway=createCookieGateway({key:cookieKey,origin,delegate:api,providerLogout:async()=>{const sessionClient=client();await providerLogout(sessionClient)}});
  const app=async function handle(request){
   const key=clientKey(request,{trustedHeader,ingressSecret});

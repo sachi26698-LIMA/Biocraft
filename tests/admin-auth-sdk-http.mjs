@@ -23,7 +23,7 @@ try {
  };
  const flows=new Map(),store={put:async(k,v)=>flows.set(k,v),take:async k=>{const v=flows.get(k);flows.delete(k);return v}};
  const mk=()=>createProviderClient(url,'sb_publishable_fixture');
- const handler=createAuthController({enabled:true,origin,key:randomBytes(32),createClient:mk,flowStore:store,limiter:async()=>true,
+ const handler=createAuthController({enabled:true,origin,key:randomBytes(32),createClient:mk,flowStore:store,limiter:async()=>true,allowList:'synthetic@example.com',
   sessionHandler:async request=>{const bearer=request.headers.get('authorization').slice(7);await verifyProviderIdentity({token:bearer,provider:mk()});return new Response('{}',{status:200});}});
  const post=(p,data,cookie)=>new Request(origin+p,{method:'POST',headers:{origin,'content-type':'application/json',...(cookie?{cookie}:{})},body:JSON.stringify(data)});
  const login=await handler(post('/api/admin/v1/auth/login',{email:'synthetic@example.com',password:'synthetic password'}),'synthetic-ip');assert.equal(login.status,200);

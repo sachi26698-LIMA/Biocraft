@@ -9,7 +9,8 @@ const origin='https://preview.example',secret=randomBytes(32),pool=new pg.Pool({
 const app=createAdminApp({env:{ADMIN_BACKEND_ENABLED:'true',ADMIN_ORIGIN:origin,ADMIN_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_local_fixture',
  ADMIN_DB_USER:'bc_fixture_executor',ADMIN_DB_PASSWORD:'fixture',ADMIN_COOKIE_KEY_HEX:randomBytes(32).toString('hex'),
  ADMIN_FLOW_KEY_HEX:randomBytes(32).toString('hex'),ADMIN_HASH_KEY_HEX:randomBytes(32).toString('hex'),
- ADMIN_TRUSTED_CLIENT_HEADER:'x-forwarded-for',ADMIN_INGRESS_SECRET_HEX:secret.toString('hex')},poolFactory:()=>pool});
+ ADMIN_TRUSTED_CLIENT_HEADER:'x-forwarded-for',ADMIN_INGRESS_SECRET_HEX:secret.toString('hex'),
+ ADMIN_ALLOWED_EMAILS:'fixture.admin@example.test'},poolFactory:()=>pool});
 assert.equal(app.configuration.enabled,true);
 // Minimal proxy stand-in: it alone knows the ingress secret.
 const server=http.createServer(async (req,res)=>{
