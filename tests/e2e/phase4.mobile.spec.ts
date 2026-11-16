@@ -23,6 +23,24 @@ const TOOLS = [
 ] as const;
 const MOBILE_WIDTHS = [360, 390, 412, 430] as const;
 const HEIGHTS: Record<number, number> = { 360: 800, 390: 844, 412: 915, 430: 932 };
+const EXPECTED_TOOL_HEADINGS: Record<string, string> = {
+  '/bio-generator': 'Bio Generator',
+  '/stylish-name-generator': 'Stylish Name Generator',
+  '/fancy-font-generator': 'Fancy Font Generator',
+  '/design-studio': 'Design Studio',
+  '/username-generator': 'Username Generator',
+  '/emoji-symbol-generator': 'Emoji & Symbol Generator',
+  '/hashtag-generator': 'Hashtag Generator',
+  '/caption-generator': 'Caption Generator',
+  '/linkedin-headline-generator': 'Professional Headline Generator',
+  '/linkedin-summary-generator': 'Professional Summary Generator',
+};
+const ROUTE_PLATFORM: Record<string, string> = {
+  '/linkedin-headline-generator': 'LinkedIn',
+  '/linkedin-summary-generator': 'LinkedIn',
+  '/whatsapp-status-generator': 'WhatsApp',
+  '/snapchat-caption-generator': 'Snapchat',
+};
 const browserErrors = new WeakMap<Page, string[]>();
 const browserConsoleErrors = new WeakMap<Page, string[]>();
 
@@ -45,6 +63,13 @@ async function openTool(page: Page, route: string) {
   expect(response?.ok(), `${route} HTTP response`).toBeTruthy();
   await page.locator('.tool-mode-toggle').waitFor({ state: 'visible' });
   await expect(page.locator('.toolkit-workspace, .bio-editor-page')).toBeVisible();
+  const platform = ROUTE_PLATFORM[route];
+  if (platform) await page.getByRole('button', { name: platform, exact: true }).click();
+  if (route === '/bio-editor') {
+    await expect(page.locator('.bio-editor-page h1')).toContainText('Bio Editor');
+  } else {
+    await expect(page.locator('#tool-heading')).toContainText(EXPECTED_TOOL_HEADINGS[route]);
+  }
 }
 
 async function verifyModeSwitch(page: Page) {
