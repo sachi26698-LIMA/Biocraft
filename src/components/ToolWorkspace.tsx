@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { Suspense, type CSSProperties } from 'react';
 import { useToolkit } from '../lib/toolkit';
 import { platformById } from '../tools/platforms';
 import { TOOLS, toolForPath, type ToolKey } from '../tools/registry';
@@ -90,7 +90,7 @@ export default function ToolWorkspace({
               <p className="workspace-subheading">{subheading}</p>
               {config.englishOnlyNote && bio && <p className="tool-note" role="note">{config.englishOnlyNote}</p>}
             </header>
-            <Panel />
+            <Suspense fallback={<p className="tool-loading" role="status">Loading tool…</p>}><Panel /></Suspense>
           </div>
         </div>
       </div>

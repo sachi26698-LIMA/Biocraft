@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Breadcrumbs from '../components/Breadcrumbs';
 import BioCollectionCard from '../components/BioCollectionCard';
 import { designForBio } from '../lib/bioCollections';
@@ -15,6 +15,7 @@ import {
   WandIcon,
 } from '../components/icons';
 import CollectionIcon from '../components/CollectionIcon';
+import { fetchCollectionBios } from '../lib/biosRemote';
 import {
   COLLECTION_NAV,
   collectionBySlug,
@@ -23,6 +24,28 @@ import {
 
 const HAS_EMOJI = /\p{Extended_Pictographic}/u;
 const DEVANAGARI = /[\u0900-\u097F]/;
+const slotKey = (index: number, original: BioEntry) => `${index}:${original.text.slice(0, 24)}`;
+
+// Each item owns its bound click callback. A replacement should not re-render
+// every other card (and its copy state) just because the list changed.
+const BioGridItem = memo(function BioGridItem({ bio, index, slug, name, onRegenerate }: {
+  bio: BioEntry; index: number; slug: string; name: string; onRegenerate: (index: number) => void;
+}) {
+  return <BioCollectionCard bio={bio} label={`bio ${index + 1} from ${name}`}
+    design={designForBio(slug, index)} onRegenerate={() => onRegenerate(index)} />;
+});
+
+const BioGrid = memo(function BioGrid({ visible, displayed, swaps, slug, name, onRegenerate }: {
+  visible: BioEntry[]; displayed: BioEntry[]; swaps: Record<string, BioEntry>; slug: string; name: string;
+  onRegenerate: (index: number) => void;
+}) {
+  return <ul className="bio-grid">
+    {displayed.map((bio, index) => (
+      <BioGridItem key={`${index}-${bio.text.slice(0, 12)}-${swaps[slotKey(index, visible[index])] ? 'v' : 'o'}`}
+        bio={bio} index={index} slug={slug} name={name} onRegenerate={onRegenerate} />
+    ))}
+  </ul>;
+});
 
 type Filter = 'all' | 'emoji' | 'styled' | 'hi' | 'en';
 
@@ -57,40 +80,78 @@ function matchesFilter(bio: BioEntry, filter: Filter): boolean {
 export default function BioCollectionPage({ slug }: { slug: string }) {
   const collection = collectionBySlug(slug);
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
   const [filter, setFilter] = useState<Filter>('all');
   /** Per-slot variation swaps, keyed by slot id (query/filter changes reset). */
   const [swaps, setSwaps] = useState<Record<string, BioEntry>>({});
+  /** Associate remote rows with their collection so navigation never shows stale bios. */
+  const [remoteBios, setRemoteBios] = useState<{ slug: string; bios: BioEntry[] } | null>(null);
+  const [remoteError, setRemoteError] = useState(false);
+  const [retryTick, setRetryTick] = useState(0);
 
   useEffect(() => {
-    setSwaps({});
-  }, [query, filter, slug]);
+    setSwaps((current) => Object.keys(current).length ? {} : current);
+  }, [deferredQuery, filter, slug]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setRemoteError(false);
+    fetchCollectionBios(slug)
+      .then((result) => {
+        if (cancelled) return;
+        // An empty successful live result is authoritative too: resurrecting
+        // bundled rows would show stale content after all live rows are removed.
+        if (result.source === 'supabase') {
+          setRemoteBios({ slug, bios: result.bios });
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        console.warn('Supabase unavailable — using the bundled collection.');
+        setRemoteBios(null);
+        setRemoteError(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [slug, retryTick]);
+
+  const sourceBios = (remoteBios?.slug === slug ? remoteBios.bios : null) ?? collection?.bios ?? [];
 
   const visible = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = deferredQuery.trim().toLowerCase();
     if (!collection) return [] as BioEntry[];
-    return collection.bios.filter((bio) => {
+    return sourceBios.filter((bio) => {
       if (!matchesFilter(bio, filter)) return false;
       if (!q) return true;
       const haystack = `${bio.plain ?? bio.text}\n${bio.text}`.toLowerCase();
       return haystack.includes(q);
     });
-  }, [collection, query, filter]);
+  }, [collection, sourceBios, deferredQuery, filter]);
 
-  const slotKey = (index: number, original: BioEntry) => `${index}:${original.text.slice(0, 24)}`;
-  const displayed = visible.map((bio, index) => swaps[slotKey(index, bio)] ?? bio);
+  const displayed = useMemo(() => visible.map((bio, index) => swaps[slotKey(index, bio)] ?? bio), [visible, swaps]);
+  const previewBios = useMemo(() => sourceBios.filter((bio) => !DEVANAGARI.test(bio.text)).map((bio) => bio.text), [sourceBios]);
+
+  // Publish committed state to the stable handler; there are no geometry reads
+  // here, so this layout effect does not force a browser layout.
+  const regenerationContext = useRef({ sourceBios, visible, displayed });
+  useLayoutEffect(() => {
+    regenerationContext.current = { sourceBios, visible, displayed };
+  }, [sourceBios, visible, displayed]);
 
   /** Swaps that slot for another bio from the same collection not already on screen. */
-  const regenerateAt = (index: number) => () => {
-    if (!collection) return;
-    const onScreen = new Set(displayed.map((bio) => bio.text));
-    const pool = collection.bios.filter((candidate) => !onScreen.has(candidate.text));
+  const regenerateAt = useCallback((index: number) => {
+    const { sourceBios: source, visible: currentVisible, displayed: currentDisplayed } = regenerationContext.current;
+    if (!currentVisible[index]) return;
+    const onScreen = new Set(currentDisplayed.map((bio) => bio.text));
+    const pool = source.filter((candidate) => !onScreen.has(candidate.text));
     if (pool.length === 0) {
       toast('Every bio is already on screen — clear the filter for more variations.');
       return;
     }
     const replacement = pool[Math.floor(Math.random() * pool.length)];
-    setSwaps((current) => ({ ...current, [slotKey(index, visible[index])]: replacement }));
-  };
+    setSwaps((current) => ({ ...current, [slotKey(index, currentVisible[index])]: replacement }));
+  }, []);
 
   if (!collection) {
     // ToolShell replaces unknown paths with the homepage; render nothing meanwhile.
@@ -129,7 +190,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
             <h1>{collection.name}</h1>
             <p className="bc-detail-lede">{collection.lede}</p>
             <p className="bc-detail-meta">
-              <span>{collection.bios.length} bios</span>
+              <span>{sourceBios.length} bios</span>
               <span aria-hidden="true">·</span>
               <span>{collection.languages}</span>
               <span aria-hidden="true">·</span>
@@ -165,7 +226,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
         {collection.preview && (
           <ProfilePreview
             variant={collection.preview}
-            bios={collection.bios.filter((bio) => !DEVANAGARI.test(bio.text)).map((bio) => bio.text)}
+            bios={previewBios}
           />
         )}
 
@@ -176,7 +237,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
             <input
               type="search"
               className="bc-search-input"
-              placeholder={`Search ${collection.bios.length} ${collection.name.toLowerCase()}s…`}
+              placeholder={`Search ${sourceBios.length} ${collection.name.toLowerCase()}s…`}
               aria-label={`Search ${collection.name}`}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -202,7 +263,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
           </div>
           <div className="bc-toolbar-foot">
             <p className="bc-result-count" role="status">
-              Showing {visible.length} of {collection.bios.length} bios
+              Showing {visible.length} of {sourceBios.length} bios
             </p>
             <button type="button" className="btn btn-secondary btn-small bc-copy-all" onClick={() => void copyAll()}>
               <ListIcon size={16} aria-hidden="true" /> Copy all shown
@@ -210,23 +271,22 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
           </div>
         </div>
 
+        {remoteError && (
+          <div className="bc-remote-notice" role="status">
+            <p>The live library couldn’t be reached — showing the built-in collection instead.</p>
+            <button type="button" className="btn btn-secondary btn-small" onClick={() => setRetryTick((tick) => tick + 1)}>
+              Retry live library
+            </button>
+          </div>
+        )}
+
         {/* Bio grid */}
         {visible.length > 0 ? (
-          <ul className="bio-grid">
-            {displayed.map((bio, index) => (
-              <BioCollectionCard
-                key={`${index}-${bio.text.slice(0, 12)}-${swaps[slotKey(index, visible[index])] ? 'v' : 'o'}`}
-                bio={bio}
-                label={`bio ${index + 1} from ${collection.name}`}
-                design={designForBio(collection.slug, index)}
-                onRegenerate={regenerateAt(index)}
-              />
-            ))}
-          </ul>
+          <BioGrid visible={visible} displayed={displayed} swaps={swaps} slug={collection.slug} name={collection.name} onRegenerate={regenerateAt} />
         ) : (
           <div className="empty-state" role="status">
-            <p className="empty-state-title">No bios match “{query.trim()}”</p>
-            <p className="empty-state-text">Try fewer words, or clear the filter — Hindi minds like Hindi searches.</p>
+            <p className="empty-state-title">{sourceBios.length === 0 ? 'No live bios are available in this collection.' : `No bios match “${deferredQuery.trim()}”`}</p>
+            <p className="empty-state-text">{sourceBios.length === 0 ? 'Please check back later.' : 'Try fewer words, or clear the filter — Hindi minds like Hindi searches.'}</p>
             <button type="button" className="btn btn-secondary btn-small" onClick={() => { setQuery(''); setFilter('all'); }}>
               Reset filters
             </button>

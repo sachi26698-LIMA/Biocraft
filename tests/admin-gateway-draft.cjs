@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict'); const fs=require('node:fs');const path=require('node:path');const vm=require('node:vm');const esbuild=require('esbuild');
+(async()=>{let handler, requests=[];const env={ADMIN_ALLOWED_ORIGIN:'https://preview.example',SUPABASE_URL:'https://supabase.example',SUPABASE_ANON_KEY:'test-public-key'};
+const source=fs.readFileSync(path.join(__dirname,'../docs/admin-package/admin-gateway-DRAFT.ts'),'utf8');
+const js=esbuild.transformSync(source,{loader:'ts',target:'es2022'}).code;
+const sandbox={Response,Request,TextDecoder,Uint8Array,JSON,Object,Error,Deno:{env:{get:k=>env[k]},serve:fn=>handler=fn},fetch:async(url,opts)=>{requests.push({url,opts});return url.endsWith('/auth/v1/user')?new Response('{}',{status:200}):new Response('"draft-id"',{status:200});}};vm.runInNewContext(js,sandbox);
+const req=(body,origin='https://preview.example',token='Bearer mock.token')=>new Request('https://gateway.example',{method:'POST',headers:{origin,authorization:token,'content-type':'application/json'},body:typeof body==='string'?body:JSON.stringify(body)});
+let result=await handler(req({action:'create',args:{p_bio_id:'20000000-0000-0000-0000-000000000001'}})); assert.equal(result.status,200);assert.equal(await result.json(),'draft-id');assert.equal(requests.length,2);assert.equal(requests[1].opts.headers.authorization,'Bearer mock.token');
+requests=[];result=await handler(req({action:'create',args:{}},'https://attacker.example'));assert.equal(result.status,403);assert.equal(requests.length,0);
+result=await handler(req({action:'constructor',args:{}}));assert.equal(result.status,400);
+result=await handler(req('x'.repeat(32769)));assert.equal(result.status,400);
+result=await handler(req({action:'create',args:{p_bio_id:'20000000-0000-0000-0000-000000000001'}},'https://preview.example','bad'));assert.equal(result.status,401);
+result=await handler(new Request('https://gateway.example',{method:'OPTIONS',headers:{origin:'https://preview.example'}}));assert.equal(result.status,204);assert.equal(result.headers.get('access-control-allow-origin'),'https://preview.example');
+console.log('PASS gateway draft: allowlist, origin, auth header, request size and forwarding (mock network only)');
+})().catch(e=>{console.error(e);process.exitCode=1});

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import CopyButton from './CopyButton';
 
 export interface StyleGalleryItem {
@@ -23,7 +24,7 @@ interface StyleGalleryProps {
  * style is recognisable at a glance.
  * Shared by the Stylish Name and Fancy Font tools.
  */
-export default function StyleGallery({ items, copyLabel, copyAllText, copyAllAriaLabel }: StyleGalleryProps) {
+const StyleGallery = memo(function StyleGallery({ items, copyLabel, copyAllText, copyAllAriaLabel }: StyleGalleryProps) {
   return (
     <div className="style-gallery-wrap">
       {copyAllText && items.length > 0 && (
@@ -50,4 +51,6 @@ export default function StyleGallery({ items, copyLabel, copyAllText, copyAllAri
     </ul>
     </div>
   );
-}
+});
+
+export default StyleGallery;

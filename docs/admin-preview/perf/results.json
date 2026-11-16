@@ -1,0 +1,344 @@
+[
+  {
+    "name": "android-emulated",
+    "values": {
+      "long": [
+        {
+          "duration": 272,
+          "start": 225.10000000149012
+        },
+        {
+          "duration": 50,
+          "start": 1136.9000000022352
+        },
+        {
+          "duration": 77,
+          "start": 1250.9000000022352
+        },
+        {
+          "duration": 61,
+          "start": 1414.4000000022352
+        }
+      ],
+      "events": [
+        {
+          "name": "keydown",
+          "duration": 80,
+          "id": 4522,
+          "input": 1.199999999254942,
+          "processing": 50.30000000074506,
+          "target": "INPUT"
+        },
+        {
+          "name": "keyup",
+          "duration": 24,
+          "id": 4522,
+          "input": 0.3999999985098839,
+          "processing": 1.1000000014901161,
+          "target": "INPUT"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 96,
+          "id": 4529,
+          "input": 1.0999999977648258,
+          "processing": 0.30000000074505806,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerup",
+          "duration": 96,
+          "id": 4529,
+          "input": 2,
+          "processing": 0,
+          "target": "BUTTON"
+        },
+        {
+          "name": "click",
+          "duration": 96,
+          "id": 4529,
+          "input": 2.099999997764826,
+          "processing": 5.900000002235174,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 56,
+          "id": 4536,
+          "input": 2.900000002235174,
+          "processing": 0.30000000074505806
+        },
+        {
+          "name": "pointerup",
+          "duration": 56,
+          "id": 4536,
+          "input": 6.599999997764826,
+          "processing": 0.7000000029802322
+        },
+        {
+          "name": "click",
+          "duration": 56,
+          "id": 4536,
+          "input": 7.399999998509884,
+          "processing": 9.400000002235174
+        }
+      ],
+      "shifts": [
+        {
+          "value": 0.00013778459690250676,
+          "start": 1077.199999999255
+        }
+      ],
+      "lcp": [
+        520
+      ]
+    },
+    "nav": {
+      "dcl": 155.5,
+      "load": 155.60000000149012
+    },
+    "resources": [
+      {
+        "name": "/assets/admin-CLh0YY-J.js",
+        "size": 12130
+      },
+      {
+        "name": "/assets/router-BBJLCJB3.js",
+        "size": 84764
+      },
+      {
+        "name": "/assets/categories-CxxjNg9w.js",
+        "size": 3413
+      },
+      {
+        "name": "/assets/admin-Cq09uNkT.css",
+        "size": 4706
+      }
+    ]
+  },
+  {
+    "name": "tablet",
+    "values": {
+      "long": [
+        {
+          "duration": 52,
+          "start": 134.69999999925494
+        },
+        {
+          "duration": 252,
+          "start": 188.40000000223517
+        },
+        {
+          "duration": 66,
+          "start": 1029.4000000022352
+        },
+        {
+          "duration": 86,
+          "start": 1182.199999999255
+        },
+        {
+          "duration": 54,
+          "start": 1326.800000000745
+        }
+      ],
+      "events": [
+        {
+          "name": "keydown",
+          "duration": 88,
+          "id": 1512,
+          "input": 0.8000000007450581,
+          "processing": 66.40000000223517,
+          "target": "INPUT"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 80,
+          "id": 1519,
+          "input": 2,
+          "processing": 0.30000000074505806,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerup",
+          "duration": 80,
+          "id": 1519,
+          "input": 2.7000000029802322,
+          "processing": 0.09999999776482582,
+          "target": "BUTTON"
+        },
+        {
+          "name": "click",
+          "duration": 80,
+          "id": 1519,
+          "input": 2.800000000745058,
+          "processing": 2.300000000745058,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 64,
+          "id": 1526,
+          "input": 2.300000000745058,
+          "processing": 0.19999999925494194
+        },
+        {
+          "name": "pointerup",
+          "duration": 64,
+          "id": 1526,
+          "input": 2.699999999254942,
+          "processing": 0.10000000149011612
+        },
+        {
+          "name": "click",
+          "duration": 64,
+          "id": 1526,
+          "input": 2.800000000745058,
+          "processing": 14.299999997019768
+        }
+      ],
+      "shifts": [],
+      "lcp": [
+        476
+      ]
+    },
+    "nav": {
+      "dcl": 134.19999999925494,
+      "load": 134.30000000074506
+    },
+    "resources": [
+      {
+        "name": "/assets/admin-CLh0YY-J.js",
+        "size": 12130
+      },
+      {
+        "name": "/assets/router-BBJLCJB3.js",
+        "size": 84764
+      },
+      {
+        "name": "/assets/admin-Cq09uNkT.css",
+        "size": 4706
+      },
+      {
+        "name": "/assets/categories-CxxjNg9w.js",
+        "size": 3413
+      }
+    ]
+  },
+  {
+    "name": "desktop",
+    "values": {
+      "long": [
+        {
+          "duration": 53,
+          "start": 109.09999999776483
+        },
+        {
+          "duration": 51,
+          "start": 167.39999999850988
+        },
+        {
+          "duration": 195,
+          "start": 221.09999999776483
+        },
+        {
+          "duration": 53,
+          "start": 958.8999999985099
+        },
+        {
+          "duration": 101,
+          "start": 1101.3999999985099
+        },
+        {
+          "duration": 81,
+          "start": 1303.5999999977648
+        }
+      ],
+      "events": [
+        {
+          "name": "keydown",
+          "duration": 88,
+          "id": 2389,
+          "input": 1.2000000029802322,
+          "processing": 53,
+          "target": "INPUT"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 112,
+          "id": 2396,
+          "input": 5.199999999254942,
+          "processing": 2.199999999254942,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerup",
+          "duration": 112,
+          "id": 2396,
+          "input": 11,
+          "processing": 0,
+          "target": "BUTTON"
+        },
+        {
+          "name": "click",
+          "duration": 112,
+          "id": 2396,
+          "input": 11.100000001490116,
+          "processing": 7.100000001490116,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 72,
+          "id": 2403,
+          "input": 7,
+          "processing": 0.9000000022351742
+        },
+        {
+          "name": "pointerup",
+          "duration": 72,
+          "id": 2403,
+          "input": 9.899999998509884,
+          "processing": 0.6000000014901161
+        },
+        {
+          "name": "click",
+          "duration": 72,
+          "id": 2403,
+          "input": 10.5,
+          "processing": 8.199999999254942
+        }
+      ],
+      "shifts": [
+        {
+          "value": 0.0005969237276556071,
+          "start": 905.3000000007451
+        }
+      ],
+      "lcp": [
+        476
+      ]
+    },
+    "nav": {
+      "dcl": 162.80000000074506,
+      "load": 162.89999999850988
+    },
+    "resources": [
+      {
+        "name": "/assets/admin-CLh0YY-J.js",
+        "size": 12130
+      },
+      {
+        "name": "/assets/router-BBJLCJB3.js",
+        "size": 84764
+      },
+      {
+        "name": "/assets/admin-Cq09uNkT.css",
+        "size": 4706
+      },
+      {
+        "name": "/assets/categories-CxxjNg9w.js",
+        "size": 3413
+      }
+    ]
+  }
+]

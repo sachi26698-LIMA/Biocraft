@@ -1,0 +1,365 @@
+[
+  {
+    "name": "android-emulated",
+    "values": {
+      "long": [
+        {
+          "duration": 51,
+          "start": 181.90000000037253
+        },
+        {
+          "duration": 233,
+          "start": 233.69999999925494
+        },
+        {
+          "duration": 51,
+          "start": 1108.7999999988824
+        },
+        {
+          "duration": 58,
+          "start": 1212.4000000003725
+        },
+        {
+          "duration": 99,
+          "start": 1365.0999999996275
+        },
+        {
+          "duration": 74,
+          "start": 1530
+        }
+      ],
+      "events": [
+        {
+          "name": "keydown",
+          "duration": 88,
+          "id": 559,
+          "input": 0.6999999992549419,
+          "processing": 58.20000000111759,
+          "target": "INPUT"
+        },
+        {
+          "name": "keyup",
+          "duration": 16,
+          "id": 559,
+          "input": 12.099999999627471,
+          "processing": 1.599999999627471,
+          "target": "INPUT"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 96,
+          "id": 566,
+          "input": 6.700000001117587,
+          "processing": 3.599999999627471,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerup",
+          "duration": 96,
+          "id": 566,
+          "input": 13.300000000745058,
+          "processing": 0.09999999962747097,
+          "target": "BUTTON"
+        },
+        {
+          "name": "click",
+          "duration": 96,
+          "id": 566,
+          "input": 13.400000000372529,
+          "processing": 8.5,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 48,
+          "id": 573,
+          "input": 3.100000001490116,
+          "processing": 0.19999999925494194
+        },
+        {
+          "name": "pointerup",
+          "duration": 48,
+          "id": 573,
+          "input": 6,
+          "processing": 0.10000000149011612
+        },
+        {
+          "name": "click",
+          "duration": 48,
+          "id": 573,
+          "input": 6.800000000745058,
+          "processing": 7
+        }
+      ],
+      "shifts": [
+        {
+          "value": 0.0003331612849311179,
+          "start": 1161.199999999255
+        }
+      ],
+      "lcp": [
+        496
+      ]
+    },
+    "nav": {
+      "dcl": 160.5,
+      "load": 160.5
+    },
+    "resources": [
+      {
+        "name": "/assets/admin-BAHdMTU5.js",
+        "size": 7115
+      },
+      {
+        "name": "/assets/router-D_HT4hs0.js",
+        "size": 84816
+      },
+      {
+        "name": "/assets/admin-_8bnLMIb.css",
+        "size": 4069
+      },
+      {
+        "name": "/assets/categories-CxxjNg9w.js",
+        "size": 3413
+      }
+    ]
+  },
+  {
+    "name": "tablet",
+    "values": {
+      "long": [
+        {
+          "duration": 51,
+          "start": 144.10000000149012
+        },
+        {
+          "duration": 201,
+          "start": 198.10000000149012
+        },
+        {
+          "duration": 67,
+          "start": 894.9000000003725
+        },
+        {
+          "duration": 91,
+          "start": 1113.7000000011176
+        },
+        {
+          "duration": 72,
+          "start": 1296.7000000011176
+        }
+      ],
+      "events": [
+        {
+          "name": "keydown",
+          "duration": 64,
+          "id": 495,
+          "input": 0.5,
+          "processing": 33.90000000037253,
+          "target": "INPUT"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 96,
+          "id": 502,
+          "input": 7.599999999627471,
+          "processing": 1.900000000372529,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerup",
+          "duration": 96,
+          "id": 502,
+          "input": 12.800000000745058,
+          "processing": 0.6999999992549419,
+          "target": "BUTTON"
+        },
+        {
+          "name": "click",
+          "duration": 96,
+          "id": 502,
+          "input": 13.599999999627471,
+          "processing": 8.800000000745058,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 64,
+          "id": 509,
+          "input": 4.200000001117587,
+          "processing": 0.2999999988824129
+        },
+        {
+          "name": "pointerup",
+          "duration": 64,
+          "id": 509,
+          "input": 7.5,
+          "processing": 0.09999999962747097
+        },
+        {
+          "name": "click",
+          "duration": 64,
+          "id": 509,
+          "input": 8.599999999627471,
+          "processing": 12.099999999627471
+        }
+      ],
+      "shifts": [
+        {
+          "value": 0.01860083450917154,
+          "start": 958.2000000011176
+        }
+      ],
+      "lcp": [
+        440
+      ]
+    },
+    "nav": {
+      "dcl": 139.30000000074506,
+      "load": 140.30000000074506
+    },
+    "resources": [
+      {
+        "name": "/assets/admin-BAHdMTU5.js",
+        "size": 7115
+      },
+      {
+        "name": "/assets/router-D_HT4hs0.js",
+        "size": 84816
+      },
+      {
+        "name": "/assets/categories-CxxjNg9w.js",
+        "size": 3413
+      },
+      {
+        "name": "/assets/admin-_8bnLMIb.css",
+        "size": 4069
+      }
+    ]
+  },
+  {
+    "name": "desktop",
+    "values": {
+      "long": [
+        {
+          "duration": 59,
+          "start": 110.09999999962747
+        },
+        {
+          "duration": 60,
+          "start": 169.7999999988824
+        },
+        {
+          "duration": 211,
+          "start": 239.90000000037253
+        },
+        {
+          "duration": 87,
+          "start": 956.0999999996275
+        },
+        {
+          "duration": 108,
+          "start": 1156.9000000003725
+        },
+        {
+          "duration": 115,
+          "start": 1361.4000000003725
+        }
+      ],
+      "events": [
+        {
+          "name": "keydown",
+          "duration": 128,
+          "id": 2265,
+          "input": 0.30000000074505806,
+          "processing": 70.09999999962747,
+          "target": "INPUT"
+        },
+        {
+          "name": "keyup",
+          "duration": 16,
+          "id": 2265,
+          "input": 14.400000000372529,
+          "processing": 0.599999999627471,
+          "target": "INPUT"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 160,
+          "id": 2272,
+          "input": 9.300000000745058,
+          "processing": 2.799999998882413,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerup",
+          "duration": 160,
+          "id": 2272,
+          "input": 16.899999998509884,
+          "processing": 0.10000000149011612,
+          "target": "BUTTON"
+        },
+        {
+          "name": "click",
+          "duration": 160,
+          "id": 2272,
+          "input": 18.09999999962747,
+          "processing": 4.400000000372529,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 88,
+          "id": 2279,
+          "input": 4.699999999254942,
+          "processing": 0.40000000037252903
+        },
+        {
+          "name": "pointerup",
+          "duration": 88,
+          "id": 2279,
+          "input": 9.800000000745058,
+          "processing": 0.09999999962747097
+        },
+        {
+          "name": "click",
+          "duration": 88,
+          "id": 2279,
+          "input": 10.800000000745058,
+          "processing": 8.199999999254942
+        }
+      ],
+      "shifts": [
+        {
+          "value": 0.0006923826283061128,
+          "start": 906.1999999992549
+        }
+      ],
+      "lcp": [
+        492
+      ]
+    },
+    "nav": {
+      "dcl": 168.69999999925494,
+      "load": 168.69999999925494
+    },
+    "resources": [
+      {
+        "name": "/assets/admin-BAHdMTU5.js",
+        "size": 7115
+      },
+      {
+        "name": "/assets/router-D_HT4hs0.js",
+        "size": 84816
+      },
+      {
+        "name": "/assets/categories-CxxjNg9w.js",
+        "size": 3413
+      },
+      {
+        "name": "/assets/admin-_8bnLMIb.css",
+        "size": 4069
+      }
+    ]
+  }
+]

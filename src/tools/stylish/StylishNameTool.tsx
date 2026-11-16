@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { UNICODE_STYLES, hasDevanagari } from '../../lib/unicodeStyles';
 import { DISPLAY_NAME_LIMIT, bioLength, tidy } from '../../lib/text';
 import StyleGallery from '../../components/StyleGallery';
@@ -6,6 +6,7 @@ import CharCounter from '../../components/CharCounter';
 import { NAME_DESIGNS, applyNameDesign } from './nameDesigns';
 
 const DEMO = 'BioCraft';
+const copyLabel = (label: string) => `Copy ${label} style`;
 
 /**
  * Stylish Name Generator — your display name in styled Unicode alphabets,
@@ -15,15 +16,16 @@ export default function StylishNameTool() {
   const [name, setName] = useState('');
   const [design, setDesign] = useState('none');
   const trimmed = tidy(name);
+  const previewName = useDeferredValue(trimmed);
 
   const items = useMemo(
     () =>
       UNICODE_STYLES.map((style) =>
-        trimmed
+        previewName
           ? {
               id: style.id,
               label: style.label,
-              text: applyNameDesign(style.transform(trimmed), design),
+              text: applyNameDesign(style.transform(previewName), design),
               demo: applyNameDesign(style.transform(DEMO), design),
             }
           : {
@@ -32,8 +34,9 @@ export default function StylishNameTool() {
               text: applyNameDesign(style.transform(DEMO), design),
             },
       ),
-    [trimmed, design],
+    [previewName, design],
   );
+  const copyAllText = useMemo(() => items.map((item) => `${item.label}: ${item.text}`).join('\n'), [items]);
 
   const showDevanagariNote = hasDevanagari(trimmed);
   const count = bioLength(trimmed);
@@ -101,15 +104,15 @@ export default function StylishNameTool() {
         </div>
 
         <div className="styles-main" aria-live="polite">
-          {!trimmed && (
+          {!previewName && (
             <p className="tool-note" role="note">
               Showing “{DEMO}” in all {UNICODE_STYLES.length} styles — type your name to replace it.
             </p>
           )}
           <StyleGallery
             items={items}
-            copyLabel={(label) => `Copy ${label} style`}
-            copyAllText={items.map((item) => `${item.label}: ${item.text}`).join('\n')}
+            copyLabel={copyLabel}
+            copyAllText={copyAllText}
             copyAllAriaLabel={"Copy all styles to clipboard"}
           />
         </div>

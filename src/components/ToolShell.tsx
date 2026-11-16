@@ -1,23 +1,40 @@
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { handleAnchorClick, navigate, usePath } from '../lib/router';
 import ToolWorkspace from './ToolWorkspace';
 import Breadcrumbs from './Breadcrumbs';
 import { TOOLS, toolForPath } from '../tools/registry';
 import { useRecentlyUsed } from '../lib/toolbox';
 import HomePage from '../pages/HomePage';
-import InfoPage from '../pages/InfoPage';
-import FeaturesPage from '../pages/FeaturesPage';
-import CategoriesPage from '../pages/CategoriesPage';
-import BioCollectionsPage from '../pages/BioCollectionsPage';
-import BioCollectionPage from '../pages/BioCollectionPage';
-import BioEditorPage from '../pages/BioEditorPage';
 import { infoPageForPath } from '../pages/info';
 import { collectionForPath } from '../lib/bioCollections';
+
+const InfoPage = lazy(() => import('../pages/InfoPage'));
+const FeaturesPage = lazy(() => import('../pages/FeaturesPage'));
+const CategoriesPage = lazy(() => import('../pages/CategoriesPage'));
+const BioCollectionsPage = lazy(() => import('../pages/BioCollectionsPage'));
+const BioCollectionPage = lazy(() => import('../pages/BioCollectionPage'));
+const BioEditorPage = lazy(() => import('../pages/BioEditorPage'));
 
 const TOOL_PATHS = new Set(TOOLS.map((tool) => tool.path));
 const COLLECTIONS_INDEX = '/bio-collections';
 const BIO_EDITOR = '/bio-editor';
 const HOME = '/';
+// This import is removed from production builds; the route is not linked publicly.
+const diagnosticsEnabled = typeof __BIOCRAFT_PREVIEW_DIAGNOSTICS__ !== 'undefined' && __BIOCRAFT_PREVIEW_DIAGNOSTICS__;
+const DiagnosticsPage = diagnosticsEnabled ? lazy(() => import('../pages/PreviewDiagnosticsPage')) : null;
+
+// A fragment can be requested before a lazy page exists; resolve it after the
+// page actually mounts instead of silently leaving the visitor at the top.
+function ReadyPage({ path, children }: { path: string; children: ReactNode }) {
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash) document.getElementById(hash)?.scrollIntoView?.({ block: 'start' });
+  }, [path]);
+  return children;
+}
+function DeferredPage({ path, children }: { path: string; children: ReactNode }) {
+  return <Suspense fallback={<p className="route-loading" role="status">Loading page…</p>}><ReadyPage path={path}>{children}</ReadyPage></Suspense>;
+}
 
 /**
  * Route dispatcher.
@@ -43,6 +60,7 @@ export default function ToolShell() {
   const isCollectionsIndex = path === COLLECTIONS_INDEX;
   const isBioEditor = path === BIO_EDITOR;
   const isFeatures = path === '/features';
+  const isDiagnostics = diagnosticsEnabled && path === '/preview-diagnostics';
   const collection = collectionForPath(path);
   const tool = toolForPath(path);
   const isToolRoute = TOOL_PATHS.has(path);
@@ -51,10 +69,20 @@ export default function ToolShell() {
 
   // Unknown paths fall back to the homepage.
   useEffect(() => {
-    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isFeatures && !collection) {
+    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isFeatures && !isDiagnostics && !collection) {
       navigate(HOME, { replace: true });
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, collection]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, isDiagnostics, collection]);
+
+  // On client-side navigation, request only the small common-styles font when
+  // bundled collection content or a font gallery will use it. Other glyphs
+  // remain demand-loaded by CSS.
+  useEffect(() => {
+    const hasCommonMath = collection?.bios.some((bio) => /[\u{1d400}-\u{1d433}\u{1d5d4}-\u{1d607}\u{1d670}-\u{1d6a3}]/u.test(bio.text));
+    if ((hasCommonMath || path === '/stylish-name-generator' || path === '/fancy-font-generator') && document.fonts?.load) {
+      void document.fonts.load('400 1em "Noto Sans Math"', '𝐀').catch(() => {});
+    }
+  }, [path, collection]);
 
   // Remember tool visits (localStorage only) for the "Recently used" rail.
   useEffect(() => {
@@ -77,7 +105,9 @@ export default function ToolShell() {
   }, [path]);
 
   useEffect(() => {
-    if (isHome) {
+    if (isDiagnostics) {
+      document.title = 'Preview Diagnostics — BioCraft';
+    } else if (isHome) {
       document.title = 'BioCraft — All-in-One Social Media Toolkit';
     } else if (isToolRoute) {
       document.title = tool.title;
@@ -94,13 +124,14 @@ export default function ToolShell() {
     } else if (collection) {
       document.title = collection.seoTitle;
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, collection, tool]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, isDiagnostics, collection, tool]);
 
+  if (isDiagnostics && DiagnosticsPage) return <Suspense fallback={<p>Loading diagnostics…</p>}><DiagnosticsPage /></Suspense>;
   if (isHome) return <HomePage />;
-  if (isCategories) return <CategoriesPage />;
-  if (isCollectionsIndex) return <BioCollectionsPage />;
-  if (isBioEditor) return <BioEditorPage />;
-  if (collection) return <BioCollectionPage slug={collection.slug} />;
+  if (isCategories) return <DeferredPage path={path}><CategoriesPage /></DeferredPage>;
+  if (isCollectionsIndex) return <DeferredPage path={path}><BioCollectionsPage /></DeferredPage>;
+  if (isBioEditor) return <DeferredPage path={path}><BioEditorPage /></DeferredPage>;
+  if (collection) return <DeferredPage path={path}><BioCollectionPage slug={collection.slug} /></DeferredPage>;
   if (isToolRoute) {
     return (
       <section className="tool-page">
@@ -126,7 +157,7 @@ export default function ToolShell() {
       </section>
     );
   }
-  if (path === '/features') return <FeaturesPage />;
-  if (infoPage) return <InfoPage path={path} />;
+  if (path === '/features') return <DeferredPage path={path}><FeaturesPage /></DeferredPage>;
+  if (infoPage) return <DeferredPage path={path}><InfoPage path={path} /></DeferredPage>;
   return <HomePage />; // transient state while the replace-navigation lands
 }

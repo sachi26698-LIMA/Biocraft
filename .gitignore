@@ -8,3 +8,8 @@ npm-debug.log*
 !.vscode/extensions.json
 .idea
 review-harness.bundle.cjs
+
+# Local environment files — never commit real credentials
+.env
+.env.*
+!.env.example

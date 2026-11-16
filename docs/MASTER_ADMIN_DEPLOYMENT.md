@@ -1,0 +1,5 @@
+# Isolated deployment prerequisites
+
+Vercel reports Preview commit `98960fb` READY at `https://biocraft-p5y96wpul-sachi26698-6758s-projects.vercel.app/admin`. It is a UI-only Preview; the local backend building blocks are not wired to it, no Admin schema was deployed, and hosted browser behavior was not independently verified.
+
+No new Supabase project or subscription is requested. The target is the existing shared project `jvpadtzfsuekixrquzjv`; see [shared-project review](MASTER_ADMIN_SHARED_PROJECT.md). Existing frontend publishable connection may be reused; no secret or service-role key belongs in a browser. A Preview connected to the same project is **not** isolated from Production. Before any shared security migration, show and obtain approval for the exact final SQL, impact and rollback. Security review, live session and authorization implementation, bootstrap, hosted verification and distinct approval for real publishing remain required. No Production deployment, main merge or public content publication is authorized.

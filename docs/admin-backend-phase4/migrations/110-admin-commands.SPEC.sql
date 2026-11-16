@@ -1,0 +1,15 @@
+-- SPECIFICATION ONLY. NO EXECUTABLE MIGRATION. DO NOT DEPLOY.
+-- Target: isolated admin DB. Implement and review narrowly granted commands for
+-- staff/session lookup and revoke; member changes with serialized last-S rule;
+-- typed draft create/update/submit, approve/reject; release intent and status;
+-- redacted audit reads and default-OFF switches. No generic table/SQL endpoint.
+-- Each transaction binds a provider-verified subject/session through a proven
+-- trusted server channel, locks enabled membership/session, checks named scoped
+-- permission, MFA and required fresh step-up, validates expected version, records
+-- idempotency and success audit atomically. Do not trust arbitrary session GUCs.
+-- Separation of author, reviewer and publisher; lock ordering and concurrency
+-- tests required. Outbox uses immutable environment, release ID, target key,
+-- base hash/version, payload digest and actor/review evidence; worker lease,
+-- retry/reconcile state and exact replay rules. Failed denials go to a separate
+-- security log because their transaction rolls back. No provider implementation,
+-- permissions or identity binding are provided by this specification.

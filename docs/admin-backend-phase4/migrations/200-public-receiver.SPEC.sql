@@ -1,0 +1,15 @@
+-- SPECIFICATION ONLY. NO EXECUTABLE MIGRATION. DO NOT DEPLOY.
+-- Target: synthetic public DB first; existing public production target only
+-- after separate approval of exact reviewed SQL and rollback/restore plan.
+-- Receiver invoked only by a narrow non-owner executor, authenticated via an
+-- independently verified environment-bound worker identity. Protect receiver
+-- owner, function search_path and grants; no general DML or service-role key.
+-- Default-OFF target switch; strict per-kind input schema and bounded request.
+-- Receipt table unique(release_id), digest, target/environment, resource,
+-- applied version/hash and bounded result; target audit and content mutation in
+-- same transaction. Identical replay returns receipt; mismatched replay rejects.
+-- Lock target; compare current target base/version/hash; validate mapping,
+-- dependencies and allowed columns; apply typed update/insert/archive; append
+-- audit/receipt atomically. Failed checks or ambiguity fail closed. Provide
+-- authorized receipt lookup and alerting; no cross-DB transaction assumption.
+-- Public consumer/build/fallback and restore plans are separate prerequisites.

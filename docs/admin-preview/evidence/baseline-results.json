@@ -1,0 +1,362 @@
+[
+  {
+    "name": "android-emulated",
+    "values": {
+      "long": [
+        {
+          "duration": 55,
+          "start": 132.80000000074506
+        },
+        {
+          "duration": 244,
+          "start": 344.09999999962747
+        },
+        {
+          "duration": 58,
+          "start": 1241.4000000003725
+        },
+        {
+          "duration": 64,
+          "start": 1378.0999999996275
+        },
+        {
+          "duration": 94,
+          "start": 1528.9000000003725
+        },
+        {
+          "duration": 90,
+          "start": 1714.4000000003725
+        }
+      ],
+      "events": [
+        {
+          "name": "keydown",
+          "duration": 88,
+          "id": 4939,
+          "input": 1.5,
+          "processing": 52.30000000074506,
+          "target": "INPUT"
+        },
+        {
+          "name": "keyup",
+          "duration": 16,
+          "id": 4939,
+          "input": 8.199999999254942,
+          "processing": 3.600000001490116,
+          "target": "INPUT"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 128,
+          "id": 4946,
+          "input": 8.599999999627471,
+          "processing": 4.5,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerup",
+          "duration": 128,
+          "id": 4946,
+          "input": 17.699999999254942,
+          "processing": 0.2000000011175871,
+          "target": "BUTTON"
+        },
+        {
+          "name": "click",
+          "duration": 128,
+          "id": 4946,
+          "input": 21.90000000037253,
+          "processing": 8.699999999254942,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 80,
+          "id": 4953,
+          "input": 8,
+          "processing": 0.40000000037252903
+        },
+        {
+          "name": "pointerup",
+          "duration": 80,
+          "id": 4953,
+          "input": 8.800000000745058,
+          "processing": 0
+        },
+        {
+          "name": "click",
+          "duration": 80,
+          "id": 4953,
+          "input": 8.900000000372529,
+          "processing": 7.700000001117587
+        }
+      ],
+      "shifts": [
+        {
+          "value": 0.0003331612849311179,
+          "start": 1304.800000000745
+        }
+      ],
+      "lcp": [
+        284,
+        612
+      ]
+    },
+    "nav": {
+      "dcl": 184.5,
+      "load": 184.59999999962747
+    },
+    "resources": [
+      {
+        "name": "/assets/index-CMkI3o_u.js",
+        "size": 109138
+      },
+      {
+        "name": "/assets/index-C9NwelWm.css",
+        "size": 22560
+      },
+      {
+        "name": "/assets/AdminApp-CDDsA4Zr.js",
+        "size": 6542
+      },
+      {
+        "name": "/assets/AdminApp-C8yLJQZl.css",
+        "size": 4004
+      }
+    ]
+  },
+  {
+    "name": "tablet",
+    "values": {
+      "long": [
+        {
+          "duration": 62,
+          "start": 114.40000000037253
+        },
+        {
+          "duration": 224,
+          "start": 294.7000000011176
+        },
+        {
+          "duration": 51,
+          "start": 1192
+        },
+        {
+          "duration": 101,
+          "start": 1333.300000000745
+        },
+        {
+          "duration": 76,
+          "start": 1508.9000000003725
+        }
+      ],
+      "events": [
+        {
+          "name": "keydown",
+          "duration": 104,
+          "id": 2602,
+          "input": 0.6000000014901161,
+          "processing": 51,
+          "target": "INPUT"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 136,
+          "id": 2609,
+          "input": 4.5,
+          "processing": 0.5,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerup",
+          "duration": 136,
+          "id": 2609,
+          "input": 5.5,
+          "processing": 0.10000000149011612,
+          "target": "BUTTON"
+        },
+        {
+          "name": "click",
+          "duration": 136,
+          "id": 2609,
+          "input": 5.600000001490116,
+          "processing": 11,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 88,
+          "id": 2616,
+          "input": 2.399999998509884,
+          "processing": 4.300000000745058
+        },
+        {
+          "name": "pointerup",
+          "duration": 88,
+          "id": 2616,
+          "input": 7.699999999254942,
+          "processing": 0.09999999962747097
+        },
+        {
+          "name": "click",
+          "duration": 88,
+          "id": 2616,
+          "input": 7.899999998509884,
+          "processing": 7.600000001490116
+        }
+      ],
+      "shifts": [
+        {
+          "value": 0.01860083450917154,
+          "start": 1130.800000000745
+        }
+      ],
+      "lcp": [
+        288
+      ]
+    },
+    "nav": {
+      "dcl": 173.2000000011176,
+      "load": 173.40000000037253
+    },
+    "resources": [
+      {
+        "name": "/assets/index-CMkI3o_u.js",
+        "size": 109138
+      },
+      {
+        "name": "/assets/index-C9NwelWm.css",
+        "size": 22560
+      },
+      {
+        "name": "/assets/AdminApp-CDDsA4Zr.js",
+        "size": 6542
+      },
+      {
+        "name": "/assets/AdminApp-C8yLJQZl.css",
+        "size": 4004
+      }
+    ]
+  },
+  {
+    "name": "desktop",
+    "values": {
+      "long": [
+        {
+          "duration": 93,
+          "start": 77.69999999925494
+        },
+        {
+          "duration": 241,
+          "start": 322.5
+        },
+        {
+          "duration": 50,
+          "start": 1155.5
+        },
+        {
+          "duration": 93,
+          "start": 1288.199999999255
+        },
+        {
+          "duration": 62,
+          "start": 1451.5999999996275
+        }
+      ],
+      "events": [
+        {
+          "name": "keydown",
+          "duration": 104,
+          "id": 4870,
+          "input": 0.7999999988824129,
+          "processing": 50.09999999962747,
+          "target": "INPUT"
+        },
+        {
+          "name": "keyup",
+          "duration": 56,
+          "id": 4870,
+          "input": 0.2000000011175871,
+          "processing": 1.799999998882413,
+          "target": "INPUT"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 112,
+          "id": 4877,
+          "input": 3.400000000372529,
+          "processing": 2.800000000745058,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerup",
+          "duration": 112,
+          "id": 4877,
+          "input": 8.799999998882413,
+          "processing": 0,
+          "target": "BUTTON"
+        },
+        {
+          "name": "click",
+          "duration": 112,
+          "id": 4877,
+          "input": 8.900000000372529,
+          "processing": 6.599999999627471,
+          "target": "BUTTON"
+        },
+        {
+          "name": "pointerdown",
+          "duration": 96,
+          "id": 4884,
+          "input": 5.200000001117587,
+          "processing": 1.299999998882413
+        },
+        {
+          "name": "pointerup",
+          "duration": 96,
+          "id": 4884,
+          "input": 8.900000000372529,
+          "processing": 0.599999999627471
+        },
+        {
+          "name": "click",
+          "duration": 96,
+          "id": 4884,
+          "input": 10.200000001117587,
+          "processing": 5.400000000372529
+        }
+      ],
+      "shifts": [
+        {
+          "value": 0.0006923826283061128,
+          "start": 1093.0999999996275
+        }
+      ],
+      "lcp": [
+        324
+      ]
+    },
+    "nav": {
+      "dcl": 157.59999999962747,
+      "load": 169.69999999925494
+    },
+    "resources": [
+      {
+        "name": "/assets/index-CMkI3o_u.js",
+        "size": 109138
+      },
+      {
+        "name": "/assets/index-C9NwelWm.css",
+        "size": 22560
+      },
+      {
+        "name": "/assets/AdminApp-CDDsA4Zr.js",
+        "size": 6542
+      },
+      {
+        "name": "/assets/AdminApp-C8yLJQZl.css",
+        "size": 4004
+      }
+    ]
+  }
+]
