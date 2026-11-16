@@ -219,12 +219,13 @@ Provenance matters here, so each row says when it ran.
 | Live security gates (11 attacks, §1) | **11 refused, 1 audit row, 0 sessions** |
 | Typecheck (`tsc --noEmit`) | **pass** |
 | `test:admin-grant-inventory` | **pass** — 44 canonical signatures match the live grants |
+| `test:admin-rewrite-sim` | **pass** — the Vercel rewrite duplicate is dropped, 18 paged routes carry no stray parameter |
 | `test:admin-postgres` (real PostgreSQL **18.6**) | **pass** — 4 legs |
 | `test:admin-app-local`, `test:admin-http-smoke` (real cluster) | **pass** |
 | `test:admin-pool-config`, `test:admin-rewrite-sim`, `test:admin-api-routing` | **pass** |
 | `test:performance` (production build) | **pass** |
 | Production build | **pass** — 60 route shells, `admin` chunk 116.72 kB |
-| All 44 `test:*` scripts attempted | **33 pass**, 10 browser (no Chromium), 1 needs `AUDIT_BASE` |
+| All 44 `test:*` scripts attempted | **33 pass**; 10 need Chromium, 1 needs a hosted `AUDIT_BASE` |
 
 ### Earlier in this work, while the local suites were green
 
@@ -311,6 +312,32 @@ you can do, or something this sandbox physically cannot do.
    against the real database and validated the app configuration offline — but I
    have not seen the hosted page answer an authenticated request. I will not claim
    I have.
+
+### One deployment defect found and fixed
+
+The read path was broken on the live deployment, and nothing in the earlier test
+set caught it. Vercel's rewrite emits **two** parameters:
+
+```
+/api/admin/v1/:path*  ->  /api/admin/handler?__admin_path=$1&path=$1
+```
+
+`restoreAdminUrl` stripped `__admin_path` but left `path` behind, so the
+application received `/api/admin/v1/staff?path=staff`. The API rejects unknown
+query keys outright, so **all 18 paged read routes** would have answered
+`400 INVALID` — the console would have looked empty everywhere.
+
+The rewrite simulation passed only because it reproduced half of the rewrite
+(`?__admin_path=<path>` with no `&path=`), which is not what Vercel does. That is
+the lesson: a simulation that is more forgiving than the platform proves nothing.
+
+The fix is in `api/admin/handler.mjs`, not in the rewrite: the duplicate is
+dropped **only** when it equals the captured route, so a genuine client `path`
+parameter is never swallowed. The test now reproduces the real rewrite, asserts
+that every one of the 18 routes ends up with an empty query, and asserts that
+client parameters survive. Confirmed load-bearing: the new test fails against the
+old handler (`actual: '/api/admin/v1/staff?path=staff'`) and passes against the
+fix.
 
 ### Test results as measured
 

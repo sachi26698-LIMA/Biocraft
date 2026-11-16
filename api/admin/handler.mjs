@@ -29,6 +29,13 @@ export function restoreAdminUrl(url) {
     return raw.startsWith(`${PREFIX}/proxy`) ? PREFIX + raw.slice(PREFIX.length + '/proxy'.length) : raw;
   }
   params.delete(MARKER);
+  // Vercel's rewrite also emits `path=$1` (`?__admin_path=$1&path=$1`). That
+  // second parameter is the captured route, not a client parameter, so it must
+  // be dropped: the API rejects unknown query keys outright, and leaving it in
+  // made every paged read answer 400 INVALID on the real deployment. It is only
+  // removed when it duplicates the captured route, so a genuine client `path`
+  // parameter is never silently swallowed.
+  if (params.get('path') === forwarded) params.delete('path');
   // A captured path is a relative remainder and must never escape the prefix.
   const remainder = forwarded.replace(/^\/+/, '');
   if (remainder.split('/').some(segment => segment === '..' || segment === '.')) return `${PREFIX}/`;
