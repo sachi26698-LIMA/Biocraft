@@ -1,7 +1,6 @@
 import { lazy, type ComponentType } from 'react';
-
-// Keep the route registry lightweight: tool implementations (including their
-// curated data pools) are fetched only when their route/panel is selected.
+// Load each tool on demand so unrelated data and rendering code do not block
+// the shell or the first paint. The workspace shows an accessible fallback.
 const BioTool = lazy(() => import('./bio/BioTool'));
 const StylishNameTool = lazy(() => import('./stylish/StylishNameTool'));
 const FancyFontTool = lazy(() => import('./fonts/FancyFontTool'));

@@ -1,9 +1,50 @@
 import type { CSSProperties } from 'react';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useToolkit } from '../lib/toolkit';
-import { platformById } from '../tools/platforms';
-import { PLATFORM_WIDE_MOCKS } from './stageMocks';
+import { platformById, type PlatformId } from '../tools/platforms';
 
+// The decorative screen is interactive, but it does not need to delay the
+// chassis, platform controls and shell. Load it once, then reuse the module.
+const MOCKS = Object.fromEntries(
+  (['instagram', 'facebook', 'threads', 'tiktok', 'x', 'linkedin', 'whatsapp', 'snapchat'] as const)
+    .map((id) => [id, lazy(() => import('./stageMocks').then((module) => ({ default: module.PLATFORM_WIDE_MOCKS[id] })))]),
+) as Record<PlatformId, ReturnType<typeof lazy>>;
+
+// The ticking clock must not re-render the entire platform illustration.
+function StageClock() {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => {
+    const compact = window.matchMedia('(max-width: 599px)');
+    let timer: number | undefined;
+    const tick = () => {
+      window.clearTimeout(timer);
+      if (document.hidden) return;
+      const time = new Date();
+      setNow(time);
+      // Phones show minutes only. Update precisely at the next visible unit,
+      // and refresh immediately when the viewport or tab visibility changes.
+      const period = compact.matches ? 60_000 : 1_000;
+      timer = window.setTimeout(tick, period - (time.getTime() % period) + 5);
+    };
+    tick();
+    compact.addEventListener('change', tick);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      window.clearTimeout(timer);
+      compact.removeEventListener('change', tick);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, []);
+  return (
+    <span className="stage-footer-datetime">
+      <span className="stage-footer-date">{now ? now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : '···'}</span>
+      <span className="stage-footer-time">
+        <span className="stage-footer-time-short">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '··:··'}</span>
+        <span className="stage-footer-time-full" aria-hidden="true">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : '··:··'}</span>
+      </span>
+    </span>
+  );
+}
 
 /**
  * The hero — a premium MacBook-class laptop: photoreal asset for the
@@ -17,19 +58,18 @@ export default function PlatformStage() {
   const screenRef = useRef<HTMLDivElement>(null);
   const { platform } = useToolkit();
   const config = platformById(platform);
-  const Mock = PLATFORM_WIDE_MOCKS[config.id];
-  const [now, setNow] = useState<Date | null>(null);
+  const Mock = MOCKS[config.id];
   /* Scale the fixed 610×419 app-home canvas to fill the live display */
   const [mockScale, setMockScale] = useState(1);
-  useLayoutEffect(() => {
+  useEffect(() => {
     const el = screenRef.current;
     if (!el) return undefined;
-    const update = () => {
-      const { clientWidth, clientHeight } = el;
-      if (clientWidth > 0 && clientHeight > 0) setMockScale(Math.min(clientWidth / 610, clientHeight / 419));
-    };
-    update();
-    const ro = new ResizeObserver(update);
+    // Consume the browser's measured size instead of forcing a full-document
+    // synchronous layout from a React layout effect before the first paint.
+    const ro = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect;
+      if (width > 0 && height > 0) setMockScale(Math.min(width / 610, height / 419));
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
@@ -43,35 +83,40 @@ export default function PlatformStage() {
     const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
     if (reduce.matches || !fine.matches) return undefined;
     let targetX = 0, targetY = 0, currentX = 0, currentY = 0, raf = 0;
-    const onMove = (event: MouseEvent) => {
-      const rect = stage.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      targetX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-      targetY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-    };
-    const onLeave = () => { targetX = 0; targetY = 0; };
+    let pointer: { x: number; y: number } | null = null;
     const tick = () => {
+      // Coalesce pointer events into one geometry read per frame, before writes.
+      if (pointer) {
+        const rect = stage.getBoundingClientRect();
+        if (rect.width && rect.height) {
+          targetX = ((pointer.x - rect.left) / rect.width - 0.5) * 2;
+          targetY = ((pointer.y - rect.top) / rect.height - 0.5) * 2;
+        }
+        pointer = null;
+      }
       currentX += (targetX - currentX) * 0.06;
       currentY += (targetY - currentY) * 0.06;
       layer.style.setProperty('--plx', currentX.toFixed(4));
       layer.style.setProperty('--ply', currentY.toFixed(4));
-      raf = window.requestAnimationFrame(tick);
+      if (Math.abs(targetX - currentX) > 0.001 || Math.abs(targetY - currentY) > 0.001) {
+        raf = window.requestAnimationFrame(tick);
+      } else {
+        raf = 0;
+      }
     };
+    const schedule = () => { if (!raf) raf = window.requestAnimationFrame(tick); };
+    const onMove = (event: MouseEvent) => {
+      pointer = { x: event.clientX, y: event.clientY };
+      schedule();
+    };
+    const onLeave = () => { pointer = null; targetX = 0; targetY = 0; schedule(); };
     stage.addEventListener('mousemove', onMove);
     stage.addEventListener('mouseleave', onLeave);
-    raf = window.requestAnimationFrame(tick);
     return () => {
       stage.removeEventListener('mousemove', onMove);
       stage.removeEventListener('mouseleave', onLeave);
       window.cancelAnimationFrame(raf);
     };
-  }, []);
-
-  useEffect(() => {
-    const tick = () => setNow(new Date());
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
   }, []);
 
   return (
@@ -106,31 +151,23 @@ export default function PlatformStage() {
                         The display is pure black — our live interface renders on top of it. */}
                     {/* React 18.3 does not map the React 19 `fetchPriority` prop; the HTML attribute is
             `fetchpriority` (case-insensitive), which React 18 forwards when spelled lowercase. */}
-                    <img className="laptop-chassis" src="/laptop-hero.webp" alt="" width={1742} height={1246} decoding="async" draggable={false} {...{ fetchpriority: 'high' } as object} />
+                    <img className="laptop-chassis" src="/laptop-hero.webp" srcSet="/laptop-hero-871.webp 871w, /laptop-hero.webp 1742w" sizes="(min-width: 1100px) 780px, (min-width: 600px) 560px, 330px" alt="" width={1742} height={1246} decoding="async" draggable={false} {...{ fetchpriority: 'high' } as object} />
                     <div className="laptop-screen-shell">
                       <div className="laptop-screen-canvas">
                         {/* The live app home — full-bleed, no chrome, no search */}
                         <div
                           className="stage-slab-screen"
-                          key={config.id}
                           role="region"
                           aria-label={`Illustrative ${config.name} app home`}
                           ref={screenRef}
                           style={{ '--mock-scale': mockScale } as CSSProperties}
                         >
-                          <Mock />
+                          <Suspense fallback={null}><Mock key={config.id} /></Suspense>
                         </div>
 
                         {/* Screen footer: live date/time + system icons */}
                         <div className="stage-slab-footer">
-                          <span className="stage-footer-datetime">
-                            <span className="stage-footer-date">{now ? now.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : '···'}</span>
-                            <span className="stage-footer-time">
-                              {/* Two localized variants — the phone-sized one drops seconds; CSS toggles them by width */}
-                              <span className="stage-footer-time-short">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '··:··'}</span>
-                              <span className="stage-footer-time-full" aria-hidden="true">{now ? now.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : '··:··'}</span>
-                            </span>
-                          </span>
+                          <StageClock />
                           <span className="stage-footer-home" aria-hidden="true"><span className="stage-footer-home-bar" /></span>
                           <span className="stage-footer-icons" aria-hidden="true">
                             {/* Wi-Fi */}

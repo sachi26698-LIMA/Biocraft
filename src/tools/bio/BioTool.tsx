@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { generateCategoryBios, generatePersonalBios, generateSingleBio } from './lib/bioGenerator';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { GenerationRunner } from './lib/generationRunner';
+import type { GenerationJob } from './lib/generationJobs';
 import {
   firstErrorField,
   hasErrors,
@@ -8,6 +9,7 @@ import {
 import type { Language, Mode, PersonalFormErrors, PersonalFormValues } from '../../types';
 import BioCard from './BioCard';
 import DownloadButton from '../../components/DownloadButton';
+import { useToolMode } from '../../lib/toolMode';
 import CategoryPicker from './CategoryPicker';
 import PersonalizedForm, { FIELD_ORDER, fieldId } from './PersonalizedForm';
 import SegmentedControl from '../../components/SegmentedControl';
@@ -17,7 +19,6 @@ import { useToolkit } from '../../lib/toolkit';
 import { useSearch } from '../../lib/router';
 import { platformById } from '../platforms';
 import { CATEGORIES } from './data/categories';
-import { useToolMode } from '../../lib/toolMode';
 
 /**
  * Deep-link support: `/bio-generator?tab=category&category=fitness` opens the
@@ -60,6 +61,10 @@ export default function BioTool() {
   const [bios, setBios] = useState<string[]>([]);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [announcement, setAnnouncement] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const runnerRef = useRef<GenerationRunner | null>(null);
+  if (!runnerRef.current) runnerRef.current = new GenerationRunner();
+  useEffect(() => () => runnerRef.current?.dispose(), []);
 
   const personalTabRef = useRef<HTMLButtonElement>(null);
   const categoryTabRef = useRef<HTMLButtonElement>(null);
@@ -77,44 +82,54 @@ export default function BioTool() {
   const bioLimit = platformConfig.bioLimit;
   const isLinkedIn = platformConfig.id === 'linkedin';
   const activeLanguage: Language = isLinkedIn ? 'en' : language;
-  const generationValues = useMemo(
-    () => userMode === 'basic' ? { ...values, niche: '', city: '' } : values,
-    [userMode, values],
-  );
+
+  const generationValues = userMode === 'basic' ? { ...values, niche: '', city: '' } : values;
   const generationLanguage: Language = userMode === 'basic' || isLinkedIn ? 'en' : activeLanguage;
   const generationEmojis = userMode === 'basic' ? true : emojis;
   const generationCount = userMode === 'basic' ? 5 : count;
 
-  const runGeneration = useCallback((): boolean => {
+  const makeJob = useCallback((): GenerationJob => ({
+    mode: activeMode, values: generationValues, categoryId, language: generationLanguage, emojis: generationEmojis,
+    options: isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin', count: generationCount } : { limit: bioLimit, count: generationCount },
+  }), [activeMode, generationValues, categoryId, generationLanguage, generationEmojis, isLinkedIn, bioLimit, generationCount]);
+
+  const submitJob = useCallback((job: GenerationJob, apply: (result: string[]) => void) => {
+    setGenerating(true);
+    setAnnouncement('Generating bios…');
+    void runnerRef.current!.run(job).then((result) => {
+      if (result === null) return; // superseded or unmounted
+      setGenerating(false);
+      apply(result);
+    }).catch(() => {
+      setGenerating(false);
+      setAnnouncement('Could not generate bios. Please try again.');
+    });
+  }, []);
+
+  const runGeneration = useCallback(() => {
     if (activeMode === 'personal') {
       const validation = validatePersonalForm(generationValues);
       setErrors(validation);
       if (hasErrors(validation)) {
+        runnerRef.current?.cancel();
+        setGenerating(false);
         setShowSummary(true);
         const target = firstErrorField(validation);
-        if (target) {
-          document.getElementById(fieldId(target))?.focus();
-        }
-        return false;
+        if (target) document.getElementById(fieldId(target))?.focus();
+        return;
       }
     }
+    submitJob(makeJob(), (next) => {
+      setBios(next);
+      setHasGenerated(true);
+      setAnnouncement(`${next.length} new bios generated.`);
+    });
+  }, [activeMode, generationValues, makeJob, submitJob]);
 
-    const options = isLinkedIn
-      ? { limit: bioLimit, poolSet: 'linkedin' as const, count: generationCount }
-      : { limit: bioLimit, count: generationCount };
-    const next =
-      activeMode === 'personal'
-        ? generatePersonalBios(generationValues, generationLanguage, generationEmojis, options)
-        : generateCategoryBios(categoryId, generationLanguage, generationEmojis, options);
-
-    setBios(next);
-    setHasGenerated(true);
-    setAnnouncement(`${generationCount} new bios generated.`);
-    return true;
-  }, [activeMode, generationValues, generationLanguage, generationEmojis, categoryId, isLinkedIn, bioLimit, generationCount]);
-
-  // Switching mode invalidates the previous result set.
+  // Switching mode invalidates both the previous result set and pending work.
   const switchMode = useCallback((nextMode: Mode) => {
+    runnerRef.current?.cancel();
+    setGenerating(false);
     setMode(nextMode);
     setBios([]);
     setHasGenerated(false);
@@ -122,27 +137,24 @@ export default function BioTool() {
     setAnnouncement('');
   }, []);
 
-  // Changing language / emoji / category after a successful run refreshes the
-  // list in place so the output always matches the current settings. It never
-  // shows errors or steals focus — it just skips refreshing while the form is
-  // (temporarily) invalid and keeps the previous list instead.
+  // Settings refresh results without blocking the UI. A newer job cancels the old one.
   useEffect(() => {
-    if (!hasGenerated) return;
+    if (!hasGenerated && !generating) return;
     if (activeMode === 'personal' && hasErrors(validatePersonalForm(generationValues))) return;
-
-    const next =
-      activeMode === 'personal'
-        ? generatePersonalBios(generationValues, generationLanguage, generationEmojis, isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const, count: generationCount } : { limit: bioLimit, count: generationCount })
-        : generateCategoryBios(categoryId, generationLanguage, generationEmojis, isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const } : { limit: bioLimit });
-
-    setBios(next);
-    setAnnouncement('Bios refreshed to match your settings.');
+    submitJob(makeJob(), (next) => {
+      setBios(next);
+      setHasGenerated(true);
+      setAnnouncement('Bios refreshed to match your settings.');
+    });
     // Deliberately keyed on settings only — typing must not regenerate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeMode, generationLanguage, generationEmojis, categoryId, isLinkedIn, bioLimit, generationCount]);
 
   const handleFieldChange = useCallback(
     (field: keyof PersonalFormValues, value: string) => {
+      runnerRef.current?.cancel();
+      setGenerating(false);
+      setAnnouncement('');
       setValues((prev) => ({ ...prev, [field]: value }));
       setErrors((prev) => {
         if (!prev[field]) return prev;
@@ -154,25 +166,16 @@ export default function BioTool() {
     [],
   );
 
-  const regenerateOne = useCallback(
-    (index: number) => {
-      const replacement = generateSingleBio(
-        activeMode,
-        { values: generationValues, categoryId },
-        generationLanguage,
-        generationEmojis,
-        isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const } : { limit: bioLimit },
-        bios,
-      );
-      if (!replacement) {
+  const regenerateOne = useCallback((index: number) => {
+    submitJob({ ...makeJob(), exclude: bios }, (next) => {
+      if (!next[0]) {
         setAnnouncement('Could not find a fresh variation — try Regenerate all.');
         return;
       }
-      setBios((current) => current.map((bio, i) => (i === index ? replacement : bio)));
+      setBios((current) => current.map((bio, i) => (i === index ? next[0] : bio)));
       setAnnouncement(`Bio ${index + 1} replaced with a fresh variation.`);
-    },
-    [activeMode, generationValues, categoryId, generationLanguage, generationEmojis, isLinkedIn, bioLimit, bios],
-  );
+    });
+  }, [bios, makeJob, submitJob]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -185,7 +188,7 @@ export default function BioTool() {
     if (!keys.includes(event.key)) return;
     event.preventDefault();
     const order: Mode[] = ['personal', 'category'];
-    const current = order.indexOf(mode);
+    const current = order.indexOf(activeMode);
     let next = current;
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
       next = (current + 1) % order.length;
@@ -207,7 +210,7 @@ export default function BioTool() {
     <div className="generator-card">
       {/* ------- Left: controls ------- */}
       <div className="generator-panel">
-        <div className="tabs" role="tablist" aria-label="Bio generation mode" onKeyDown={handleTabKeyDown}>
+        <div className="tabs tool-advanced" role="tablist" aria-label="Bio generation mode" onKeyDown={handleTabKeyDown}>
           <button
             ref={personalTabRef}
             type="button"
@@ -292,11 +295,10 @@ export default function BioTool() {
           </div>
 
           <div
-            className="tool-advanced"
             id="panel-category"
             role="tabpanel"
             aria-labelledby="tab-category"
-            hidden={mode !== 'category'}
+            hidden={activeMode !== 'category'}
           >
             <CategoryPicker value={categoryId} language={activeLanguage} onChange={setCategoryId} />
             <p className="panel-note">
@@ -312,10 +314,10 @@ export default function BioTool() {
             value={String(count) as '5' | '10' | '20'}
             onChange={(value) => setCount(Number(value) as 5 | 10 | 20)}
           />
-          </div>
 
-          <button type="submit" className="btn btn-primary btn-large generate-button">
-            Generate {generationCount} bios
+          </div>
+          <button type="submit" className="btn btn-primary btn-large generate-button" disabled={generating}>
+            {generating ? 'Generating…' : `Generate ${generationCount} bios`}
           </button>
           <p className="form-footnote">$0 forever · No sign-up · Your text never leaves this page</p>
         </form>
@@ -343,11 +345,10 @@ export default function BioTool() {
                 Copy all
               </button>
               <DownloadButton text={bios.join('\n\n')} filename="biocraft-bios.txt" />
-              <button type="button" className="btn btn-secondary btn-small" onClick={() => runGeneration()}>
+              <button type="button" className="btn btn-secondary btn-small" disabled={generating} onClick={() => runGeneration()}>
                 <RefreshIcon size={16} />
                 Regenerate
               </button>
-              <button type="button" className="btn btn-secondary btn-small" onClick={() => { setBios([]); setHasGenerated(false); }}>Reset results</button>
             </div>
           )}
         </div>
@@ -367,7 +368,8 @@ export default function BioTool() {
                     limit={bioLimit}
                     limitDescription={`the ${platformConfig.name} limit (${bioLimit} characters)`}
                     onRegenerate={() => regenerateOne(index)}
-                    onChange={(value) => setBios((current) => current.map((item, i) => i === index ? value : item))}
+                    regenerateDisabled={generating}
+                    onChange={(value) => setBios((current) => current.map((item, i) => (i === index ? value : item)))}
                   />
                 </li>
               ))}

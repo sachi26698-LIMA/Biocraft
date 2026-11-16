@@ -1,9 +1,10 @@
-node_modules
-dist
-dist-ssr
+node_modules/
+dist/
+dist-ssr/
 *.local
-.DS_Store
+*.log
 npm-debug.log*
+.DS_Store
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -11,3 +12,8 @@ review-harness.bundle.cjs
 phase4-artifacts/
 playwright-report/
 test-results/
+
+# Local environment files — never commit real credentials
+.env
+.env.*
+!.env.example

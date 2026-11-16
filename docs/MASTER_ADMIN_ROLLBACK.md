@@ -1,0 +1,3 @@
+# Rollback and recovery
+
+For synthetic local tests, reverse `004_private_draft_commands.sql`, `003_permission_catalog.sql`, `002_workflow_integrity.sql`, then `001_admin_foundation.sql`; 001 intentionally refuses to remove a nonempty schema. No automatic destructive cleanup is authorized for actual environments. For incidents preserve audit, outbox and receiver evidence; stop gateway, workers and receiver, revoke credentials, account for in-flight commits, reconcile receipts and restore into an isolated target before any reviewed corrective release. See [Phase 4 incident runbook](admin-backend-phase4/TEST-AND-RECOVERY.md). No backups, restore drills or recovery objectives have been verified.

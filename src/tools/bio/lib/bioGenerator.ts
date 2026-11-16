@@ -116,15 +116,19 @@ const isUsable = (bio: string, limit: number): boolean =>
  * a deterministic enumeration is the backstop for the toughest constraint
  * sets (e.g. no-emoji Hindi with a long name).
  */
-function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT, count: number = BIO_COUNT): string[] {
+function* composeBiosSteps(ctx: ComposeContext, limit: number = BIO_LIMIT, count: number = BIO_COUNT, exclude: readonly string[] = []): Generator<void, string[]> {
+  let work = 0;
   const seen = new Set<string>();
+  const excluded = new Set(exclude.map((bio) => bio.toLowerCase()));
   const results: string[] = [];
+  const accept = (candidate: string) => isUsable(candidate, limit) && !seen.has(candidate) && !excluded.has(candidate.toLowerCase());
 
   let attempts = 0;
   while (results.length < count && attempts < 1200) {
     attempts += 1;
+    if (++work % 8 === 0) yield;
     const candidate = buildCandidate(ctx, limit);
-    if (isUsable(candidate, limit) && !seen.has(candidate)) {
+    if (accept(candidate)) {
       seen.add(candidate);
       results.push(candidate);
     }
@@ -133,8 +137,9 @@ function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT, count: numb
   if (results.length < count && limit <= 80) {
     outerShort: for (const identity of ctx.pools.identity) {
       if (results.length >= count) break outerShort;
+      if (++work % 8 === 0) yield;
       const candidate = assemble([fill(identity, ctx)]);
-      if (isUsable(candidate, limit) && !seen.has(candidate)) {
+      if (accept(candidate)) {
         seen.add(candidate);
         results.push(candidate);
       }
@@ -154,11 +159,12 @@ function composeBios(ctx: ComposeContext, limit: number = BIO_LIMIT, count: numb
         for (const location of locationChoices) {
           for (const cta of ctx.pools.cta) {
             if (results.length >= count) break outer;
+            if (++work % 8 === 0) yield;
             const rawLines = [identity, detail];
             if (location) rawLines.push(location);
             if (cta) rawLines.push(cta);
             const candidate = assemble(rawLines.map((line) => fill(line, ctx)));
-            if (isUsable(candidate, limit) && !seen.has(candidate)) {
+            if (accept(candidate)) {
               seen.add(candidate);
               results.push(candidate);
             }
@@ -178,15 +184,28 @@ export interface BioOptions {
   count?: number;
   /** 'linkedin' uses the professional English pool with the LinkedIn About limit. */
   poolSet?: 'linkedin';
+  /** Exclude existing results when requesting a fresh variation. */
+  exclude?: readonly string[];
 }
 
-/** Generates five unique personalized bios from the user's details. */
-export function generatePersonalBios(
+function finishSteps(steps: Generator<void, string[]>): string[] {
+  let step = steps.next();
+  while (!step.done) step = steps.next();
+  return step.value;
+}
+
+/** Generate synchronously where explicitly requested (normally in a worker). */
+export function generatePersonalBios(values: PersonalFormValues, language: Language, emojis: boolean, options: BioOptions = {}): string[] {
+  return finishSteps(generatePersonalBiosSteps(values, language, emojis, options));
+}
+
+/** Incremental composition for worker-unavailable environments. */
+export function* generatePersonalBiosSteps(
   values: PersonalFormValues,
   language: Language,
   emojis: boolean,
   options: BioOptions = {},
-): string[] {
+): Generator<void, string[]> {
   const limit = options.limit ?? BIO_LIMIT;
   const name = tidy(values.name);
   const role = tidy(values.role);
@@ -213,16 +232,20 @@ export function generatePersonalBios(
     pools: linkedIn ? getLinkedInPools(emojis) : getPools(language, emojis, 'personal'),
   };
 
-  return composeBios(ctx, limit, options.count);
+  return yield* composeBiosSteps(ctx, limit, options.count, options.exclude);
 }
 
 /** Generates unique bios for a category (no personal details needed). */
-export function generateCategoryBios(
+export function generateCategoryBios(categoryId: string, language: Language, emojis: boolean, options: BioOptions = {}): string[] {
+  return finishSteps(generateCategoryBiosSteps(categoryId, language, emojis, options));
+}
+
+export function* generateCategoryBiosSteps(
   categoryId: string,
   language: Language,
   emojis: boolean,
   options: BioOptions = {},
-): string[] {
+): Generator<void, string[]> {
   const limit = options.limit ?? BIO_LIMIT;
   const category = getCategory(categoryId);
   const content = language === 'hi' ? category.hi : category.en;
@@ -237,7 +260,7 @@ export function generateCategoryBios(
     pools: getPools(language, emojis, 'category'),
   };
 
-  return composeBios(ctx, limit, options.count);
+  return yield* composeBiosSteps(ctx, limit, options.count, options.exclude);
 }
 
 /**
@@ -253,11 +276,9 @@ export function generateSingleBio(
   options: BioOptions,
   exclude: readonly string[],
 ): string | null {
-  const excluded = new Set(exclude.map((item) => item.toLowerCase()));
-  const pool =
-    mode === 'personal'
-      ? generatePersonalBios(args.values as PersonalFormValues, language, emojis, { ...options, count: 20 })
-      : generateCategoryBios(args.categoryId ?? '', language, emojis, { ...options, count: 20 });
-  const candidate = pool.find((bio) => !excluded.has(bio.toLowerCase()));
-  return candidate ?? null;
+  const singleOptions = { ...options, count: 1, exclude };
+  const pool = mode === 'personal'
+    ? generatePersonalBios(args.values as PersonalFormValues, language, emojis, singleOptions)
+    : generateCategoryBios(args.categoryId ?? '', language, emojis, singleOptions);
+  return pool[0] ?? null;
 }

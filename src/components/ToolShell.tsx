@@ -1,9 +1,12 @@
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef, type ReactNode } from 'react';
 import { handleAnchorClick, navigate, usePath } from '../lib/router';
 import ToolWorkspace from './ToolWorkspace';
 import Breadcrumbs from './Breadcrumbs';
 import { TOOLS, toolForPath } from '../tools/registry';
 import { useRecentlyUsed } from '../lib/toolbox';
+import { infoPageForPath } from '../pages/info';
+import { collectionForPath } from '../lib/bioCollections';
+
 const HomePage = lazy(() => import('../pages/HomePage'));
 const InfoPage = lazy(() => import('../pages/InfoPage'));
 const FeaturesPage = lazy(() => import('../pages/FeaturesPage'));
@@ -11,16 +14,29 @@ const CategoriesPage = lazy(() => import('../pages/CategoriesPage'));
 const BioCollectionsPage = lazy(() => import('../pages/BioCollectionsPage'));
 const BioCollectionPage = lazy(() => import('../pages/BioCollectionPage'));
 const BioEditorPage = lazy(() => import('../pages/BioEditorPage'));
-import { infoPageForPath } from '../pages/info';
-import { collectionForPath } from '../lib/bioCollections';
 
 const TOOL_PATHS = new Set(TOOLS.map((tool) => tool.path));
 const COLLECTIONS_INDEX = '/bio-collections';
 const BIO_EDITOR = '/bio-editor';
 const HOME = '/';
+// This import is removed from production builds; the route is not linked publicly.
+const diagnosticsEnabled = typeof __BIOCRAFT_PREVIEW_DIAGNOSTICS__ !== 'undefined' && __BIOCRAFT_PREVIEW_DIAGNOSTICS__;
+const DiagnosticsPage = diagnosticsEnabled ? lazy(() => import('../pages/PreviewDiagnosticsPage')) : null;
 
-function RouteLoading() {
-  return <div className="tool-loading" role="status" aria-live="polite">Loading page…</div>;
+// Resolve in-page links only after lazy route content is mounted.
+function ReadyPage({ path, children }: { path: string; children: ReactNode }) {
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash) document.getElementById(hash)?.scrollIntoView?.({ block: 'start' });
+  }, [path]);
+  return children;
+}
+function DeferredPage({ path, children }: { path: string; children: ReactNode }) {
+  return (
+    <Suspense fallback={<div className="tool-loading" role="status" aria-live="polite">Loading page…</div>}>
+      <ReadyPage path={path}>{children}</ReadyPage>
+    </Suspense>
+  );
 }
 
 /**
@@ -37,38 +53,39 @@ function RouteLoading() {
  */
 export default function ToolShell() {
   const path = usePath();
-  // Mount vs. in-app navigation: track the previous path instead of a
-  // first-render ref, so focus is never stolen on a fresh page load — even
-  // under StrictMode's double-effect in development.
   const prevPath = useRef<string | null>(null);
-
   const isHome = path === HOME;
   const isCategories = path === '/categories';
   const isCollectionsIndex = path === COLLECTIONS_INDEX;
   const isBioEditor = path === BIO_EDITOR;
   const isFeatures = path === '/features';
+  const isDiagnostics = diagnosticsEnabled && path === '/preview-diagnostics';
   const collection = collectionForPath(path);
   const tool = toolForPath(path);
   const isToolRoute = TOOL_PATHS.has(path);
   const infoPage = infoPageForPath(path);
   const { record } = useRecentlyUsed();
 
-  // Unknown paths fall back to the homepage.
   useEffect(() => {
-    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isFeatures && !collection) {
+    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isFeatures && !isDiagnostics && !collection) {
       navigate(HOME, { replace: true });
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, collection]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, isDiagnostics, collection]);
 
-  // Remember tool visits (localStorage only) for the "Recently used" rail.
+  // Load only the small common-math font on routes whose content needs it.
+  useEffect(() => {
+    const hasCommonMath = collection?.bios.some((bio) => /[\u{1d400}-\u{1d433}\u{1d5d4}-\u{1d607}\u{1d670}-\u{1d6a3}]/u.test(bio.text));
+    if ((hasCommonMath || path === '/stylish-name-generator' || path === '/fancy-font-generator') && document.fonts?.load) {
+      void document.fonts.load('400 1em "Noto Sans Math"', '𝐀').catch(() => {});
+    }
+  }, [path, collection]);
+
   useEffect(() => {
     if (isToolRoute) record(tool.key);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, isToolRoute]);
 
-  // After in-app navigation the workspace remounts (route swap), which would
-  // drop focus to <body>. Return focus to the panel so keyboard and
-  // screen-reader users land where the action is. Not on initial page load.
+  // Restore focus after client-side route changes, but never steal it on load.
   useEffect(() => {
     if (prevPath.current === null) {
       prevPath.current = path;
@@ -81,7 +98,9 @@ export default function ToolShell() {
   }, [path]);
 
   useEffect(() => {
-    if (isHome) {
+    if (isDiagnostics) {
+      document.title = 'Preview Diagnostics — BioCraft';
+    } else if (isHome) {
       document.title = 'BioCraft — All-in-One Social Media Toolkit';
     } else if (isToolRoute) {
       document.title = tool.title;
@@ -98,13 +117,14 @@ export default function ToolShell() {
     } else if (collection) {
       document.title = collection.seoTitle;
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, collection, tool]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, isDiagnostics, collection, tool]);
 
-  if (isHome) return <Suspense fallback={<RouteLoading />}><HomePage /></Suspense>;
-  if (isCategories) return <Suspense fallback={<RouteLoading />}><CategoriesPage /></Suspense>;
-  if (isCollectionsIndex) return <Suspense fallback={<RouteLoading />}><BioCollectionsPage /></Suspense>;
-  if (isBioEditor) return <Suspense fallback={<RouteLoading />}><BioEditorPage /></Suspense>;
-  if (collection) return <Suspense fallback={<RouteLoading />}><BioCollectionPage slug={collection.slug} /></Suspense>;
+  if (isDiagnostics && DiagnosticsPage) return <Suspense fallback={<div role="status">Loading diagnostics…</div>}><DiagnosticsPage /></Suspense>;
+  if (isHome) return <DeferredPage path={path}><HomePage /></DeferredPage>;
+  if (isCategories) return <DeferredPage path={path}><CategoriesPage /></DeferredPage>;
+  if (isCollectionsIndex) return <DeferredPage path={path}><BioCollectionsPage /></DeferredPage>;
+  if (isBioEditor) return <DeferredPage path={path}><BioEditorPage /></DeferredPage>;
+  if (collection) return <DeferredPage path={path}><BioCollectionPage slug={collection.slug} /></DeferredPage>;
   if (isToolRoute) {
     return (
       <section className="tool-page">
@@ -130,7 +150,7 @@ export default function ToolShell() {
       </section>
     );
   }
-  if (path === '/features') return <Suspense fallback={<RouteLoading />}><FeaturesPage /></Suspense>;
-  if (infoPage) return <Suspense fallback={<RouteLoading />}><InfoPage path={path} /></Suspense>;
-  return <Suspense fallback={<RouteLoading />}><HomePage /></Suspense>; // transient state while the replace-navigation lands
+  if (isFeatures) return <DeferredPage path={path}><FeaturesPage /></DeferredPage>;
+  if (infoPage) return <DeferredPage path={path}><InfoPage path={path} /></DeferredPage>;
+  return <DeferredPage path={path}><HomePage /></DeferredPage>;
 }

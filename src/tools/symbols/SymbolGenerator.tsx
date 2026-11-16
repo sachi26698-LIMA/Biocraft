@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckIcon, SearchIcon } from '../../components/icons';
 import DownloadButton from '../../components/DownloadButton';
 import { useToolMode } from '../../lib/toolMode';
@@ -11,6 +11,36 @@ import {
   searchSymbols,
 } from './data/symbols';
 
+type SymbolResult = ReturnType<typeof searchSymbols>[number];
+const SymbolCell = memo(function SymbolCell({ symbol, copied, favourite, onCopy, onToggle }: {
+  symbol: SymbolResult; copied: boolean; favourite: boolean;
+  onCopy: (glyph: string) => void; onToggle: (glyph: string) => void;
+}) {
+  const isRow = [...symbol.glyph].length > 6;
+  return <li className={`symbol-cell${isRow ? ' symbol-cell--row' : ''}`}>
+    <button type="button" className={`symbol-button${isRow ? ' symbol-button--row' : ''}`}
+      onClick={() => onCopy(symbol.glyph)}
+      aria-label={isRow ? `Copy ${symbol.keywords} to clipboard` : `Copy ${symbol.glyph} to clipboard`}
+      title={`${symbol.keywords} · ${symbol.categoryLabel}`}>
+      <span aria-hidden="true">{copied ? <CheckIcon size={18} /> : symbol.glyph}</span>
+    </button>
+    <button type="button" className={`symbol-fav${favourite ? ' is-fav' : ''}`}
+      onClick={() => onToggle(symbol.glyph)} aria-pressed={favourite}
+      aria-label={favourite ? `Remove ${symbol.glyph} from favourites` : `Save ${symbol.glyph} to favourites`}
+      title={favourite ? 'Unfavourite' : 'Favourite'}>{favourite ? '★' : '☆'}</button>
+  </li>;
+});
+
+const SymbolGrid = memo(function SymbolGrid({ results, favs, copiedGlyph, onCopy, onToggle }: {
+  results: SymbolResult[]; favs: Set<string>; copiedGlyph: string | null;
+  onCopy: (glyph: string) => void; onToggle: (glyph: string) => void;
+}) {
+  return <ul className="symbol-grid">{results.map((symbol) => <SymbolCell
+    key={`${symbol.categoryId}-${symbol.glyph}`} symbol={symbol}
+    copied={copiedGlyph === symbol.glyph} favourite={favs.has(symbol.glyph)} onCopy={onCopy} onToggle={onToggle}
+  />)}</ul>;
+});
+
 /**
  * Emoji & Symbol Generator — a curated library of Unicode symbols and emoji,
  * searchable and copyable. Favourite ★ the ones you love, recents fill in as
@@ -21,6 +51,7 @@ const SYMBOL_PAGE_SIZE = 48;
 
 export default function SymbolGenerator() {
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [visibleCount, setVisibleCount] = useState(SYMBOL_PAGE_SIZE);
   const { mode: toolMode } = useToolMode();
@@ -29,7 +60,7 @@ export default function SymbolGenerator() {
   const [copiedCombo, setCopiedCombo] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
   const timer = useRef<number | null>(null);
-  const { favs, isFav, toggle: toggleFav, count: favCount } = useSymbolFavourites();
+  const { favs, toggle: toggleFav, count: favCount } = useSymbolFavourites();
   const { recents, record } = useSymbolRecents();
 
   useEffect(() => () => {
@@ -38,30 +69,22 @@ export default function SymbolGenerator() {
 
   const results = useMemo(() => {
     if (visibleCategory === 'favs') {
-      const trimmed = query.trim().toLowerCase();
-      const favbed = SYMBOL_CATEGORIES.flatMap((category) =>
-        category.symbols.map((symbol) => ({
-          ...symbol,
-          categoryId: category.id,
-          categoryLabel: category.label,
-        })),
-      ).filter((symbol) => favs.has(symbol.glyph));
+      const trimmed = deferredQuery.trim().toLowerCase();
+      const favbed = searchSymbols('', 'all').filter((symbol) => favs.has(symbol.glyph));
       if (!trimmed) return favbed;
       return favbed.filter((symbol) =>
         `${symbol.keywords} ${symbol.categoryLabel}`.toLowerCase().includes(trimmed),
       );
     }
-    return searchSymbols(query, visibleCategory);
-  }, [query, visibleCategory, favs]);
+    return searchSymbols(deferredQuery, visibleCategory);
+  }, [deferredQuery, visibleCategory, favs]);
 
-  useEffect(() => {
-    setVisibleCount(SYMBOL_PAGE_SIZE);
-  }, [query, visibleCategory]);
-
+  useEffect(() => { setVisibleCount(SYMBOL_PAGE_SIZE); }, [deferredQuery, visibleCategory]);
   const visibleResults = results.slice(0, visibleCount);
+
   const announce = (message: string) => setStatusMessage(message);
 
-  const copySymbol = async (glyph: string) => {
+  const copySymbol = useCallback(async (glyph: string) => {
     const succeeded = await copyText(glyph);
     if (timer.current !== null) window.clearTimeout(timer.current);
     setCopiedGlyph(succeeded ? glyph : null);
@@ -72,7 +95,7 @@ export default function SymbolGenerator() {
         : 'Copying failed. Please select the symbol and copy it manually.',
     );
     timer.current = window.setTimeout(() => setCopiedGlyph(null), 1600);
-  };
+  }, [record]);
 
   const copyCombo = async (combo: { label: string; text: string }) => {
     const succeeded = await copyText(combo.text);
@@ -92,7 +115,7 @@ export default function SymbolGenerator() {
     );
   };
 
-  const trimmedQuery = query.trim();
+  const trimmedQuery = deferredQuery.trim();
 
   return (
     <div className="tool-card tool-card--split">
@@ -148,7 +171,7 @@ export default function SymbolGenerator() {
             className="btn btn-secondary btn-small copy-all-inline"
             onClick={() => void copyAll()}
             disabled={results.length === 0}
-            aria-label={`Copy all ${results.length} matching symbols to clipboard`}
+            aria-label={`Copy all ${results.length} visible symbols to clipboard`}
           >
             Copy all
           </button>
@@ -167,8 +190,8 @@ export default function SymbolGenerator() {
         </button>
         <button
           type="button"
-          className={`chip${activeCategory === 'favs' ? ' is-selected' : ''}`}
-          aria-pressed={activeCategory === 'favs'}
+          className={`chip${visibleCategory === 'favs' ? ' is-selected' : ''}`}
+          aria-pressed={visibleCategory === 'favs'}
           onClick={() => setActiveCategory('favs')}
         >
           ★ Favourites{favCount > 0 ? ` (${favCount})` : ''}
@@ -212,53 +235,15 @@ export default function SymbolGenerator() {
       <div className="symbol-main">
       {results.length > 0 ? (
         <>
-        <ul className="symbol-grid" aria-label={`${visibleResults.length} symbols shown`}>
-          {visibleResults.map((symbol, index) => {
-            const isRow = [...symbol.glyph].length > 6;
-            return (
-            <li key={`${symbol.categoryId}-${index}-${symbol.glyph}`} className={`symbol-cell${isRow ? ' symbol-cell--row' : ''}`}>
-              <button
-                type="button"
-                className={`symbol-button${isRow ? ' symbol-button--row' : ''}`}
-                onClick={() => void copySymbol(symbol.glyph)}
-                aria-label={isRow ? `Copy ${symbol.keywords} to clipboard` : `Copy ${symbol.glyph} to clipboard`}
-                title={`${symbol.keywords} · ${symbol.categoryLabel}`}
-              >
-                <span aria-hidden="true">
-                  {copiedGlyph === symbol.glyph ? <CheckIcon size={18} /> : symbol.glyph}
-                </span>
+          <SymbolGrid results={visibleResults} favs={favs} copiedGlyph={copiedGlyph} onCopy={copySymbol} onToggle={toggleFav} />
+          {visibleResults.length < results.length && (
+            <div className="symbol-show-more">
+              <p className="field-hint">Showing {visibleResults.length} of {results.length} matching symbols</p>
+              <button type="button" className="btn btn-secondary" onClick={() => setVisibleCount((current) => Math.min(current + SYMBOL_PAGE_SIZE, results.length))} aria-label={`Show ${Math.min(SYMBOL_PAGE_SIZE, results.length - visibleResults.length)} more symbols`}>
+                Show {Math.min(SYMBOL_PAGE_SIZE, results.length - visibleResults.length)} more
               </button>
-              <button
-                type="button"
-                className={`symbol-fav${isFav(symbol.glyph) ? ' is-fav' : ''}`}
-                onClick={() => toggleFav(symbol.glyph)}
-                aria-pressed={isFav(symbol.glyph)}
-                aria-label={
-                  isFav(symbol.glyph)
-                    ? `Remove ${symbol.glyph} from favourites`
-                    : `Save ${symbol.glyph} to favourites`
-                }
-                title={isFav(symbol.glyph) ? 'Unfavourite' : 'Favourite'}
-              >
-                {isFav(symbol.glyph) ? '★' : '☆'}
-              </button>
-            </li>
-            );
-          })}
-        </ul>
-        {visibleResults.length < results.length && (
-          <div className="symbol-show-more">
-            <p className="field-hint">Showing {visibleResults.length} of {results.length} matching symbols</p>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setVisibleCount((current) => Math.min(current + SYMBOL_PAGE_SIZE, results.length))}
-              aria-label={`Show ${Math.min(SYMBOL_PAGE_SIZE, results.length - visibleResults.length)} more symbols`}
-            >
-              Show {Math.min(SYMBOL_PAGE_SIZE, results.length - visibleResults.length)} more
-            </button>
-          </div>
-        )}
+            </div>
+          )}
         </>
       ) : (
         <p className="empty-state-text styles-empty">

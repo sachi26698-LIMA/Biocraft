@@ -406,12 +406,53 @@ const ROUTES = [
   },
 ];
 
+// Direct links to the temporary diagnostic and admin shells exist only in Preview builds.
+const PREVIEW_BRANCHES = new Set([
+  'arena/5e351ec3-biocraft',
+  'arena/805e3bf3-biocraft',
+]);
+const adminPreview = process.env.BIOCRAFT_ADMIN_PREVIEW === 'true' || (
+  process.env.VERCEL_ENV === 'preview' &&
+  PREVIEW_BRANCHES.has(process.env.VERCEL_GIT_COMMIT_REF ?? '')
+);
+if (adminPreview) {
+  ROUTES.push({
+    path: '/preview-diagnostics',
+    title: 'Preview Diagnostics — BioCraft',
+    description: 'Temporary Preview-only diagnostics.',
+    ogTitle: 'Preview Diagnostics — BioCraft',
+    ogDescription: 'Temporary Preview-only diagnostics.',
+    noindex: true,
+  });
+  // Noindex static shells for every BioCraft Master Admin module route.
+  for (const section of [
+    '', '/login', '/users', '/bios', '/categories', '/collections',
+    '/platforms', '/generators', '/content', '/analytics',
+    '/audit-logs', '/security', '/settings', '/backup',
+  ]) {
+    ROUTES.push({ path: `/admin${section}`, title: 'BioCraft Master Admin',
+      description: 'BioCraft Master Admin workspace.', ogTitle: 'BioCraft Master Admin',
+      ogDescription: 'BioCraft Master Admin workspace.', noindex: true });
+  }
+}
+
 // Optional canonical/og:url generation. Omits them entirely unless the
 // production domain is known and passed in — placeholder domains must not ship.
 const SITE_URL = (process.env.SITE_URL ?? '').trim().replace(/\/+$/, '');
 const canonicalFor = (path) => (SITE_URL ? `  <link rel="canonical" href="${SITE_URL}${path === '/' ? '/' : path}" />\n` : '');
 
 const template = readFileSync(join(dist, 'index.html'), 'utf8');
+
+// Only the small 11 KB common-styles face is hinted, and only where bundled
+// content or the font galleries use it. Other math glyphs remain on demand.
+const COMMON_MATH_PATHS = new Set([
+  '/instagram-bio-for-boys', '/stylish-instagram-bio', '/attitude-bio', '/vip-bio',
+  '/sad-bio', '/simple-bio', '/english-bio', '/creator-bio', '/student-bio', '/gamer-bio',
+  '/stylish-name-generator', '/fancy-font-generator',
+]);
+const COMMON_MATH_HREF = '/fonts/noto-math/noto-sans-math-common-400.woff2';
+const commonMathPreload = `  <link rel="preload" as="font" type="font/woff2" href="${COMMON_MATH_HREF}" fetchpriority="low" crossorigin />\n`;
+
 
 const escapeAttr = (value) => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 
@@ -423,15 +464,29 @@ const replaceOrThrow = (html, pattern, replacement, label) => {
 };
 
 for (const route of ROUTES) {
-  if (route.runAsTemplate) {
-    if (SITE_URL) {
-      const html = template.replace('</head>', () => `${canonicalFor(route.path)}  </head>`);
-      writeFileSync(join(dist, 'index.html'), html, 'utf8');
-      console.log('canonical injected into: dist/index.html (root)');
-    }
+  if (route.path === '/admin' || route.path.startsWith('/admin/')) {
+    // Do not load the public app, CSS or providers inside the admin document.
+    const html = readFileSync(join(dist, 'admin-preview.html'), 'utf8');
+    const outDir = join(dist, route.path);
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, 'index.html'), html, 'utf8');
+    console.log(`shell written: dist${route.path}/index.html`);
     continue;
   }
-  let html = template;
+  if (route.runAsTemplate) {
+    // The hero exists only on the homepage. Discover the same responsive image
+    // before React executes without downloading it on every other route.
+    // Some static hosts serve index.html as a fallback for clean URLs. Guard
+    // the hint by pathname so that those non-home routes do not fetch the hero.
+    const heroPreload = `  <script>if(location.pathname === '/'){const l=document.createElement('link');l.rel='preload';l.as='image';l.href='/laptop-hero-871.webp';l.imageSrcset='/laptop-hero-871.webp 871w, /laptop-hero.webp 1742w';l.imageSizes='(min-width: 1100px) 780px, (min-width: 600px) 560px, 330px';l.fetchPriority='high';document.head.appendChild(l)}</script>\n`;
+    // A clean-URL fallback also needs the small route-specific font hint.
+    const fontPreload = `  <script>if(${JSON.stringify([...COMMON_MATH_PATHS])}.includes(location.pathname.replace(/\\/$/,''))){const l=document.createElement('link');l.rel='preload';l.as='font';l.type='font/woff2';l.fetchPriority='low';l.href='${COMMON_MATH_HREF}';l.crossOrigin='anonymous';document.head.appendChild(l)}</script>\n`;
+    const html = template.replace('<head>', () => `<head>\n${heroPreload}${fontPreload}`).replace('</head>', () => `${canonicalFor(route.path)}  </head>`);
+    writeFileSync(join(dist, 'index.html'), html, 'utf8');
+    console.log('homepage hero preload injected into: dist/index.html');
+    continue;
+  }
+  let html = COMMON_MATH_PATHS.has(route.path) ? template.replace('<head>', () => `<head>\n${commonMathPreload}`) : template;
   html = replaceOrThrow(
     html,
     /<title>[^<]*<\/title>/,
@@ -469,7 +524,9 @@ for (const route of ROUTES) {
     `${route.path} twitter:description`,
   );
 
-  if (SITE_URL) {
+  if (route.noindex) {
+    html = html.replace('</head>', '  <meta name="robots" content="noindex, nofollow" />\n  </head>');
+  } else if (SITE_URL) {
     html = html.replace('</head>', () => `${canonicalFor(route.path)}  </head>`);
   }
 
