@@ -1,9 +1,46 @@
 # Master Admin — delivery status, verified
 
-_written 2026-11-13. Everything below is either a measured result from this
-repository or an explicit statement that something was not verified. Nothing is
-described as done because it was written; a feature is only marked complete if a
-test in this repository exercises it._
+_written 2026-11-13, updated 2026-11-16 after the twenty-item pass. Everything
+below is either a measured result from this repository or an explicit statement
+that something was not verified. Nothing is described as done because it was
+written; a feature is only marked complete if a test in this repository exercises
+it._
+
+---
+
+## 0. The twenty items, as they stand
+
+`Done` means a test in this repository exercises it and I ran that test. `Blocked`
+means I could not execute it from this sandbox, with the reason and the manual step
+in §8. Nothing here is graded `Done` on inspection alone.
+
+| # | Item | State | What actually proves it |
+|---|---|---|---|
+| 1 | Admin console correctness (all ten modules render and read) | Done | `test:admin-live-modules`, `test:admin-catalog`, 10/10 browser suites |
+| 2 | One backend probe per navigation, none on the public site | Done | `test:admin-browser` (`admin-preview-browser.cjs`) counts navigations and probes: exactly 1 per nav, 0 on `/` |
+| 3 | Login / TOTP / recovery against the real database | **Blocked** | Suites mock the transport; no test credentials exist. Real-DB half covered by `test:admin-postgres`; the browser-to-hosted wire is unproven, see blockers 4 and 5 |
+| 4 | Accessibility — WCAG 2.1 AA | Done | 60 axe scans (10 routes × 2 themes × 3 viewports), 0 violations |
+| 5 | Touch targets ≥ 24×24 (WCAG 2.5.8) | Done | Measured all interactive controls on every Admin route: 0 undersized |
+| 6 | Keyboard and focus behaviour | Done | `test:admin-interactions` (skip link, focus-visible, trap-free nav) |
+| 7 | Mobile layout, 320–1440 | Done | 4 viewports × 10 routes = 40 combinations, 0 failures, no horizontal overflow |
+| 8 | Published site unchanged | Done | 48/48 public routes byte-identical to the `main` baseline at `659c000` |
+| 9 | Hosted HTTP verification of the deployed console | **Blocked** | Every `*.vercel.app` path returns Vercel's SSO page; no hosted request answered (§8.5) |
+| 10 | Performance / Core Web Vitals | Done | LCP 332–352 ms, CLS ≤ 0.0008, INP 48–80 ms, 0 long tasks (§6) |
+| 11 | Lazy-module failure handling | Done | `test:admin-lazy-error` — a failed chunk shows a recoverable error, not a blank page |
+| 12 | Read paths survive the Vercel rewrite | Done | `test:admin-rewrite-sim` against the real two-parameter rewrite; the bug it found is fixed (§8) |
+| 13 | Session security (cookie, CSRF, revocation, revoke-all) | Done | `test:admin-session-cookie`, `test:admin-http-smoke`, PGlite + PostgreSQL suites |
+| 14 | Step-up freshness on destructive actions | Done | PostgreSQL and PGlite suites; `test:admin-api-integration` proves `revoke-all` is refused without a fresh factor |
+| 15 | Privilege separation — executor cannot read tables | Done | `test:admin-grant-inventory`, `test:admin-privilege-review`, 11 live attacks all refused |
+| 16 | Migration and rollback integrity | Done | `tests/admin-rollback-cycle.mjs` on a fresh cluster: 012 refuses while evidence exists, the whole package tears down to no schema, a reinstall reproduces the object counts |
+| 17 | Schema parity between the tested and the live database | Done | 207/207 objects, 49/49 function bodies, 76/76 seed rows |
+| 18 | Public data untouched | Done | 506 bios, 33 categories, 8 platforms, 48 SEO pages — counts unchanged |
+| 19 | Secrets stay server-side | Done | Client holds only an HttpOnly cookie; all twelve `ADMIN_*` variables are `preview`-scoped on this branch, four of them `sensitive`, none in the bundle |
+| 20 | Production alias untouched | Done | `biocraft-bice.vercel.app` not reassigned; only Preview deployments created |
+
+**Result: 18 of 20 done; 2 blocked (items 3 and 9), both on the same cause —
+this sandbox cannot complete a request to the hosted deployment.** Both are
+covered by manual steps in §9, and neither is a code defect I can find; they are
+verification gaps I am not willing to paper over.
 
 ---
 
@@ -119,9 +156,9 @@ the pooler has IPv4 — the path the code already documents for Vercel egress.
 https://biocraft-git-arena-5e351ec3-biocraft-sachi26698-6758s-projects.vercel.app/admin
 ```
 
-Deployment carrying the backend configuration: **`dpl_8bJ4xV6cTMsZeoB9dY1XuAMwYXcX`**
-(commit `335acb6`) — `READY`, built in 20 s, 180 modules, 60 route shells, branch
-alias assigned. The twelve `ADMIN_*` variables are scoped to
+Current deployment carrying the backend configuration: **`dpl_36M1Ez65KwZnshekSVUbGHtEs2dR`**
+(commit `e2005ec`) — `READY`, 60 route shells, branch alias assigned. The twelve
+`ADMIN_*` variables are scoped to
 `arena/5e351ec3-biocraft`, so only Preview deployments of this branch receive them.
 
 Verified on that URL: it answers **Vercel's SSO login page** ("Protected
@@ -167,8 +204,10 @@ no password was set, requested, or stored by this work.
 
 Legend: **Verified** = exercised by an automated test in this repository, now
 against the real applied schema. **Built** = implemented and typechecked, with no
-automated exercise. Where a suite needs a browser, this sandbox has no Chromium,
-so hosted browser verification is listed as a gap in §8 rather than claimed.
+automated exercise. The browser suites do run here: Chromium was unpacked from
+`@sparticuz/chromium` and driven by `playwright-core`, so the ten rendered-console
+suites below are executed, not inferred. What is still missing is *hosted*
+verification — see §8.
 
 ### Authentication and session
 
@@ -203,7 +242,7 @@ so hosted browser verification is listed as a gap in §8 rather than claimed.
 | 14 forward migrations, 14 rollbacks, 1 grant file (29 SQL files) | Verified, SHA-256 pinned in both documents |
 | 20 tables, 49 functions = 44 callable + 5 trigger bodies | Machine-derived; a stale count fails a test |
 | Rollback of every migration, including the newest first | Verified on a fresh database |
-| `public` schema byte-identical after a full rollback | Verified |
+| `public.bios` untouched by rollback/013; a full reverse teardown leaves no Admin schema or function, and a clean reinstall recreates 20 tables / 49 functions | Verified on a fresh database (`tests/admin-rollback-cycle.mjs`) |
 
 ---
 
@@ -224,21 +263,36 @@ Provenance matters here, so each row says when it ran.
 | `test:admin-app-local`, `test:admin-http-smoke` (real cluster) | **pass** |
 | `test:admin-pool-config`, `test:admin-rewrite-sim`, `test:admin-api-routing` | **pass** |
 | `test:performance` (production build) | **pass** |
-| Production build | **pass** — 60 route shells, `admin` chunk 116.72 kB |
-| All 44 `test:*` scripts attempted | **33 pass**; 10 need Chromium, 1 needs a hosted `AUDIT_BASE` |
+| Production build | **pass** — 60 route shells, `admin` chunk 117.0 kB |
+| **All 44 `test:*` scripts** | **44 pass** — every suite, including the ten browser suites and the real-cluster ones |
+
+Two notes on how that 44/44 was obtained, because two of the suites are one-shot by
+design and will refuse a second run on the same cluster:
+
+* `test:admin-postgres` demands a *pristine* cluster and marks it on first use. It
+  was given a freshly `initdb`'d throwaway cluster; re-running it against the
+  cluster it already consumed correctly fails with *"Cluster is not blank"*. That
+  refusal is the suite working, not a flake.
+* `test:admin-postgres-local` and the real-cluster suites need
+  `BIOCRAFT_TEST_PG_BIN` / `BIOCRAFT_TEST_PG_SOCKET`; `test:admin-performance`
+  needs `AUDIT_BASE` and `AUDIT_DIR`. Without those they exit with an explicit
+  message rather than a false pass.
 
 ### Earlier in this work, while the local suites were green
 
-These are recorded because they really ran, but they were run **before** this
-session's apply, and I could not repeat them now (this sandbox has no Chromium
-and no route to the hosted URL). Treat them as historical, not as current proof.
+The browser suites now run in this sandbox, so the table below is current rather
+than historical. Each row was re-run against the production build being deployed.
 
-| Suite | Result then |
+| Suite | Result |
 |---|---|
 | Browser: interactions (3 viewports) | passed, 0 errors, 0 unexpected 4xx |
 | Browser: phase (workflow + axe WCAG 2.1 AA) | passed on phone, tablet, desktop |
 | Browser: live modules | passed on 390 px and 1440 px, all **10** routes |
-| Browser: public regression, 48 routes | passed, byte-identical to the `7c9e904` baseline |
+| Browser: public regression, 48 routes | passed, byte-identical to the `main` baseline (`659c000`) |
+| All ten browser suites together | **10 / 10 passed** |
+| axe, 10 routes × 2 themes × 3 viewports (60 scans) | **0 WCAG 2.1 AA violations** |
+| Layout sweep, 4 viewports × 10 routes (40 combinations) | **0 failures**; no horizontal overflow, one `h1`, one app shell, `noindex` intact |
+| Touch targets (WCAG 2.5.8, 24×24) | **0** undersized controls on any Admin route |
 
 Two real defects were found and fixed by those runs, which is the point of running
 them: `GET /session` never returned the caller's identity (only an expiry), and the
@@ -254,20 +308,32 @@ between *no data*, *not permitted*, and *the request failed*.
 
 ## 6. Performance numbers
 
-Measured in the locally served production build, desktop 1440×900, throttled to
-4× CPU on an emulated device — i.e. pessimistically.
+Measured in the locally served production build of the current branch
+(`vite preview` on the real `dist`), on `/admin/bios`, with 4× CPU throttling.
+`test:admin-performance` writes the raw trace per device to disk.
 
-| Measure | Desktop | Tablet | Emulated phone |
-|---|---|---|---|
-| DOMContentLoaded | 152 ms | 188 ms | 116 ms |
-| Largest contentful paint | 532 ms | 552 ms | 540 ms |
-| Cumulative layout shift | 0.0006 | 0 | 0.0001 |
-| Admin shell, JS | 116.9 kB (**29.08 kB gzipped**) | | |
-| Admin shell, CSS | 23.1 kB (5.17 kB gzipped) | | |
+| Measure | Desktop | Tablet | Emulated phone | Good threshold |
+|---|---|---|---|---|
+| DOMContentLoaded | 126 ms | 96 ms | 108 ms | — |
+| Largest contentful paint | 344 ms | 352 ms | 332 ms | < 2500 ms |
+| Cumulative layout shift | 0.0006 | 0.0008 | 0.0001 | < 0.1 |
+| Interaction to next paint | 80 ms | 64 ms | 56 ms | < 200 ms |
+| Long tasks (>50 ms) | 0 | 0 | 0 | — |
+| Transferred on load | 121 kB | 121 kB | 121 kB | — |
+| Admin shell, JS | 117.0 kB (**29.13 kB gzipped**) | | | |
+| Admin shell, CSS | 23.2 kB (5.21 kB gzipped) | | | |
 
-No long task exceeded 289 ms. These are local numbers; the deployed Preview adds
-network latency I cannot measure from here (the sandbox cannot reach
-`*.vercel.app`).
+The INP figure is the worst interaction of the run, not a lucky sample. A separate
+probe drove twelve genuine input events through the page (typed a query one key at
+a time, changed a filter, paged, toggled the theme at both ends) and recorded INP
+**48 ms** with a **16 ms** median, CLS 0.0000, LCP 264 ms and zero long tasks.
+Synthetic `fill()` calls report nothing — the `event` timing API only observes
+trusted input — which is why the first attempt measured zero interactions and was
+discarded rather than reported.
+
+All three device profiles are inside the "good" band for every Core Web Vital.
+These are local numbers; the deployed Preview adds network latency I cannot
+measure from here (the sandbox cannot reach `*.vercel.app`).
 
 ---
 
@@ -299,19 +365,23 @@ you can do, or something this sandbox physically cannot do.
    offers TOTP enrolment. Until that code is confirmed the account is AAL1 and
    every privileged call is refused.
 3. **Preview SSO.** Vercel's own protection gates the Preview URL.
-4. **No browser verification was possible here.** Chromium cannot be installed in
-   this sandbox, so the browser suites (`admin-live-modules`, `admin-login-browser`,
-   `admin-login-flow-browser`, `admin-recovery-browser`, `admin-browser`,
-   `admin-catalog`, `admin-interactions`, `admin-public-regression`,
-   `admin-phase`, `admin-lazy-error`) did not run. They are **not** claimed as
-   passing. The ten modules are covered instead by `test:admin-live-modules`'
-   non-browser half plus the PostgreSQL suite; the rendered-console check remains
-   a gap.
-5. **No hosted round-trip from this sandbox.** `*.vercel.app` is unreachable from
-   here, so I verified the schema, the grants, the gates, and the configuration
-   against the real database and validated the app configuration offline — but I
-   have not seen the hosted page answer an authenticated request. I will not claim
-   I have.
+4. **The browser suites run, but they do not talk to the real database.** Chromium
+   was unpacked from `@sparticuz/chromium` and driven by `playwright-core`, so all
+   ten browser suites execute and pass. Be precise about what that proves: the
+   login and recovery suites intercept `/api/admin/v1/*` with `page.route` and mock
+   the responses, and `test:admin-full-flow` mocks Supabase Auth on top of PGlite.
+   No suite signs into the **hosted** console against the **live** database,
+   because there are no test credentials and I will not ask for yours. The real
+   database is exercised by `test:admin-postgres` and
+   `test:admin-postgres-local` against a local PostgreSQL 18.6 with the live
+   migration set applied; the wire between the browser and the hosted function is
+   the part that remains unproven.
+5. **No hosted round-trip from this sandbox.** `*.vercel.app` answers every path,
+   including `/api/admin/v1/health`, with a Vercel SSO login page, so I have not
+   seen the deployed page answer an authenticated request. The live Supabase Auth
+   service *was* reachable and reports GoTrue **v2.198.0** with email signup
+   enabled and `mailer_autoconfirm: false`; the password grant itself needs a POST
+   this sandbox cannot issue to that host. I will not claim a hosted sign-in.
 
 ### One deployment defect found and fixed
 
@@ -350,9 +420,9 @@ fix.
 | `test:admin-app-local`, `test:admin-http-smoke` (real cluster) | **pass** |
 | `test:performance` (production build) | **pass** |
 | Production build | **pass** — 60 route shells, `admin` chunk 116.72 kB |
-| All non-browser suites | **33 pass** |
-| Browser suites | **not run** — no Chromium (gap 4) |
-| `test:admin-performance` | **not run** — requires `AUDIT_BASE`/`AUDIT_DIR` pointed at a hosted deployment |
+| All 44 `test:*` suites | **44 pass** |
+| Browser suites | **10 / 10 pass** — Chromium unpacked locally, driven by `playwright-core` |
+| `test:admin-performance` | **pass** — run against the local production build, not a hosted deployment |
 
 ## 9. What to do next, in order
 
