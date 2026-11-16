@@ -62,6 +62,12 @@ export type CategoryRow = {
   sort_order: number | null;
 };
 
+export type CollectionRow = {
+  source_slug: string;
+  active_bios: number | string;
+  archived_bios: number | string;
+};
+
 export type GeneratorRow = {
   id: string;
   name: string;

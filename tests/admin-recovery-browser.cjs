@@ -59,14 +59,12 @@ const RECOVERY_CODE = 'abcd-efgh-2345';
       await page.getByRole('alert').waitFor();
       assert.match(await page.getByRole('alert').innerText(), /could not|invalid|not accepted/i);
 
-      // 4. Accessibility of the recovery view, in both themes.
+      // 4. Accessibility & strict light-only check of the recovery view.
       await page.addScriptTag({ path: require.resolve('axe-core/axe.min.js') });
-      for (const theme of ['light', 'dark']) {
-        if (theme === 'dark') await page.getByRole('button', { name: 'Switch to dark mode' }).click();
-        const audit = await page.evaluate(() => window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }));
-        assert.deepEqual(audit.violations.map(v => v.id), [], `${name} recovery ${theme} accessibility`);
-      }
-      await page.getByRole('button', { name: 'Switch to light mode' }).click();
+      assert.equal(await page.locator('.ad-dark').count(), 0);
+      assert.equal(await page.getByRole('button', { name: /dark mode/i }).count(), 0);
+      const audit = await page.evaluate(() => window.axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } }));
+      assert.deepEqual(audit.violations.map(v => v.id), [], `${name} recovery light accessibility`);
 
       // 5. No horizontal overflow at either width.
       const overflow = await page.evaluate(() => ({ document: document.documentElement.scrollWidth, viewport: innerWidth }));

@@ -1,20 +1,15 @@
 /**
- * Settings — the non-secret configuration the database holds, plus the two
- * operational surfaces that belong with it: backup history and cleanup.
- *
- * Two rules this screen follows strictly:
- *
- *  - a setting is edited with the version it was read at, so a concurrent change
- *    produces a conflict instead of a silent overwrite;
- *  - nothing here is a credential. The database stores non-secret configuration
- *    only; keys and passwords live in the server environment and are never
- *    readable from, or writable to, this screen.
+ * Live Settings — Versioned non-secret system settings with Modal JSON editor,
+ * operational maintenance cleanup, and explicit security boundaries.
  */
 import { useState } from 'react';
-import { Badge, Panel } from '../parts';
+import { useAdminContext } from '../context';
+import { Icon } from '../icons';
+import { ConfirmDialog, Modal } from '../ui/Modal';
+import { useToast } from '../ui/Toast';
+import { Badge, EmptyState, Field, MessageBox, PageHead, Panel, StateNotice } from './common';
+import type { SettingRow } from './types';
 import { formatDate, mutate, useLive } from './useLive';
-import { EmptyState, Field, MessageBox, StateNotice } from './ui';
-import type { BackupRow, SettingRow } from './types';
 
 const FRIENDLY: Record<string, string> = {
   'site.maintenance': 'Maintenance mode',
@@ -22,170 +17,238 @@ const FRIENDLY: Record<string, string> = {
   'publishing.enabled': 'Publishing enabled',
 };
 
-export default function Settings() {
+export default function LiveSettings() {
+  const { navigate } = useAdminContext();
+  const toast = useToast();
   const settings = useLive<{ items: SettingRow[] }>('/settings?limit=100');
-  const backups = useLive<{ items: BackupRow[] }>('/backups?limit=25');
 
-  const [editing, setEditing] = useState<string | null>(null);
+  const [editing, setEditing] = useState<SettingRow | null>(null);
   const [draftJson, setDraftJson] = useState('');
+  const [confirmCleanup, setConfirmCleanup] = useState<'admin_login_flows' | 'admin_rate_limits' | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
 
-  async function save(row: SettingRow) {
+  async function save() {
+    if (!editing) return;
     let parsed: unknown;
     try {
       parsed = JSON.parse(draftJson);
     } catch {
-      setFailure('That is not valid JSON, so nothing was saved.');
+      setFailure('Invalid JSON syntax — nothing was saved.');
       return;
     }
     if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
       setFailure('A setting value must be a JSON object, for example {"enabled": true}.');
       return;
     }
-    setBusy(row.key); setMessage(null); setFailure(null);
+    setBusy(editing.key);
+    setMessage(null);
+    setFailure(null);
     try {
-      const result = await mutate<{ version: number }>('/settings', {
-        key: row.key,
-        value: parsed,
-        expectedVersion: Number(row.version),
-      }, 'PUT');
-      setMessage(`Saved "${FRIENDLY[row.key] ?? row.key}" at version ${result.version}.`);
+      const result = await mutate<{ version: number }>(
+        '/settings',
+        {
+          key: editing.key,
+          value: parsed,
+          expectedVersion: Number(editing.version),
+        },
+        'PUT',
+      );
+      const msg = `Saved "${FRIENDLY[editing.key] ?? editing.key}" at version ${result.version}.`;
+      setMessage(msg);
+      toast.push('Setting updated', { description: msg, tone: 'success' });
       setEditing(null);
+      setDraftJson('');
       settings.reload();
     } catch (error) {
       const code = (error as { code?: string } | null)?.code;
-      setFailure(code === 'CONFLICT'
-        ? 'Someone else changed this setting first. Nothing was saved — reload and try again.'
-        : code === 'STEP_UP_REQUIRED'
-          ? 'Your second factor is older than this change allows. Sign in again with your authenticator.'
-          : code === 'FORBIDDEN'
-            ? 'Your account is not permitted to change settings.'
-            : 'The setting was not saved.');
-    } finally { setBusy(null); }
+      const err =
+        code === 'CONFLICT'
+          ? 'Someone else changed this setting first. Reload and try again.'
+          : code === 'STEP_UP_REQUIRED'
+            ? 'Your second factor is older than this change allows. Sign in again with your authenticator.'
+            : code === 'FORBIDDEN'
+              ? 'Your account is not permitted to change settings.'
+              : 'The setting was not saved.';
+      setFailure(err);
+      toast.push('Update blocked', { description: err, tone: 'error' });
+    } finally {
+      setBusy(null);
+    }
   }
 
-  async function cleanup(target: 'admin_login_flows' | 'admin_rate_limits') {
-    setBusy(target); setMessage(null); setFailure(null);
+  async function runCleanup(target: 'admin_login_flows' | 'admin_rate_limits') {
+    setBusy(target);
+    setMessage(null);
+    setFailure(null);
     try {
       const result = await mutate<{ deleted: number }>('/ops/cleanup', { target, limit: 500 });
-      setMessage(`${result.deleted} expired row${result.deleted === 1 ? '' : 's'} removed from ${target.replace('admin_', '').replace('_', ' ')}. Audit evidence was not touched.`);
+      const msg = `${result.deleted} expired row${result.deleted === 1 ? '' : 's'} removed from ${target.replace('admin_', '').replace('_', ' ')}. Audit evidence untouched.`;
+      setMessage(msg);
+      toast.push('Maintenance completed', { description: msg, tone: 'success' });
+      setConfirmCleanup(null);
     } catch {
-      setFailure('Cleanup did not run.');
-    } finally { setBusy(null); }
+      const err = 'Cleanup did not run.';
+      setFailure(err);
+      toast.push('Cleanup failed', { description: err, tone: 'error' });
+    } finally {
+      setBusy(null);
+    }
   }
 
   return (
     <>
-      <header className="ad-page-head">
-        <span className="ad-eyebrow">CONFIGURATION</span>
-        <h1>Settings</h1>
-        <p>Non-secret configuration held in the database, and the operational history around it. Credentials are never stored here.</p>
-      </header>
+      <PageHead
+        eyebrow="SYSTEM CONFIGURATION"
+        title="Settings"
+        description="Non-secret configuration held in the database with optimistic concurrency and step-up protection."
+        actions={
+          <button type="button" className="ad-btn ad-btn--secondary" onClick={() => navigate('/admin/backup')}>
+            <Icon name="backup" size={14} /> Backup &amp; Recovery
+          </button>
+        }
+      />
 
       <Panel
         title="Settings"
+        icon="settings"
         description="Every change is versioned, requires a fresh second factor, and is written to the audit trail."
         aside={settings.state === 'ready' ? <Badge tone="green">{settings.data?.items.length ?? 0} keys</Badge> : undefined}
       >
-        {settings.state !== 'ready'
-          ? <StateNotice state={settings.state} error={settings.error} reload={settings.reload} />
-          : (settings.data?.items.length ?? 0) === 0
-            ? <EmptyState title="No settings recorded" text="The settings table is empty. Defaults apply until a value is written here." />
-            : (
-              <div className="ad-table-wrap" tabIndex={0} role="region" aria-label="Settings table">
-                <table className="ad-table">
-                  <thead><tr><th>Setting</th><th>Value</th><th>Version</th><th>Changed</th><th></th></tr></thead>
-                  <tbody>
-                    {settings.data!.items.map(row => (
-                      <tr key={row.key}>
-                        <td>
-                          <strong>{FRIENDLY[row.key] ?? row.key}</strong>
-                          {FRIENDLY[row.key] && <div className="ad-mono ad-muted-copy" style={{ margin: 0 }}>{row.key}</div>}
-                        </td>
-                        <td><code className="ad-mono">{JSON.stringify(row.value)}</code></td>
-                        <td className="ad-nowrap">{String(row.version)}</td>
-                        <td className="ad-nowrap">{formatDate(row.updated_at)}</td>
-                        <td>
-                          {editing === row.key
-                            ? <div className="ad-action-row">
-                                <button type="button" onClick={() => void save(row)} disabled={busy !== null}>{busy === row.key ? 'Saving…' : 'Save'}</button>
-                                <button type="button" onClick={() => { setEditing(null); setDraftJson(''); }} disabled={busy !== null}>Cancel</button>
-                              </div>
-                            : <button type="button" onClick={() => { setEditing(row.key); setDraftJson(JSON.stringify(row.value, null, 2)); setMessage(null); setFailure(null); }}>Edit</button>}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-        {editing && (
-          <div className="ad-detail" role="group" aria-label="Edit setting value">
-            <Field label={`New value for ${editing}`} hint="A JSON object. It is validated on the server before anything is written.">
-              <textarea value={draftJson} onChange={event => setDraftJson(event.target.value)} rows={5} spellCheck={false} aria-label="Setting value as JSON" />
-            </Field>
+        {settings.state !== 'ready' ? (
+          <StateNotice state={settings.state} error={settings.error} reload={settings.reload} />
+        ) : (settings.data?.items.length ?? 0) === 0 ? (
+          <EmptyState icon="settings" title="No settings recorded" text="The settings table is empty. Defaults apply until a value is written." />
+        ) : (
+          <div className="ad-table-wrap" tabIndex={0} role="region" aria-label="Settings table">
+            <table className="ad-table">
+              <thead>
+                <tr>
+                  <th>Setting</th>
+                  <th>Value</th>
+                  <th>Version</th>
+                  <th>Changed</th>
+                  <th className="ad-right">Edit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {settings.data!.items.map(row => (
+                  <tr key={row.key}>
+                    <td>
+                      <strong>{FRIENDLY[row.key] ?? row.key}</strong>
+                      {FRIENDLY[row.key] && <small className="ad-cell-sub ad-mono">{row.key}</small>}
+                    </td>
+                    <td><code className="ad-mono">{JSON.stringify(row.value)}</code></td>
+                    <td className="ad-nowrap">v{String(row.version)}</td>
+                    <td className="ad-nowrap">{formatDate(row.updated_at)}</td>
+                    <td className="ad-right">
+                      <button
+                        type="button"
+                        className="ad-btn ad-btn--secondary ad-btn--sm"
+                        onClick={() => {
+                          setEditing(row);
+                          setDraftJson(JSON.stringify(row.value, null, 2));
+                          setMessage(null);
+                          setFailure(null);
+                        }}
+                      >
+                        <Icon name="edit" size={13} /> Edit
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
         <MessageBox message={message} failure={failure} />
       </Panel>
 
-      <Panel
-        title="Backups"
-        description="What was requested from the database provider and whether a restore was verified. Provider references only — never credentials."
-        aside={backups.state === 'ready' ? <Badge tone={(backups.data?.items.length ?? 0) === 0 ? 'amber' : 'green'}>{backups.data?.items.length ?? 0} records</Badge> : undefined}
-      >
-        {backups.state !== 'ready'
-          ? <StateNotice state={backups.state} error={backups.error} reload={backups.reload} />
-          : (backups.data?.items.length ?? 0) === 0
-            ? <EmptyState
-                title="No backup recorded"
-                text="This table is empty, which does not mean there is no backup — it means none was recorded here. Backups are taken by the database provider; this screen only shows what was logged."
-              />
-            : (
-              <div className="ad-table-wrap" tabIndex={0} role="region" aria-label="Backup records">
-                <table className="ad-table">
-                  <thead><tr><th>Requested</th><th>Environment</th><th>Reference</th><th>State</th><th>Verified</th></tr></thead>
-                  <tbody>
-                    {backups.data!.items.map(row => (
-                      <tr key={row.id}>
-                        <td className="ad-nowrap">{formatDate(row.requested_at)}</td>
-                        <td>{row.environment}</td>
-                        <td><code className="ad-mono">{row.provider_reference}</code></td>
-                        <td><Badge tone={row.state === 'restore_verified' ? 'green' : row.state === 'failed' ? 'red' : 'amber'}>{row.state.replace(/_/g, ' ')}</Badge></td>
-                        <td className="ad-nowrap">{row.verified_at ? formatDate(row.verified_at) : '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-      </Panel>
+      <div className="ad-two-col">
+        <Panel
+          title="Operational maintenance"
+          icon="refresh"
+          description="Removes expired sign-in handoffs and stale rate-limit windows in bounded batches. Audit evidence is never touched."
+        >
+          <div className="ad-action-row">
+            <button
+              type="button"
+              className="ad-btn ad-btn--secondary"
+              onClick={() => setConfirmCleanup('admin_login_flows')}
+              disabled={busy !== null}
+            >
+              Clear expired sign-in handoffs
+            </button>
+            <button
+              type="button"
+              className="ad-btn ad-btn--secondary"
+              onClick={() => setConfirmCleanup('admin_rate_limits')}
+              disabled={busy !== null}
+            >
+              Clear stale rate limits
+            </button>
+          </div>
+          <p className="ad-muted-copy">Idempotent operations — safe to re-run at any time.</p>
+        </Panel>
 
-      <Panel
-        title="Maintenance"
-        description="Deletes only expired handoff and rate-limit rows, under a lock, in bounded batches. Audit evidence is never touched."
-      >
-        <div className="ad-action-row">
-          <button type="button" onClick={() => void cleanup('admin_login_flows')} disabled={busy !== null}>
-            {busy === 'admin_login_flows' ? 'Clearing…' : 'Clear expired sign-in handoffs'}
-          </button>
-          <button type="button" onClick={() => void cleanup('admin_rate_limits')} disabled={busy !== null}>
-            {busy === 'admin_rate_limits' ? 'Clearing…' : 'Clear stale rate limits'}
-          </button>
-        </div>
-        <p className="ad-muted-copy">Both operations are idempotent: running them twice removes nothing the first run did not already remove.</p>
-      </Panel>
+        <Panel title="Not configurable here" icon="shieldCheck" description="Protected architectural boundaries" aside={<Badge tone="amber">By design</Badge>}>
+          <ul className="ad-clean-list">
+            <li><strong>Database credentials</strong> live strictly in server environment variables.</li>
+            <li><strong>Provider &amp; HMAC keys</strong> are never readable from the browser console.</li>
+            <li><strong>Role definitions</strong> are managed by reviewed SQL migrations, not UI forms.</li>
+            <li><strong>Backup restores</strong> require provider-level approval outside the browser.</li>
+          </ul>
+        </Panel>
+      </div>
 
-      <Panel title="Not configurable here" description="And why" aside={<Badge tone="amber">By design</Badge>}>
-        <ul className="ad-muted-copy" style={{ paddingLeft: 18 }}>
-          <li><strong>Database credentials</strong> live in the server environment. A console that could read them would be a bigger risk than any convenience it offered.</li>
-          <li><strong>Provider and SMTP keys</strong> are server-side secrets with the same rule.</li>
-          <li><strong>Role definitions</strong> are part of the reviewed SQL, not a text field. Changing them needs a migration and a review, not a save button.</li>
-          <li><strong>Restoring a backup</strong> is a provider operation with its own approval. This screen shows history; it cannot start a restore.</li>
-        </ul>
-      </Panel>
+      <Modal
+        open={Boolean(editing)}
+        onClose={busy ? () => {} : () => { setEditing(null); setDraftJson(''); }}
+        title={editing ? `Edit ${FRIENDLY[editing.key] ?? editing.key}` : 'Edit setting'}
+        subtitle={editing ? `Key: ${editing.key} · expected version ${editing.version}` : ''}
+        footer={
+          <>
+            <button type="button" className="ad-btn ad-btn--secondary" onClick={() => { setEditing(null); setDraftJson(''); }} disabled={busy !== null}>
+              Cancel
+            </button>
+            <button type="button" className="ad-btn ad-btn--primary" onClick={() => void save()} disabled={busy !== null}>
+              {busy ? 'Saving…' : 'Save setting'}
+            </button>
+          </>
+        }
+      >
+        {editing && (
+          <Field label="JSON object value" hint="Validated server-side before writing.">
+            <textarea
+              className="ad-mono-textarea"
+              value={draftJson}
+              onChange={e => setDraftJson(e.target.value)}
+              rows={6}
+              spellCheck={false}
+              aria-label="Setting value as JSON"
+            />
+          </Field>
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        open={Boolean(confirmCleanup)}
+        onClose={() => setConfirmCleanup(null)}
+        onConfirm={async () => {
+          if (confirmCleanup) await runCleanup(confirmCleanup);
+        }}
+        title="Run bounded maintenance cleanup?"
+        description={
+          confirmCleanup === 'admin_login_flows'
+            ? 'Remove up to 500 expired sign-in handoff rows from admin_login_flows.'
+            : 'Remove up to 500 stale rate-limit window rows from admin_rate_limits.'
+        }
+        consequence="Audit logs, active sessions, drafts, and public content are never touched."
+        confirmLabel="Run cleanup"
+        tone="primary"
+        busy={busy !== null}
+      />
     </>
   );
 }

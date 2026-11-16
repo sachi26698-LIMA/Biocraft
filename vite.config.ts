@@ -1,12 +1,27 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-const adminPreview = process.env.VERCEL_ENV === 'preview' &&
-  process.env.VERCEL_GIT_COMMIT_REF === 'arena/5e351ec3-biocraft';
+const PREVIEW_BRANCHES = new Set([
+  'arena/5e351ec3-biocraft',
+  'arena/805e3bf3-biocraft',
+]);
+const adminPreview = process.env.BIOCRAFT_ADMIN_PREVIEW === 'true' || (
+  process.env.VERCEL_ENV === 'preview' &&
+  PREVIEW_BRANCHES.has(process.env.VERCEL_GIT_COMMIT_REF ?? '')
+);
 
 export default defineConfig({
   plugins: [react(), {
     name: 'admin-preview-shell',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        const [pathname, query] = (req.url ?? '').split('?', 2);
+        if (/^\/admin(?:\/.*)?$/.test(pathname) && !pathname.endsWith('.html')) {
+          req.url = `/admin-preview.html${query ? `?${query}` : ''}`;
+        }
+        next();
+      });
+    },
     configurePreviewServer(server) {
       // vite preview's SPA fallback ignores folder shells without a trailing
       // slash; use the noindex shell for admin deep links instead.

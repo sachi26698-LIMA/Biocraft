@@ -1,184 +1,781 @@
-import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { BIO_COLLECTIONS, TOTAL_BIOS } from '../lib/bioCollections';
-import { PLATFORMS } from '../tools/platforms';
-import { CATEGORIES } from '../tools/bio/data/categories';
-import { TOOLS } from '../tools/registry';
-import { handleAnchorClick, usePath } from '../lib/router';
-import { adminBackend } from './backend';
-import LiveModules from './LiveModules';
-import LiveOverview from './live/Overview';
-import LiveUsers from './live/Users';
-import LiveContent from './live/Content';
-import LiveLibrary from './live/Library';
-import LiveAnalytics from './live/Analytics';
-import LiveSecurity from './live/Security';
-import LiveSettings from './live/Settings';
-import { Categories as LiveCategories, Generators as LiveGenerators, Platforms as LivePlatforms, SeoPages as LiveSeoPages } from './live/Catalog';
-import { probeBackend, type BackendStatus } from './backend';
+/**
+ * BioCraft Master Admin v2.0 — Apple-inspired bright light-only console shell.
+ *
+ * Strict Light Theme Only: Zero dark mode toggle, zero dark theme CSS,
+ * pure white / soft lavender-white surfaces, frosted glass topbar & sidebar,
+ * Cmd+K Spotlight search, notification bell & profile menus, collapsible sidebar
+ * organized into Overview / Content / People / Insights / System across all 13
+ * modules, mobile drawer with focus trap, and mobile bottom navigation bar.
+ *
+ * Dual-mode architecture preserved cleanly:
+ * - When /api/admin/v1/health answers → live Supabase-backed modules.
+ * - When /api/admin/v1/health is unreachable → honest read-only Preview mode.
+ */
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { handleAnchorClick, navigate as routerNavigate, usePath } from '../lib/router';
+import { currentSession, logoutSession, probeBackend, type AdminSession, type BackendStatus } from './backend';
+import { AdminContext, type BioDraftPreset } from './context';
+import { Icon, type IconName } from './icons';
+import type { NotificationRow } from './live/types';
+import { formatDate, mutate, request } from './live/useLive';
 import Login from './Login';
+import { BioEditorModal } from './ui/BioEditorModal';
+import { CommandPalette } from './ui/CommandPalette';
+import { Badge, PageHead, SkeletonStats } from './ui/Primitives';
+import { ToastProvider, useToast } from './ui/Toast';
 import './admin.css';
 
-const DraftScratch = lazy(() => import('./DraftScratch'));
+// Lazy-loaded Live modules for fast route switching & minimal bundle on first paint
+const LiveOverview = lazy(() => import('./live/Overview'));
+const LiveBiosLibrary = lazy(() => import('./live/Library'));
+const LiveCategories = lazy(() => import('./live/Catalog').then(m => ({ default: m.Categories })));
+const LiveCollections = lazy(() => import('./live/Catalog').then(m => ({ default: m.LiveCollections })));
+const LivePlatforms = lazy(() => import('./live/Catalog').then(m => ({ default: m.Platforms })));
+const LiveGenerators = lazy(() => import('./live/Catalog').then(m => ({ default: m.Generators })));
+const LiveSeoPages = lazy(() => import('./live/Catalog').then(m => ({ default: m.SeoPages })));
+const LiveContent = lazy(() => import('./live/Content'));
+const LiveUsers = lazy(() => import('./live/Users'));
+const LiveAnalytics = lazy(() => import('./live/Analytics'));
+const LiveAuditLogs = lazy(() => import('./live/AuditLogs'));
+const LiveSecurity = lazy(() => import('./live/Security'));
+const LiveSettings = lazy(() => import('./live/Settings'));
+const LiveBackup = lazy(() => import('./live/Backup'));
 
-class PreviewErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() { return { failed: true }; }
-  render() { return this.state.failed ? <div className="ad-panel" role="alert"><h2>This preview section could not load</h2><p>Nothing was saved or sent. Refresh to retry.</p></div> : this.props.children; }
+// Lazy-loaded Preview modules (read-only bundled data)
+const PreviewOverview = lazy(() => import('./preview/PreviewOverview'));
+const PreviewBioLibrary = lazy(() => import('./preview/PreviewCatalog').then(m => ({ default: m.PreviewBioLibrary })));
+const PreviewCategories = lazy(() => import('./preview/PreviewCatalog').then(m => ({ default: m.PreviewCategories })));
+const PreviewCollections = lazy(() => import('./preview/PreviewCatalog').then(m => ({ default: m.PreviewCollections })));
+const PreviewPlatforms = lazy(() => import('./preview/PreviewCatalog').then(m => ({ default: m.PreviewPlatforms })));
+const PreviewGenerators = lazy(() => import('./preview/PreviewCatalog').then(m => ({ default: m.PreviewGenerators })));
+const PreviewRestricted = lazy(() => import('./preview/PreviewRestricted'));
+
+type NavKey =
+  | 'overview'
+  | 'bios'
+  | 'categories'
+  | 'collections'
+  | 'platforms'
+  | 'generators'
+  | 'content'
+  | 'users'
+  | 'analytics'
+  | 'audit-logs'
+  | 'security'
+  | 'settings'
+  | 'backup';
+
+type NavSection = 'OVERVIEW' | 'CONTENT' | 'PEOPLE' | 'INSIGHTS' | 'SYSTEM';
+
+interface NavItem {
+  key: NavKey;
+  label: string;
+  shortLabel: string;
+  path: string;
+  icon: IconName;
+  section: NavSection;
+  keywords: string;
 }
 
-type IconName = 'overview' | 'users' | 'bios' | 'categories' | 'platforms' | 'generators' | 'content' | 'analytics' | 'security' | 'settings' | 'search' | 'sun' | 'moon' | 'menu' | 'arrow' | 'lock' | 'check' | 'layers' | 'external';
-const paths: Record<IconName, ReactNode> = {
-  overview: <><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>,
-  users: <><circle cx="9" cy="8" r="3"/><path d="M3 20v-1a6 6 0 0 1 12 0v1M16 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 3 5v1"/></>,
-  bios: <><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v5h4M9 12h7M9 16h7"/></>, categories: <><path d="M4 5h6l2 2h8v12H4z"/><path d="M8 12h8M8 16h5"/></>,
-  platforms: <><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M8 7h8M8 11h8M10 17h4"/></>, generators: <><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></>,
-  content: <><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 13h8M8 16h5"/></>, analytics: <><path d="M4 20V11M10 20V4M16 20v-7M22 20H2"/></>,
-  security: <><path d="M12 3 4 6v5c0 5 3 8 8 10 5-2 8-5 8-10V6z"/><path d="m9 12 2 2 4-4"/></>, settings: <><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4m0-14.2-1.4 1.4M6.3 17.7l-1.4 1.4"/></>,
-  search: <><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/></>, sun: <><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M19 5l-1.5 1.5m-11 11L5 19"/></>, moon: <path d="M20 14A8 8 0 0 1 10 4a8 8 0 1 0 10 10Z"/>, menu: <path d="M4 6h16M4 12h16M4 18h16"/>, arrow: <path d="M5 12h14m-5-5 5 5-5 5"/>, lock: <><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></>, check: <path d="m5 12 4 4L19 6"/>, layers: <><path d="m12 3 9 5-9 5-9-5zM3 12l9 5 9-5M3 16l9 5 9-5"/></>, external: <><path d="M13 5h6v6M19 5l-9 9"/><path d="M19 14v5H5V5h5"/></>,
-};
-function Icon({ name, size = 19 }: { name: IconName; size?: number }) { return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>; }
+const NAV_ITEMS: readonly NavItem[] = [
+  { key: 'overview', label: 'Overview', shortLabel: 'Home', path: '/admin', icon: 'overview', section: 'OVERVIEW', keywords: 'dashboard home kpi summary status' },
+  { key: 'bios', label: 'Bios Library', shortLabel: 'Bios', path: '/admin/bios', icon: 'bios', section: 'CONTENT', keywords: 'bio text library copy catalog search' },
+  { key: 'categories', label: 'Categories', shortLabel: 'Categories', path: '/admin/categories', icon: 'categories', section: 'CONTENT', keywords: 'niche taxonomy labels generator' },
+  { key: 'collections', label: 'Collections', shortLabel: 'Collections', path: '/admin/collections', icon: 'collections', section: 'CONTENT', keywords: 'curated sets groups showcase slugs' },
+  { key: 'platforms', label: 'Platforms', shortLabel: 'Platforms', path: '/admin/platforms', icon: 'platforms', section: 'CONTENT', keywords: 'instagram tiktok linkedin x twitter whatsapp snapchat facebook threads' },
+  { key: 'generators', label: 'Generators', shortLabel: 'Tools', path: '/admin/generators', icon: 'generators', section: 'CONTENT', keywords: 'tools bio generator caption hashtag username' },
+  { key: 'content', label: 'Content & SEO', shortLabel: 'Content', path: '/admin/content', icon: 'content', section: 'CONTENT', keywords: 'drafts review publish seo pages metadata workflow' },
+  { key: 'users', label: 'Users & Staff', shortLabel: 'Users', path: '/admin/users', icon: 'users', section: 'PEOPLE', keywords: 'staff team accounts roles recovery totp' },
+  { key: 'analytics', label: 'Analytics', shortLabel: 'Analytics', path: '/admin/analytics', icon: 'analytics', section: 'INSIGHTS', keywords: 'metrics stats counts export csv json charts' },
+  { key: 'audit-logs', label: 'Audit Logs', shortLabel: 'Audit', path: '/admin/audit-logs', icon: 'audit', section: 'INSIGHTS', keywords: 'history events ledger tamper evident logs' },
+  { key: 'security', label: 'Security & Roles', shortLabel: 'Security', path: '/admin/security', icon: 'security', section: 'INSIGHTS', keywords: 'rbac permissions mfa aal2 sessions revoke' },
+  { key: 'settings', label: 'Settings', shortLabel: 'Settings', path: '/admin/settings', icon: 'settings', section: 'SYSTEM', keywords: 'configuration flags maintenance cleanup' },
+  { key: 'backup', label: 'Backup & Recovery', shortLabel: 'Backup', path: '/admin/backup', icon: 'backup', section: 'SYSTEM', keywords: 'snapshot restore health recovery database' },
+];
 
-const nav = [
-  { key: 'overview', label: 'Overview', path: '/admin', icon: 'overview' },
-  { key: 'users', label: 'Users', path: '/admin/users', icon: 'users' },
-  { key: 'bios', label: 'Bio library', path: '/admin/bios', icon: 'bios' },
-  { key: 'categories', label: 'Categories & collections', path: '/admin/categories', icon: 'categories' },
-  { key: 'platforms', label: 'Platforms', path: '/admin/platforms', icon: 'platforms' },
-  { key: 'generators', label: 'Generators', path: '/admin/generators', icon: 'generators' },
-  { key: 'content', label: 'Content & SEO', path: '/admin/content', icon: 'content' },
-  { key: 'analytics', label: 'Analytics', path: '/admin/analytics', icon: 'analytics' },
-  { key: 'security', label: 'Security', path: '/admin/security', icon: 'security' },
-  { key: 'settings', label: 'Settings', path: '/admin/settings', icon: 'settings' },
-] as const;
-type NavItem = typeof nav[number];
-const LANG: Record<string, string> = { en: 'English', hi: 'Hindi', hg: 'Hinglish' };
-const bioRows = BIO_COLLECTIONS.flatMap(collection => collection.bios.map((bio, index) => ({ ...bio, collection: collection.name, slug: collection.slug, id: `${collection.slug}-${index}` })));
+const NAV_GROUPS: readonly { section: NavSection; label: string }[] = [
+  { section: 'OVERVIEW', label: 'OVERVIEW' },
+  { section: 'CONTENT', label: 'CONTENT' },
+  { section: 'PEOPLE', label: 'PEOPLE' },
+  { section: 'INSIGHTS', label: 'INSIGHTS' },
+  { section: 'SYSTEM', label: 'SYSTEM' },
+];
 
-function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'purple' | 'green' | 'amber' }) { return <span className={`ad-badge ad-badge--${tone}`}>{children}</span>; }
-function Panel({ title, description, aside, children, className = '' }: { title: string; description?: string; aside?: ReactNode; children: ReactNode; className?: string }) { return <section className={`ad-panel ${className}`}><div className="ad-panel-head"><div><h2>{title}</h2>{description && <p>{description}</p>}</div>{aside}</div>{children}</section>; }
-function PageHead({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) { return <header className="ad-page-head"><span className="ad-eyebrow">{eyebrow}</span><h1>{title}</h1><p>{description}</p></header>; }
-function NavLink({ item, path, close }: { item: NavItem; path: string; close?: () => void }) { return <a className={`ad-nav-link ${path === item.path ? 'is-active' : ''}`} href={item.path} aria-current={path === item.path ? 'page' : undefined} onClick={event => { handleAnchorClick(event); close?.(); }}><Icon name={item.icon} size={18}/><span>{item.label}</span>{item.key === 'security' && <span className="ad-nav-dot"/>}</a>; }
-
-function Stat({ icon, label, value, caption, tint }: { icon: IconName; label: string; value: string | number; caption: string; tint: string }) { return <div className="ad-stat"><div className="ad-stat-top"><span>{label}</span><span className={`ad-stat-icon ${tint}`}><Icon name={icon} size={19}/></span></div><strong>{value}</strong><small>{caption}</small></div>; }
-function Blocked({ title, text, items }: { title: string; text: string; items: string[] }) { return <Panel title={title} description={text}><div className="ad-blocked"><span className="ad-blocked-icon"><Icon name="lock" size={22}/></span><div><h3>Not connected yet</h3><p>These capabilities require an approved, isolated backend and server-side authorization. No administrator has been provisioned.</p><div className="ad-blocked-list">{items.map(item => <span key={item}>{item}</span>)}</div></div></div></Panel>; }
-
-function Overview() {
-  const counts = ['en','hi','hg'].map(lang => ({ lang, count: bioRows.filter(bio => bio.lang === lang).length }));
-  return <><PageHead eyebrow="YOUR WORKSPACE" title="Good to see you." description="A clear view of what’s in BioCraft, and what’s still needed to manage it."/>
-    <div className="ad-notice"><span className="ad-notice-icon"><Icon name="lock" size={17}/></span><div><strong>Preview workspace · public data only</strong><p>{adminBackend.reason} No changes can be made here.</p></div><Badge tone="amber">Setup required</Badge></div>
-    <div className="ad-stats"><Stat icon="bios" label="Bundled bios" value={TOTAL_BIOS.toLocaleString()} caption="In the built-in collections" tint="lavender"/><Stat icon="categories" label="Collections" value={BIO_COLLECTIONS.length} caption="Available in the app" tint="peach"/><Stat icon="platforms" label="Platforms" value={PLATFORMS.length} caption="Independent configurations" tint="blue"/><Stat icon="generators" label="Tools" value={TOOLS.length} caption="Registered in BioCraft" tint="mint"/></div>
-    <div className="ad-grid"><Panel title="Content at a glance" description="Language breakdown across bundled bios" aside={<Badge tone="purple">Bundled data</Badge>} className="ad-chart-panel"><div className="ad-chart-summary"><div><span>Total entries</span><strong>{TOTAL_BIOS.toLocaleString()}</strong></div><span className="ad-chart-note">Counts reflect the app bundle,<br/>not the live database.</span></div><div className="ad-bar-chart" aria-label="Bundled bio counts by language">{counts.map(({lang,count}, index) => <div className="ad-bar-row" key={lang}><span>{LANG[lang]}</span><div className="ad-bar-track"><span className={`ad-bar-fill ad-bar-${index}`} style={{width: `${TOTAL_BIOS ? count / TOTAL_BIOS * 100 : 0}%`}}/></div><strong>{count}</strong></div>)}</div><div className="ad-chart-footer"><span><i/> Based on bundled collections</span><a href="/admin/bios" onClick={handleAnchorClick}>Explore library <Icon name="arrow" size={15}/></a></div></Panel>
-    <Panel title="Workspace status" description="Your path to a secure admin" className="ad-status-panel"><div className="ad-status-list"><div><span className="ad-status-icon done"><Icon name="check" size={15}/></span><p><strong>Public app inventory</strong><small>Available from this build</small></p><Badge tone="green">Available</Badge></div><div><span className="ad-status-icon"><Icon name="lock" size={14}/></span><p><strong>Isolated backend</strong><small>Requires approval and setup</small></p><Badge>Pending</Badge></div><div><span className="ad-status-icon"><Icon name="lock" size={14}/></span><p><strong>Admin access & publishing</strong><small>Not enabled</small></p><Badge>Pending</Badge></div></div><div className="ad-status-foot">Security comes first. No privileged data or actions are connected.</div></Panel></div>
-    <div className="ad-bottom-grid"><Panel title="Platforms in BioCraft" description="The app’s current bundled configurations" aside={<a className="ad-text-link" href="/admin/platforms" onClick={handleAnchorClick}>View all <Icon name="arrow" size={15}/></a>}><div className="ad-platform-strip" tabIndex={0} role="region" aria-label="Platforms in BioCraft">{PLATFORMS.map(p => <div key={p.id}><span style={{background:p.tileFrom,color:p.deep}}>{p.shortName.slice(0,1)}</span><strong>{p.shortName}</strong></div>)}</div></Panel>
-    <Panel title="Analytics" description="Usage, visitors and performance"><div className="ad-empty-small"><Icon name="analytics" size={22}/><div><strong>No data source connected</strong><p>Real metrics will appear only after an approved integration.</p></div></div></Panel></div>
-  </>;
+function RouteFallback() {
+  return (
+    <div className="ad-route-loading" role="status" aria-label="Loading module">
+      <SkeletonStats count={4} />
+      <div className="ad-panel ad-skeleton">
+        <span>Loading workspace module…</span>
+        <i aria-hidden="true" />
+        <i aria-hidden="true" />
+        <i aria-hidden="true" />
+      </div>
+    </div>
+  );
 }
 
-function Pagination({page, pages, total, setPage}: {page:number;pages:number;total:number;setPage:(n:number)=>void}) { return <div className="ad-pagination"><span>{total === 0 ? 'No results' : `Page ${page} of ${pages} · ${total} results`}</span><div><button type="button" disabled={page<=1} onClick={()=>setPage(page-1)}>Previous</button><button type="button" disabled={page>=pages} onClick={()=>setPage(page+1)}>Next</button></div></div>; }
-function SearchInput({value,onChange,placeholder}: {value:string;onChange:(v:string)=>void;placeholder:string}) {return <label className="ad-search"><Icon name="search" size={17}/><span className="ad-sr">{placeholder}</span><input type="search" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}/></label>;}
-function BioLibrary() {
- const [query,setQuery]=useState(''); const [language,setLanguage]=useState('all'); const [collection,setCollection]=useState('all'); const [sort,setSort]=useState('source'); const [page,setPage]=useState(1); const [detail,setDetail]=useState<string|null>(null); const [scratch,setScratch]=useState(false);
- const searchable=useMemo(()=>bioRows.map(bio=>({bio,search:`${bio.text} ${bio.plain??''} ${bio.collection}`.toLocaleLowerCase()})),[]);
- const filtered=useMemo(()=>{const q=query.trim().toLocaleLowerCase();const rows=searchable.filter(({bio:b,search}) => (language==='all'||b.lang===language)&&(collection==='all'||b.slug===collection)&&(!q||search.includes(q))).map(row=>row.bio);if(sort==='text')rows.sort((a,b)=>a.text.localeCompare(b.text));if(sort==='collection')rows.sort((a,b)=>a.collection.localeCompare(b.collection));return rows;},[query,language,collection,sort,searchable]);
- const pages=Math.max(1,Math.ceil(filtered.length/10));const current=Math.min(page,pages);const selected=bioRows.find(b=>b.id===detail);
- return <><PageHead eyebrow="CONTENT LIBRARY" title="Bio library" description="Explore the bios bundled with this build. Live database records and editing are not connected."/><Panel title="Built-in bios" description="Search across collections and languages" aside={<Badge tone="purple">Read-only · bundled</Badge>}><div className="ad-toolbar"><SearchInput value={query} onChange={v=>{setQuery(v);setPage(1);}} placeholder="Search bios or collections"/><label className="ad-select-label"><span className="ad-sr">Filter by language</span><select value={language} onChange={e=>{setLanguage(e.target.value);setPage(1);}}><option value="all">All languages</option><option value="en">English</option><option value="hi">Hindi</option><option value="hg">Hinglish</option></select></label><label className="ad-select-label"><span className="ad-sr">Filter by collection</span><select value={collection} onChange={e=>{setCollection(e.target.value);setPage(1);}}><option value="all">All collections</option>{BIO_COLLECTIONS.map(c=><option key={c.slug} value={c.slug}>{c.name}</option>)}</select></label><label className="ad-select-label"><span className="ad-sr">Sort bios</span><select value={sort} onChange={e=>{setSort(e.target.value);setPage(1);}}><option value="source">Bundled order</option><option value="text">Bio text A–Z</option><option value="collection">Collection A–Z</option></select></label></div><div className="ad-table-wrap" tabIndex={0} role="region" aria-label="Scrollable data table"><table className="ad-table"><thead><tr><th>Bio</th><th>Collection</th><th>Language</th><th>Style</th><th>Details</th></tr></thead><tbody>{filtered.slice((current-1)*10,current*10).map(b=><tr key={b.id}><td className="ad-bio-text">{b.text}</td><td>{b.collection}</td><td><Badge>{LANG[b.lang]}</Badge></td><td>{b.style ? 'Styled' : 'Plain'}</td><td><button type="button" onClick={()=>setDetail(b.id)} aria-label={`View details for ${b.id}`}>View</button></td></tr>)}</tbody></table>{filtered.length===0&&<div className="ad-empty-table">No bios match your filters. Try another search or collection.</div>}</div><Pagination page={current} pages={pages} total={filtered.length} setPage={setPage}/>{selected&&<section className="ad-detail" aria-label="Bundled bio details"><div className="ad-panel-head"><div><h3>Bundled bio details</h3><p>Read-only source item · not a live database record</p></div><button type="button" onClick={()=>setDetail(null)}>Close details</button></div><dl><dt>Collection</dt><dd>{selected.collection}</dd><dt>Language</dt><dd>{LANG[selected.lang]}</dd><dt>Style</dt><dd>{selected.style?'Styled':'Plain'}</dd><dt>Text</dt><dd className="ad-bio-text">{selected.text}</dd>{selected.plain&&<><dt>Plain text</dt><dd className="ad-bio-text">{selected.plain}</dd></>}</dl></section>}</Panel><p className="ad-footnote"><Icon name="lock" size={14}/> Editing published bios requires an approved admin backend.</p><button type="button" aria-expanded={scratch} onClick={()=>setScratch(v=>!v)}>{scratch?'Close browser-only scratchpad (discard items)':'Open browser-only draft scratchpad'}</button>{scratch&&<PreviewErrorBoundary><Suspense fallback={<div className="ad-panel ad-skeleton" role="status"><span>Loading browser-only draft form…</span><i aria-hidden="true"/><i aria-hidden="true"/><i aria-hidden="true"/></div>}><DraftScratch/></Suspense></PreviewErrorBoundary>}</>;
-}
-function Collections() {
- const [q,setQ]=useState(''); const [categoryQuery,setCategoryQuery]=useState(''); const [collectionSort,setCollectionSort]=useState('source');const [categorySort,setCategorySort]=useState('source');const [categoryDetail,setCategoryDetail]=useState<string|null>(null);const [collectionDetail,setCollectionDetail]=useState<string|null>(null);
- const rows=useMemo(()=>{const r=BIO_COLLECTIONS.filter(c=>`${c.name} ${c.slug} ${c.languages}`.toLowerCase().includes(q.trim().toLowerCase()));if(collectionSort==='name')r.sort((a,b)=>a.name.localeCompare(b.name));if(collectionSort==='count')r.sort((a,b)=>b.bios.length-a.bios.length);return r;},[q,collectionSort]);
- const categories=useMemo(()=>{const r=CATEGORIES.filter(c=>`${c.id} ${c.en.label} ${c.hi.label} ${c.hg.label}`.toLocaleLowerCase().includes(categoryQuery.trim().toLocaleLowerCase()));if(categorySort==='name')r.sort((a,b)=>a.en.label.localeCompare(b.en.label));return r;},[categoryQuery,categorySort]);
- const selectedCategory=CATEGORIES.find(c=>c.id===categoryDetail);const selectedCollection=BIO_COLLECTIONS.find(c=>c.slug===collectionDetail);
- return <><PageHead eyebrow="CONTENT LIBRARY" title="Categories & collections" description="Explore bundled bio-generator categories and ready-made bio collections."/>
- <Panel title="Generator categories" description="Labels used in the bio generator · not the live database" aside={<Badge tone="purple">{CATEGORIES.length} categories</Badge>}>
- <div className="ad-toolbar"><SearchInput value={categoryQuery} onChange={setCategoryQuery} placeholder="Search generator categories"/><label className="ad-select-label"><span className="ad-sr">Sort generator categories</span><select value={categorySort} onChange={e=>setCategorySort(e.target.value)}><option value="source">Bundled order</option><option value="name">English label A–Z</option></select></label></div>
- <div className="ad-table-wrap" tabIndex={0} role="region" aria-label="Scrollable generator categories table"><table className="ad-table"><thead><tr><th>Category ID</th><th>English</th><th>Hindi</th><th>Hinglish</th><th>Details</th></tr></thead><tbody>{categories.map(c=><tr key={c.id}><td><code>{c.id}</code></td><td><strong>{c.en.label}</strong></td><td>{c.hi.label}</td><td>{c.hg.label}</td><td><button type="button" aria-label={`View category ${c.id}`} onClick={()=>setCategoryDetail(c.id)}>View</button></td></tr>)}</tbody></table>{categories.length===0&&<div className="ad-empty-table">No categories match your search.</div>}</div>{selectedCategory&&<section className="ad-detail" aria-label="Category details"><h3>{selectedCategory.en.label}</h3><dl><dt>Emoji</dt><dd>{selectedCategory.emojis.join(' ')}</dd>{(['en','hi','hg'] as const).map(lang=><div key={lang} className="ad-detail-language"><dt>{LANG[lang]}</dt><dd>Roles: {selectedCategory[lang].roles.join(', ')}<br/>Topics: {selectedCategory[lang].niches.join(', ')}</dd></div>)}</dl><button type="button" onClick={()=>setCategoryDetail(null)}>Close category details</button></section>}</Panel>
- <div className="ad-section-gap"/><Panel title="Collection registry" description="Bundled routes and content counts" aside={<Badge tone="purple">Read-only · bundled</Badge>}><div className="ad-toolbar"><SearchInput value={q} onChange={setQ} placeholder="Search collections"/><label className="ad-select-label"><span className="ad-sr">Sort collections</span><select value={collectionSort} onChange={e=>setCollectionSort(e.target.value)}><option value="source">Bundled order</option><option value="name">Name A–Z</option><option value="count">Most bios first</option></select></label></div><div className="ad-table-wrap" tabIndex={0} role="region" aria-label="Scrollable collections table"><table className="ad-table"><thead><tr><th>Collection</th><th>Route</th><th>Languages</th><th>Bios</th><th>Details</th></tr></thead><tbody>{rows.map(c=><tr key={c.slug}><td><strong>{c.name}</strong></td><td><code>/{c.slug}</code></td><td>{c.languages}</td><td>{c.bios.length}</td><td><button type="button" aria-label={`View collection ${c.name}`} onClick={()=>setCollectionDetail(c.slug)}>View</button></td></tr>)}</tbody></table>{rows.length===0&&<div className="ad-empty-table">No collections match your search.</div>}</div>{selectedCollection&&<section className="ad-detail" aria-label="Collection details"><h3>{selectedCollection.name}</h3><dl><dt>Route</dt><dd>/{selectedCollection.slug}</dd><dt>Description</dt><dd>{selectedCollection.description}</dd><dt>Languages</dt><dd>{selectedCollection.languages}</dd><dt>Reviewed</dt><dd>{selectedCollection.updated}</dd><dt>SEO title</dt><dd>{selectedCollection.seoTitle}</dd><dt>SEO description</dt><dd>{selectedCollection.seoDescription}</dd></dl><button type="button" onClick={()=>setCollectionDetail(null)}>Close collection details</button></section>}</Panel><p className="ad-footnote"><Icon name="lock" size={14}/> Category and collection management require an approved backend.</p></>;
-}
-function Platforms() {
- const [q,setQ]=useState('');const [sort,setSort]=useState('source');const [detail,setDetail]=useState<string|null>(null);
- const rows=useMemo(()=>{const r=PLATFORMS.filter(p=>p.name.toLowerCase().includes(q.trim().toLowerCase()));if(sort==='name')r.sort((a,b)=>a.name.localeCompare(b.name));if(sort==='limit')r.sort((a,b)=>b.bioLimit-a.bioLimit);return r;},[q,sort]);
- const selected=PLATFORMS.find(p=>p.id===detail);
- return <><PageHead eyebrow="YOUR ECOSYSTEM" title="Platforms" description="The current platform configurations, directly from the BioCraft app."/><Panel title="Supported platforms" description="Limits shown are app configuration, not independently verified platform policies." aside={<Badge tone="purple">{PLATFORMS.length} platforms</Badge>}><div className="ad-toolbar"><SearchInput value={q} onChange={setQ} placeholder="Search platforms"/><label className="ad-select-label"><span className="ad-sr">Sort platforms</span><select value={sort} onChange={e=>setSort(e.target.value)}><option value="source">Bundled order</option><option value="name">Name A–Z</option><option value="limit">Bio limit descending</option></select></label></div><div className="ad-platform-cards">{rows.map(p=><article className="ad-platform-card" key={p.id}><div className="ad-platform-card-head"><span className="ad-platform-mark" style={{background:p.tileFrom,color:p.deep}}>{p.shortName.slice(0,1)}</span><div><h3>{p.name}</h3><p>{p.tools.length} available tools</p></div><Badge>Bundled</Badge></div><div className="ad-platform-info"><div><small>Bio limit</small><strong>{p.id === 'snapchat' ? '≈' : ''}{p.bioLimit.toLocaleString()} characters</strong></div><div><small>Workspace</small><strong>{p.bioHeading}</strong></div></div>{p.englishOnlyNote&&<p className="ad-platform-note">{p.englishOnlyNote}</p>}<button type="button" onClick={()=>setDetail(p.id)} aria-label={`View configuration for ${p.name}`}>View configuration</button></article>)}</div>{rows.length===0&&<div className="ad-empty-table">No platforms match your search.</div>}{selected&&<section className="ad-detail" aria-label="Platform configuration details"><h3>{selected.name} · bundled configuration</h3><dl><dt>Bio limit</dt><dd>{selected.id==='snapchat'?'Approximately ':''}{selected.bioLimit.toLocaleString()} characters</dd><dt>Bio workspace</dt><dd>{selected.bioHeading}</dd><dt>Caption label</dt><dd>{selected.captionsLabel}</dd><dt>Available tools</dt><dd>{TOOLS.filter(t=>selected.tools.includes(t.key)).map(t=>t.heading).join(', ')}</dd></dl><button type="button" onClick={()=>setDetail(null)}>Close configuration</button></section>}</Panel><p className="ad-footnote"><Icon name="lock" size={14}/> Settings are bundled in the public app and cannot be edited here.</p></>;
-}
-function Generators() {
- const [q,setQ]=useState('');const [platform,setPlatform]=useState('all');const [sort,setSort]=useState('source');const [detail,setDetail]=useState<string|null>(null);
- const rows=useMemo(()=>{const p=PLATFORMS.find(x=>x.id===platform);const r=TOOLS.filter(t=>`${t.heading} ${t.path} ${t.tabLabel}`.toLowerCase().includes(q.trim().toLowerCase())&&(!p||p.tools.includes(t.key)));if(sort==='name')r.sort((a,b)=>a.heading.localeCompare(b.heading));return r;},[q,platform,sort]);const selected=TOOLS.find(t=>t.key===detail);
- return <><PageHead eyebrow="TOOLKIT" title="Generators" description="Explore the real tools registered in BioCraft and where they are available."/><Panel title="Tool registry" description="Rule-based tools, as configured in this build" aside={<Badge tone="purple">{TOOLS.length} tools</Badge>}><div className="ad-toolbar"><SearchInput value={q} onChange={setQ} placeholder="Search tools"/><label className="ad-select-label"><span className="ad-sr">Filter tools by platform</span><select value={platform} onChange={e=>setPlatform(e.target.value)}><option value="all">All platforms</option>{PLATFORMS.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></label><label className="ad-select-label"><span className="ad-sr">Sort tools</span><select value={sort} onChange={e=>setSort(e.target.value)}><option value="source">Bundled order</option><option value="name">Name A–Z</option></select></label></div><div className="ad-table-wrap" tabIndex={0} role="region" aria-label="Scrollable data table"><table className="ad-table"><thead><tr><th>Tool</th><th>Public route</th><th>Platforms</th><th>Details</th></tr></thead><tbody>{rows.map(t=><tr key={t.key}><td><strong>{t.heading}</strong><small className="ad-cell-sub">{t.tabLabel}</small></td><td><a href={t.path}>{t.path} ↗</a></td><td>{PLATFORMS.filter(p=>p.tools.includes(t.key)).map(p=>p.shortName).join(', ')}</td><td><button type="button" onClick={()=>setDetail(t.key)} aria-label={`View ${t.heading} details`}>View</button></td></tr>)}</tbody></table>{rows.length===0&&<div className="ad-empty-table">No tools match your search or platform.</div>}</div>{selected&&<section className="ad-detail" aria-label="Generator details"><h3>{selected.heading}</h3><dl><dt>Public path</dt><dd>{selected.path}</dd><dt>Description</dt><dd>{selected.subheading}</dd><dt>Platforms</dt><dd>{PLATFORMS.filter(p=>p.tools.includes(selected.key)).map(p=>p.name).join(', ')}</dd></dl><button type="button" onClick={()=>setDetail(null)}>Close tool details</button></section>}</Panel><p className="ad-footnote"><Icon name="lock" size={14}/> Presets and language configuration are not connected.</p></>;
-}
-const unavailable: Record<string,{eyebrow:string;title:string;description:string;panel:string;items:string[]}> = {
- users:{eyebrow:'PEOPLE',title:'Users',description:'Manage access and account activity from one secure place.',panel:'User management',items:['User directory','Account status','Roles & permissions']},
- content:{eyebrow:'PUBLISHING',title:'Content & SEO',description:'Manage your site content with a secure review and publishing workflow.',panel:'Content management',items:['Pages & sections','SEO metadata','Drafts & publishing']},
- analytics:{eyebrow:'INSIGHTS',title:'Analytics',description:'Understand usage and performance with privacy-respecting, real data.',panel:'Usage analytics',items:['Visitor trends','Generation activity','Performance reports']},
- security:{eyebrow:'PROTECTION',title:'Security',description:'Keep access, activity and sensitive actions protected.',panel:'Security center',items:['MFA & sessions','Audit history','Server-side permissions']},
- settings:{eyebrow:'WORKSPACE',title:'Settings',description:'Configure your workspace once a secure backend is available.',panel:'System settings',items:['Site configuration','Feature flags','Backup & recovery']},
-};
-function Unavailable({section, moduleKey}:{section: typeof unavailable[string];moduleKey:string}) {
- const [query,setQuery]=useState('');const [sort,setSort]=useState('source');const [details,setDetails]=useState<string|null>(null);
- const seo=useMemo(()=>{const rows=TOOLS.filter(t=>`${t.heading} ${t.path} ${t.title} ${t.description}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));if(sort==='title')rows.sort((a,b)=>a.title.localeCompare(b.title));return rows;},[query,sort]);
- const selected=TOOLS.find(t=>t.key===details);
- return <><PageHead eyebrow={section.eyebrow} title={section.title} description={section.description}/><Blocked title={section.panel} text="This module is not connected to a data source." items={section.items}/>
- {moduleKey==='users'&&<><div className="ad-section-gap"/><Panel title="User directory" description="Unavailable — no authenticated directory is connected."><div className="ad-action-row"><button type="button" disabled>Invite user</button><button type="button" disabled>Export users</button></div><p className="ad-muted-copy">User records, role changes, sessions and account controls cannot be queried or managed in this Preview. This is not an empty live directory.</p></Panel></>}
- {moduleKey==='content'&&<><div className="ad-section-gap"/><Panel title="Bundled tool SEO inventory" description="Public tool metadata from this build only; not a live page or editable SEO registry." aside={<Badge>Read-only</Badge>}><div className="ad-toolbar"><SearchInput value={query} onChange={setQuery} placeholder="Search bundled SEO"/><label className="ad-select-label"><span className="ad-sr">Sort SEO metadata</span><select value={sort} onChange={e=>setSort(e.target.value)}><option value="source">Bundled order</option><option value="title">Title A–Z</option></select></label><button type="button" disabled>Edit SEO metadata</button></div><div className="ad-table-wrap" tabIndex={0} role="region" aria-label="Bundled tool SEO table"><table className="ad-table"><thead><tr><th>Tool</th><th>Title</th><th>Route</th><th>Details</th></tr></thead><tbody>{seo.map(t=><tr key={t.key}><td>{t.heading}</td><td>{t.title}</td><td><a href={t.path}>{t.path}</a></td><td><button type="button" onClick={()=>setDetails(t.key)} aria-label={`View SEO details for ${t.heading}`}>View</button></td></tr>)}</tbody></table>{!seo.length&&<div className="ad-empty-table">No bundled tool metadata matches this search.</div>}</div>{selected&&<section className="ad-detail" aria-label="Bundled SEO details"><h3>{selected.heading}</h3><dl><dt>Title</dt><dd>{selected.title}</dd><dt>Description</dt><dd>{selected.description}</dd><dt>Open Graph title</dt><dd>{selected.ogTitle}</dd><dt>Open Graph description</dt><dd>{selected.ogDescription}</dd></dl><button type="button" onClick={()=>setDetails(null)}>Close SEO details</button></section>}</Panel></>}
- {moduleKey==='analytics'&&<><div className="ad-section-gap"/><Panel title="Analytics reports" description="No telemetry source or reporting API is connected."><div className="ad-action-row"><button type="button" disabled>Export CSV</button><button type="button" disabled>Export JSON</button></div><p className="ad-muted-copy">Traffic, engagement, generation usage and performance are unavailable — not zero. Export requires an approved source, authorization and privacy review.</p></Panel></>}
- {moduleKey==='security'&&<><div className="ad-section-gap"/><Panel title="Proposed roles" description="Design only · no roles or permissions are provisioned or enforced by this screen."><div className="ad-table-wrap" tabIndex={0} role="region" aria-label="Proposed role responsibilities"><table className="ad-table"><thead><tr><th>Proposed role</th><th>Intended responsibility</th></tr></thead><tbody><tr><td>Super Admin</td><td>Membership administration and protected operations</td></tr><tr><td>Admin</td><td>Authorized operations and reviewed publication</td></tr><tr><td>Content Manager</td><td>Content drafts and reviewed publication</td></tr><tr><td>Editor</td><td>Create drafts and submit for independent review</td></tr><tr><td>SEO Manager</td><td>SEO drafts and content metadata</td></tr><tr><td>Moderator</td><td>Reject content submissions, not publication</td></tr><tr><td>Analyst</td><td>Approved aggregate reporting</td></tr><tr><td>Read-only Auditor</td><td>Read permitted security and audit information</td></tr></tbody></table></div><p className="ad-muted-copy">Server-side permission checks, MFA and conflict-of-interest rules are required before any role can be active. The role table is a proposal, not a security boundary.</p></Panel><div className="ad-section-gap"/><Panel title="Audit log" description="No event source is connected."><button type="button" disabled>Export audit log</button><p className="ad-muted-copy">Audit events and session history are unavailable; no assertion is made about real activity.</p></Panel></>}
- {moduleKey==='settings'&&<><div className="ad-section-gap"/><Panel title="Configuration and recovery" description="Privileged operations are not connected."><div className="ad-action-row"><button type="button" disabled>Change settings</button><button type="button" disabled>Request backup</button></div><p className="ad-muted-copy">No provider, backup, restore or cache operations can be performed from this Preview.</p></Panel></>}
- </>;
+function AdminShell() {
+  const path = usePath();
+  const toast = useToast();
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [bioModalOpen, setBioModalOpen] = useState(false);
+  const [bioPreset, setBioPreset] = useState<BioDraftPreset | null>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationRow[]>([]);
+  const [notifLoaded, setNotifLoaded] = useState(false);
+
+  const [backend, setBackend] = useState<BackendStatus>('unavailable');
+  const [probed, setProbed] = useState(false);
+  const [session, setSession] = useState<AdminSession | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+
+  const probedOnce = useRef(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  const loadSession = useCallback(async () => {
+    try {
+      const data = await currentSession();
+      setSession(data);
+    } catch {
+      setSession(null);
+    }
+  }, []);
+
+  const refreshSession = useCallback(async () => {
+    const result = await probeBackend();
+    setBackend(result);
+    setProbed(true);
+    if (result === 'ready') {
+      await loadSession();
+    } else {
+      setSession(null);
+    }
+  }, [loadSession]);
+
+  // Single-shot mount probe (avoids React StrictMode double fetch)
+  useEffect(() => {
+    if (probedOnce.current) return;
+    probedOnce.current = true;
+    const controller = new AbortController();
+    probeBackend(controller.signal)
+      .then(result => {
+        if (controller.signal.aborted) return;
+        setBackend(result);
+        setProbed(true);
+        if (result === 'ready') void loadSession();
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setBackend('unavailable');
+          setProbed(true);
+        }
+      });
+    return () => controller.abort();
+  }, [loadSession]);
+
+  const live = backend === 'ready' || backend === 'unauthenticated';
+
+  // Fetch notifications when bell opens in live ready state
+  useEffect(() => {
+    if (!notifOpen || backend !== 'ready' || notifLoaded) return;
+    request<{ items: NotificationRow[] }>('/notifications?limit=12')
+      .then(res => {
+        setNotifications(res.items ?? []);
+        setNotifLoaded(true);
+      })
+      .catch(() => setNotifLoaded(true));
+  }, [notifOpen, backend, notifLoaded]);
+
+  // Document title & strict light color-scheme
+  useEffect(() => {
+    document.title = 'Admin — BioCraft';
+    document.documentElement.style.colorScheme = 'light';
+    return () => {
+      document.title = 'BioCraft — All-in-One Social Media Toolkit';
+    };
+  }, []);
+
+  // Close menus on route change
+  useEffect(() => {
+    setMenuOpen(false);
+    setNotifOpen(false);
+    setProfileOpen(false);
+  }, [path]);
+
+  // Global Cmd+K / Ctrl+K Spotlight shortcut + outside click for popovers
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setCommandOpen(open => !open);
+        setNotifOpen(false);
+        setProfileOpen(false);
+      }
+      if (e.key === 'Escape') {
+        setNotifOpen(false);
+        setProfileOpen(false);
+      }
+    };
+    const onClick = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClick);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onClick);
+    };
+  }, []);
+
+  // Mobile drawer focus trap & scroll lock
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const links = () => Array.from(sidebarRef.current?.querySelectorAll<HTMLAnchorElement>('a[href]') ?? []);
+    links()[0]?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setMenuOpen(false);
+      }
+      if (event.key === 'Tab') {
+        const focusable = links();
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (first && last && event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (first && last && !event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    const onResize = () => {
+      if (window.innerWidth > 900) setMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', onResize);
+      if (window.innerWidth <= 900) menuButton.current?.focus();
+    };
+  }, [menuOpen]);
+
+  const navigate = useCallback((to: string) => {
+    routerNavigate(to);
+  }, []);
+
+  const bumpRefresh = useCallback(() => {
+    setRefreshTick(t => t + 1);
+  }, []);
+
+  const openBioModal = useCallback(
+    (preset?: BioDraftPreset) => {
+      if (backend === 'ready' || !live) {
+        setBioPreset(preset ?? null);
+        setBioModalOpen(true);
+      } else {
+        toast.push('Sign in to create bio drafts', { description: 'Authenticate with your TOTP factor first.', tone: 'info' });
+        navigate('/admin/login');
+      }
+    },
+    [backend, live, navigate, toast],
+  );
+
+  const handleSignOut = async () => {
+    setProfileOpen(false);
+    try {
+      await logoutSession();
+      toast.push('Signed out cleanly', { tone: 'info' });
+    } catch {
+      toast.push('Session ended', { tone: 'info' });
+    }
+    setSession(null);
+    setBackend('unauthenticated');
+    navigate('/admin/login');
+  };
+
+  const markNotificationsRead = async () => {
+    const unreadIds = notifications.filter(n => n.unread).map(n => n.id);
+    if (unreadIds.length === 0) return;
+    try {
+      await mutate('/notifications/read', { ids: unreadIds });
+      setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+      toast.push('Notifications marked as read', { tone: 'success' });
+    } catch {
+      toast.push('Could not mark notifications read', { tone: 'error' });
+    }
+  };
+
+  const unreadCount = notifications.filter(n => n.unread).length;
+
+  const activeNav = NAV_ITEMS.find(n => n.path === path);
+
+  let content: ReactNode;
+  if (!activeNav && path === '/admin/login') {
+    content = (
+      <>
+        <PageHead
+          eyebrow="ADMIN ACCESS"
+          title="Sign in"
+          description="Server-side password and authenticator verification is required to use the Admin workspace."
+        />
+        <Login onAuthenticated={refreshSession} />
+      </>
+    );
+  } else if (!activeNav) {
+    content = (
+      <>
+        <PageHead eyebrow="NOT FOUND" title="Page not found" description="This workspace page doesn’t exist." />
+        <a className="ad-btn ad-btn--primary" href="/admin" onClick={handleAnchorClick}>
+          Back to overview <Icon name="arrow" size={15} />
+        </a>
+      </>
+    );
+  } else if (live) {
+    switch (activeNav.key) {
+      case 'overview':
+        content = <LiveOverview key={refreshTick} />;
+        break;
+      case 'bios':
+        content = <LiveBiosLibrary key={refreshTick} />;
+        break;
+      case 'categories':
+        content = (
+          <>
+            <LiveCategories />
+            <LiveSeoPages />
+          </>
+        );
+        break;
+      case 'collections':
+        content = <LiveCollections />;
+        break;
+      case 'platforms':
+        content = <LivePlatforms />;
+        break;
+      case 'generators':
+        content = <LiveGenerators />;
+        break;
+      case 'content':
+        content = <LiveContent key={refreshTick} />;
+        break;
+      case 'users':
+        content = <LiveUsers />;
+        break;
+      case 'analytics':
+        content = <LiveAnalytics />;
+        break;
+      case 'audit-logs':
+        content = <LiveAuditLogs />;
+        break;
+      case 'security':
+        content = <LiveSecurity />;
+        break;
+      case 'settings':
+        content = <LiveSettings />;
+        break;
+      case 'backup':
+        content = <LiveBackup />;
+        break;
+    }
+  } else {
+    switch (activeNav.key) {
+      case 'overview':
+        content = <PreviewOverview />;
+        break;
+      case 'bios':
+        content = <PreviewBioLibrary />;
+        break;
+      case 'categories':
+        content = <PreviewCategories />;
+        break;
+      case 'collections':
+        content = <PreviewCollections />;
+        break;
+      case 'platforms':
+        content = <PreviewPlatforms />;
+        break;
+      case 'generators':
+        content = <PreviewGenerators />;
+        break;
+      default:
+        content = <PreviewRestricted key={activeNav.key} moduleKey={activeNav.key} />;
+        break;
+    }
+  }
+
+  return (
+    <AdminContext.Provider
+      value={{
+        backend,
+        probed,
+        live,
+        session,
+        refreshTick,
+        bumpRefresh,
+        openBioModal,
+        openCommandPalette: () => setCommandOpen(true),
+        navigate,
+      }}
+    >
+      <div className={`ad-app ${collapsed ? 'is-collapsed' : ''}`}>
+        <a className="ad-skip" href="#admin-main">
+          Skip to content
+        </a>
+
+        {menuOpen && (
+          <button
+            type="button"
+            className="ad-overlay"
+            aria-label="Close navigation"
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
+
+        {/* Frosted Collapsible Apple Sidebar */}
+        <aside
+          ref={sidebarRef}
+          className={`ad-sidebar ${menuOpen ? 'ad-sidebar-open' : ''}`}
+          aria-label="Admin navigation"
+        >
+          <div className="ad-sidebar-top">
+            <a
+              className="ad-brand"
+              href="/admin"
+              onClick={e => {
+                handleAnchorClick(e);
+                setMenuOpen(false);
+              }}
+            >
+              <span className="ad-brand-mark" aria-hidden="true">
+                <Icon name="layers" size={20} />
+              </span>
+              <span className="ad-brand-text">
+                <strong>BioCraft</strong>
+                <small>MASTER ADMIN</small>
+              </span>
+            </a>
+
+            <button
+              type="button"
+              className="ad-collapse-btn"
+              onClick={() => setCollapsed(v => !v)}
+              aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} size={15} />
+            </button>
+          </div>
+
+          <div className="ad-sidebar-scroll">
+            {NAV_GROUPS.map(group => {
+              const items = NAV_ITEMS.filter(item => item.section === group.section);
+              return (
+                <div className="ad-nav-group" key={group.section}>
+                  <div className="ad-sidebar-label">{group.label}</div>
+                  <nav aria-label={group.label}>
+                    {items.map(item => {
+                      const active = path === item.path;
+                      return (
+                        <a
+                          key={item.key}
+                          className={`ad-nav-link ${active ? 'is-active' : ''}`}
+                          href={item.path}
+                          title={collapsed ? item.label : undefined}
+                          aria-current={active ? 'page' : undefined}
+                          onClick={event => {
+                            handleAnchorClick(event);
+                            setMenuOpen(false);
+                          }}
+                        >
+                          <span className="ad-nav-icon" aria-hidden="true">
+                            <Icon name={item.icon} size={17} />
+                          </span>
+                          <span className="ad-nav-text">{item.label}</span>
+                          {item.key === 'security' && <span className="ad-nav-dot" aria-hidden="true" />}
+                        </a>
+                      );
+                    })}
+                  </nav>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="ad-sidebar-bottom">
+            <div className="ad-sidebar-card">
+              <div className="ad-sidebar-card-head">
+                <span className="ad-mini-lock" aria-hidden="true">
+                  <Icon name={live ? 'shieldCheck' : 'lock'} size={15} />
+                </span>
+                <div>
+                  <strong>BioCraft Admin v2.0</strong>
+                  <small>{!probed ? 'Checking…' : live ? 'Live Console' : 'Preview Mode'}</small>
+                </div>
+              </div>
+              <div className="ad-sidebar-card-links">
+                <a
+                  href="/admin/security"
+                  onClick={e => {
+                    handleAnchorClick(e);
+                    setMenuOpen(false);
+                  }}
+                >
+                  View security
+                </a>
+                <a
+                  href="/admin/login"
+                  onClick={e => {
+                    handleAnchorClick(e);
+                    setMenuOpen(false);
+                  }}
+                >
+                  Admin sign-in
+                </a>
+              </div>
+            </div>
+            <a className="ad-back" href="/">
+              <span>← Back to BioCraft</span>
+              <Icon name="external" size={14} />
+            </a>
+          </div>
+        </aside>
+
+        {/* Main Workspace Surface */}
+        <div className="ad-content">
+          {/* Floating Frosted Translucent Top Bar */}
+          <header className="ad-topbar">
+            <div className="ad-topbar-left">
+              <button
+                ref={menuButton}
+                className="ad-mobile-menu"
+                type="button"
+                aria-label="Open navigation"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen(true)}
+              >
+                <Icon name="menu" size={20} />
+              </button>
+
+              <nav className="ad-breadcrumb" aria-label="Breadcrumb">
+                <span className="ad-crumb-root">Workspace</span>
+                <span className="ad-crumb-sep" aria-hidden="true">/</span>
+                <strong>{activeNav?.label ?? (path === '/admin/login' ? 'Sign in' : 'Not found')}</strong>
+              </nav>
+            </div>
+
+            <div className="ad-topbar-center">
+              <button
+                type="button"
+                className="ad-cmd-trigger"
+                onClick={() => setCommandOpen(true)}
+                title="Search BioCraft Admin (⌘K)"
+              >
+                <Icon name="search" size={15} />
+                <span>Search BioCraft Admin…</span>
+                <kbd aria-hidden="true">Ctrl K</kbd>
+              </button>
+            </div>
+
+            <div className="ad-top-actions">
+              <span className={`ad-preview-pill ${live ? 'is-live' : ''}`}>
+                <i aria-hidden="true" /> {live ? 'Live data' : 'Preview mode'}
+              </span>
+
+              {/* Notification Bell Menu */}
+              <div className="ad-popover-wrap" ref={notifRef}>
+                <button
+                  type="button"
+                  className="ad-icon-btn"
+                  aria-label="Notifications"
+                  aria-expanded={notifOpen}
+                  onClick={() => {
+                    setNotifOpen(v => !v);
+                    setProfileOpen(false);
+                  }}
+                >
+                  <Icon name="bell" size={17} />
+                  {unreadCount > 0 && <span className="ad-notif-badge">{unreadCount}</span>}
+                </button>
+                {notifOpen && (
+                  <div className="ad-popover" role="dialog" aria-label="Notifications panel">
+                    <div className="ad-popover-head">
+                      <strong>Notifications</strong>
+                      {unreadCount > 0 && (
+                        <button type="button" className="ad-text-link" onClick={() => void markNotificationsRead()}>
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    {backend !== 'ready' ? (
+                      <p className="ad-popover-empty">
+                        {live
+                          ? 'Sign in with your authenticator to read inbox notifications.'
+                          : 'Notifications require a live Admin backend connection.'}
+                      </p>
+                    ) : notifications.length === 0 ? (
+                      <p className="ad-popover-empty">You’re all caught up. No new alerts.</p>
+                    ) : (
+                      <ul className="ad-popover-list">
+                        {notifications.map(n => (
+                          <li key={n.id} className={n.unread ? 'is-unread' : ''}>
+                            <div>
+                              <strong>{n.category}</strong>
+                              <p>{n.message}</p>
+                              <small>{formatDate(n.created_at)}</small>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Profile Menu */}
+              <div className="ad-popover-wrap" ref={profileRef}>
+                <button
+                  type="button"
+                  className="ad-avatar"
+                  aria-label="Account menu"
+                  aria-expanded={profileOpen}
+                  onClick={() => {
+                    setProfileOpen(v => !v);
+                    setNotifOpen(false);
+                  }}
+                >
+                  <Icon name={backend === 'ready' ? 'user' : 'lock'} size={16} />
+                </button>
+                {profileOpen && (
+                  <div className="ad-popover ad-popover--sm" role="dialog" aria-label="Account menu">
+                    <div className="ad-popover-head">
+                      <div>
+                        <strong>{backend === 'ready' ? 'Signed-in Admin' : 'Guest Preview'}</strong>
+                        <small className="ad-cell-sub">
+                          {session?.roles?.length
+                            ? session.roles.map(r => r.replace(/_/g, ' ')).join(' · ')
+                            : live
+                              ? 'Not authenticated'
+                              : 'Public data only'}
+                        </small>
+                      </div>
+                      <Badge tone={backend === 'ready' ? 'green' : 'amber'}>
+                        {backend === 'ready' ? 'AAL2' : 'Locked'}
+                      </Badge>
+                    </div>
+                    <div className="ad-popover-actions">
+                      <button type="button" onClick={() => { setProfileOpen(false); navigate('/admin/security'); }}>
+                        <Icon name="security" size={15} /> Security &amp; Sessions
+                      </button>
+                      <button type="button" onClick={() => { setProfileOpen(false); navigate('/admin/settings'); }}>
+                        <Icon name="settings" size={15} /> System Settings
+                      </button>
+                      {backend === 'ready' ? (
+                        <button type="button" className="is-danger" onClick={() => void handleSignOut()}>
+                          <Icon name="logout" size={15} /> Sign out
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => { setProfileOpen(false); navigate('/admin/login'); }}>
+                          <Icon name="lock" size={15} /> Admin Sign-In
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </header>
+
+          {/* Main Route Viewport */}
+          <main id="admin-main" className="ad-main">
+            <Suspense fallback={<RouteFallback />}>{content}</Suspense>
+            <footer className="ad-footer">
+              <span>{live ? 'BioCraft Master Admin v2.0' : 'BioCraft Admin Preview'}</span>
+              <span>{live ? 'Server-verified AAL2 session · Every action audited' : 'Public catalog only · No admin session'}</span>
+            </footer>
+          </main>
+        </div>
+
+        {/* Mobile Bottom Tab Bar with center + FAB matching visual reference */}
+        <nav className="ad-mobile-bar" aria-label="Quick mobile navigation">
+          <a
+            href="/admin"
+            className={path === '/admin' ? 'is-active' : ''}
+            onClick={handleAnchorClick}
+          >
+            <Icon name="overview" size={19} />
+            <span>Home</span>
+          </a>
+          <a
+            href="/admin/bios"
+            className={path === '/admin/bios' ? 'is-active' : ''}
+            onClick={handleAnchorClick}
+          >
+            <Icon name="bios" size={19} />
+            <span>Bios</span>
+          </a>
+          <button
+            type="button"
+            className="ad-mobile-fab"
+            aria-label="Create new bio"
+            onClick={() => openBioModal()}
+          >
+            <Icon name="plus" size={22} />
+          </button>
+          <a
+            href="/admin/content"
+            className={path === '/admin/content' ? 'is-active' : ''}
+            onClick={handleAnchorClick}
+          >
+            <Icon name="content" size={19} />
+            <span>Content</span>
+          </a>
+          <button
+            type="button"
+            className={menuOpen ? 'is-active' : ''}
+            onClick={() => setMenuOpen(true)}
+            aria-label="More modules"
+          >
+            <Icon name="menu" size={19} />
+            <span>More</span>
+          </button>
+        </nav>
+
+        {/* Global Spotlight Search (Cmd/Ctrl + K) */}
+        <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} />
+
+        {/* Global Rich Bio Composer Modal */}
+        <BioEditorModal
+          open={bioModalOpen}
+          preset={bioPreset}
+          onClose={() => {
+            setBioModalOpen(false);
+            setBioPreset(null);
+          }}
+        />
+      </div>
+    </AdminContext.Provider>
+  );
 }
 
 export default function AdminApp() {
- const path=usePath();const [menu,setMenu]=useState(false);const [dark,setDark]=useState(false);
- // The console has two modes and never mixes them. With no reachable backend it
- // shows the bundled read-only inventory exactly as before; once /health answers,
- // it switches to the live modules. The probe result is a state, not a guess, and
- // a failed probe never renders live-looking numbers.
- const [backend,setBackend]=useState<BackendStatus>('unavailable');
- const [probed,setProbed]=useState(false);
- // The probe runs once per mount. React invokes effects twice in development
- // to surface non-idempotent work, which sent two identical /health requests;
- // the ref makes the probe genuinely single-shot without aborting the live one.
- const probedOnce=useRef(false);
- useEffect(()=>{
-  if(probedOnce.current) return;
-  probedOnce.current=true;
-  const controller=new AbortController();
-  probeBackend(controller.signal).then(result=>{ if(!controller.signal.aborted){ setBackend(result); setProbed(true); } }).catch(()=>{ if(!controller.signal.aborted){ setBackend('unavailable'); setProbed(true); } });
-  return ()=>controller.abort();
- },[]);
- const live = backend === 'ready' || backend === 'unauthenticated';
- const menuButton=useRef<HTMLButtonElement>(null);const sidebar=useRef<HTMLElement>(null);
- useEffect(()=>{document.title='Admin — BioCraft'; return ()=>{document.title='BioCraft — All-in-One Social Media Toolkit';};},[]);
- useEffect(()=>{setMenu(false);},[path]);
- useEffect(() => {
-  if (!menu) return;
-  const previousOverflow = document.body.style.overflow;
-  document.body.style.overflow = 'hidden';
-  const links = () => Array.from(sidebar.current?.querySelectorAll<HTMLAnchorElement>('a[href]') ?? []);
-  links()[0]?.focus();
-  const onKey = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') { event.preventDefault(); setMenu(false); }
-    if (event.key === 'Tab') {
-      const focusable=links(); const first=focusable[0]; const last=focusable[focusable.length-1];
-      if (first && last && event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-      else if (first && last && !event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-    }
-  };
-  const onResize = () => { if (window.innerWidth > 700) setMenu(false); };
-  window.addEventListener('keydown', onKey); window.addEventListener('resize', onResize);
-  return () => { document.body.style.overflow = previousOverflow; window.removeEventListener('keydown', onKey); window.removeEventListener('resize', onResize); if (window.innerWidth <= 700) menuButton.current?.focus(); };
- }, [menu]);
- const item=nav.find(n=>n.path===path); let content:ReactNode;
- if (!item && path === '/admin/login') content=<><PageHead eyebrow="ADMIN ACCESS" title="Sign in" description="Server-side password and authenticator verification is required to use the Admin workspace."/><Login/></>;
- else if (!item) content=<><PageHead eyebrow="NOT FOUND" title="Page not found" description="This workspace page doesn’t exist."/><a className="ad-text-link" href="/admin" onClick={handleAnchorClick}>Back to overview <Icon name="arrow" size={15}/></a></>;
- else if(live&&item.key==='overview')content=<LiveOverview/>;
- else if(live&&item.key==='users')content=<LiveUsers/>;
- else if(live&&item.key==='content')content=<LiveContent/>;
- else if(live&&item.key==='bios')content=<><LiveLibrary/><LiveModules/></>;
- else if(live&&item.key==='analytics')content=<LiveAnalytics/>;
- else if(live&&item.key==='security')content=<LiveSecurity/>;
- else if(live&&item.key==='settings')content=<LiveSettings/>;
- else if(live&&item.key==='categories')content=<><LiveCategories/><LiveSeoPages/></>;
- else if(live&&item.key==='platforms')content=<LivePlatforms/>;
- else if(live&&item.key==='generators')content=<LiveGenerators/>;
- else if(item.key==='overview')content=<><Overview/><LiveModules/></>;else if(item.key==='bios')content=<BioLibrary/>;else if(item.key==='categories')content=<Collections/>;else if(item.key==='platforms')content=<Platforms/>;else if(item.key==='generators')content=<Generators/>;else content=<Unavailable key={item.key} moduleKey={item.key} section={unavailable[item.key]}/>;
- return <div className={`ad-app ${dark?'ad-dark':''}`}><a className="ad-skip" href="#admin-main">Skip to content</a>{menu&&<button className="ad-overlay" aria-label="Close navigation" onClick={()=>setMenu(false)}/>}<aside ref={sidebar} className={`ad-sidebar ${menu?'ad-sidebar-open':''}`} aria-label="Admin navigation"><a className="ad-brand" href="/admin" onClick={e=>{handleAnchorClick(e);setMenu(false);}}><span className="ad-brand-mark"><Icon name="layers" size={21}/></span><span><strong>BioCraft</strong><small>ADMIN WORKSPACE</small></span></a><div className="ad-sidebar-label">WORKSPACE</div><nav>{nav.slice(0,7).map(n=><NavLink key={n.key} item={n} path={path} close={()=>setMenu(false)}/>)}</nav><div className="ad-sidebar-label ad-sidebar-label-second">MANAGE</div><nav>{nav.slice(7).map(n=><NavLink key={n.key} item={n} path={path} close={()=>setMenu(false)}/>)}</nav><div className="ad-sidebar-bottom"><div className="ad-sidebar-card"><span className="ad-mini-lock"><Icon name="lock" size={16}/></span><strong>{live?'Signed-in console':'Built for secure work'}</strong><p>{!probed?'Checking whether the Admin service is reachable…':live?'Live data. Sign-in, roles and every action are checked on the server.':'Admin services are not connected in this preview.'}</p><a href="/admin/security" onClick={e=>{handleAnchorClick(e);setMenu(false);}}>View security <Icon name="arrow" size={14}/></a><a href="/admin/login" onClick={e=>{handleAnchorClick(e);setMenu(false);}}>Admin sign-in <Icon name="arrow" size={14}/></a></div><a className="ad-back" href="/">← <span>Back to BioCraft</span><Icon name="external" size={15}/></a></div></aside><div className="ad-content"><header className="ad-topbar"><button ref={menuButton} className="ad-mobile-menu" type="button" aria-label="Open navigation" aria-expanded={menu} onClick={()=>setMenu(true)}><Icon name="menu"/></button><div className="ad-breadcrumb"><span>Workspace</span><span>/</span><strong>{item?.label ?? (path === '/admin/login' ? 'Sign in' : 'Not found')}</strong></div><div className="ad-top-actions"><span className="ad-preview-pill"><i/> {live?'Live data':'Preview mode'}</span><button className="ad-theme-toggle" type="button" onClick={()=>setDark(!dark)} aria-label={dark?'Switch to light mode':'Switch to dark mode'} title={dark?'Switch to light mode':'Switch to dark mode'}><Icon name={dark?'sun':'moon'} size={18}/></button><span className="ad-avatar" aria-hidden="true"><Icon name="lock" size={16}/></span></div></header><main id="admin-main" className="ad-main">{content}<footer className="ad-footer"><span>{live?'BioCraft Admin Console':'BioCraft Admin Preview'}</span><span>{live?'Server-verified session · Every action audited':'Public data only · No admin session'}</span></footer></main></div></div>;
+  return (
+    <ToastProvider>
+      <AdminShell />
+    </ToastProvider>
+  );
 }

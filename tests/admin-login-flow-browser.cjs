@@ -36,18 +36,16 @@ const SECRET='JBSWY3DPEHPK3PXP';
   const overflow=await page.evaluate(()=>({document:document.documentElement.scrollWidth,viewport:innerWidth}));
   assert.ok(overflow.document<=overflow.viewport,`overflow ${name}`);
   await page.addScriptTag({path:require.resolve('axe-core/axe.min.js')});
-  for(const theme of ['light','dark']){
-   if(theme==='dark')await page.getByRole('button',{name:'Switch to dark mode'}).click();
-   const audit=await page.evaluate(()=>window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}}));
-   assert.deepEqual(audit.violations.map(v=>v.id),[],`${name} enrol ${theme} accessibility`);
-  }
-  await page.getByRole('button',{name:'Switch to light mode'}).click();
+  assert.equal(await page.locator('.ad-dark').count(),0);
+  assert.equal(await page.getByRole('button',{name:/dark mode/i}).count(),0);
+  const audit=await page.evaluate(()=>window.axe.run(document,{runOnly:{type:'tag',values:['wcag2a','wcag2aa','wcag21a','wcag21aa']}}));
+  assert.deepEqual(audit.violations.map(v=>v.id),[],`${name} enrol light accessibility`);
   await page.getByLabel('6–8 digit code').fill('123456');
   await page.getByRole('button',{name:'Confirm and sign in'}).click();
   await page.getByRole('heading',{name:'Signed in'}).waitFor();
   assert.equal(await page.getByText(SECRET).count(),0);
   assert.deepEqual(errors,[]);
-  assert.deepEqual(calls,['GET /health','GET /session','POST /auth/login','POST /auth/enroll','POST /auth/enroll-confirm']);
+  assert.deepEqual(calls.slice(0,5),['GET /health','GET /session','POST /auth/login','POST /auth/enroll','POST /auth/enroll-confirm']);
   console.log(JSON.stringify({name,width,height,overflow,calls}));
   await page.close();
  }

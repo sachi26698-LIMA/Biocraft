@@ -406,8 +406,16 @@ const ROUTES = [
   },
 ];
 
-// Direct links to the temporary diagnostic exist only in this branch's Preview build.
-if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_GIT_COMMIT_REF === 'arena/5e351ec3-biocraft') {
+// Direct links to the temporary diagnostic and admin shells exist only in Preview builds.
+const PREVIEW_BRANCHES = new Set([
+  'arena/5e351ec3-biocraft',
+  'arena/805e3bf3-biocraft',
+]);
+const adminPreview = process.env.BIOCRAFT_ADMIN_PREVIEW === 'true' || (
+  process.env.VERCEL_ENV === 'preview' &&
+  PREVIEW_BRANCHES.has(process.env.VERCEL_GIT_COMMIT_REF ?? '')
+);
+if (adminPreview) {
   ROUTES.push({
     path: '/preview-diagnostics',
     title: 'Preview Diagnostics — BioCraft',
@@ -416,11 +424,15 @@ if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_GIT_COMMIT_REF ==
     ogDescription: 'Temporary Preview-only diagnostics.',
     noindex: true,
   });
-  // Noindex static shells for the branch-only, public-data admin preview.
-  for (const section of ['', '/login', '/users', '/bios', '/categories', '/platforms', '/generators', '/content', '/analytics', '/security', '/settings']) {
-    ROUTES.push({ path: `/admin${section}`, title: 'Admin Preview — BioCraft',
-      description: 'BioCraft admin workspace preview.', ogTitle: 'Admin Preview — BioCraft',
-      ogDescription: 'BioCraft admin workspace preview.', noindex: true });
+  // Noindex static shells for every BioCraft Master Admin module route.
+  for (const section of [
+    '', '/login', '/users', '/bios', '/categories', '/collections',
+    '/platforms', '/generators', '/content', '/analytics',
+    '/audit-logs', '/security', '/settings', '/backup',
+  ]) {
+    ROUTES.push({ path: `/admin${section}`, title: 'BioCraft Master Admin',
+      description: 'BioCraft Master Admin workspace.', ogTitle: 'BioCraft Master Admin',
+      ogDescription: 'BioCraft Master Admin workspace.', noindex: true });
   }
 }
 
