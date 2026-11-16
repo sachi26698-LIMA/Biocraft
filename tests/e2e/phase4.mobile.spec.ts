@@ -208,7 +208,7 @@ test('mobile tool actions meet 44px targets and text inputs remain reachable in 
     await openTool(page, route);
 
     const undersizedButtons = await page.locator(
-      '.toolkit-workspace button:visible:not(.switch), .bio-editor-page button:visible:not(.switch)',
+      '.toolkit-workspace button:visible:not(.switch):not(.symbol-fav), .bio-editor-page button:visible:not(.switch)',
     ).evaluateAll((buttons) => buttons.flatMap((button) => {
       const rect = button.getBoundingClientRect();
       return rect.width < 44 || rect.height < 44
@@ -224,6 +224,13 @@ test('mobile tool actions meet 44px targets and text inputs remain reachable in 
       }),
     );
     expect(switchTargets.every(({ width, height }) => width >= 44 && height >= 24), `${route} switch targets`).toBeTruthy();
+    const favouriteTargets = await page.locator('.toolkit-workspace button.symbol-fav:visible').evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const rect = button.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      }),
+    );
+    expect(favouriteTargets.every(({ width, height }) => width >= 36 && height >= 36), `${route} overlaid symbol favourite targets`).toBeTruthy();
 
     // Shrinking the emulated viewport approximates the space left above an
     // on-screen keyboard. It is not a native keyboard/device test.
@@ -235,6 +242,7 @@ test('mobile tool actions meet 44px targets and text inputs remain reachable in 
     await expect(input, `${route} first editable field`).toBeVisible();
     await input.focus();
     await page.setViewportSize({ width: 390, height: 560 });
+    await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; });
     await input.evaluate((element) => element.scrollIntoView({ block: 'center', inline: 'nearest' }));
     const focusedField = await input.evaluate((element) => {
       const rect = element.getBoundingClientRect();

@@ -1897,10 +1897,12 @@ select:focus-visible, [tabindex]:focus-visible {
   .segmented-option { min-height: 44px; }
   .menu-toggle { width: 46px; height: 46px; }
   .favourite-btn { width: 44px; height: 44px; }
-  .toolkit-workspace button:not(.switch), .bio-editor-page button:not(.switch) {
+  .toolkit-workspace button:not(.switch):not(.symbol-fav), .bio-editor-page button:not(.switch) {
     min-width: 44px;
     min-height: 44px;
   }
+  /* Keep the overlaid favourite inside its tile so it cannot steal the glyph tap. */
+  .toolkit-workspace .symbol-fav { min-width: 36px; min-height: 36px; }
   .bc-search-clear { width: 44px; height: 44px; }
   .bc-nav-chip, .footer-link { min-height: 44px; }
 }
