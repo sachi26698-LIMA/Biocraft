@@ -133,7 +133,13 @@ export default function AdminApp() {
  // a failed probe never renders live-looking numbers.
  const [backend,setBackend]=useState<BackendStatus>('unavailable');
  const [probed,setProbed]=useState(false);
+ // The probe runs once per mount. React invokes effects twice in development
+ // to surface non-idempotent work, which sent two identical /health requests;
+ // the ref makes the probe genuinely single-shot without aborting the live one.
+ const probedOnce=useRef(false);
  useEffect(()=>{
+  if(probedOnce.current) return;
+  probedOnce.current=true;
   const controller=new AbortController();
   probeBackend(controller.signal).then(result=>{ if(!controller.signal.aborted){ setBackend(result); setProbed(true); } }).catch(()=>{ if(!controller.signal.aborted){ setBackend('unavailable'); setProbed(true); } });
   return ()=>controller.abort();

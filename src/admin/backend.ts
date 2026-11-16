@@ -39,10 +39,30 @@ class AdminRequestError extends Error implements AdminError {
 
 let csrfToken: string | null = null;
 
+/** Coalesce identical in-flight probes.
+ *
+ * The console mounts two independent components that both need the backend
+ * status, so it issued two `/health` requests per page load. The route table and
+ * the security review both assume exactly one probe, and the extra request is
+ * real server work for no added information — so an in-flight probe is shared
+ * rather than duplicated. The shared promise is cleared as soon as it settles,
+ * so a later explicit probe still observes fresh server state.
+ */
+let inFlightProbe: Promise<BackendStatus> | null = null;
+
 /** Probe the deployed server. Absent endpoints (404 from the static host) and
  * network failures both resolve to `unavailable`: a missing backend must never
  * be presented as a working one. */
-export async function probeBackend(signal?: AbortSignal): Promise<BackendStatus> {
+export function probeBackend(signal?: AbortSignal): Promise<BackendStatus> {
+  if (inFlightProbe) return inFlightProbe;
+  const pending = probeBackendOnce(signal).finally(() => {
+    if (inFlightProbe === pending) inFlightProbe = null;
+  });
+  inFlightProbe = pending;
+  return pending;
+}
+
+async function probeBackendOnce(signal?: AbortSignal): Promise<BackendStatus> {
   try {
     const response = await fetch(`${ADMIN_BASE}/health`, { credentials: 'same-origin', headers: { accept: 'application/json' }, signal });
     if (response.status === 503) return 'unavailable';

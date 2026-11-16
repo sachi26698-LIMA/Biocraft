@@ -24,7 +24,7 @@ try {
  create table public.generators(id uuid primary key default gen_random_uuid(),name text not null,slug text not null unique,generator_type text not null,character_limit integer,is_active boolean not null default true,platform_id uuid);
  create table public.seo_pages(id uuid primary key default gen_random_uuid(),page_slug text not null unique,title text not null,meta_description text,robots text not null default 'index,follow',is_active boolean not null default true,updated_at timestamptz not null default now());
  -- gen_random_uuid() is built into PostgreSQL 13+; PGlite provides it too.`);
- for(const f of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','008_bio_edit.sql','010_admin_module_commands.sql','012_recovery_and_cleanup.sql','013_publication_bridge.sql','014_module_read_surface.sql']) await db.exec(fs.readFileSync(`admin-backend/migrations/${f}`,'utf8'));
+ for(const f of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql','012_recovery_and_cleanup.sql','013_publication_bridge.sql','014_module_read_surface.sql']) await db.exec(fs.readFileSync(`admin-backend/migrations/${f}`,'utf8'));
  await db.exec(`insert into auth.users values('${a}'),('${b}'),('${outsider}');insert into bc_admin_v1.admin_users(id,enabled) values('${a}',true),('${b}',true);
  insert into auth.sessions(id,user_id) values('${sa}','${a}'),('${sb}','${b}');
  insert into bc_admin_v1.admin_user_roles(user_id,role_id) values('${a}','editor'),('${b}','admin');`);
@@ -38,7 +38,8 @@ try {
  bc_admin_v1.publish_bio_draft(uuid,bigint,uuid,uuid),bc_admin_v1.list_bio_publications(uuid,integer,bigint),bc_admin_v1.create_revert_draft(bigint,uuid),
  bc_admin_v1.session_identity(),bc_admin_v1.list_my_notifications(integer,timestamptz),bc_admin_v1.mark_notifications_read(timestamptz),
  bc_admin_v1.list_publication_jobs(integer,uuid),bc_admin_v1.list_backup_records(integer,timestamptz),
- bc_admin_v1.list_public_bios(integer,uuid,text,text,boolean) to fixture_executor;`);
+ bc_admin_v1.list_public_bios(integer,uuid,text,text,boolean),
+ bc_admin_v1.revoke_my_sessions(uuid) to fixture_executor;`);
  // PGlite has one login: session_user comparison is simulated here; real
  // session-user and role privilege checks run in admin-postgres-integration.
  const pool={connect:async()=>{await db.exec('set role fixture_executor');return {query:(text,params)=>db.query(text.replace('session_user=current_user','true'),params),release:async()=>{await db.exec('reset role')}}}};
@@ -138,6 +139,23 @@ try {
  assert.equal((await call('/api/admin/v1/bios?after=not-a-uuid')).status,422);
  // An outsider without the permission is denied, not shown an empty page.
  assert.equal((await call('/api/admin/v1/bios','GET',undefined,token(outsider,sa))).status,403);
+ // The caller's own session list. Own-account only, so no permission beyond
+ // dashboard.read, and no cursor parameter the client can point at another user.
+ const sessions=await call('/api/admin/v1/sessions');
+ assert.equal(sessions.status,200);
+ assert.match(sessions.headers.get('cache-control'),/no-store/);
+ const sessionPage=await sessions.json();
+ assert(Array.isArray(sessionPage.items) && sessionPage.items.length>=1);
+ assert.equal(sessionPage.request_id!==undefined,true);
+ assert.equal((await call('/api/admin/v1/sessions?limit=1000')).status,422);
+ assert.equal((await call('/api/admin/v1/sessions?before=not-a-time')).status,422);
+ // There is no account parameter to point at: an unknown query key is a 400
+ // (malformed request), while a known key with a bad value is a 422.
+ assert.equal((await call('/api/admin/v1/sessions?user=someone-else')).status,400);
+ // Signing out everywhere is a step-up act, and it is refused without one.
+ const noStepUp=await call('/api/admin/v1/sessions/revoke-all','POST',undefined,token(a,sa,{amr:undefined}));
+ assert.equal(noStepUp.status,403);
+ assert.equal((await noStepUp.json()).error.code,'STEP_UP_REQUIRED');
  assert.equal((await call('/api/admin/v1/session','DELETE')).status,200);
  assert.equal((await call('/api/admin/v1/bio-drafts')).status,403);
  assert.equal((await call('/api/admin/v1/session','POST')).status,403);
@@ -208,5 +226,26 @@ try {
  assert.equal((await createAdminHandler({enabled:true,provider,execute,rateLimit:async()=>false,platformRules:rules})(new Request('https://admin.example/api/admin/v1/bio-drafts',{headers:{Authorization:`Bearer ${token(b,sb)}`}}))).status,429);
  assert.throws(()=>createPostgresPool({host:'other.example',user:'limited',password:'fixture'}));
  const realPool=createPostgresPool({host:'db.jvpadtzfsuekixrquzjv.supabase.co',user:'limited',password:'fixture'});await realPool.end(); // no connection opened
- console.log('PASS local API-to-PGlite draft workflow plus 010 module reads, settings/audit authorization, paging validation, step-up denial, 012 recovery authorisation, factor reset, bounded cleanup, and 013 publication/staff-administration and 014 inbox/library/job routes; mocked provider and fixture-only limited-role grants');
+ // "Sign out everywhere" success path, last because it revokes the account's
+ // live sessions by design. Uses a throwaway member so nothing above depends on it.
+ // 009's revoke_my_sessions() is granted to the fixture executor, which is what
+ // made these two routes reachable at all: they were in executor-grants.sql but
+ // absent from this fixture's grant list, so the SQL path was never exercised here.
+ await db.exec("insert into auth.users values('44444444-4444-4444-8444-444444444444') on conflict do nothing;");
+ await db.exec("insert into bc_admin_v1.admin_users(id,enabled) values('44444444-4444-4444-8444-444444444444',true) on conflict do nothing;");
+ await db.exec("insert into bc_admin_v1.admin_user_roles(user_id,role_id) values('44444444-4444-4444-8444-444444444444','editor') on conflict do nothing;");
+ const tmpSession='cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+ await db.exec("insert into auth.sessions(id,user_id) values('"+tmpSession+"','44444444-4444-4444-8444-444444444444') on conflict do nothing;");
+ const tmpCall=(path,method='GET')=>handler(new Request('https://admin.example'+path,{method,headers:{Authorization:'Bearer '+token('44444444-4444-4444-8444-444444444444',tmpSession)}}));
+ assert.equal((await tmpCall('/api/admin/v1/session','POST')).status,200);
+ assert.equal((await tmpCall('/api/admin/v1/sessions')).status,200);
+ const revoked=await tmpCall('/api/admin/v1/sessions/revoke-all','POST');
+ assert.equal(revoked.status,200);
+ assert((await revoked.json()).revoked>=1);
+ // The account is now signed out everywhere, including the calling session.
+ assert.equal((await tmpCall('/api/admin/v1/sessions')).status,403);
+ // The audit trail records it against the actor, never a client-supplied id.
+ const revokedRow=await db.query("select actor_id from bc_admin_v1.admin_audit_logs where action='session.revoke_all'");
+ assert(revokedRow.rows.some(r=>r.actor_id==='44444444-4444-4444-8444-444444444444'));
+ console.log('PASS local API-to-PGlite draft workflow plus 010 module reads, settings/audit authorization, paging validation, step-up denial, 012 recovery authorisation, factor reset, bounded cleanup, and 013 publication/staff-administration 014 inbox/library/job routes, and the own-session list plus sign-out-everywhere; mocked provider and fixture-only limited-role grants');
 } finally {await db.close()}
