@@ -761,7 +761,12 @@ h1, h2, h3, h4 { text-wrap: balance; }
 .optional { color: var(--muted); font-weight: 500; }
 .required { color: var(--error); }
 
-.field input, .field textarea, .select {
+/* Every control nested in a .field is styled, not just the ones that happen to
+   carry the `select` class. A bare <select> inside .field matched none of these
+   rules, so it fell back to the browser default and rendered 19px tall — under
+   the 24px minimum for a touch target, and visually inconsistent with the
+   inputs beside it. */
+.field input, .field textarea, .field select, .select {
   width: 100%;
   background: var(--card-solid);
   border: 1px solid var(--line);
@@ -775,8 +780,8 @@ h1, h2, h3, h4 { text-wrap: balance; }
 }
 .field textarea { resize: vertical; min-height: 96px; }
 .field input::placeholder, .field textarea::placeholder { color: #8E829E; }
-.field input:hover, .field textarea:hover, .select:hover { border-color: var(--line-strong); }
-.field input:focus, .field textarea:focus, .select:focus {
+.field input:hover, .field textarea:hover, .field select:hover, .select:hover { border-color: var(--line-strong); }
+.field input:focus, .field textarea:focus, .field select:focus, .select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: var(--focus-ring);

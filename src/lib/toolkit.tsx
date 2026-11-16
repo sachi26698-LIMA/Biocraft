@@ -39,6 +39,12 @@ const platformFromSearch = (search: string): PlatformId | null => {
 const DEFAULT_BY_PATH: Array<[string, PlatformId]> = [
   ['/whatsapp-status-generator', 'whatsapp'],
   ['/snapchat-caption-generator', 'snapchat'],
+  // These two tools exist only on LinkedIn. Without this mapping a cold visit
+  // to either URL kept the Instagram default, ToolWorkspace saw the tool was
+  // unavailable there and substituted the Bio tool — so the page titled
+  // "LinkedIn Headline Generator" rendered an Instagram bio form.
+  ['/linkedin-headline-generator', 'linkedin'],
+  ['/linkedin-summary-generator', 'linkedin'],
 ];
 
 const defaultForPath = (pathname: string): PlatformId => {
