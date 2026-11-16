@@ -11,6 +11,9 @@ import { toast } from '../lib/toast';
 import { PLATFORMS, type PlatformId } from '../tools/platforms';
 import CharCounter from '../components/CharCounter';
 import CopyButton from '../components/CopyButton';
+import DownloadButton from '../components/DownloadButton';
+import ToolModeToggle from '../components/ToolModeToggle';
+import { useToolMode } from '../lib/toolMode';
 import { useSymbolFavourites, useSymbolRecents } from '../lib/toolbox';
 import { WandIcon, RefreshIcon, CloseIcon } from '../components/icons';
 
@@ -41,6 +44,7 @@ const LINE_SPACINGS = [
  * rule-based (no AI) and fully client-side.
  */
 export default function BioEditorPage() {
+  const { mode } = useToolMode();
   const [platform, setPlatform] = useState<PlatformId>('instagram');
   const [text, setText] = useState('');
   const [styleId, setStyleId] = useState<string>('none');
@@ -61,17 +65,22 @@ export default function BioEditorPage() {
   const { recents, record } = useSymbolRecents();
 
   const config = PLATFORMS.find((item) => item.id === platform) ?? PLATFORMS[0];
-  const divider = DIVIDERS.find((item) => item.id === dividerId) ?? DIVIDERS[0];
+  const effectiveStyleId = mode === 'basic' ? 'none' : styleId;
+  const effectiveDividerId = mode === 'basic' ? 'none' : dividerId;
+  const effectivePlacement = mode === 'basic' ? 'none' : placement;
+  const effectiveLineSpacing = mode === 'basic' ? '1.6' : lineSpacing;
+  const effectiveDesign = mode === 'basic' ? 'minimal' : design;
+  const divider = DIVIDERS.find((item) => item.id === effectiveDividerId) ?? DIVIDERS[0];
 
   const finalText = useMemo(() => {
-    const styled = styleId === 'none' ? text : applyStyle(text, styleId);
+    const styled = effectiveStyleId === 'none' ? text : applyStyle(text, effectiveStyleId);
     const lines: string[] = [];
     const withDivider = (line: string) => line;
-    if (placement === 'top' || placement === 'both') lines.push(withDivider(divider.glyph));
+    if (effectivePlacement === 'top' || effectivePlacement === 'both') lines.push(withDivider(divider.glyph));
     if (styled.trim()) lines.push(styled);
-    if (placement === 'bottom' || placement === 'both') lines.push(withDivider(divider.glyph));
+    if (effectivePlacement === 'bottom' || effectivePlacement === 'both') lines.push(withDivider(divider.glyph));
     return lines.join('\n');
-  }, [text, styleId, divider.glyph, placement]);
+  }, [text, effectiveStyleId, divider.glyph, effectivePlacement]);
 
   const count = bioLength(finalText);
   const over = count > config.bioLimit;
@@ -116,16 +125,17 @@ export default function BioEditorPage() {
   const recentGlyphs = useMemo(() => recents.slice(0, 14), [recents]);
 
   return (
-    <section className="page bio-editor-page">
+    <section className="page bio-editor-page" data-tool-mode={mode}>
       <div className="container narrow">
         <header className="bio-editor-head">
           <span className="hub-header-icon bc-hub-icon" aria-hidden="true"><WandIcon size={26} /></span>
           <div>
             <h1>Bio Editor</h1>
-            <p className="bio-editor-lede">
-              Build your bio by hand — platform limits, Unicode fonts, dividers, emoji and every
-              design preview. Rule-based, private, nothing leaves your browser.
-            </p>
+              <p className="bio-editor-lede">
+                Build your bio by hand — platform limits, Unicode fonts, dividers, emoji and every
+                design preview. Rule-based, private, nothing leaves your browser.
+              </p>
+              <ToolModeToggle />
           </div>
         </header>
 
@@ -177,7 +187,7 @@ export default function BioEditorPage() {
               </div>
             </div>
 
-            <div className="field">
+            <div className="field tool-advanced">
               <label htmlFor="bio-editor-font">Font style</label>
               <select id="bio-editor-font" value={styleId} onChange={(event) => setStyleId(event.target.value)}>
                 <option value="none">Original (no style)</option>
@@ -188,7 +198,7 @@ export default function BioEditorPage() {
               <p className="field-hint">Devanagari stays untouched — Unicode has no styled Devanagari alphabets.</p>
             </div>
 
-            <div className="field-row">
+            <div className="field-row tool-advanced">
               <div className="field">
                 <label htmlFor="bio-editor-divider">Decorative divider</label>
                 <select id="bio-editor-divider" value={dividerId} onChange={(event) => setDividerId(event.target.value)}>
@@ -208,7 +218,7 @@ export default function BioEditorPage() {
               </div>
             </div>
 
-            <fieldset className="plain-fieldset">
+            <fieldset className="plain-fieldset tool-advanced">
               <legend className="option-label" id="editor-spacing-label">Line spacing <span className="field-hint-inline">(preview only)</span></legend>
               <div className="chip-row" role="group" aria-labelledby="editor-spacing-label">
                 {LINE_SPACINGS.map((item) => (
@@ -225,7 +235,7 @@ export default function BioEditorPage() {
               </div>
             </fieldset>
 
-            <div className="field">
+            <div className="field tool-advanced">
               <label htmlFor="bio-editor-design">Card design</label>
               <select id="bio-editor-design" value={design} onChange={(event) => setDesign(event.target.value as BioDesignKey)}>
                 {BIO_DESIGNS.map((item) => (
@@ -244,7 +254,7 @@ export default function BioEditorPage() {
                   </button>
                 ))}
               </div>
-              {recentGlyphs.length > 0 && (
+              {mode === 'advanced' && recentGlyphs.length > 0 && (
                 <>
                   <p className="field-hint bio-editor-emoji-sub">Recently used</p>
                   <div className="bio-editor-emoji-row" role="group" aria-label="Recently used symbols">
@@ -256,7 +266,7 @@ export default function BioEditorPage() {
                   </div>
                 </>
               )}
-              {favouriteGlyphs.length > 0 && (
+              {mode === 'advanced' && favouriteGlyphs.length > 0 && (
                 <>
                   <p className="field-hint bio-editor-emoji-sub">Your favourites</p>
                   <div className="bio-editor-emoji-row" role="group" aria-label="Favourite symbols">
@@ -286,8 +296,8 @@ export default function BioEditorPage() {
             <div
               role="region"
               aria-labelledby="editor-preview-label"
-              className={`bio-card bio-design bio-design-${design} bio-editor-preview`}
-              style={{ lineHeight: Number(lineSpacing) }}
+              className={`bio-card bio-design bio-design-${effectiveDesign} bio-editor-preview`}
+              style={{ lineHeight: Number(effectiveLineSpacing) }}
             >
               <p className="bio-card-text">
                 {finalText.trim() ? finalText : <span className="bio-editor-placeholder">Your styled bio will appear here…</span>}
@@ -306,7 +316,8 @@ export default function BioEditorPage() {
                 ariaLabel="Copy the final styled bio to clipboard"
                 className="bio-editor-copy"
               />
-              <p className="form-footnote">Copies the exact styled text — including dividers and Unicode letters.</p>
+              <DownloadButton text={finalText} filename="biocraft-edited-bio.txt" label="Download" />
+              <p className="form-footnote">Copies or downloads the exact styled text — including dividers and Unicode letters.</p>
             </div>
           </div>
         </div>

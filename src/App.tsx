@@ -4,6 +4,7 @@ import Header from './components/Header';
 import ToolShell from './components/ToolShell';
 import Toaster from './components/Toaster';
 import { ToolkitProvider } from './lib/toolkit';
+import { ToolModeProvider } from './lib/toolMode';
 
 export default function App() {
   // Honor an initial deep link like /?platform=linkedin#workspace.
@@ -16,6 +17,7 @@ export default function App() {
 
   return (
     <ToolkitProvider>
+      <ToolModeProvider>
       <span id="top" />
       <Header />
       <main>
@@ -23,6 +25,7 @@ export default function App() {
       </main>
       <Footer />
       <Toaster />
+      </ToolModeProvider>
     </ToolkitProvider>
   );
 }

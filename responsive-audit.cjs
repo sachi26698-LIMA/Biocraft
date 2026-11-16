@@ -2,7 +2,7 @@
  * Static responsive-layout audit (no browser required).
  *
  * Loads src/index.css, evaluates the min/max-width media conditions against the
- * nine brief breakpoints and resolves the cascade for a matrix of layout-critical
+ * requested phone/tablet breakpoints and resolves the cascade for a matrix of layout-critical
  * selectors. It answers "what would compute at W px?" for grid tracks, visibility
  * and sizing — the parts of layout that come from CSS, without pixel rendering.
  *
@@ -11,7 +11,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const css = fs.readFileSync(path.join(__dirname, 'src', 'index.css'), 'utf8')
+const css = ['index.css', 'upgrade.css']
+  .map((file) => fs.readFileSync(path.join(__dirname, 'src', file), 'utf8'))
+  .join('\n')
   .replace(/\/\*[\s\S]*?\*\//g, '');
 
 function walkRules(block, cond, out) {
@@ -70,7 +72,7 @@ function resolve(selector, prop, width) {
   return winner;
 }
 
-const WIDTHS = [320, 360, 375, 390, 430, 768, 1024, 1280, 1440];
+const WIDTHS = [320, 360, 375, 390, 412, 430, 768, 820, 1024, 1280, 1440];
 const CASES = [
   ['.pastel-grid', 'grid-template-columns'],
   ['.tile-grid', 'grid-template-columns'],
@@ -87,6 +89,18 @@ const CASES = [
   ['.site-nav', 'display'],
   ['.menu-toggle', 'display'],
   ['.container', 'padding-inline'],
+  ['.result-editable', 'width'],
+  ['.symbol-button', 'min-height'],
+  ['.symbol-grid', 'grid-template-columns'],
+  ['.symbol-fav', 'width'],
+  ['.field input', 'min-height'],
+  ['.btn', 'min-height'],
+  ['.results-actions', 'flex-wrap'],
+  ['.theme-toggle-label', 'display'],
+  ['.workspace-reset', 'margin-top'],
+  ['.tool-mode-toggle', 'display'],
+  ["[data-tool-mode='basic'] .tool-advanced", 'display'],
+  ['.workspace-tool-actions', 'flex-wrap'],
 ];
 
 let failures = 0;
@@ -114,6 +128,18 @@ const EXPECT = [
   ['.site-nav', 'display', { 320: 'none', 768: 'none', 1024: 'block', 1440: 'block' }],
   ['.menu-toggle', 'display', { 320: 'inline-flex', 1024: 'none', 1440: 'none' }],
   ['.container', 'padding-inline', { 320: '1.1rem', 768: '2rem' }],
+  ['.result-editable', 'width', { 320: '100%', 375: '100%', 412: '100%', 768: '100%', 1440: '100%' }],
+  ['.symbol-button', 'min-height', { 360: '62px', 390: '62px', 412: '62px', 430: '62px', 768: '54px' }],
+  ['.symbol-grid', 'grid-template-columns', { 360: 'repeat(auto-fill, minmax(64px, 1fr))', 390: 'repeat(auto-fill, minmax(64px, 1fr))', 412: 'repeat(auto-fill, minmax(64px, 1fr))', 430: 'repeat(auto-fill, minmax(64px, 1fr))', 768: 'repeat(auto-fill, minmax(56px, 1fr))' }],
+  ['.symbol-fav', 'width', { 360: '36px', 390: '36px', 412: '36px', 430: '36px', 768: '24px' }],
+  ['.field input', 'min-height', { 360: '46px', 390: '46px', 412: '46px', 430: '46px' }],
+  ['.btn', 'min-height', { 360: '44px', 390: '44px', 412: '44px', 430: '44px' }],
+  ['.results-actions', 'flex-wrap', { 360: 'wrap', 390: 'wrap', 412: 'wrap', 430: 'wrap' }],
+  ['.theme-toggle-label', 'display', { 320: 'none', 430: 'none', 768: null }],
+  ['.workspace-reset', 'margin-top', { 320: '0.6rem', 768: '0.6rem' }],
+  ['.tool-mode-toggle', 'display', { 320: 'inline-flex', 390: 'inline-flex', 820: 'inline-flex', 1440: 'inline-flex' }],
+  ["[data-tool-mode='basic'] .tool-advanced", 'display', { 320: 'none !important', 820: 'none !important', 1440: 'none !important' }],
+  ['.workspace-tool-actions', 'flex-wrap', { 320: 'wrap', 820: 'wrap', 1440: 'wrap' }],
 ];
 
 console.log('\nexpectations\n');
