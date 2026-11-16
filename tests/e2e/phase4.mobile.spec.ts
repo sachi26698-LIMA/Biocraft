@@ -282,7 +282,7 @@ test('every tool supports its mobile workflow, editable output, copy/download, a
   await fav.click();
   await expect(fav).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: /Copy all .* matching symbols/ }).click();
-  await expect(page.locator('.symbol-side [role="status"]')).toContainText('Copied');
+  await expect(page.locator('.tool-card > [role="status"]')).toContainText('Copied');
   await verifyDownload(page, page.getByRole('button', { name: 'Download' }));
   await page.locator('#symbol-search-input').fill('');
   await page.getByRole('button', { name: /Show 48 more symbols/ }).click();
@@ -406,7 +406,7 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   });
   const page = await context.newPage();
   await page.addInitScript(() => {
-    type ShiftDetail = { value: number; startTime: number; sources: string[] };
+    type ShiftDetail = { value: number; startTime: number; scrollY: number; sources: string[] };
     type MetricWindow = Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: ShiftDetail[] } };
     const target = window as MetricWindow;
     target.__phase4Metrics = { lcpMs: null, cls: 0, inpCandidateMs: null, longTasks: [], layoutShifts: [] };
@@ -426,6 +426,7 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
         target.__phase4Metrics!.layoutShifts.push({
           value: entry.value,
           startTime: entry.startTime,
+          scrollY: window.scrollY,
           sources: (entry.sources ?? []).map((source) => {
             const node = source.node instanceof Element ? source.node : source.node.parentElement;
             const classes = node && typeof node.className === 'string' ? node.className.trim().split(' ').filter(Boolean).join('.') : '';
@@ -461,25 +462,32 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   const response = await page.goto('/emoji-symbol-generator', { waitUntil: 'domcontentloaded', timeout: 60_000 });
   await expect(page.locator('#symbol-search-input')).toBeVisible({ timeout: 60_000 });
   const routeReadyMs = Date.now() - navStart;
-  await page.locator('#symbol-search-input').fill('heart');
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  const interactionStartMs = await page.evaluate(() => performance.now());
+  const searchInput = page.locator('#symbol-search-input');
+  await searchInput.click();
+  await searchInput.pressSequentially('heart', { delay: 20 });
   await expect(page.locator('.symbol-grid .symbol-button').first()).toBeVisible();
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-  const browserMetrics = await page.evaluate(() => {
+  const browserMetrics = await page.evaluate((interactionStart) => {
     const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-    const metrics = (window as Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: { value: number; startTime: number; sources: string[] }[] } }).__phase4Metrics;
+    const metrics = (window as Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: { value: number; startTime: number; scrollY: number; sources: string[] }[] } }).__phase4Metrics;
+    const allLayoutShifts = metrics?.layoutShifts ?? [];
+    const loadLayoutShifts = allLayoutShifts.filter((entry) => entry.startTime < interactionStart);
     return {
       route: location.pathname,
       navigationLoadEventEndMs: navigation?.loadEventEnd ?? null,
       lcpMs: metrics?.lcpMs ?? null,
-      cls: metrics?.cls ?? null,
+      cls: loadLayoutShifts.reduce((sum, entry) => sum + entry.value, 0),
       inpCandidateMs: metrics?.inpCandidateMs ?? null,
       longTaskCount: metrics?.longTasks.length ?? 0,
       longTaskMaxMs: metrics?.longTasks.length ? Math.max(...metrics.longTasks) : 0,
       longTaskTotalMs: metrics?.longTasks.reduce((sum, duration) => sum + duration, 0) ?? 0,
-      layoutShiftEvents: metrics?.layoutShifts ?? [],
+      layoutShiftEvents: allLayoutShifts,
+      loadPhaseLayoutShiftEvents: loadLayoutShifts,
       symbolsShownAfterSearch: document.querySelectorAll('.symbol-grid .symbol-button').length,
     };
-  });
+  }, interactionStartMs);
   const report = {
     measurement: 'Synthetic Chromium lab run; Android mobile emulation, not a physical handset.',
     throttling: { cpuRate: 4, network: '3G emulation', latencyMs: 400, downloadBytesPerSecond: 50 * 1024, uploadBytesPerSecond: 25 * 1024 },
