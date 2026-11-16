@@ -325,9 +325,12 @@ test('every tool supports its mobile workflow, editable output, copy/download, a
   // LinkedIn headline.
   await openTool(page, '/linkedin-headline-generator');
   await verifyModeSwitch(page);
-  await page.locator('.generate-button').click();
-  await expect(page.locator('#linkedin-headline-role-error')).toBeVisible();
-  await page.locator('#linkedin-headline-role').fill('Product Designer');
+  const headlineRoleInput = page.locator('#linkedin-headline-role');
+  await headlineRoleInput.fill('');
+  await page.getByRole('button', { name: 'Generate 5 headlines', exact: true }).click();
+  await expect(headlineRoleInput).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.locator('.form-error-summary')).toContainText('Role is required.');
+  await headlineRoleInput.fill('Product Designer');
   await page.getByRole('button', { name: 'Advanced', exact: true }).click();
   await page.locator('#linkedin-headline-focus').fill('accessible products');
   await page.locator('#linkedin-headline-years').fill('6');
