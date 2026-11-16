@@ -454,7 +454,8 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   });
   const page = await context.newPage();
   await page.addInitScript(() => {
-    type ShiftDetail = { value: number; startTime: number; scrollY: number; sources: string[] };
+    type GeometryDetail = { selector: string; top: number; height: number; display: string; position: string };
+    type ShiftDetail = { value: number; startTime: number; scrollY: number; pathname: string; title: string; geometry: GeometryDetail[]; sources: string[] };
     type ScrollDetail = { timeMs: number; y: number };
     type MetricWindow = Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: ShiftDetail[]; scrollEvents: ScrollDetail[] } };
     const target = window as MetricWindow;
@@ -473,10 +474,21 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
       for (const entry of entries as (PerformanceEntry & { value: number; hadRecentInput: boolean; sources?: { node: Node; previousRect: DOMRectReadOnly; currentRect: DOMRectReadOnly }[] })[]) {
         if (entry.hadRecentInput) continue;
         target.__phase4Metrics!.cls += entry.value;
+        const geometrySelectors = ['main', '.tool-page', '#workspace', '.workspace-card', '#tool-panel', '.tool-foot', '.tool-howto'];
+        const geometry = geometrySelectors.flatMap((selector) => {
+          const element = document.querySelector(selector);
+          if (!(element instanceof HTMLElement)) return [];
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return [{ selector, top: Number(rect.top.toFixed(1)), height: Number(rect.height.toFixed(1)), display: style.display, position: style.position }];
+        });
         target.__phase4Metrics!.layoutShifts.push({
           value: entry.value,
           startTime: entry.startTime,
           scrollY: window.scrollY,
+          pathname: location.pathname,
+          title: document.title,
+          geometry,
           sources: (entry.sources ?? []).map((source) => {
             const node = source.node instanceof Element ? source.node : source.node.parentElement;
             const classes = node && typeof node.className === 'string' ? node.className.trim().split(' ').filter(Boolean).join('.') : '';
@@ -521,7 +533,7 @@ test('collects Core Web Vitals and long tasks under 4x CPU and slow-3G emulation
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   const browserMetrics = await page.evaluate((interactionStart) => {
     const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-    const metrics = (window as Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: { value: number; startTime: number; scrollY: number; sources: string[] }[]; scrollEvents: { timeMs: number; y: number }[] } }).__phase4Metrics;
+    const metrics = (window as Window & { __phase4Metrics?: { lcpMs: number | null; cls: number; inpCandidateMs: number | null; longTasks: number[]; layoutShifts: { value: number; startTime: number; scrollY: number; pathname: string; title: string; geometry: { selector: string; top: number; height: number; display: string; position: string }[]; sources: string[] }[]; scrollEvents: { timeMs: number; y: number }[] } }).__phase4Metrics;
     const allLayoutShifts = metrics?.layoutShifts ?? [];
     const loadLayoutShifts = allLayoutShifts.filter((entry) => entry.startTime < interactionStart);
     return {
