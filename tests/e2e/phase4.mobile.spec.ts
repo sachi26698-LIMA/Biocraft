@@ -4,6 +4,7 @@ import path from 'node:path';
 
 const ROOT = process.cwd();
 const SCREENSHOTS = path.join(ROOT, 'phase4-artifacts', 'screenshots');
+const AXE_SOURCE = readFileSync(path.join(ROOT, 'node_modules', 'axe-core', 'axe.min.js'), 'utf8');
 mkdirSync(SCREENSHOTS, { recursive: true });
 
 const TOOLS = [
@@ -21,8 +22,8 @@ const TOOLS = [
   '/snapchat-caption-generator',
   '/bio-editor',
 ] as const;
-const MOBILE_WIDTHS = [360, 390, 412, 430] as const;
-const HEIGHTS: Record<number, number> = { 360: 800, 390: 844, 412: 915, 430: 932 };
+const VIEWPORT_WIDTHS = [320, 360, 390, 412, 430, 820, 1440] as const;
+const HEIGHTS: Record<number, number> = { 320: 720, 360: 800, 390: 844, 412: 915, 430: 932, 820: 1180, 1440: 1000 };
 const EXPECTED_TOOL_HEADINGS: Record<string, string> = {
   '/bio-generator': 'Bio Generator',
   '/stylish-name-generator': 'Stylish Name Generator',
@@ -185,15 +186,13 @@ test('all 48 direct routes hydrate with their own page content and route metadat
   }
 });
 
-test('mobile widths have no document-level horizontal scrolling on all tools and all routes', async ({ page }) => {
-  for (const width of MOBILE_WIDTHS) {
+test('requested phone, tablet and desktop widths have no horizontal overflow on all tools and routes', async ({ page }) => {
+  for (const width of VIEWPORT_WIDTHS) {
     await page.setViewportSize({ width, height: HEIGHTS[width] });
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('#workspace')).toBeVisible();
     await verifyNoHorizontalOverflow(page, width, '/');
-    if (width === 360 || width === 390 || width === 412 || width === 430) {
-      await page.screenshot({ path: path.join(SCREENSHOTS, `home-${width}.png`) });
-    }
+    await page.screenshot({ path: path.join(SCREENSHOTS, `home-${width}.png`) });
 
     for (const route of TOOLS) {
       await openTool(page, route);
@@ -201,6 +200,25 @@ test('mobile widths have no document-level horizontal scrolling on all tools and
     }
   }
   await page.setViewportSize({ width: 390, height: 844 });
+});
+
+test('all 13 public tools and editor pass browser axe accessibility scans', async ({ page }) => {
+  for (const route of TOOLS) {
+    await openTool(page, route);
+    await page.addScriptTag({ content: AXE_SOURCE });
+    const violations = await page.evaluate(async () => {
+      const axe = (window as any).axe;
+      if (!axe) throw new Error('axe-core failed to initialize');
+      const result = await axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } });
+      return result.violations.map(({ id, impact, help, nodes }) => ({
+        id,
+        impact,
+        help,
+        nodes: nodes.map(({ target, failureSummary }) => ({ target, failureSummary })),
+      }));
+    });
+    expect(violations, `${route} WCAG 2.1 A/AA violations`).toEqual([]);
+  }
 });
 
 test('delayed lazy tool chunk exposes a real loading status and then completes', async ({ page }) => {
@@ -437,8 +455,8 @@ test('every tool supports its mobile workflow, editable output, copy/download, a
   await captureTool(page, 'bio-editor', '.bio-editor-preview');
 });
 
-test('mobile home screenshots at 360, 390, 412 and 430 CSS pixels', async ({ page }) => {
-  for (const width of MOBILE_WIDTHS) {
+test('home screenshots at 320, 360, 390, 412, 430, 820 and 1440 CSS pixels', async ({ page }) => {
+  for (const width of VIEWPORT_WIDTHS) {
     await page.setViewportSize({ width, height: HEIGHTS[width] });
     await page.goto('/', { waitUntil: 'networkidle' });
     await verifyNoHorizontalOverflow(page, width, '/');
