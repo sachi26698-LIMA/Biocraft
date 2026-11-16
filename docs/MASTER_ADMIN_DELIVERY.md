@@ -7,42 +7,111 @@ test in this repository exercises it._
 
 ---
 
-## 1. The single decision that is blocking the live console
+## 1. The live console is now backed by a real database
 
-**The Admin console is built and deployed, but it cannot query the database yet.**
-The reason is not a bug — it is that the Admin schema does not exist in the shared
-Supabase project, and creating it needs your yes.
+The approval was given and the package has been applied to the shared project
+`jvpadtzfsuekixrquzjv`. The Admin schema now exists, the restricted login exists,
+and one Super Admin account is provisioned.
 
-Confirmed this session against `jvpadtzfsuekixrquzjv` (read-only query):
+Every number below was measured after the apply, not before.
 
-| Check | Result |
+### Schema parity — the deployed schema is the tested schema
+
+Rather than trusting that fourteen files were applied correctly, the deployed
+schema was compared against a pristine cluster built from the same canonical
+files in `admin-backend/migrations/`:
+
+| Comparison | Canonical | Live | Result |
+|---|---|---|---|
+| Tables | 20 | 20 | identical |
+| Functions | 49 | 49 | **49/49 code-identical** |
+| Triggers | 15 | 15 | identical |
+| Indexes | 37 | 37 | identical |
+| Columns | 115 | 115 | identical |
+| RLS policies | 20 | 20 | identical |
+| Foreign keys | 20 | 20 | identical |
+| Structure objects total | **207** | **207** | **0 differences** |
+| Role catalog seed | 8 roles / 18 permissions / 50 mappings | same | identical |
+
+Function comparison is done on the compiled body with comments and whitespace
+stripped, so a formatting difference cannot hide a logic difference. All 49
+match; the five trigger functions (`reject_mutation`, `guard_draft`,
+`guard_approval`, `stamp_mfa_enrolled`, `notify_draft_event`) are byte-identical
+including their comments.
+
+### Existing data was not touched
+
+| Check | Before | After |
+|---|---|---|
+| `public.bios` | 506 | **506** |
+| Categories | 33 | **33** |
+| Platforms | 8 | **8** |
+| Public tables | 10 | **10** |
+
+`013` is the only file that can write to `public.bios`; nothing called it.
+
+### The restricted login
+
+`bc_admin_executor` is a `LOGIN` role with `nosuperuser nocreatedb nocreaterole
+noreplication nobypassrls inherit`. Measured privileges:
+
+| Measure | Result |
 |---|---|
-| Admin schema `bc_admin_v1` present | **0** |
-| Admin roles (`bc_admin%`) present | **0** |
-| Public bios | **506**, all active |
-| Collections (`source_slug`) | **20** |
-| Categories / platforms | **33 / 8** |
-| Public tables with RLS | **10** |
+| EXECUTE grants | **44** (the whole callable surface) |
+| Functions withheld | exactly the 5 trigger bodies |
+| Schema `USAGE` on `bc_admin_v1` | yes |
+| Schema `CREATE` | **no** |
+| Table `SELECT` / `INSERT` | **0 / 0** — it cannot read a table directly |
+| Table `CREATE` | **no** — verified by attempting it |
 
-So the public site is healthy and untouched, and the Admin package has not been
-applied. The console therefore shows the bundled read-only preview: it probes
-`/api/admin/v1/health`, gets no answer, and says so instead of displaying invented
-numbers.
+So the server cannot reach data except through the 44 reviewed functions, and
+each of those re-checks permission and step-up freshness inside SQL.
 
-**What your yes authorises** (one approval covers all of it, details in
-`docs/CONSOLIDATED_APPROVAL_REPORT.md`):
+### The Super Admin
 
-1. apply migrations `001`–`014` to the shared project (new schema only; no change
-   to any existing table, policy, or `public` row);
-2. create the restricted `bc_admin_executor` login the server uses;
-3. provision exactly one Super Admin account;
-4. set the server-only environment variables in the Preview environment.
+`sachi26698@gmail.com` existed in Supabase Auth (confirmed by the provider). It
+now has one `admin_users` row (enabled) and one `admin_user_roles` row with
+`super_admin`, which resolves to all 18 permissions. `mfa_enrolled_at` is **null**
+on purpose: the first sign-in asks for a password, then routes to TOTP
+enrolment rather than to the console.
 
-Nothing in that list deletes or rewrites content. `013` is the only file that can
-write to `public.bios`, it only ever inserts or updates, and every write is behind
-an independent review.
+No password was set, seen, or stored by this work. The account already had one,
+set by you through the provider.
 
----
+### The gates were attacked, not just described
+
+Run against the live database:
+
+| Attack | Result |
+|---|---|
+| Executor reads `admin_users` directly | refused `42501` |
+| Executor reads `admin_sessions` directly | refused `42501` |
+| Executor reads `public.bios` directly | refused `42501` |
+| Executor creates a table in the schema | refused `42501` |
+| Anonymous caller reaches `require_actor` | refused `42501` |
+| Anonymous caller lists bios via `list_public_bios` | refused `42501` |
+| AAL2 claim with no `admin_sessions` row | refused `42501` |
+| AAL2 claim with an unknown subject | refused `42501` |
+| AAL2 claim with a malformed session id | refused `42501` |
+| Missing JWT entirely | refused `42501` |
+| AAL1 caller asking the factor gate to enrol | `denied` |
+
+The refused attempt produced **one audit row and zero sessions**.
+
+### Preview configuration
+
+Twelve server-only variables are set for the `arena/5e351ec3-biocraft` Preview
+branch. Nine are stored `sensitive` — Vercel will not return their values, which
+is correct. The configuration was then validated offline against the exact
+values: the app enables cleanly, the pool factory accepts the pooler host and the
+project-scoped login, and all five misconfiguration cases fail closed (`missing
+database credentials`, `invalid database configuration`, `invalid keys`,
+`invalid provider configuration`, `disabled`).
+
+`ADMIN_DB_HOST` points at `aws-0-ap-southeast-2.pooler.supabase.com` because the
+direct host `db.jvpadtzfsuekixrquzjv.supabase.co` resolves to IPv6 only, while
+the pooler has IPv4 — the path the code already documents for Vercel egress.
+`ADMIN_DB_PORT=5432` (session mode); transaction mode is refused by the adapter.
 
 ## 2. Preview URL
 
@@ -51,6 +120,8 @@ https://biocraft-git-arena-5e351ec3-biocraft-sachi26698-6758s-projects.vercel.ap
 ```
 
 Deployment for this work: `dpl_33XY1ARodV3ZbrtLGrjF8TDSPSWX` (commit `e130515`).
+The backend variables were added afterwards, so the first deployment that picks
+them up is the one built from the commit that records this apply.
 The project's SSO protection covers Preview deployments, so you may be asked to
 sign in to Vercel before the page loads — that is Vercel's gate, not this app's.
 
@@ -81,16 +152,17 @@ Once the package is approved and applied, the sequence is:
    clears the stale enrolment so you can enrol a new device. That whole path is
    tested end to end.
 
-What I need from you to finish step 1: **the email address** to provision. Nothing
-else — no password.
+All four steps are done. The account is provisioned for `sachi26698@gmail.com`;
+no password was set, requested, or stored by this work.
 
 ---
 
 ## 4. Feature checklist
 
-Legend: **Verified** = exercised by an automated test in this repository.
-**Built** = implemented, typechecked, rendered in a browser against the server's
-response shape, but its database half needs the approval above.
+Legend: **Verified** = exercised by an automated test in this repository, now
+against the real applied schema. **Built** = implemented and typechecked, with no
+automated exercise. Where a suite needs a browser, this sandbox has no Chromium,
+so hosted browser verification is listed as a gap in §8 rather than claimed.
 
 ### Authentication and session
 
@@ -131,20 +203,37 @@ response shape, but its database half needs the approval above.
 
 ## 5. Real test results
 
-All numbers below are from runs in this session on this machine. PostgreSQL means a
-real PostgreSQL 17.11 server on a disposable local socket — not the shared project.
+Provenance matters here, so each row says when it ran.
+
+### This session, against the applied schema
 
 | Suite | Result |
 |---|---|
-| 28 Node/API/domain suites | **28 passed, 0 failed** |
-| PostgreSQL integration (4 legs) | **4 passed** |
-| Grant inventory + document sync | **passed** (43→44 grants, both docs reproduce every file) |
-| Browser: interactions (3 viewports) | **passed**, 0 errors, 0 unexpected 4xx |
-| Browser: phase (workflow + axe WCAG 2.1 AA) | **passed** on phone, tablet, desktop |
-| Browser: live modules | **passed** on 390 px and 1440 px, all **10** live routes |
-| Browser: public regression, 48 routes | **passed** — byte-identical to the `7c9e904` baseline |
+| Schema parity vs a pristine canonical cluster | **207/207 objects, 49/49 function bodies, 76/76 seed rows** |
+| Live security gates (11 attacks, §1) | **11 refused, 1 audit row, 0 sessions** |
+| Typecheck (`tsc --noEmit`) | **pass** |
+| `test:admin-grant-inventory` | **pass** — 44 canonical signatures match the live grants |
+| `test:admin-postgres` (real PostgreSQL **18.6**) | **pass** — 4 legs |
+| `test:admin-app-local`, `test:admin-http-smoke` (real cluster) | **pass** |
+| `test:admin-pool-config`, `test:admin-rewrite-sim`, `test:admin-api-routing` | **pass** |
+| `test:performance` (production build) | **pass** |
+| Production build | **pass** — 60 route shells, `admin` chunk 116.72 kB |
+| All 44 `test:*` scripts attempted | **33 pass**, 10 browser (no Chromium), 1 needs `AUDIT_BASE` |
 
-Two real defects were found and fixed by these runs, which is the point of running
+### Earlier in this work, while the local suites were green
+
+These are recorded because they really ran, but they were run **before** this
+session's apply, and I could not repeat them now (this sandbox has no Chromium
+and no route to the hosted URL). Treat them as historical, not as current proof.
+
+| Suite | Result then |
+|---|---|
+| Browser: interactions (3 viewports) | passed, 0 errors, 0 unexpected 4xx |
+| Browser: phase (workflow + axe WCAG 2.1 AA) | passed on phone, tablet, desktop |
+| Browser: live modules | passed on 390 px and 1440 px, all **10** routes |
+| Browser: public regression, 48 routes | passed, byte-identical to the `7c9e904` baseline |
+
+Two real defects were found and fixed by those runs, which is the point of running
 them: `GET /session` never returned the caller's identity (only an expiry), and the
 notification writer suppressed the author's own "your draft was decided" message as
 if it were noise.
@@ -191,26 +280,54 @@ network latency I cannot measure from here (the sandbox cannot reach
 
 ---
 
-## 8. Blockers
+## 8. Blockers and gaps
 
-1. **The approval in §1.** Everything downstream waits on it.
-2. **The Super Admin email address** — needed to provision the one account.
-3. **Preview SSO.** Vercel's own protection gates the Preview URL. I cannot test
-   the hosted deployment from this sandbox at all (no outbound route to
-   `*.vercel.app`), so every "verified" claim above is from the local production
-   build and real PostgreSQL, not from the hosted URL. I will not claim otherwise.
+Everything I can execute safely is executed. What remains is either something only
+you can do, or something this sandbox physically cannot do.
 
----
+1. **You set the password.** The account exists and is confirmed, and it already
+   had a password. If you do not know it, use the provider's reset flow. I never
+   request, set, or store a password.
+2. **You enrol the authenticator.** The first sign-in asks for password, then
+   offers TOTP enrolment. Until that code is confirmed the account is AAL1 and
+   every privileged call is refused.
+3. **Preview SSO.** Vercel's own protection gates the Preview URL.
+4. **No browser verification was possible here.** Chromium cannot be installed in
+   this sandbox, so the browser suites (`admin-live-modules`, `admin-login-browser`,
+   `admin-login-flow-browser`, `admin-recovery-browser`, `admin-browser`,
+   `admin-catalog`, `admin-interactions`, `admin-public-regression`,
+   `admin-phase`, `admin-lazy-error`) did not run. They are **not** claimed as
+   passing. The ten modules are covered instead by `test:admin-live-modules`'
+   non-browser half plus the PostgreSQL suite; the rendered-console check remains
+   a gap.
+5. **No hosted round-trip from this sandbox.** `*.vercel.app` is unreachable from
+   here, so I verified the schema, the grants, the gates, and the configuration
+   against the real database and validated the app configuration offline — but I
+   have not seen the hosted page answer an authenticated request. I will not claim
+   I have.
 
-## 9. The exact minimal action required from you
+### Test results as measured
 
-Reply, in Hindi or English, with:
+| Suite set | Result |
+|---|---|
+| Typecheck (`tsc --noEmit`) | **pass** |
+| `test:admin-grant-inventory` | **pass** — grants match the 44 canonical signatures |
+| `test:admin-pool-config`, `test:admin-rewrite-sim`, `test:admin-api-routing` | **pass** |
+| `test:admin-postgres` (real PostgreSQL 18.6) | **pass** |
+| `test:admin-app-local`, `test:admin-http-smoke` (real cluster) | **pass** |
+| `test:performance` (production build) | **pass** |
+| Production build | **pass** — 60 route shells, `admin` chunk 116.72 kB |
+| All non-browser suites | **33 pass** |
+| Browser suites | **not run** — no Chromium (gap 4) |
+| `test:admin-performance` | **not run** — requires `AUDIT_BASE`/`AUDIT_DIR` pointed at a hosted deployment |
 
-> **YES** — and the email address for the Super Admin.
+## 9. What to do next, in order
 
-That authorises §1 items 1–4. If you prefer to split it, the smallest first step
-that unblocks anything visible is items 1 and 2 only; say so and I will do exactly
-that and stop.
+1. Open the Preview URL in §2 and sign in at `/admin/login` with
+   `sachi26698@gmail.com`.
+2. Enter your password. If you do not have it, reset it through the provider first.
+3. Scan the setup key into an authenticator app and confirm one code.
+4. You are then AAL2 and the ten modules read from the live database.
 
-I will not touch Production, will not create another Supabase project, and will not
-delete or rewrite any existing bio, collection, or policy.
+Production was not touched, no second Supabase project was created, and no
+existing bio, collection, platform, category, or policy was deleted or rewritten.
