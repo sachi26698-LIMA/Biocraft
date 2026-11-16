@@ -171,7 +171,7 @@ export default function SymbolGenerator() {
             className="btn btn-secondary btn-small copy-all-inline"
             onClick={() => void copyAll()}
             disabled={results.length === 0}
-            aria-label={`Copy all ${results.length} visible symbols to clipboard`}
+            aria-label={`Copy all ${results.length} matching symbols to clipboard`}
           >
             Copy all
           </button>
