@@ -2,6 +2,15 @@
 
 Updated: 2026-11-13. Scope is the public-facing tool suite only. Admin behavior, production data, Supabase policies, and Vercel project settings were not changed.
 
+## Latest continuation checkpoint — commit `8cc76b4`
+
+- Reviewed the latest GitHub Cloudflare check (`133592766467`) and the successful Android-emulation workflow (`43950774961`). Cloudflare still reports only Build ID `f6489c46-9536-4016-a46c-12e6f503168f` and the Cloudflare dashboard link; its annotations are empty and the authenticated dashboard redirects to SSO. The exact failed build stage and root cause remain **unknown**. No build/deployment fix can responsibly be inferred from this evidence.
+- The Android-emulation workflow passed all steps for exact commit `8cc76b44511d88b36bd7ce1948d03c9aeef283a9`: regression, responsive checks, browser checks, summary, and artifact upload. Browser evidence is Chromium on a Pixel 7 emulation profile, not a physical Android device. Existing metrics and scope are recorded below; no new measurements were made in this continuation.
+- A fresh authorized artifact-download attempt for artifact `14266847636` (10,464,330 bytes) again failed with `EOF` from GitHub Actions' `productionresultssa0.blob.core.windows.net` artifact storage. Screenshots/traces could not be visually reviewed. Artifact listing and workflow status are available; the binary contents are not.
+- Vercel's exact-commit deployment remains `READY`, `readySubstate: STAGED`, `public: false`, for commit `8cc76b44511d88b36bd7ce1948d03c9aeef283a9`: `https://biocraft-7mmt02lch-sachi26698-6758s-projects.vercel.app` (deployment ID `dpl_G1eBg7Z8oTewQDZ5ANEfc3yDMLLK`). Direct access redirects to Vercel login; deployment-file lookup returned 404 (`File tree not found`). The application HTTP response and rendered app are therefore **not verified**. No access control was bypassed or changed, and no new deployment was needed.
+- Repository inventory confirmed there is no Cloudflare/Wrangler/Vercel static-host configuration manifest at depth ≤3. Existing Vite route-shell generation remains documented below. This continuation found no reproducible source defect requiring a product-code change; the existing code and test suite were not altered.
+- Independent evidence-backed blockers: Cloudflare's authenticated build logs (SSO), the Actions artifact payload (storage `EOF`), and the Vercel Preview response (private/staged login). These are access limitations, not test passes or inferred build failures.
+
 ## Phase 4 — Android-first mobile and remote browser testing (in progress)
 
 - The sandbox has no installed browser or usable browser cache; local Playwright cannot start. CI safely provisions Chromium and Linux libraries on Ubuntu instead of repeating inaccessible Debian-mirror attempts. Vercel integration provides deployment metadata but no interactive browser/test API.
