@@ -42,7 +42,16 @@ const MENU_ICONS: Array<{
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    try { return window.localStorage.getItem('biocraft:theme') === 'dark'; } catch { return false; }
+  });
   const path = usePath();
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
+    document.documentElement.style.colorScheme = darkMode ? 'dark' : 'light';
+    try { window.localStorage.setItem('biocraft:theme', darkMode ? 'dark' : 'light'); } catch { /* private mode */ }
+  }, [darkMode]);
 
   // Open the search overlay when the stage's search bar (or any widget) asks.
   useEffect(() => {
@@ -89,6 +98,9 @@ export default function Header() {
         </nav>
 
         <div className="site-header-actions">
+          <button type="button" className="icon-action theme-toggle" aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'} aria-pressed={darkMode} onClick={() => setDarkMode((current) => !current)}>
+            <span aria-hidden="true">{darkMode ? '☀' : '☾'}</span><span className="theme-toggle-label">{darkMode ? 'Light' : 'Dark'}</span>
+          </button>
           <button
             type="button"
             className="icon-action"

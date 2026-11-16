@@ -8,17 +8,24 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build && node scripts/build-shells.mjs",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:regression": "esbuild review-harness.tsx --bundle --platform=node --format=cjs --outfile=review-harness.bundle.cjs && node review-check.cjs",
+    "test:responsive": "node responsive-audit.cjs",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^26.6.6",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
+    "axe-core": "^4.14.1",
+    "jsdom": "^31.0.1",
     "typescript": "^5.5.4",
-    "vite": "^5.4.8"
+    "vite": "^6.4.6"
   }
 }

@@ -1,8 +1,10 @@
-import type { CSSProperties } from 'react';
+import { Suspense, useState, type CSSProperties } from 'react';
 import { useToolkit } from '../lib/toolkit';
 import { platformById } from '../tools/platforms';
 import { TOOLS, toolForPath, type ToolKey } from '../tools/registry';
 import { TOOL_THEMES } from '../lib/toolThemes';
+import { useToolMode } from '../lib/toolMode';
+import ToolModeToggle from './ToolModeToggle';
 import PlatformPills from './PlatformPills';
 import ToolTabs from './ToolTabs';
 
@@ -24,6 +26,8 @@ export default function ToolWorkspace({
   headingLevel: 'h1' | 'h2';
 }) {
   const { platform } = useToolkit();
+  const { mode } = useToolMode();
+  const [resetKey, setResetKey] = useState(0);
   const config = platformById(platform);
   const activeTool = toolForPath(path);
 
@@ -50,6 +54,7 @@ export default function ToolWorkspace({
       id="workspace"
       aria-label="Social media toolkit workspace"
       data-platform={config.id}
+      data-tool-mode={mode}
       style={
         {
           '--platform-accent': config.accent,
@@ -89,8 +94,16 @@ export default function ToolWorkspace({
               </Heading>
               <p className="workspace-subheading">{subheading}</p>
               {config.englishOnlyNote && bio && <p className="tool-note" role="note">{config.englishOnlyNote}</p>}
+              <div className="workspace-tool-actions">
+                <ToolModeToggle />
+                <button type="button" className="workspace-reset btn btn-secondary btn-small" onClick={() => setResetKey((value) => value + 1)} aria-label={`Reset ${effectiveTool.heading} inputs and results`}>
+                  Reset tool
+                </button>
+              </div>
             </header>
-            <Panel />
+            <Suspense fallback={<div className="tool-loading" role="status" aria-live="polite">Loading this tool…</div>}>
+              <Panel key={resetKey} />
+            </Suspense>
           </div>
         </div>
       </div>

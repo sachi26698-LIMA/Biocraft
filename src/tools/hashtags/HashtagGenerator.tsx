@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import DownloadButton from '../../components/DownloadButton';
 import { CheckIcon, ClipboardIcon, RefreshIcon } from '../../components/icons';
 import { copyText } from '../../lib/clipboard';
 import {
@@ -9,6 +10,7 @@ import {
 } from './data/pools';
 import type { Language } from '../../types';
 import SegmentedControl from '../../components/SegmentedControl';
+import { useToolMode } from '../../lib/toolMode';
 
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
@@ -29,41 +31,68 @@ const SIZE_OPTIONS = [
  * variants of your own keywords. No reach or virality is ever promised.
  */
 export default function HashtagGenerator() {
+  const { mode: toolMode } = useToolMode();
   const [nicheId, setNicheId] = useState('photography');
   const [language, setLanguage] = useState<Language>('en');
   const [size, setSize] = useState<HashtagSize>(20);
   const [rawKeywords, setRawKeywords] = useState('');
   const [keywordError, setKeywordError] = useState<string | null>(null);
   const [tags, setTags] = useState<string[] | null>(null);
+  const [groups, setGroups] = useState({ keywords: [] as string[], broad: [] as string[], medium: [] as string[], focused: [] as string[], custom: [] as string[] });
   const [fromKeywords, setFromKeywords] = useState(0);
   const [copiedTag, setCopiedTag] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
+  const generationNiche = toolMode === 'basic' ? 'photography' : nicheId;
+  const generationLanguage: Language = toolMode === 'basic' ? 'en' : language;
+  const generationSize: HashtagSize = toolMode === 'basic' ? 20 : size;
+  const generationKeywords = toolMode === 'basic' ? '' : rawKeywords;
 
-  const activeNiche = NICHES.find((niche) => niche.id === nicheId) ?? NICHES[0];
+  const activeNiche = NICHES.find((niche) => niche.id === generationNiche) ?? NICHES[0];
 
   const runGeneration = () => {
     // The keyword field is optional but validated when present.
-    const raw = rawKeywords.trim();
+    const raw = generationKeywords.trim();
     if (raw && keywordTokens(raw).length === 0) {
       setKeywordError('Keywords need at least 2 letters or digits each — e.g. “street food”.');
-      setTags(null);
       return;
     }
     if ([...raw].length > 200) {
       setKeywordError('Please keep keywords under 200 characters.');
-      setTags(null);
       return;
     }
     setKeywordError(null);
-    const result = generateHashtags(nicheId, language, size, raw);
-    setTags(result.tags);
+    const result = generateHashtags(generationNiche, generationLanguage, generationSize, raw);
+    // Avoid a visibly unchanged result after a rare same-order random draw,
+    // while keeping each item in its relevance bucket.
+    const sameOrder = tags?.length === result.tags.length && tags.every((tag, index) => tag === result.tags[index]);
+    const nextGroups = {
+      keywords: [...result.groups.keywords],
+      broad: [...result.groups.broad],
+      medium: [...result.groups.medium],
+      focused: [...result.groups.focused],
+      custom: [],
+    };
+    if (sameOrder) {
+      const firstGroup = (['keywords', 'broad', 'medium', 'focused'] as const).find((key) => nextGroups[key].length > 1);
+      if (firstGroup) nextGroups[firstGroup] = [...nextGroups[firstGroup].slice(1), nextGroups[firstGroup][0]];
+    }
+    const nextTags = [...nextGroups.keywords, ...nextGroups.broad, ...nextGroups.medium, ...nextGroups.focused];
+    setTags(nextTags);
+    setGroups(nextGroups);
     setFromKeywords(result.fromKeywords);
-    setStatusMessage(`${result.tags.length} hashtags generated.`);
+    setStatusMessage(`${nextTags.length} hashtags generated.`);
   };
 
   const handleKeywordChange = (value: string) => {
     setRawKeywords(value);
     if (keywordError) setKeywordError(null);
+  };
+
+  const handleTagsEdit = (value: string) => {
+    const edited = value.split(/\s+/).filter(Boolean);
+    setTags(edited);
+    setGroups({ keywords: [], broad: [], medium: [], focused: [], custom: edited });
+    setFromKeywords(0);
   };
 
   const copyWithFeedback = async (value: string, label: string) => {
@@ -78,13 +107,20 @@ export default function HashtagGenerator() {
   };
 
   const nicheLabel =
-    language === 'hi' ? activeNiche.labelHi : language === 'hg' ? activeNiche.labelHg : activeNiche.labelEn;
+    generationLanguage === 'hi' ? activeNiche.labelHi : generationLanguage === 'hg' ? activeNiche.labelHg : activeNiche.labelEn;
 
   const copyAllText = useMemo(() => (tags ? tags.join(' ') : ''), [tags]);
+  const visibleGroups = [
+    { label: 'Your keywords', tags: groups.keywords },
+    { label: 'Broad discovery', tags: groups.broad },
+    { label: 'Medium niche', tags: groups.medium },
+    { label: 'Focused community', tags: groups.focused },
+    { label: 'Your edited set', tags: groups.custom },
+  ].filter((group) => group.tags.length > 0);
 
   return (
     <div className="tool-card">
-      <fieldset className="plain-fieldset">
+      <fieldset className="plain-fieldset tool-advanced">
         <legend className="option-label" id="hashtag-niche-legend">Niche</legend>
         <div className="chip-row" role="group" aria-labelledby="hashtag-niche-legend">
           {NICHES.map((niche) => (
@@ -101,7 +137,7 @@ export default function HashtagGenerator() {
         </div>
       </fieldset>
 
-      <div className="generator-options">
+      <div className="generator-options tool-advanced">
         <SegmentedControl
           label="Hashtag language"
           visibleLabel="Hashtag language"
@@ -118,7 +154,7 @@ export default function HashtagGenerator() {
         />
       </div>
 
-      <div className="field">
+      <div className="field tool-advanced">
         <label htmlFor="hashtag-keywords">Your keywords (optional)</label>
         <input
           id="hashtag-keywords"
@@ -144,7 +180,7 @@ export default function HashtagGenerator() {
       </div>
 
       <button type="button" className="btn btn-primary btn-large generate-button" onClick={runGeneration}>
-        Generate {size} hashtags
+        Generate {generationSize} hashtags
       </button>
 
       <div className="results-block" role="region" aria-label="Generated hashtags">
@@ -154,33 +190,40 @@ export default function HashtagGenerator() {
             {tags && <span className="results-count">{tags.length}</span>}
           </h2>
           {tags && (
-            <button type="button" className="btn btn-secondary btn-small" onClick={runGeneration}>
-              <RefreshIcon size={16} />
-              Regenerate
-            </button>
+            <div className="results-actions">
+              <DownloadButton text={tags.join(' ')} filename="biocraft-hashtags.txt" />
+              <button type="button" className="btn btn-secondary btn-small" onClick={runGeneration}>
+                <RefreshIcon size={16} /> Regenerate
+              </button>
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => setTags(null)}>Reset results</button>
+            </div>
           )}
         </div>
 
         {tags ? (
           <>
             <p className="results-note">
-              A mix of broad, medium and focused tags{fromKeywords > 0 ? ' plus your keyword variants' : ''}. Tap any tag to copy it.
+              A mix of broad, medium and focused tags{fromKeywords > 0 ? ' plus your keyword variants' : ''}. Edit below, or tap any tag to copy it.
             </p>
-            <ul className="hashtag-grid">
-              {tags.map((tag) => (
-                <li key={tag}>
-                  <button
-                    type="button"
-                    className="hashtag-chip"
-                    onClick={() => void copyWithFeedback(tag, tag)}
-                    aria-label={`Copy hashtag ${tag}`}
-                  >
-                    <span>{tag}</span>
-                    {copiedTag === tag ? <CheckIcon size={14} /> : <ClipboardIcon size={14} />}
-                  </button>
-                </li>
+            <label className="sr-only" htmlFor="hashtag-results-edit">Edit generated hashtags</label>
+            <textarea id="hashtag-results-edit" className="result-editable hashtag-editable" rows={3} value={tags.join(' ')} onChange={(event) => handleTagsEdit(event.target.value)} />
+            <div className="hashtag-groups">
+              {visibleGroups.map((group) => (
+                <section className="hashtag-result-group" key={group.label} aria-label={group.label}>
+                  <h3>{group.label}</h3>
+                  <ul className="hashtag-grid">
+                    {group.tags.map((tag) => (
+                      <li key={`${group.label}-${tag}`}>
+                        <button type="button" className="hashtag-chip" onClick={() => void copyWithFeedback(tag, tag)} aria-label={`Copy hashtag ${tag}`}>
+                          <span>{tag}</span>
+                          {copiedTag === tag ? <CheckIcon size={14} /> : <ClipboardIcon size={14} />}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               ))}
-            </ul>
+            </div>
             <div className="hashtag-actions">
               <button
                 type="button"

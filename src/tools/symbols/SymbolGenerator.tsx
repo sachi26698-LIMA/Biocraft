@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CheckIcon, SearchIcon } from '../../components/icons';
+import DownloadButton from '../../components/DownloadButton';
+import { useToolMode } from '../../lib/toolMode';
 import { copyText } from '../../lib/clipboard';
 import { useSymbolFavourites, useSymbolRecents } from '../../lib/toolbox';
 import {
@@ -15,9 +17,14 @@ import {
  * you copy, and ready-made signature combos sit on top. Nothing leaves the
  * browser.
  */
+const SYMBOL_PAGE_SIZE = 48;
+
 export default function SymbolGenerator() {
   const [query, setQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [visibleCount, setVisibleCount] = useState(SYMBOL_PAGE_SIZE);
+  const { mode: toolMode } = useToolMode();
+  const visibleCategory = toolMode === 'basic' ? 'all' : activeCategory;
   const [copiedGlyph, setCopiedGlyph] = useState<string | null>(null);
   const [copiedCombo, setCopiedCombo] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
@@ -30,7 +37,7 @@ export default function SymbolGenerator() {
   }, []);
 
   const results = useMemo(() => {
-    if (activeCategory === 'favs') {
+    if (visibleCategory === 'favs') {
       const trimmed = query.trim().toLowerCase();
       const favbed = SYMBOL_CATEGORIES.flatMap((category) =>
         category.symbols.map((symbol) => ({
@@ -44,9 +51,14 @@ export default function SymbolGenerator() {
         `${symbol.keywords} ${symbol.categoryLabel}`.toLowerCase().includes(trimmed),
       );
     }
-    return searchSymbols(query, activeCategory);
-  }, [query, activeCategory, favs]);
+    return searchSymbols(query, visibleCategory);
+  }, [query, visibleCategory, favs]);
 
+  useEffect(() => {
+    setVisibleCount(SYMBOL_PAGE_SIZE);
+  }, [query, visibleCategory]);
+
+  const visibleResults = results.slice(0, visibleCount);
   const announce = (message: string) => setStatusMessage(message);
 
   const copySymbol = async (glyph: string) => {
@@ -86,7 +98,7 @@ export default function SymbolGenerator() {
     <div className="tool-card tool-card--split">
       <div className="symbol-side">
       {/* ------- Signature combos ------- */}
-      <div className="symbol-combos">
+      <div className="symbol-combos tool-advanced">
         <p className="option-label symbol-combos-label" id="symbol-combos-label">
           Signature combos — one tap to copy
         </p>
@@ -136,14 +148,15 @@ export default function SymbolGenerator() {
             className="btn btn-secondary btn-small copy-all-inline"
             onClick={() => void copyAll()}
             disabled={results.length === 0}
-            aria-label={`Copy all ${results.length} visible symbols to clipboard`}
+            aria-label={`Copy all ${results.length} matching symbols to clipboard`}
           >
             Copy all
           </button>
+          <DownloadButton text={results.map((symbol) => symbol.glyph).join(' ')} filename="biocraft-symbols.txt" label="Download" />
         </div>
       </div>
 
-      <div className="symbol-categories" role="group" aria-label="Symbol category">
+      <div className="symbol-categories tool-advanced" role="group" aria-label="Symbol category">
         <button
           type="button"
           className={`chip${activeCategory === 'all' ? ' is-selected' : ''}`}
@@ -198,8 +211,9 @@ export default function SymbolGenerator() {
 
       <div className="symbol-main">
       {results.length > 0 ? (
-        <ul className="symbol-grid">
-          {results.map((symbol, index) => {
+        <>
+        <ul className="symbol-grid" aria-label={`${visibleResults.length} symbols shown`}>
+          {visibleResults.map((symbol, index) => {
             const isRow = [...symbol.glyph].length > 6;
             return (
             <li key={`${symbol.categoryId}-${index}-${symbol.glyph}`} className={`symbol-cell${isRow ? ' symbol-cell--row' : ''}`}>
@@ -232,9 +246,23 @@ export default function SymbolGenerator() {
             );
           })}
         </ul>
+        {visibleResults.length < results.length && (
+          <div className="symbol-show-more">
+            <p className="field-hint">Showing {visibleResults.length} of {results.length} matching symbols</p>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => setVisibleCount((current) => Math.min(current + SYMBOL_PAGE_SIZE, results.length))}
+              aria-label={`Show ${Math.min(SYMBOL_PAGE_SIZE, results.length - visibleResults.length)} more symbols`}
+            >
+              Show {Math.min(SYMBOL_PAGE_SIZE, results.length - visibleResults.length)} more
+            </button>
+          </div>
+        )}
+        </>
       ) : (
         <p className="empty-state-text styles-empty">
-          {activeCategory === 'favs'
+          {visibleCategory === 'favs'
             ? favCount === 0
               ? 'No favourites yet — tap ☆ on any symbol to save it here.'
               : `No favourites match “${trimmedQuery}”.`

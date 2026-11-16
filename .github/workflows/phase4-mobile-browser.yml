@@ -1,0 +1,46 @@
+name: BioCraft Phase 4 browser and mobile checks
+
+on:
+  push:
+    branches:
+      - arena/3140d158-biocraft
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phase4-mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chromium-mobile:
+    name: Chromium Android-emulation workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out current branch
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Install Playwright Chromium and runner OS libraries
+        run: npx playwright install --with-deps chromium
+      - name: Run complete React/jsdom regression
+        run: npm run test:regression
+      - name: Run responsive cascade checks
+        run: npm run test:responsive
+      - name: Run real-browser route, interaction, screenshot and lab-metric checks
+        run: npm run test:browser
+      - name: Upload mobile screenshots, browser trace and metrics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: biocraft-phase4-browser-${{ github.sha }}
+          path: phase4-artifacts/
+          if-no-files-found: warn
+          retention-days: 7

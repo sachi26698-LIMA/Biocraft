@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState, type FormEvent } from 'react';
 import type { Language } from '../../types';
 import SegmentedControl from '../../components/SegmentedControl';
 import CopyButton from '../../components/CopyButton';
+import DownloadButton from '../../components/DownloadButton';
 import CharCounter from '../../components/CharCounter';
 import { RefreshIcon, ClipboardIcon } from '../../components/icons';
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard';
@@ -11,6 +12,7 @@ import {
   type MoodBoardCategory,
 } from './moodBoard';
 import type { MoodBoardPools } from './moodBoard';
+import { useToolMode } from '../../lib/toolMode';
 
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
@@ -54,6 +56,7 @@ export default function MoodBoardTool<C extends string>({
   limitDescription,
   generateLabel,
 }: MoodBoardToolProps<C>) {
+  const { mode: toolMode } = useToolMode();
   const [categoryId, setCategoryId] = useState<C>(categories[0].id as C);
   const [language, setLanguage] = useState<Language>('en');
   const [noEmoji, setNoEmoji] = useState(false);
@@ -62,17 +65,20 @@ export default function MoodBoardTool<C extends string>({
   const [hasGenerated, setHasGenerated] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const { copy } = useCopyToClipboard(2000);
+  const generationLanguage: Language = toolMode === 'basic' ? 'en' : language;
+  const generationNoEmoji = toolMode === 'basic' ? false : noEmoji;
+  const generationCount = toolMode === 'basic' ? 5 : Number(count);
 
   const activeCategory = useMemo(
     () => categories.find((item) => item.id === categoryId) ?? categories[0],
     [categories, categoryId],
   );
   const categoryText =
-    language === 'hi' ? activeCategory.labelHi : language === 'hg' ? activeCategory.labelHg : activeCategory.label;
+    generationLanguage === 'hi' ? activeCategory.labelHi : generationLanguage === 'hg' ? activeCategory.labelHg : activeCategory.label;
 
   const runGeneration = useCallback(
-    (nextCount = Number(count)) => {
-      const { lines: picked } = composeMoodBoard(pools, categoryId, language, nextCount, noEmoji);
+    (nextCount = generationCount) => {
+      const { lines: picked } = composeMoodBoard(pools, categoryId, generationLanguage, nextCount, generationNoEmoji);
       if (picked.length === 0) {
         setAnnouncement('Nothing usable in this pool with emojis off — turn emojis back on.');
         return;
@@ -81,12 +87,12 @@ export default function MoodBoardTool<C extends string>({
       setHasGenerated(true);
       setAnnouncement(`${picked.length} ${noun} options generated.`);
     },
-    [pools, categoryId, language, noEmoji, count, noun],
+    [pools, categoryId, generationLanguage, generationNoEmoji, generationCount, noun],
   );
 
   const regenerateOne = useCallback(
     (index: number) => {
-      const replacement = freshLine(pools, categoryId, language, noEmoji, lines);
+      const replacement = freshLine(pools, categoryId, generationLanguage, generationNoEmoji, lines);
       if (!replacement) {
         setAnnouncement('Every option in this pool is already shown — try Regenerate all.');
         return;
@@ -94,7 +100,7 @@ export default function MoodBoardTool<C extends string>({
       setLines((current) => current.map((line, i) => (i === index ? replacement : line)));
       setAnnouncement(`${noun} ${index + 1} replaced with a fresh variation.`);
     },
-    [pools, categoryId, language, noEmoji, lines, noun],
+    [pools, categoryId, generationLanguage, generationNoEmoji, lines, noun],
   );
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -116,13 +122,13 @@ export default function MoodBoardTool<C extends string>({
           <legend className="option-label" id="moodboard-category-legend">Pick a vibe</legend>
           <div className="chip-row" role="group" aria-labelledby="moodboard-category-legend">
             {categories.map((item) => {
-              const text = language === 'hi' ? item.labelHi : language === 'hg' ? item.labelHg : item.label;
+              const text = generationLanguage === 'hi' ? item.labelHi : generationLanguage === 'hg' ? item.labelHg : item.label;
               const selected = item.id === categoryId;
               return (
                 <button
                   key={item.id}
                   type="button"
-                  lang={language === 'hi' ? 'hi' : undefined}
+                  lang={generationLanguage === 'hi' ? 'hi' : undefined}
                   className={`chip${selected ? ' is-selected' : ''}`}
                   aria-pressed={selected}
                   onClick={() => setCategoryId(item.id as C)}
@@ -134,7 +140,7 @@ export default function MoodBoardTool<C extends string>({
           </div>
         </fieldset>
 
-        <div className="generator-options">
+        <div className="generator-options tool-advanced">
           <SegmentedControl
             label="Language"
             visibleLabel="Language"
@@ -161,6 +167,7 @@ export default function MoodBoardTool<C extends string>({
         </div>
 
         <form className="generator-form" onSubmit={handleSubmit} noValidate>
+          <div className="tool-advanced">
           <SegmentedControl
             label="How many options"
             visibleLabel="How many"
@@ -168,9 +175,10 @@ export default function MoodBoardTool<C extends string>({
             value={count}
             onChange={setCount}
           />
+          </div>
 
           <button type="submit" className="btn btn-primary btn-large generate-button">
-            {generateLabel.replace('{n}', count)}
+            {generateLabel.replace('{n}', String(generationCount))}
           </button>
           <p className="form-footnote">$0 forever · No sign-up · Nothing leaves your browser</p>
           <p className="form-footnote moodboard-honesty">{honestyNote}</p>
@@ -181,7 +189,7 @@ export default function MoodBoardTool<C extends string>({
       <div className="results-column" role="region" aria-label={`Generated ${noun} options`}>
         <div className="results-header">
           <h2 className="results-title">
-            {categoryText} {noun} <span className="results-count">{hasGenerated ? lines.length : count}</span>
+            {categoryText} {noun} <span className="results-count">{hasGenerated ? lines.length : generationCount}</span>
           </h2>
           {hasGenerated && lines.length > 0 && (
             <div className="results-actions">
@@ -189,9 +197,13 @@ export default function MoodBoardTool<C extends string>({
                 <ClipboardIcon size={16} />
                 Copy all
               </button>
+              <DownloadButton text={lines.join('\n\n')} filename={`biocraft-${noun}s.txt`} />
               <button type="button" className="btn btn-secondary btn-small" onClick={() => runGeneration()}>
                 <RefreshIcon size={16} />
                 Regenerate
+              </button>
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => { setLines([]); setHasGenerated(false); setAnnouncement('Results cleared.'); }}>
+                Reset results
               </button>
             </div>
           )}
@@ -212,7 +224,7 @@ export default function MoodBoardTool<C extends string>({
                       ariaLabel={`${noun} length ${limitDescription ? `against ${limitDescription}` : `against the ${limit}-character reference`}`}
                     />
                   </div>
-                  <p className="bio-text">{line}</p>
+                  <textarea className="bio-text result-editable" aria-label={`Edit ${noun} option ${index + 1}`} rows={3} value={line} onChange={(event) => setLines((current) => current.map((item, i) => i === index ? event.target.value : item))} />
                   <div className="bio-card-actions">
                     <CopyButton text={line} ariaLabel={`Copy ${noun} option ${index + 1} to clipboard`} />
                     <button

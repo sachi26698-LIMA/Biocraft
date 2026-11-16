@@ -14,6 +14,7 @@ interface BioCardProps {
   limitDescription?: string;
   /** Optional per-card regenerate — replaces just this result. */
   onRegenerate?: () => void;
+  onChange?: (value: string) => void;
 }
 
 export default function BioCard({
@@ -23,6 +24,7 @@ export default function BioCard({
   limit = 150,
   limitDescription = "Instagram's 150-character limit",
   onRegenerate,
+  onChange,
 }: BioCardProps) {
   const count = bioLength(bio);
 
@@ -35,7 +37,7 @@ export default function BioCard({
         <CharCounter count={count} limit={limit} ariaLabel={`${label} length against ${limitDescription}`} />
       </div>
 
-      <p className="bio-text">{bio}</p>
+      {onChange ? <textarea className="bio-text result-editable" aria-label={`Edit ${label.toLowerCase()} option ${index + 1}`} rows={3} value={bio} onChange={(event) => onChange(event.target.value)} /> : <p className="bio-text">{bio}</p>}
 
       <div className="bio-card-actions">
         <CopyButton text={bio} ariaLabel={`Copy ${label.toLowerCase()} option ${index + 1} to clipboard`} />

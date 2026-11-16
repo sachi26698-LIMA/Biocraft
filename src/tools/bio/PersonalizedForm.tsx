@@ -73,7 +73,7 @@ export default function PersonalizedForm({ values, errors, onChange }: Personali
         )}
       </div>
 
-      <div className="field">
+      <div className="field tool-advanced">
         <label htmlFor={fieldId('niche')}>Niche or interests</label>
         <input
           id={fieldId('niche')}
@@ -98,7 +98,7 @@ export default function PersonalizedForm({ values, errors, onChange }: Personali
         )}
       </div>
 
-      <div className="field">
+      <div className="field tool-advanced">
         <label htmlFor={fieldId('city')}>City</label>
         <input
           id={fieldId('city')}

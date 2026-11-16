@@ -3,6 +3,9 @@ import { UNICODE_STYLES, hasDevanagari } from '../../lib/unicodeStyles';
 import { CAPTION_LIMIT, bioLength } from '../../lib/text';
 import StyleGallery from '../../components/StyleGallery';
 import CharCounter from '../../components/CharCounter';
+import StyleCollectionPicker from '../../components/StyleCollectionPicker';
+import { STYLE_COLLECTIONS } from '../../lib/styleCollections';
+import { useToolMode } from '../../lib/toolMode';
 
 const DEMO = 'BioCraft';
 
@@ -12,6 +15,8 @@ const DEMO = 'BioCraft';
  */
 export default function FancyFontTool() {
   const [text, setText] = useState('');
+  const [collection, setCollection] = useState('all');
+  const { mode } = useToolMode();
   const trimmed = text.trim();
 
   const items = useMemo(
@@ -32,6 +37,8 @@ export default function FancyFontTool() {
       ),
     [trimmed],
   );
+  const selectedIds = mode === 'advanced' ? STYLE_COLLECTIONS.find((item) => item.id === collection)?.ids : null;
+  const visibleItems = selectedIds ? items.filter((item) => (selectedIds as readonly string[]).includes(item.id)) : items;
 
   const showDevanagariNote = hasDevanagari(trimmed);
   const count = bioLength(text);
@@ -84,10 +91,11 @@ export default function FancyFontTool() {
               Showing “{DEMO}” in all {UNICODE_STYLES.length} styles — type your own text to replace it.
             </p>
           )}
+          <StyleCollectionPicker value={collection} onChange={setCollection} />
           <StyleGallery
-            items={items}
+            items={visibleItems}
             copyLabel={(label) => `Copy ${label} text`}
-            copyAllText={items.map((item) => `${item.label}: ${item.text}`).join('\n')}
+            copyAllText={visibleItems.map((item) => `${item.label}: ${item.text}`).join('\n')}
             copyAllAriaLabel={"Copy all styles to clipboard"}
           />
         </div>

@@ -5,7 +5,9 @@ import { BIO_DESIGNS, designLabel, type BioDesignKey } from '../../lib/bioCollec
 import { EMOJI_FRAMES, MIX_COMBOS, MIXES_PER_PAGE, frameById } from './emojiFrames';
 import CharCounter from '../../components/CharCounter';
 import CopyButton from '../../components/CopyButton';
+import DownloadButton from '../../components/DownloadButton';
 import { RefreshIcon } from '../../components/icons';
+import { useToolMode } from '../../lib/toolMode';
 
 /**
  * Design Studio — type any sentence, get it back as ready-made designs:
@@ -14,20 +16,27 @@ import { RefreshIcon } from '../../components/icons';
  * Rule-based and fully client-side, like every BioCraft tool.
  */
 export default function DesignStudioTool() {
+  const { mode: toolMode } = useToolMode();
   const [text, setText] = useState('');
   const [styleId, setStyleId] = useState('none');
   const [frameId, setFrameId] = useState('none');
   const [design, setDesign] = useState<BioDesignKey>('minimal');
   const [page, setPage] = useState(0);
+  const [previewEdit, setPreviewEdit] = useState<{ source: string; value: string } | null>(null);
+  const [mixEdits, setMixEdits] = useState<Record<string, { source: string; value: string }>>({});
 
   const trimmed = text.trim();
+  const effectiveStyleId = toolMode === 'basic' ? 'none' : styleId;
+  const effectiveFrameId = toolMode === 'basic' ? 'none' : frameId;
+  const effectiveDesign = toolMode === 'basic' ? 'minimal' : design;
   const count = bioLength(text);
   const showDevanagariNote = hasDevanagari(trimmed);
 
-  const style = UNICODE_STYLES.find((item) => item.id === styleId);
-  const frame = frameById(frameId);
+  const style = UNICODE_STYLES.find((item) => item.id === effectiveStyleId);
+  const frame = frameById(effectiveFrameId);
   const styled = trimmed ? (style ? style.transform(trimmed) : trimmed) : '';
   const finalText = styled ? `${frame.before}${styled}${frame.after}` : '';
+  const previewText = previewEdit?.source === finalText ? previewEdit.value : finalText;
 
   const styleLabel = style?.label ?? 'Original';
   const frameLabel = frame.id === 'none' ? null : frame.label;
@@ -54,7 +63,11 @@ export default function DesignStudioTool() {
 
   const remix = () => setPage((current) => current + 1);
 
-  const copyAllMixes = mixes.map((mix) => `${mix.styleLabel} · ${mix.combo.name}: ${mix.text}`).join('\n');
+  const mixTextFor = (mix: (typeof mixes)[number]) => {
+    const edit = mixEdits[mix.key];
+    return edit?.source === mix.text ? edit.value : mix.text;
+  };
+  const copyAllMixes = mixes.map((mix) => `${mix.styleLabel} · ${mix.combo.name}: ${mixTextFor(mix)}`).join('\n');
 
   return (
     <div className="tool-card">
@@ -92,7 +105,7 @@ export default function DesignStudioTool() {
             </p>
           )}
 
-          <div className="field">
+          <div className="field tool-advanced">
             <label htmlFor="design-studio-font">Font style</label>
             <select id="design-studio-font" value={styleId} onChange={(event) => setStyleId(event.target.value)}>
               <option value="none">Original (no style)</option>
@@ -102,7 +115,7 @@ export default function DesignStudioTool() {
             </select>
           </div>
 
-          <div className="field">
+          <div className="field tool-advanced">
             <label htmlFor="design-studio-frame">Emoji frame</label>
             <select id="design-studio-frame" value={frameId} onChange={(event) => setFrameId(event.target.value)}>
               {EMOJI_FRAMES.map((item) => (
@@ -113,7 +126,7 @@ export default function DesignStudioTool() {
             </select>
           </div>
 
-          <div className="field">
+          <div className="field tool-advanced">
             <label htmlFor="design-studio-card">Card design</label>
             <select id="design-studio-card" value={design} onChange={(event) => setDesign(event.target.value as BioDesignKey)}>
               {BIO_DESIGNS.map((item) => (
@@ -134,21 +147,29 @@ export default function DesignStudioTool() {
           <div
             role="region"
             aria-labelledby="design-studio-preview-label"
-            className={`bio-card bio-design bio-design-${design} design-studio-preview`}
+            className={`bio-card bio-design bio-design-${effectiveDesign} design-studio-preview`}
           >
-            <p className="bio-card-text">
-              {finalText || <span className="design-studio-placeholder">Your designed sentence will appear here…</span>}
-            </p>
+            <textarea
+              className="bio-card-text result-editable design-studio-output"
+              aria-label="Edit designed sentence output"
+              rows={3}
+              maxLength={CAPTION_LIMIT}
+              placeholder="Your designed sentence will appear here…"
+              value={previewText}
+              onChange={(event) => setPreviewEdit({ source: finalText, value: event.target.value })}
+            />
             <div className="bio-card-foot">
               <span className="bio-card-tags" aria-hidden="true">
                 {styleLabel !== 'Original' && <span className="bio-badge bio-badge-style">{styleLabel}</span>}
                 {frameLabel && <span className="bio-badge bio-badge-lang">{frameLabel}</span>}
-                <span className="bio-badge bio-badge-style">{designLabel(design)}</span>
+                <span className="bio-badge bio-badge-style">{designLabel(effectiveDesign)}</span>
               </span>
-              <CopyButton text={finalText} ariaLabel="Copy your designed sentence to clipboard" className="mix-copy" />
+              <CopyButton text={previewText} ariaLabel="Copy your designed sentence to clipboard" className="mix-copy" />
+              <DownloadButton text={previewText} filename="biocraft-designed-text.txt" label="Download" />
             </div>
           </div>
 
+          <div className="tool-advanced">
           <div className="mix-gallery-head">
             <p className="option-label" id="design-studio-mixes-label">Ready-made mixes</p>
             <div className="mix-gallery-actions">
@@ -156,7 +177,10 @@ export default function DesignStudioTool() {
                 <RefreshIcon size={15} aria-hidden="true" /> Remix
               </button>
               {mixes.length > 0 && (
-                <CopyButton text={copyAllMixes} ariaLabel="Copy all ready-made mixes to clipboard" className="mix-copy-all" />
+                <>
+                  <CopyButton text={copyAllMixes} ariaLabel="Copy all ready-made mixes to clipboard" className="mix-copy-all" />
+                  <DownloadButton text={copyAllMixes} filename="biocraft-design-mixes.txt" label="Download" />
+                </>
               )}
             </div>
           </div>
@@ -169,14 +193,24 @@ export default function DesignStudioTool() {
                   className={`bio-card bio-design bio-design-${mix.combo.design} mix-card`}
                   style={{ '--mix-rotate': '0deg' } as CSSProperties}
                 >
-                  <p className="bio-card-text">{mix.text}</p>
+                  <textarea
+                    className="bio-card-text result-editable design-studio-output"
+                    aria-label={`Edit the ${mix.combo.name} mix output`}
+                    rows={3}
+                    maxLength={CAPTION_LIMIT}
+                    value={mixTextFor(mix)}
+                    onChange={(event) => setMixEdits((current) => ({
+                      ...current,
+                      [mix.key]: { source: mix.text, value: event.target.value },
+                    }))}
+                  />
                   <div className="bio-card-foot">
                     <span className="bio-card-tags" aria-hidden="true">
                       <span className="bio-badge bio-badge-style">{mix.styleLabel}</span>
                       {mix.frameLabel && <span className="bio-badge bio-badge-lang">{mix.frameLabel}</span>}
                       <span className="bio-badge bio-badge-style">{mix.designLabel}</span>
                     </span>
-                    <CopyButton text={mix.text} ariaLabel={`Copy the ${mix.combo.name} mix to clipboard`} className="mix-copy" />
+                    <CopyButton text={mixTextFor(mix)} ariaLabel={`Copy the ${mix.combo.name} mix to clipboard`} className="mix-copy" />
                   </div>
                 </li>
               ))}
@@ -186,6 +220,7 @@ export default function DesignStudioTool() {
               Type a sentence above — you’ll get {MIXES_PER_PAGE} hand-curated mixes here, ready to copy.
             </p>
           )}
+          </div>
         </div>
       </div>
     </div>

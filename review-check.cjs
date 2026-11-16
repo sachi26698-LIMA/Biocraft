@@ -14,7 +14,11 @@ const virtualConsole = new VirtualConsole();
 virtualConsole.on('jsdomError', (error) => {
   // jsdom has no canvas — axe's color-contrast probe triggers this; it is
   // informational and cannot occur in a real browser. Everything else prints.
-  if (String(error && error.message).includes('HTMLCanvasElement')) return;
+  const message = String(error && error.message);
+  if (message.includes('HTMLCanvasElement')) return;
+  // jsdom cannot follow full-document links; in-app routing is asserted above,
+  // and this diagnostic has no browser equivalent when navigation is handled.
+  if (message.includes('navigation to another Document')) return;
   console.error('jsdomError:', error);
 });
 virtualConsole.on('error', (...args) => console.error(...args));
@@ -75,6 +79,15 @@ global.Event = window.Event;
 global.MouseEvent = window.MouseEvent;
 global.KeyboardEvent = window.KeyboardEvent;
 global.PopStateEvent = window.PopStateEvent || window.Event;
+// jsdom does not implement layout observation; a no-op keeps layout-only
+// components mounted while this harness verifies their DOM behavior.
+class NoopResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+window.ResizeObserver = NoopResizeObserver;
+global.ResizeObserver = NoopResizeObserver;
 global.getComputedStyle = window.getComputedStyle.bind(window);
 global.requestAnimationFrame = (cb) => setTimeout(cb, 0);
 global.IS_REACT_ACT_ENVIRONMENT = true;
@@ -253,6 +266,34 @@ const runAxe = async (routeName) => {
   check('header renders search + favourites + Explore Tools', Boolean($('.site-header-actions button[aria-label="Search tools"]')) && Boolean($('.site-header-actions a[href="/categories#favourites"]')) && Boolean($('.site-header-actions a.btn-explore[href="/resources"]')));
   check('header center nav exposes the six section links', ['/', '/resources', '/categories', '/features', '/about', '/help'].every((href) => Boolean($(`.site-nav a[href="${href}"]`))));
   check('header contains no Login or Start Free buttons', !$('.site-header a[href="/login"]') && !($('.site-header')?.textContent ?? '').includes('Start Free'));
+  check('workspace starts in Basic mode with a mode chooser', Boolean($$('.tool-mode-toggle button').find((button) => button.textContent === 'Basic' && button.getAttribute('aria-pressed') === 'true')));
+  await click($$('.tool-mode-toggle button').find((button) => button.textContent === 'Advanced'));
+  check('Advanced mode preference persists', window.localStorage.getItem('biocraft:tool-mode') === 'advanced');
+  await click($$('.tool-mode-toggle button').find((button) => button.textContent === 'Basic'));
+  check('Basic mode can be restored', window.localStorage.getItem('biocraft:tool-mode') === 'basic');
+  await click($('.theme-toggle'));
+  check('theme toggle enables persisted dark mode', window.document.documentElement.dataset.theme === 'dark' && window.localStorage.getItem('biocraft:theme') === 'dark');
+  await click($('.theme-toggle'));
+  check('theme toggle restores light mode', window.document.documentElement.dataset.theme === 'light');
+
+  let exportedBlob = null;
+  let exportedAnchor = null;
+  const createObjectURL = URL.createObjectURL;
+  const revokeObjectURL = URL.revokeObjectURL;
+  const anchorClick = window.HTMLAnchorElement.prototype.click;
+  URL.createObjectURL = (blob) => { exportedBlob = blob; return 'blob:biocraft-test'; };
+  URL.revokeObjectURL = () => {};
+  window.HTMLAnchorElement.prototype.click = function () { exportedAnchor = { href: this.href, filename: this.download }; };
+  const exportSucceeded = bundle.downloadText('BioCraft export test', 'biocraft-test.txt');
+  check('text export creates a downloadable file with its requested name', exportSucceeded && exportedAnchor?.filename === 'biocraft-test.txt');
+  check('text export writes the exact user content', exportedBlob && await exportedBlob.text() === 'BioCraft export test');
+  window.HTMLAnchorElement.prototype.click = anchorClick;
+  URL.createObjectURL = createObjectURL;
+  URL.revokeObjectURL = revokeObjectURL;
+
+  const generatorLatency = bundle.benchmarkGenerators();
+  console.log('Generation benchmark (20 synchronous runs each, mean ms):', generatorLatency);
+  check('all local generator engines stay below 100 ms mean per run', Object.values(generatorLatency).every((duration) => duration < 100));
 
   console.log('\n--- Mobile hamburger menu ---');
   const toggle = $('.menu-toggle');
@@ -325,9 +366,19 @@ const runAxe = async (routeName) => {
   const firstBio = text('.bio-text');
   await click($('.bio-card .copy-button'));
   check('copy writes the exact bio text', clipboardText === firstBio);
+  check('bio results expose a text export action', Boolean($$('.results-actions button').find((button) => button.textContent.includes('Download'))));
+  const bioEdit = $('.bio-card .result-editable');
+  await setInputValue(bioEdit, 'My edited bio draft', 'textarea');
+  await click($('.bio-card .copy-button'));
+  check('edited bio draft copies exactly', clipboardText === 'My edited bio draft');
+  await click($$('.tool-mode-toggle button').find((button) => button.textContent === 'Advanced'));
+  await click($$('.segmented-option').find((button) => button.textContent.includes('हिन्दी')));
+  await click($$('.tool-mode-toggle button').find((button) => button.textContent === 'Basic'));
+  await click($('.generate-button'));
+  check('Basic mode uses its English smart default after Advanced Hindi settings', $$('.bio-text').every((el) => !/[\u0900-\u097F]/.test(el.value || el.textContent)));
 
   console.log('\n--- Bio: regenerate ---');
-  await click($$('.results-header button')[0]);
+  await click($$('.results-header button').find((button) => button.textContent.includes('Regenerate')));
   await act(async () => {});
   check('regenerate yields 5 unique bios again', (() => {
     const again = $$('.bio-text').map((el) => el.textContent.trim());
@@ -335,6 +386,7 @@ const runAxe = async (routeName) => {
   })());
 
   console.log('\n--- Bio: category mode ---');
+  await click($$('.tool-mode-toggle button').find((button) => button.textContent === 'Advanced'));
   await click($$('.tabs [role="tab"]')[1]);
   check('category panel renders the category grid', Boolean($('.category-grid')));
   await click($('.category-option'));
@@ -382,9 +434,23 @@ const runAxe = async (routeName) => {
   const nameRows = $$('.style-row');
   check('33 style rows render', nameRows.length === 33);
   check('Bold row is 𝐇𝐞𝐥𝐥𝐨', nameRows.find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.style-row-text-live').textContent === '𝐇𝐞𝐥𝐥𝐨');
-  await click(nameRows.find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.copy-button'));
+  await click($$('.style-row').find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.copy-button'));
   check('stylish copy writes 𝐇𝐞𝐥𝐥𝐨 byte-exact', clipboardText === '𝐇𝐞𝐥𝐥𝐨');
+  const boldNameOutput = $$('.style-row').find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.style-row-editable');
+  await setInputValue(boldNameOutput, 'My edited bold name', 'textarea');
+  await click($$('.style-row').find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.copy-button'));
+  check('stylish output variant is directly editable and copy follows the edit', boldNameOutput.value === 'My edited bold name' && clipboardText === 'My edited bold name');
+  await click($$('[aria-label="Copy all styles to clipboard"]')[0]);
+  check('stylish Copy All includes the edited variant', clipboardText.includes('Bold: My edited bold name'));
+  await setInputValue(nameInput, 'World', 'input');
+  check('changing source resets derived stylish output edits', $$('.style-row').find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.style-row-editable').value === '𝐖𝐨𝐫𝐥𝐝');
+  await setInputValue(nameInput, 'Hello', 'input');
   check('stylish name tool exposes Copy all', Boolean($$('[aria-label="Copy all styles to clipboard"]')[0]));
+  check('stylish name offers text download', $$('.style-gallery-actions button').length >= 2);
+  await click($$('.style-collection-picker button').find((button) => button.textContent.includes('Script')));
+  check('advanced collection filters script styles', $$('.style-row').length === 6);
+  await click($$('.style-collection-picker button').find((button) => button.textContent.includes('All styles')));
+  check('collection reset restores all 33 styles', $$('.style-row').length === 33);
 
   await setInputValue(nameInput, 'नमस्ते', 'input');
   check('Devanagari honesty note appears', $$('.tool-note[role="note"]').some((el) => el.textContent.includes('Devanagari')));
@@ -414,11 +480,19 @@ const runAxe = async (routeName) => {
   check('counter shows 5/2200', $$('.char-count').some((el) => el.textContent.trim() === '5/2200'));
   const fontRows = $$('.style-row');
   check('33 style rows render', fontRows.length === 33);
+  check('fancy fonts offer text download', $$('.style-gallery-actions button').length >= 2);
   check('Fullwidth row text is Ｈｅｌｌｏ', fontRows.find((row) => row.querySelector('.style-row-label').textContent === 'Fullwidth').querySelector('.style-row-text-live').textContent === 'Ｈｅｌｌｏ');
   check('Monospace row text is 𝙷𝚎𝚕𝚕𝚘', fontRows.find((row) => row.querySelector('.style-row-label').textContent === 'Monospace').querySelector('.style-row-text-live').textContent === '𝙷𝚎𝚕𝚕𝚘');
   await click(fontRows.find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.copy-button'));
   check('font copy writes 𝐇𝐞𝐥𝐥𝐨 byte-exact', clipboardText === '𝐇𝐞𝐥𝐥𝐨');
-
+  const boldFontOutput = fontRows.find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.style-row-editable');
+  await setInputValue(boldFontOutput, 'Edited font output', 'textarea');
+  await click(fontRows.find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.copy-button'));
+  check('fancy font result variant can be edited and copied', boldFontOutput.value === 'Edited font output' && clipboardText === 'Edited font output');
+  await click($$('[aria-label="Copy all styles to clipboard"]')[0]);
+  check('fancy font Copy All uses edited style output', clipboardText.includes('Bold: Edited font output'));
+  await setInputValue(textarea, 'World', 'textarea');
+  check('changing fancy-font source resets derived output edits', $$('.style-row').find((row) => row.querySelector('.style-row-label').textContent === 'Bold').querySelector('.style-row-editable').value === '𝐖𝐨𝐫𝐥𝐝');
   await setInputValue(textarea, 'नमस्ते', 'textarea');
   check('Devanagari honesty note appears', $$('.tool-note[role="note"]').some((el) => el.textContent.includes('Devanagari')));
   const combiningPattern2 = /[\u0300-\u036F]/g;
@@ -452,20 +526,26 @@ const runAxe = async (routeName) => {
   await act(async () => {});
   const handleButtons = $$('.username-item');
   check('exactly 12 username suggestions', handleButtons.length === 12);
-  const handles = handleButtons.map((el) => el.querySelector('.username-handle').textContent);
+  const handles = handleButtons.map((el) => el.querySelector('.username-handle').value);
   check('all handles unique', new Set(handles).size === handles.length);
   const handlePattern = /^[a-z0-9](?:[a-z0-9._]{0,28}[a-z0-9])?$/;
   check('all handles match Instagram rules', handles.every((h) => handlePattern.test(h)));
   check('style labels render (multi-style grid)', new Set($$('.username-style').map((el) => el.textContent)).size >= 3);
-  await click(handleButtons[0]);
+  await click($$('.username-copy-button')[0]);
   check('copy writes the handle byte-exact', clipboardText === handles[0]);
-  await click(handleButtons[1]);
+  await click($$('.username-copy-button')[1]);
   check('second suggestion copies byte-exact too', clipboardText === handles[1]);
+  await setInputValue($('#username-result-0'), 'my.edit_handle', 'input');
+  check('username suggestions are directly editable', $('#username-result-0').value === 'my.edit_handle');
+  await click($$('.username-copy-button')[0]);
+  check('edited valid username copies exactly', clipboardText === 'my.edit_handle');
+  await setInputValue($('#username-result-0'), 'invalid handle', 'input');
+  check('invalid edited username disables copy', $$('.username-copy-button')[0].disabled);
 
-  await click($$('.results-header button')[0]); // regenerate
+  await click($$('.results-header button').find((button) => button.textContent.includes('Regenerate'))); // regenerate
   await act(async () => {});
   const handlesAfter = handles.join(',');
-  const handles2 = $$('.username-handle').map((el) => el.textContent);
+  const handles2 = $$('.username-handle').map((el) => el.value);
   check('regenerate yields 12 unique handles again', handles2.length === 12 && new Set(handles2).size === 12);
   console.log('   (username regenerate freshness: same set can legitimately recur from a small pool)');
   check('regenerate set is still a valid fresh run', handles2.length === 12 && new Set(handles2).size === 12);
@@ -474,7 +554,7 @@ const runAxe = async (routeName) => {
   await setInputValue($('#username-keyword'), '', 'input');
   await click($('.generate-button'));
   await act(async () => {});
-  const hindiHandles = $$('.username-handle').map((el) => el.textContent);
+  const hindiHandles = $$('.username-handle').map((el) => el.value);
   check('Devanagari name yields handles containing "priya"', hindiHandles.length === 12 && hindiHandles.some((h) => h.includes('priya')));
   check('Devanagari transliteration note shown', text('.results-note').includes('transliterated'));
 
@@ -492,8 +572,10 @@ const runAxe = async (routeName) => {
   check('document.title updated', window.document.title === EXPECTED_TITLES['/emoji-symbol-generator']);
 
   const allButtons = $$('.symbol-grid .symbol-button');
-  check('all symbols render by default (629)', allButtons.length === 629);
+  check('symbol library initially renders one mobile-sized page (48 of 629)', allButtons.length === 48 && text('#symbol-search-hint').includes('629 of 629'));
   check('category filter group renders (All + Favourites + 24)', $$('.symbol-categories .chip').length === 26);
+  await click($$('.symbol-show-more button')[0]);
+  check('Show more appends the next page without replacing prior symbols', $$('.symbol-grid .symbol-button').length === 96);
 
   const searchInput = $('#symbol-search-input');
   await setInputValue(searchInput, 'heart', 'input');
@@ -539,6 +621,7 @@ const runAxe = async (routeName) => {
   await act(async () => {});
   const tagButtons = $$('.hashtag-chip');
   check('default run yields 20 hashtag chips', tagButtons.length === 20);
+  check('hashtag results are grouped by relevance bucket', ['Broad discovery', 'Medium niche', 'Focused community'].every((label) => $$('.hashtag-result-group h3').some((heading) => heading.textContent === label)));
   const tags = tagButtons.map((el) => el.querySelector('span').textContent);
   check('all tags start with #', tags.every((t) => t.startsWith('#')));
   check('all tags unique', new Set(tags.map((t) => t.toLowerCase())).size === tags.length);
@@ -546,7 +629,7 @@ const runAxe = async (routeName) => {
   await click($$('.hashtag-actions button')[0]); // Copy all
   check('Copy all writes space-separated tags', clipboardText === tags.join(' '));
 
-  await click($$('.results-header button')[0]); // regenerate
+  await click($$('.results-header button').find((button) => button.textContent.includes('Regenerate'))); // regenerate
   await act(async () => {});
   const tagsAfter = tags.join(',');
   const tags2 = $$('.hashtag-chip').map((el) => el.querySelector('span').textContent);
@@ -616,7 +699,7 @@ const runAxe = async (routeName) => {
   check('Hindi captions contain Devanagari', hindiCaptionTexts.length === 5 && hindiCaptionTexts.every((c) => /[\u0900-\u097F]/.test(c)));
   check('Hindi captions still unique', new Set(hindiCaptionTexts).size === 5);
 
-  await click($$('.results-header button')[0]); // regenerate
+  await click($$('.results-header button').find((button) => button.textContent.includes('Regenerate'))); // regenerate
   await act(async () => {});
   const hindiCaptionsBefore = hindiCaptionTexts.join('|');
   const hindiCaptionsAfter = $$('.caption-card .bio-text').map((el) => el.textContent.trim()).join('|');
@@ -625,6 +708,10 @@ const runAxe = async (routeName) => {
     const again = $$('.caption-card .bio-text').map((el) => el.textContent.trim());
     return again.length === 5 && new Set(again).size === 5;
   })());
+  check('caption results offer a text download', Boolean($$('.results-actions button').find((button) => button.textContent.includes('Download'))));
+  await setInputValue($('.caption-card .result-editable'), 'An edited caption draft', 'textarea');
+  await click($('.caption-card .copy-button'));
+  check('edited caption copies exactly', clipboardText === 'An edited caption draft');
 
   console.log('\n--- axe: /caption-generator ---');
   check('/caption-generator has 0 axe violations', (await runAxe('/caption-generator')) === 0);
@@ -663,6 +750,7 @@ const runAxe = async (routeName) => {
   check('instagram restored as active platform', $('.toolkit-workspace')?.getAttribute('data-platform') === 'instagram');
 
   console.log('\n--- Platforms: fallback when route tool is unavailable ---');
+  await goto('/');
   await clickPlatform('LinkedIn');
   await goto('/hashtag-generator');
   check('fallback: URL unchanged', window.location.pathname === '/hashtag-generator');
@@ -767,16 +855,29 @@ const runAxe = async (routeName) => {
     Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set.call(dsFont, 'bold');
     dsFont.dispatchEvent(new window.Event('change', { bubbles: true }));
   });
-  check('builder preview applies the Bold style', ($('.design-studio-preview .bio-card-text')?.textContent ?? '').includes('𝐂𝐡𝐚𝐢 𝐟𝐢𝐫𝐬𝐭'));
+  check('builder preview applies the Bold style', ($('.design-studio-preview .bio-card-text')?.value ?? '').includes('𝐂𝐡𝐚𝐢 𝐟𝐢𝐫𝐬𝐭'));
   const dsFrame = $('#design-studio-frame');
   await act(async () => {
     Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype, 'value').set.call(dsFrame, 'crown');
     dsFrame.dispatchEvent(new window.Event('change', { bubbles: true }));
   });
-  const dsPreview = $('.design-studio-preview .bio-card-text')?.textContent ?? '';
+  const dsPreview = $('.design-studio-preview .bio-card-text')?.value ?? '';
   check('builder preview wraps in the crown frame', dsPreview.startsWith('👑 ') && dsPreview.endsWith(' 👑'));
   check('builder copy button renders', Boolean($('.design-studio-preview .copy-button')));
+  await setInputValue($('.design-studio-preview .design-studio-output'), 'My hand-edited design', 'textarea');
+  await click($('.design-studio-preview .copy-button'));
+  check('Design Studio preview output is directly editable and copy follows the edit', clipboardText === 'My hand-edited design');
+  const firstMixOutput = $('.mix-card .design-studio-output');
+  await setInputValue(firstMixOutput, 'Edited curated mix', 'textarea');
+  await click($('.mix-card .copy-button'));
+  check('curated mix output is editable and its copy action follows the edit', clipboardText === 'Edited curated mix');
+  await click($$('[aria-label="Copy all ready-made mixes to clipboard"]')[0]);
+  check('Copy All mixes retains edited text', clipboardText.includes('Edited curated mix'));
+  await setInputValue(dsInput, 'Chai second', 'textarea');
+  check('changing Design Studio source refreshes preview from derived settings', $('.design-studio-preview .design-studio-output').value.includes('𝐂𝐡𝐚𝐢 𝐬𝐞𝐜𝐨𝐧𝐝'));
   check('remix button is a real button', Boolean($$('.mix-gallery-actions button').find((b) => b.textContent.includes('Remix'))));
+  await click($('.workspace-reset'));
+  check('shared reset clears tool input and results', $('#design-studio-input').value === '' && $$('.mix-card').length === 0);
 
   // ================= bio editor =================
   console.log('\n--- Bio Editor ---');
@@ -790,6 +891,41 @@ const runAxe = async (routeName) => {
   check('editor counter switches to the X limit', $$('.bio-editor-counter-slot .char-count').some((el) => el.textContent.trim() === '10/160'));
   check('editor preview mirrors the typed text', text('.bio-editor-preview .bio-card-text').includes('Chai first'));
   check('editor ships a real copy button', Boolean($('.bio-editor-copy .copy-button')));
+  check('editor exposes a local text download', $$('.bio-editor-copy-row button').some((button) => button.textContent.includes('Download')));
+
+  // ================= LinkedIn tools =================
+  console.log('\n--- LinkedIn headline + summary workflows ---');
+  await goto('/');
+  await clickPlatform('LinkedIn');
+  await goto('/linkedin-headline-generator');
+  await click($('.generate-button'));
+  check('headline form validates required role', Boolean($('#linkedin-headline-role-error')));
+  await setInputValue($('#linkedin-headline-role'), 'Product Designer', 'input');
+  await setInputValue($('#linkedin-headline-focus'), 'accessible products', 'input');
+  await click($('.generate-button'));
+  check('headline form generates five editable options', $$('.results-block .bio-card').length === 5 && $$('.results-block .result-editable').length === 5);
+  check('headline options can be exported', Boolean($$('.results-actions button').find((button) => button.textContent.includes('Download'))));
+
+  await goto('/linkedin-summary-generator');
+  await setInputValue($('#linkedin-summary-role'), 'Product Designer', 'input');
+  await setInputValue($('#linkedin-summary-focus'), 'accessible products', 'input');
+  await click($('.generate-button'));
+  check('summary form generates five editable drafts', $$('.results-block .bio-card').length === 5 && $$('.results-block .result-editable').length === 5);
+  check('summary drafts can be exported', Boolean($$('.results-actions button').find((button) => button.textContent.includes('Download'))));
+
+  // ================= WhatsApp + Snapchat workflows =================
+  console.log('\n--- WhatsApp status + Snapchat caption workflows ---');
+  await clickPlatform('WhatsApp');
+  await goto('/whatsapp-status-generator');
+  await click($('.generate-button'));
+  check('WhatsApp status generator produces results', $$('.results-list .bio-card').length === 5);
+  check('WhatsApp results expose edit, copy and download', Boolean($('.results-list .result-editable')) && Boolean($('.results-list .copy-button')) && Boolean($$('.results-actions button').find((button) => button.textContent.includes('Download'))));
+
+  await clickPlatform('Snapchat');
+  await goto('/snapchat-caption-generator');
+  await click($('.generate-button'));
+  check('Snapchat caption generator produces results', $$('.results-list .bio-card').length === 5);
+  check('Snapchat results expose edit, copy and download', Boolean($('.results-list .result-editable')) && Boolean($('.results-list .copy-button')) && Boolean($$('.results-actions button').find((button) => button.textContent.includes('Download'))));
 
   // ================= exact titles =================
   console.log('\n--- Titles on every route ---');

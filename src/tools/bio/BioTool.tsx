@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { generateCategoryBios, generatePersonalBios, generateSingleBio } from './lib/bioGenerator';
 import {
   firstErrorField,
@@ -7,6 +7,7 @@ import {
 } from '../../lib/validation';
 import type { Language, Mode, PersonalFormErrors, PersonalFormValues } from '../../types';
 import BioCard from './BioCard';
+import DownloadButton from '../../components/DownloadButton';
 import CategoryPicker from './CategoryPicker';
 import PersonalizedForm, { FIELD_ORDER, fieldId } from './PersonalizedForm';
 import SegmentedControl from '../../components/SegmentedControl';
@@ -16,6 +17,7 @@ import { useToolkit } from '../../lib/toolkit';
 import { useSearch } from '../../lib/router';
 import { platformById } from '../platforms';
 import { CATEGORIES } from './data/categories';
+import { useToolMode } from '../../lib/toolMode';
 
 /**
  * Deep-link support: `/bio-generator?tab=category&category=fitness` opens the
@@ -46,6 +48,8 @@ const BIO_COUNT_OPTIONS = [
 
 export default function BioTool() {
   const [mode, setMode] = useState<Mode>('personal');
+  const { mode: userMode } = useToolMode();
+  const activeMode: Mode = userMode === 'basic' ? 'personal' : mode;
   const [language, setLanguage] = useState<Language>('en');
   const [emojis, setEmojis] = useState(true);
   const [values, setValues] = useState<PersonalFormValues>(EMPTY_VALUES);
@@ -73,10 +77,17 @@ export default function BioTool() {
   const bioLimit = platformConfig.bioLimit;
   const isLinkedIn = platformConfig.id === 'linkedin';
   const activeLanguage: Language = isLinkedIn ? 'en' : language;
+  const generationValues = useMemo(
+    () => userMode === 'basic' ? { ...values, niche: '', city: '' } : values,
+    [userMode, values],
+  );
+  const generationLanguage: Language = userMode === 'basic' || isLinkedIn ? 'en' : activeLanguage;
+  const generationEmojis = userMode === 'basic' ? true : emojis;
+  const generationCount = userMode === 'basic' ? 5 : count;
 
   const runGeneration = useCallback((): boolean => {
-    if (mode === 'personal') {
-      const validation = validatePersonalForm(values);
+    if (activeMode === 'personal') {
+      const validation = validatePersonalForm(generationValues);
       setErrors(validation);
       if (hasErrors(validation)) {
         setShowSummary(true);
@@ -88,17 +99,19 @@ export default function BioTool() {
       }
     }
 
-    const options = isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const, count } : { limit: bioLimit, count };
+    const options = isLinkedIn
+      ? { limit: bioLimit, poolSet: 'linkedin' as const, count: generationCount }
+      : { limit: bioLimit, count: generationCount };
     const next =
-      mode === 'personal'
-        ? generatePersonalBios(values, activeLanguage, emojis, options)
-        : generateCategoryBios(categoryId, activeLanguage, emojis, options);
+      activeMode === 'personal'
+        ? generatePersonalBios(generationValues, generationLanguage, generationEmojis, options)
+        : generateCategoryBios(categoryId, generationLanguage, generationEmojis, options);
 
     setBios(next);
     setHasGenerated(true);
-    setAnnouncement(`${count} new bios generated.`);
+    setAnnouncement(`${generationCount} new bios generated.`);
     return true;
-  }, [mode, values, activeLanguage, emojis, categoryId, isLinkedIn, bioLimit, count]);
+  }, [activeMode, generationValues, generationLanguage, generationEmojis, categoryId, isLinkedIn, bioLimit, generationCount]);
 
   // Switching mode invalidates the previous result set.
   const switchMode = useCallback((nextMode: Mode) => {
@@ -115,18 +128,18 @@ export default function BioTool() {
   // (temporarily) invalid and keeps the previous list instead.
   useEffect(() => {
     if (!hasGenerated) return;
-    if (mode === 'personal' && hasErrors(validatePersonalForm(values))) return;
+    if (activeMode === 'personal' && hasErrors(validatePersonalForm(generationValues))) return;
 
     const next =
-      mode === 'personal'
-        ? generatePersonalBios(values, activeLanguage, emojis, isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const, count } : { limit: bioLimit, count })
-        : generateCategoryBios(categoryId, activeLanguage, emojis, isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const } : { limit: bioLimit });
+      activeMode === 'personal'
+        ? generatePersonalBios(generationValues, generationLanguage, generationEmojis, isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const, count: generationCount } : { limit: bioLimit, count: generationCount })
+        : generateCategoryBios(categoryId, generationLanguage, generationEmojis, isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const } : { limit: bioLimit });
 
     setBios(next);
     setAnnouncement('Bios refreshed to match your settings.');
     // Deliberately keyed on settings only — typing must not regenerate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeLanguage, emojis, categoryId, isLinkedIn, bioLimit]);
+  }, [activeMode, generationLanguage, generationEmojis, categoryId, isLinkedIn, bioLimit, generationCount]);
 
   const handleFieldChange = useCallback(
     (field: keyof PersonalFormValues, value: string) => {
@@ -144,10 +157,10 @@ export default function BioTool() {
   const regenerateOne = useCallback(
     (index: number) => {
       const replacement = generateSingleBio(
-        mode,
-        { values, categoryId },
-        activeLanguage,
-        emojis,
+        activeMode,
+        { values: generationValues, categoryId },
+        generationLanguage,
+        generationEmojis,
         isLinkedIn ? { limit: bioLimit, poolSet: 'linkedin' as const } : { limit: bioLimit },
         bios,
       );
@@ -158,7 +171,7 @@ export default function BioTool() {
       setBios((current) => current.map((bio, i) => (i === index ? replacement : bio)));
       setAnnouncement(`Bio ${index + 1} replaced with a fresh variation.`);
     },
-    [mode, values, categoryId, activeLanguage, emojis, isLinkedIn, bioLimit, bios],
+    [activeMode, generationValues, categoryId, generationLanguage, generationEmojis, isLinkedIn, bioLimit, bios],
   );
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -167,6 +180,7 @@ export default function BioTool() {
   };
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (userMode === 'basic') return;
     const keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End'];
     if (!keys.includes(event.key)) return;
     event.preventDefault();
@@ -184,9 +198,10 @@ export default function BioTool() {
     (order[next] === 'personal' ? personalTabRef : categoryTabRef).current?.focus();
   };
 
-  const errorMessages = FIELD_ORDER.map((field) => errors[field]).filter(
-    (message): message is string => Boolean(message),
-  );
+  const errorMessages = FIELD_ORDER
+    .filter((field) => userMode === 'advanced' || field === 'name' || field === 'role')
+    .map((field) => errors[field])
+    .filter((message): message is string => Boolean(message));
 
   return (
     <div className="generator-card">
@@ -198,10 +213,10 @@ export default function BioTool() {
             type="button"
             role="tab"
             id="tab-personal"
-            aria-selected={mode === 'personal'}
+            aria-selected={activeMode === 'personal'}
             aria-controls="panel-personal"
-            tabIndex={mode === 'personal' ? 0 : -1}
-            className={`tab${mode === 'personal' ? ' is-active' : ''}`}
+            tabIndex={activeMode === 'personal' ? 0 : -1}
+            className={`tab${activeMode === 'personal' ? ' is-active' : ''}`}
             onClick={() => switchMode('personal')}
           >
             Personalized
@@ -211,17 +226,17 @@ export default function BioTool() {
             type="button"
             role="tab"
             id="tab-category"
-            aria-selected={mode === 'category'}
+            aria-selected={activeMode === 'category'}
             aria-controls="panel-category"
-            tabIndex={mode === 'category' ? 0 : -1}
-            className={`tab${mode === 'category' ? ' is-active' : ''}`}
+            tabIndex={activeMode === 'category' ? 0 : -1}
+            className={`tab tool-advanced${activeMode === 'category' ? ' is-active' : ''}`}
             onClick={() => switchMode('category')}
           >
             By category
           </button>
         </div>
 
-        <div className="generator-options">
+        <div className="generator-options tool-advanced">
           {isLinkedIn ? (
             <p className="tool-note tool-note-inline" role="note">
               LinkedIn professional bios are generated in English.
@@ -254,7 +269,7 @@ export default function BioTool() {
         </div>
 
         <form className="generator-form" onSubmit={handleSubmit} noValidate>
-          {mode === 'personal' && showSummary && errorMessages.length > 0 && (
+          {activeMode === 'personal' && showSummary && errorMessages.length > 0 && (
             <div className="form-error-summary" role="alert">
               <p className="form-error-title">Please fix the following:</p>
               <ul>
@@ -271,12 +286,13 @@ export default function BioTool() {
             id="panel-personal"
             role="tabpanel"
             aria-labelledby="tab-personal"
-            hidden={mode !== 'personal'}
+            hidden={activeMode !== 'personal'}
           >
             <PersonalizedForm values={values} errors={errors} onChange={handleFieldChange} />
           </div>
 
           <div
+            className="tool-advanced"
             id="panel-category"
             role="tabpanel"
             aria-labelledby="tab-category"
@@ -288,6 +304,7 @@ export default function BioTool() {
             </p>
           </div>
 
+          <div className="tool-advanced">
           <SegmentedControl
             label="How many bios"
             visibleLabel="How many"
@@ -295,9 +312,10 @@ export default function BioTool() {
             value={String(count) as '5' | '10' | '20'}
             onChange={(value) => setCount(Number(value) as 5 | 10 | 20)}
           />
+          </div>
 
           <button type="submit" className="btn btn-primary btn-large generate-button">
-            Generate {count} bios
+            Generate {generationCount} bios
           </button>
           <p className="form-footnote">$0 forever · No sign-up · Your text never leaves this page</p>
         </form>
@@ -307,7 +325,7 @@ export default function BioTool() {
       <div className="results-column" role="region" aria-label="Generated bios">
         <div className="results-header">
           <h2 className="results-title">
-            Your bios <span className="results-count">{hasGenerated ? bios.length : count}</span>
+            Your bios <span className="results-count">{hasGenerated ? bios.length : generationCount}</span>
           </h2>
           {hasGenerated && (
             <div className="results-actions">
@@ -324,10 +342,12 @@ export default function BioTool() {
                 <ClipboardIcon size={16} />
                 Copy all
               </button>
+              <DownloadButton text={bios.join('\n\n')} filename="biocraft-bios.txt" />
               <button type="button" className="btn btn-secondary btn-small" onClick={() => runGeneration()}>
                 <RefreshIcon size={16} />
                 Regenerate
               </button>
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => { setBios([]); setHasGenerated(false); }}>Reset results</button>
             </div>
           )}
         </div>
@@ -347,6 +367,7 @@ export default function BioTool() {
                     limit={bioLimit}
                     limitDescription={`the ${platformConfig.name} limit (${bioLimit} characters)`}
                     onRegenerate={() => regenerateOne(index)}
+                    onChange={(value) => setBios((current) => current.map((item, i) => i === index ? value : item))}
                   />
                 </li>
               ))}

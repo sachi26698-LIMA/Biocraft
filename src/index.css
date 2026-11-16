@@ -1056,6 +1056,9 @@ h1, h2, h3, h4 { text-wrap: balance; }
   list-style: none;
   margin: 0; padding: 0;
 }
+.symbol-show-more { display: grid; justify-items: center; gap: 0.3rem; margin: 0.9rem auto 0; }
+.symbol-show-more .field-hint { margin: 0; text-align: center; }
+.symbol-show-more .btn { min-width: min(100%, 12rem); }
 .symbol-button {
   display: grid;
   place-items: center;
@@ -1104,6 +1107,21 @@ h1, h2, h3, h4 { text-wrap: balance; }
   color: var(--tool-deep, var(--accent-hover)); overflow-wrap: anywhere;
 }
 .style-row-text-live { display: block; overflow-wrap: anywhere; }
+.style-row-editable {
+  display: block;
+  width: 100%;
+  min-height: 2.9rem;
+  padding: 0.2rem 0.25rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  resize: vertical;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.style-row-editable:focus-visible { border-color: var(--line-strong); outline: none; box-shadow: var(--focus-ring); }
 @media (min-width: 600px) { .style-row-text--demo { font-size: 1.6rem; } }
 
 /* ---------- Bio category picker (inside the Bio tool) ---------- */
@@ -3034,6 +3052,15 @@ img, svg, video, canvas { max-width: 100%; }
 .symbol-fav:hover { color: #D4A017; transform: scale(1.15); }
 .symbol-fav.is-fav { color: #D4A017; }
 .symbol-fav:focus-visible { outline: none; box-shadow: var(--bc-focus); }
+@media (max-width: 599px) {
+  .symbol-grid { grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 0.5rem; }
+  .symbol-button { min-height: 62px; }
+  .symbol-fav {
+    top: 1px; right: 1px; width: 36px; height: 36px;
+    border: 1px solid var(--line); background: var(--glass-strong);
+    font-size: 1rem;
+  }
+}
 .symbol-side { display: flex; flex-direction: column; gap: 0.9rem; min-width: 0; }
 .symbol-main { min-width: 0; }
 
@@ -3218,6 +3245,7 @@ img, svg, video, canvas { max-width: 100%; }
 .design-studio-placeholder { color: #64748B; font-style: italic; }
 .design-studio-preview .bio-card-foot { margin-top: auto; }
 .design-studio-preview .copy-button-wrap { align-self: flex-end; }
+.design-studio-output { width: 100%; background: rgba(255, 255, 255, 0.08); color: inherit; font: inherit; }
 .mix-gallery-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin: 1.1rem 0 0.6rem; flex-wrap: wrap; }
 .mix-gallery-head .option-label { margin: 0; }
 .mix-gallery-actions { display: inline-flex; align-items: center; gap: 0.5rem; }

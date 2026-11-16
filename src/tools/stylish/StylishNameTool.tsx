@@ -3,6 +3,9 @@ import { UNICODE_STYLES, hasDevanagari } from '../../lib/unicodeStyles';
 import { DISPLAY_NAME_LIMIT, bioLength, tidy } from '../../lib/text';
 import StyleGallery from '../../components/StyleGallery';
 import CharCounter from '../../components/CharCounter';
+import StyleCollectionPicker from '../../components/StyleCollectionPicker';
+import { STYLE_COLLECTIONS } from '../../lib/styleCollections';
+import { useToolMode } from '../../lib/toolMode';
 import { NAME_DESIGNS, applyNameDesign } from './nameDesigns';
 
 const DEMO = 'BioCraft';
@@ -14,6 +17,8 @@ const DEMO = 'BioCraft';
 export default function StylishNameTool() {
   const [name, setName] = useState('');
   const [design, setDesign] = useState('none');
+  const [collection, setCollection] = useState('all');
+  const { mode } = useToolMode();
   const trimmed = tidy(name);
 
   const items = useMemo(
@@ -34,6 +39,8 @@ export default function StylishNameTool() {
       ),
     [trimmed, design],
   );
+  const selectedIds = mode === 'advanced' ? STYLE_COLLECTIONS.find((item) => item.id === collection)?.ids : null;
+  const visibleItems = selectedIds ? items.filter((item) => (selectedIds as readonly string[]).includes(item.id)) : items;
 
   const showDevanagariNote = hasDevanagari(trimmed);
   const count = bioLength(trimmed);
@@ -106,10 +113,11 @@ export default function StylishNameTool() {
               Showing “{DEMO}” in all {UNICODE_STYLES.length} styles — type your name to replace it.
             </p>
           )}
+          <StyleCollectionPicker value={collection} onChange={setCollection} />
           <StyleGallery
-            items={items}
+            items={visibleItems}
             copyLabel={(label) => `Copy ${label} style`}
-            copyAllText={items.map((item) => `${item.label}: ${item.text}`).join('\n')}
+            copyAllText={visibleItems.map((item) => `${item.label}: ${item.text}`).join('\n')}
             copyAllAriaLabel={"Copy all styles to clipboard"}
           />
         </div>

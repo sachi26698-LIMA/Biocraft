@@ -8,3 +8,6 @@ npm-debug.log*
 !.vscode/extensions.json
 .idea
 review-harness.bundle.cjs
+phase4-artifacts/
+playwright-report/
+test-results/
