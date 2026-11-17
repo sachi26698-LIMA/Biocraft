@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import BioCard from '../bio/BioCard';
 import CopyButton from '../../components/CopyButton';
+import DownloadButton from '../../components/DownloadButton';
 import { RefreshIcon } from '../../components/icons';
+import { useToolMode } from '../../lib/toolMode';
 import { generateHeadlines, HEADLINE_LIMIT, isSafeLinkedinInput } from './lib/linkedin';
 
 /**
@@ -9,12 +11,15 @@ import { generateHeadlines, HEADLINE_LIMIT, isSafeLinkedinInput } from './lib/li
  * Five options ≤ 220 characters from Role | Value | Proof patterns.
  */
 export default function HeadlineGenerator() {
+  const { mode: toolMode } = useToolMode();
   const [role, setRole] = useState('');
   const [focus, setFocus] = useState('');
   const [years, setYears] = useState('');
   const [results, setResults] = useState<string[] | null>(null);
   const [errors, setErrors] = useState<{ role?: string; focus?: string; years?: string }>({});
   const [status, setStatus] = useState('');
+  const generationFocus = toolMode === 'basic' ? '' : focus;
+  const generationYears = toolMode === 'basic' ? '' : years;
 
   const validate = () => {
     const next: { role?: string; focus?: string; years?: string } = {};
@@ -24,11 +29,11 @@ export default function HeadlineGenerator() {
     else if (trimmedRole.length > 80) next.role = 'Role must be 80 characters or fewer.';
     else if (!isSafeLinkedinInput(trimmedRole))
       next.role = "Role can only contain letters, numbers and . , ' & ( ) / + | -";
-    const trimmedFocus = focus.trim();
+    const trimmedFocus = generationFocus.trim();
     if (trimmedFocus.length > 80) next.focus = 'Focus must be 80 characters or fewer.';
     else if (trimmedFocus && !isSafeLinkedinInput(trimmedFocus))
       next.focus = "Focus can only contain letters, numbers and . , ' & ( ) / + | -";
-    const trimmedYears = years.trim();
+    const trimmedYears = generationYears.trim();
     if (trimmedYears && !/^\d{1,2}$/.test(trimmedYears))
       next.years = 'Years of experience must be a number between 0 and 45.';
     setErrors(next);
@@ -37,7 +42,7 @@ export default function HeadlineGenerator() {
 
   const handleGenerate = () => {
     if (!validate()) return;
-    const next = generateHeadlines({ role, focus, years });
+    const next = generateHeadlines({ role, focus: generationFocus, years: generationYears });
     setResults(next);
     setStatus(`${next.length} headlines generated.`);
   };
@@ -88,7 +93,7 @@ export default function HeadlineGenerator() {
           )}
         </div>
 
-        <div className="field-grid">
+        <div className="field-grid tool-advanced">
           <div className="field">
             <label htmlFor="linkedin-headline-focus">Focus or domain <span className="optional">(optional)</span></label>
             <input
@@ -147,6 +152,8 @@ export default function HeadlineGenerator() {
           {results && (
             <div className="results-actions">
               <CopyButton text={combined} ariaLabel="Copy all five headlines to clipboard" />
+              <DownloadButton text={combined} filename="biocraft-linkedin-headlines.txt" />
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => setResults(null)}>Reset results</button>
               <button type="button" className="btn btn-secondary btn-small" onClick={handleGenerate}>
                 <RefreshIcon size={16} />
                 Regenerate
@@ -165,6 +172,7 @@ export default function HeadlineGenerator() {
                   label="Headline"
                   limit={HEADLINE_LIMIT}
                   limitDescription="LinkedIn's 220-character headline limit"
+                  onChange={(value) => setResults((current) => current?.map((item, i) => i === index ? value : item) ?? null)}
                 />
               </li>
             ))}

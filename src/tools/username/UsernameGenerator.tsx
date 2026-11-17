@@ -4,12 +4,15 @@ import {
   prepareTokens,
   validateUsernameForm,
   USERNAME_TARGET,
+  HANDLE_PATTERN,
   type UsernameSuggestion,
   type UsernameFormValues,
   type UsernameVibe,
 } from './lib/usernameGenerator';
 import { copyText } from '../../lib/clipboard';
 import { CheckIcon, ClipboardIcon, RefreshIcon } from '../../components/icons';
+import DownloadButton from '../../components/DownloadButton';
+import { useToolMode } from '../../lib/toolMode';
 
 const VIBE_OPTIONS: Array<{ id: UsernameVibe; en: string; hi: string }> = [
   { id: 'aesthetic', en: 'Aesthetic', hi: 'सौंदर्य' },
@@ -28,6 +31,7 @@ const fieldId = (field: keyof UsernameFormValues) => `username-${field}`;
  * guaranteed — Instagram decides what is taken.
  */
 export default function UsernameGenerator() {
+  const { mode: toolMode } = useToolMode();
   const [values, setValues] = useState<UsernameFormValues>({ name: '', keyword: '' });
   const [vibe, setVibe] = useState<UsernameVibe>('aesthetic');
   const [maxLength, setMaxLength] = useState(12);
@@ -36,6 +40,7 @@ export default function UsernameGenerator() {
   const [results, setResults] = useState<UsernameSuggestion[] | null>(null);
   const [copiedHandle, setCopiedHandle] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
+  const generationValues = toolMode === 'basic' ? { ...values, keyword: '' } : values;
   const copyTimer = useRef<number | null>(null);
 
   useEffect(
@@ -50,7 +55,7 @@ export default function UsernameGenerator() {
   );
 
   const runGeneration = () => {
-    const nextErrors = validateUsernameForm(values);
+    const nextErrors = validateUsernameForm(generationValues);
     setErrors(nextErrors);
     const hasFailures = Object.keys(nextErrors).length > 0;
     setShowSummary(hasFailures);
@@ -59,7 +64,7 @@ export default function UsernameGenerator() {
       if (first) document.getElementById(fieldId(first))?.focus();
       return;
     }
-    const suggestions = generateUsernames(values, { vibe, maxLength });
+    const suggestions = generateUsernames(generationValues, { vibe: toolMode === 'basic' ? 'aesthetic' : vibe, maxLength: toolMode === 'basic' ? 12 : maxLength });
     setResults(suggestions);
     setStatusMessage(`${suggestions.length} usernames generated.`);
   };
@@ -92,7 +97,7 @@ export default function UsernameGenerator() {
     copyTimer.current = window.setTimeout(() => setCopiedHandle(null), 1600);
   };
 
-  const tokens = results ? prepareTokens(values) : null;
+  const tokens = results ? prepareTokens(generationValues) : null;
 
   return (
     <div className="tool-card">
@@ -139,7 +144,7 @@ export default function UsernameGenerator() {
             )}
           </div>
 
-          <div className="field">
+          <div className="field tool-advanced">
             <label htmlFor={fieldId('keyword')}>Keyword or niche</label>
             <input
               id={fieldId('keyword')}
@@ -166,7 +171,7 @@ export default function UsernameGenerator() {
         </div>
 
 
-        <div className="fieldset-row">
+        <div className="fieldset-row tool-advanced">
           <fieldset className="plain-fieldset plain-fieldset-grow">
             <legend className="option-label" id="vibe-legend">Vibe <span lang="hi" className="option-label-hi">वाइब</span></legend>
             <div className="chip-row" role="group" aria-labelledby="vibe-legend">
@@ -229,6 +234,8 @@ export default function UsernameGenerator() {
                 <ClipboardIcon size={16} />
                 Copy all
               </button>
+              <DownloadButton text={results.map((item) => item.username).join('\n')} filename="biocraft-usernames.txt" />
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => setResults(null)}>Reset results</button>
               <button type="button" className="btn btn-secondary btn-small" onClick={runGeneration}>
                 <RefreshIcon size={16} />
                 Regenerate
@@ -248,32 +255,24 @@ export default function UsernameGenerator() {
               </p>
             )}
             <ol className="username-grid">
-              {results.map((suggestion) => (
-                <li key={suggestion.username}>
-                  <button
-                    type="button"
-                    className="username-item"
-                    onClick={() => void copyHandle(suggestion.username)}
-                    aria-label={`Copy handle ${suggestion.username} to clipboard`}
-                  >
+              {results.map((suggestion, index) => (
+                <li key={index}>
+                  <article className="username-item">
                     <span className="username-text">
-                      <span className="username-handle">{suggestion.username}</span>
+                      <label className="sr-only" htmlFor={`username-result-${index}`}>Edit username idea {index + 1}</label>
+                      <input id={`username-result-${index}`} className="username-handle username-result-input" value={suggestion.username} maxLength={30} spellCheck={false} aria-invalid={!HANDLE_PATTERN.test(suggestion.username)} aria-label={`Edit username idea ${index + 1}`} onChange={(event) => { const username = event.target.value; setResults((current) => current?.map((item, i) => i === index ? { ...item, username } : item) ?? null); }} />
                       <span className="username-style">{suggestion.style}</span>
                     </span>
-                    <span className="username-copy-icon" aria-hidden="true">
-                      {copiedHandle === suggestion.username ? (
-                        <CheckIcon size={16} />
-                      ) : (
-                        <ClipboardIcon size={16} />
-                      )}
-                    </span>
-                  </button>
+                    <button type="button" className="username-copy-button" onClick={() => void copyHandle(suggestion.username)} disabled={!HANDLE_PATTERN.test(suggestion.username)} aria-label={`Copy handle ${suggestion.username} to clipboard`}>
+                      {copiedHandle === suggestion.username ? <CheckIcon size={16} /> : <ClipboardIcon size={16} />}
+                    </button>
+                  </article>
                 </li>
               ))}
             </ol>
             <p className="results-note">
-              Handles follow Instagram’s character rules, but availability is never
-              guaranteed — Instagram decides what is taken.
+              Edit any handle directly; copying is enabled while it follows Instagram’s format.
+              Availability is never guaranteed — Instagram decides what is taken.
             </p>
           </>
         ) : (

@@ -15,7 +15,7 @@ async function main() {
   // This component consumes the regular platform context; provide a provider.
   const m = new module.constructor(path.join(process.cwd(), 'generation-ui-test.cjs'), module); m.filename = path.join(process.cwd(), 'generation-ui-test.cjs'); m.paths = module.paths;
   const wrapper = await esbuild.build({
-    stdin: { contents: "export { default as Tool } from './src/tools/bio/BioTool'; export { ToolkitProvider } from './src/lib/toolkit'; export { default as React, act } from 'react'; export { createRoot } from 'react-dom/client';", resolveDir: process.cwd(), loader: 'tsx' },
+    stdin: { contents: "export { default as Tool } from './src/tools/bio/BioTool'; export { ToolkitProvider } from './src/lib/toolkit'; export { ToolModeProvider } from './src/lib/toolMode'; export { default as React, act } from 'react'; export { createRoot } from 'react-dom/client';", resolveDir: process.cwd(), loader: 'tsx' },
     bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external',
     plugins: [{ name: 'mock-job-runner', setup(build) {
       build.onResolve({ filter: /\/lib\/generationRunner$/ }, () => ({ path: 'runner', namespace: 'mock' }));
@@ -23,9 +23,10 @@ async function main() {
     } }],
   });
   m._compile(wrapper.outputFiles[0].text, m.filename);
-  const { Tool, ToolkitProvider, React, act, createRoot } = m.exports;
+  const { Tool, ToolkitProvider, ToolModeProvider, React, act, createRoot } = m.exports;
+  dom.window.localStorage.setItem('biocraft:tool-mode', 'advanced');
   const root = createRoot(document.getElementById('root'));
-  await act(async () => root.render(React.createElement(ToolkitProvider, null, React.createElement(Tool))));
+  await act(async () => root.render(React.createElement(ToolModeProvider, null, React.createElement(ToolkitProvider, null, React.createElement(Tool)))));
   const click = async (element) => act(async () => element.dispatchEvent(new window.MouseEvent('click', { bubbles: true })));
   const button = (label) => [...document.querySelectorAll('button')].find(x => x.textContent.trim() === label);
   await click(button('By category'));

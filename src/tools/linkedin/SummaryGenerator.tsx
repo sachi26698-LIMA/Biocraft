@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import BioCard from '../bio/BioCard';
 import CopyButton from '../../components/CopyButton';
+import DownloadButton from '../../components/DownloadButton';
 import { RefreshIcon } from '../../components/icons';
+import { useToolMode } from '../../lib/toolMode';
 import { generateSummaries, SUMMARY_LIMIT, isSafeLinkedinInput } from './lib/linkedin';
 
 /**
@@ -9,11 +11,13 @@ import { generateSummaries, SUMMARY_LIMIT, isSafeLinkedinInput } from './lib/lin
  * Five structured About-section drafts ≤ 2,600 characters.
  */
 export default function SummaryGenerator() {
+  const { mode: toolMode } = useToolMode();
   const [role, setRole] = useState('');
   const [focus, setFocus] = useState('');
   const [results, setResults] = useState<string[] | null>(null);
   const [errors, setErrors] = useState<{ role?: string; focus?: string }>({});
   const [status, setStatus] = useState('');
+  const generationFocus = toolMode === 'basic' ? '' : focus;
 
   const validate = () => {
     const next: { role?: string; focus?: string } = {};
@@ -23,7 +27,7 @@ export default function SummaryGenerator() {
     else if (trimmedRole.length > 80) next.role = 'Role must be 80 characters or fewer.';
     else if (!isSafeLinkedinInput(trimmedRole))
       next.role = "Role can only contain letters, numbers and . , ' & ( ) / + | -";
-    const trimmedFocus = focus.trim();
+    const trimmedFocus = generationFocus.trim();
     if (trimmedFocus.length > 120) next.focus = 'Focus must be 120 characters or fewer.';
     else if (trimmedFocus && !isSafeLinkedinInput(trimmedFocus))
       next.focus = "Focus can only contain letters, numbers and . , ' & ( ) / + | -";
@@ -33,7 +37,7 @@ export default function SummaryGenerator() {
 
   const handleGenerate = () => {
     if (!validate()) return;
-    const next = generateSummaries({ role, focus });
+    const next = generateSummaries({ role, focus: generationFocus });
     setResults(next);
     setStatus(`${next.length} summaries generated.`);
   };
@@ -84,7 +88,7 @@ export default function SummaryGenerator() {
           )}
         </div>
 
-        <div className="field">
+        <div className="field tool-advanced">
           <label htmlFor="linkedin-summary-focus">Focus or domain <span className="optional">(optional)</span></label>
           <input
             id="linkedin-summary-focus"
@@ -121,6 +125,8 @@ export default function SummaryGenerator() {
           {results && (
             <div className="results-actions">
               <CopyButton text={combined} ariaLabel="Copy all five summaries to clipboard" />
+              <DownloadButton text={combined} filename="biocraft-linkedin-summaries.txt" />
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => setResults(null)}>Reset results</button>
               <button type="button" className="btn btn-secondary btn-small" onClick={handleGenerate}>
                 <RefreshIcon size={16} />
                 Regenerate
@@ -139,6 +145,7 @@ export default function SummaryGenerator() {
                   label="Summary"
                   limit={SUMMARY_LIMIT}
                   limitDescription="LinkedIn's 2,600-character About limit"
+                  onChange={(value) => setResults((current) => current?.map((item, i) => i === index ? value : item) ?? null)}
                 />
               </li>
             ))}

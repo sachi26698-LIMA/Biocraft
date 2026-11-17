@@ -1,5 +1,7 @@
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckIcon, SearchIcon } from '../../components/icons';
+import DownloadButton from '../../components/DownloadButton';
+import { useToolMode } from '../../lib/toolMode';
 import { copyText } from '../../lib/clipboard';
 import { useSymbolFavourites, useSymbolRecents } from '../../lib/toolbox';
 import {
@@ -45,10 +47,15 @@ const SymbolGrid = memo(function SymbolGrid({ results, favs, copiedGlyph, onCopy
  * you copy, and ready-made signature combos sit on top. Nothing leaves the
  * browser.
  */
+const SYMBOL_PAGE_SIZE = 48;
+
 export default function SymbolGenerator() {
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
   const [activeCategory, setActiveCategory] = useState<string>('all');
+  const [visibleCount, setVisibleCount] = useState(SYMBOL_PAGE_SIZE);
+  const { mode: toolMode } = useToolMode();
+  const visibleCategory = toolMode === 'basic' ? 'all' : activeCategory;
   const [copiedGlyph, setCopiedGlyph] = useState<string | null>(null);
   const [copiedCombo, setCopiedCombo] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
@@ -61,7 +68,7 @@ export default function SymbolGenerator() {
   }, []);
 
   const results = useMemo(() => {
-    if (activeCategory === 'favs') {
+    if (visibleCategory === 'favs') {
       const trimmed = deferredQuery.trim().toLowerCase();
       const favbed = searchSymbols('', 'all').filter((symbol) => favs.has(symbol.glyph));
       if (!trimmed) return favbed;
@@ -69,8 +76,11 @@ export default function SymbolGenerator() {
         `${symbol.keywords} ${symbol.categoryLabel}`.toLowerCase().includes(trimmed),
       );
     }
-    return searchSymbols(deferredQuery, activeCategory);
-  }, [deferredQuery, activeCategory, favs]);
+    return searchSymbols(deferredQuery, visibleCategory);
+  }, [deferredQuery, visibleCategory, favs]);
+
+  useEffect(() => { setVisibleCount(SYMBOL_PAGE_SIZE); }, [deferredQuery, visibleCategory]);
+  const visibleResults = results.slice(0, visibleCount);
 
   const announce = (message: string) => setStatusMessage(message);
 
@@ -111,7 +121,7 @@ export default function SymbolGenerator() {
     <div className="tool-card tool-card--split">
       <div className="symbol-side">
       {/* ------- Signature combos ------- */}
-      <div className="symbol-combos">
+      <div className="symbol-combos tool-advanced">
         <p className="option-label symbol-combos-label" id="symbol-combos-label">
           Signature combos — one tap to copy
         </p>
@@ -161,14 +171,15 @@ export default function SymbolGenerator() {
             className="btn btn-secondary btn-small copy-all-inline"
             onClick={() => void copyAll()}
             disabled={results.length === 0}
-            aria-label={`Copy all ${results.length} visible symbols to clipboard`}
+            aria-label={`Copy all ${results.length} matching symbols to clipboard`}
           >
             Copy all
           </button>
+          <DownloadButton text={results.map((symbol) => symbol.glyph).join(' ')} filename="biocraft-symbols.txt" label="Download" />
         </div>
       </div>
 
-      <div className="symbol-categories" role="group" aria-label="Symbol category">
+      <div className="symbol-categories tool-advanced" role="group" aria-label="Symbol category">
         <button
           type="button"
           className={`chip${activeCategory === 'all' ? ' is-selected' : ''}`}
@@ -179,8 +190,8 @@ export default function SymbolGenerator() {
         </button>
         <button
           type="button"
-          className={`chip${activeCategory === 'favs' ? ' is-selected' : ''}`}
-          aria-pressed={activeCategory === 'favs'}
+          className={`chip${visibleCategory === 'favs' ? ' is-selected' : ''}`}
+          aria-pressed={visibleCategory === 'favs'}
           onClick={() => setActiveCategory('favs')}
         >
           ★ Favourites{favCount > 0 ? ` (${favCount})` : ''}
@@ -223,10 +234,20 @@ export default function SymbolGenerator() {
 
       <div className="symbol-main">
       {results.length > 0 ? (
-        <SymbolGrid results={results} favs={favs} copiedGlyph={copiedGlyph} onCopy={copySymbol} onToggle={toggleFav} />
+        <>
+          <SymbolGrid results={visibleResults} favs={favs} copiedGlyph={copiedGlyph} onCopy={copySymbol} onToggle={toggleFav} />
+          {visibleResults.length < results.length && (
+            <div className="symbol-show-more">
+              <p className="field-hint">Showing {visibleResults.length} of {results.length} matching symbols</p>
+              <button type="button" className="btn btn-secondary" onClick={() => setVisibleCount((current) => Math.min(current + SYMBOL_PAGE_SIZE, results.length))} aria-label={`Show ${Math.min(SYMBOL_PAGE_SIZE, results.length - visibleResults.length)} more symbols`}>
+                Show {Math.min(SYMBOL_PAGE_SIZE, results.length - visibleResults.length)} more
+              </button>
+            </div>
+          )}
+        </>
       ) : (
         <p className="empty-state-text styles-empty">
-          {activeCategory === 'favs'
+          {visibleCategory === 'favs'
             ? favCount === 0
               ? 'No favourites yet — tap ☆ on any symbol to save it here.'
               : `No favourites match “${trimmedQuery}”.`

@@ -3,41 +3,31 @@ import { UNICODE_STYLES, hasDevanagari } from '../../lib/unicodeStyles';
 import { DISPLAY_NAME_LIMIT, bioLength, tidy } from '../../lib/text';
 import StyleGallery from '../../components/StyleGallery';
 import CharCounter from '../../components/CharCounter';
+import StyleCollectionPicker from '../../components/StyleCollectionPicker';
+import { STYLE_COLLECTIONS } from '../../lib/styleCollections';
+import { useToolMode } from '../../lib/toolMode';
 import { NAME_DESIGNS, applyNameDesign } from './nameDesigns';
 
 const DEMO = 'BioCraft';
 const copyLabel = (label: string) => `Copy ${label} style`;
 
-/**
- * Stylish Name Generator — your display name in styled Unicode alphabets,
- * each variant copy-able. Rule-based, nothing leaves the browser.
- */
+/** Transform a display name into editable, copyable Unicode alphabets. */
 export default function StylishNameTool() {
   const [name, setName] = useState('');
   const [design, setDesign] = useState('none');
+  const [collection, setCollection] = useState('all');
+  const { mode } = useToolMode();
   const trimmed = tidy(name);
   const previewName = useDeferredValue(trimmed);
 
-  const items = useMemo(
-    () =>
-      UNICODE_STYLES.map((style) =>
-        previewName
-          ? {
-              id: style.id,
-              label: style.label,
-              text: applyNameDesign(style.transform(previewName), design),
-              demo: applyNameDesign(style.transform(DEMO), design),
-            }
-          : {
-              id: style.id,
-              label: style.label,
-              text: applyNameDesign(style.transform(DEMO), design),
-            },
-      ),
-    [previewName, design],
-  );
-  const copyAllText = useMemo(() => items.map((item) => `${item.label}: ${item.text}`).join('\n'), [items]);
-
+  const items = useMemo(() => UNICODE_STYLES.map((style) => (
+    previewName
+      ? { id: style.id, label: style.label, text: applyNameDesign(style.transform(previewName), design), demo: applyNameDesign(style.transform(DEMO), design) }
+      : { id: style.id, label: style.label, text: applyNameDesign(style.transform(DEMO), design) }
+  )), [previewName, design]);
+  const selectedIds = mode === 'advanced' ? STYLE_COLLECTIONS.find((item) => item.id === collection)?.ids : null;
+  const visibleItems = selectedIds ? items.filter((item) => (selectedIds as readonly string[]).includes(item.id)) : items;
+  const copyAllText = useMemo(() => visibleItems.map((item) => `${item.label}: ${item.text}`).join('\n'), [visibleItems]);
   const showDevanagariNote = hasDevanagari(trimmed);
   const count = bioLength(trimmed);
 
@@ -59,62 +49,25 @@ export default function StylishNameTool() {
               onChange={(event) => setName(event.target.value)}
             />
             <div className="field-inline-select">
-              <label htmlFor="stylish-design-select" className="option-label">
-                Name design <span className="optional">(optional)</span>
-              </label>
-              <select
-                id="stylish-design-select"
-                className="select"
-                value={design}
-                onChange={(event) => setDesign(event.target.value)}
-              >
-                {NAME_DESIGNS.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.label}
-                  </option>
-                ))}
+              <label htmlFor="stylish-design-select" className="option-label">Name design <span className="optional">(optional)</span></label>
+              <select id="stylish-design-select" className="select" value={design} onChange={(event) => setDesign(event.target.value)}>
+                {NAME_DESIGNS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
               </select>
-              <p className="field-hint">
-                Wraps the styled name in a ready-made frame — crown, gaming, attitude and more.
-              </p>
+              <p className="field-hint">Wraps the styled name in a ready-made frame — crown, gaming, attitude and more.</p>
             </div>
             <div className="field-meta">
-              <p className="field-hint" id="stylish-name-hint">
-                Latin letters and digits get the full treatment; other characters pass through.
-              </p>
-              <CharCounter
-                count={count}
-                limit={DISPLAY_NAME_LIMIT}
-                ariaLabel="Display name length against Instagram's 30-character limit"
-              />
+              <p className="field-hint" id="stylish-name-hint">Latin letters and digits get the full treatment; other characters pass through.</p>
+              <CharCounter count={count} limit={DISPLAY_NAME_LIMIT} ariaLabel="Display name length against Instagram's 30-character limit" />
             </div>
           </div>
-
-          {showDevanagariNote && (
-            <p className="tool-note" role="note">
-              Devanagari text can’t be restyled — Unicode has no styled Devanagari alphabets.
-              Devanagari characters will appear unchanged.
-            </p>
-          )}
-
-          <p className="tool-note">
-            Instagram display names are capped at {DISPLAY_NAME_LIMIT} characters. If a variant
-            goes over, Instagram truncates it.
-          </p>
+          {showDevanagariNote && <p className="tool-note" role="note">Devanagari text can’t be restyled — Unicode has no styled Devanagari alphabets. Devanagari characters will appear unchanged.</p>}
+          <p className="tool-note">Instagram display names are capped at {DISPLAY_NAME_LIMIT} characters. If a variant goes over, Instagram truncates it.</p>
         </div>
 
         <div className="styles-main" aria-live="polite">
-          {!previewName && (
-            <p className="tool-note" role="note">
-              Showing “{DEMO}” in all {UNICODE_STYLES.length} styles — type your name to replace it.
-            </p>
-          )}
-          <StyleGallery
-            items={items}
-            copyLabel={copyLabel}
-            copyAllText={copyAllText}
-            copyAllAriaLabel={"Copy all styles to clipboard"}
-          />
+          {!previewName && <p className="tool-note" role="note">Showing “{DEMO}” in all {UNICODE_STYLES.length} styles — type your name to replace it.</p>}
+          <StyleCollectionPicker value={collection} onChange={setCollection} />
+          <StyleGallery items={visibleItems} copyLabel={copyLabel} copyAllText={copyAllText} copyAllAriaLabel="Copy all styles to clipboard" />
         </div>
       </div>
     </div>

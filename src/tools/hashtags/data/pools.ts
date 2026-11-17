@@ -400,6 +400,8 @@ export interface HashtagResult {
   tags: string[];
   /** Tags derived from the user's own keywords (shown first). */
   fromKeywords: number;
+  /** Relevance buckets used to render the result as an editable grouped set. */
+  groups: { keywords: string[]; broad: string[]; medium: string[]; focused: string[] };
 }
 
 /**
@@ -418,17 +420,19 @@ export function generateHashtags(
 
   const seen = new Set<string>();
   const tags: string[] = [];
-  const push = (tag: string) => {
+  const groups: HashtagResult['groups'] = { keywords: [], broad: [], medium: [], focused: [] };
+  const push = (tag: string, group: keyof HashtagResult['groups'] = 'focused') => {
     const key = tag.toLowerCase();
     if (seen.has(key) || tags.length >= size) return false;
     seen.add(key);
     tags.push(tag);
+    groups[group].push(tag);
     return true;
   };
 
   // 1) User keywords first — most relevant by definition.
   for (const token of keywordTokens(rawKeywords)) {
-    for (const variant of keywordVariants(token)) push(variant);
+    for (const variant of keywordVariants(token)) push(variant, 'keywords');
   }
   const fromKeywords = tags.length;
 
@@ -438,7 +442,7 @@ export function generateHashtags(
     let taken = 0;
     for (const tag of pool) {
       if (taken >= count || tags.length >= size) break;
-      if (push(tag)) taken += 1;
+      if (push(tag, bucket)) taken += 1;
     }
   };
   takeFrom('broad', needBroad);
@@ -449,10 +453,10 @@ export function generateHashtags(
   for (const bucket of ['focused', 'medium', 'broad'] as Bucket[]) {
     for (const tag of shuffle(niche.pools[language][bucket])) {
       if (tags.length >= size) break;
-      push(tag);
+      push(tag, bucket);
     }
     if (tags.length >= size) break;
   }
 
-  return { tags, fromKeywords };
+  return { tags, fromKeywords, groups };
 }

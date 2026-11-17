@@ -4,10 +4,10 @@ import ToolWorkspace from './ToolWorkspace';
 import Breadcrumbs from './Breadcrumbs';
 import { TOOLS, toolForPath } from '../tools/registry';
 import { useRecentlyUsed } from '../lib/toolbox';
-import HomePage from '../pages/HomePage';
 import { infoPageForPath } from '../pages/info';
 import { collectionForPath } from '../lib/bioCollections';
 
+const HomePage = lazy(() => import('../pages/HomePage'));
 const InfoPage = lazy(() => import('../pages/InfoPage'));
 const FeaturesPage = lazy(() => import('../pages/FeaturesPage'));
 const CategoriesPage = lazy(() => import('../pages/CategoriesPage'));
@@ -23,8 +23,7 @@ const HOME = '/';
 const diagnosticsEnabled = typeof __BIOCRAFT_PREVIEW_DIAGNOSTICS__ !== 'undefined' && __BIOCRAFT_PREVIEW_DIAGNOSTICS__;
 const DiagnosticsPage = diagnosticsEnabled ? lazy(() => import('../pages/PreviewDiagnosticsPage')) : null;
 
-// A fragment can be requested before a lazy page exists; resolve it after the
-// page actually mounts instead of silently leaving the visitor at the top.
+// Resolve in-page links only after lazy route content is mounted.
 function ReadyPage({ path, children }: { path: string; children: ReactNode }) {
   useEffect(() => {
     const hash = window.location.hash.slice(1);
@@ -33,7 +32,11 @@ function ReadyPage({ path, children }: { path: string; children: ReactNode }) {
   return children;
 }
 function DeferredPage({ path, children }: { path: string; children: ReactNode }) {
-  return <Suspense fallback={<p className="route-loading" role="status">Loading page…</p>}><ReadyPage path={path}>{children}</ReadyPage></Suspense>;
+  return (
+    <Suspense fallback={<div className="tool-loading" role="status" aria-live="polite">Loading page…</div>}>
+      <ReadyPage path={path}>{children}</ReadyPage>
+    </Suspense>
+  );
 }
 
 /**
@@ -50,11 +53,7 @@ function DeferredPage({ path, children }: { path: string; children: ReactNode })
  */
 export default function ToolShell() {
   const path = usePath();
-  // Mount vs. in-app navigation: track the previous path instead of a
-  // first-render ref, so focus is never stolen on a fresh page load — even
-  // under StrictMode's double-effect in development.
   const prevPath = useRef<string | null>(null);
-
   const isHome = path === HOME;
   const isCategories = path === '/categories';
   const isCollectionsIndex = path === COLLECTIONS_INDEX;
@@ -67,16 +66,13 @@ export default function ToolShell() {
   const infoPage = infoPageForPath(path);
   const { record } = useRecentlyUsed();
 
-  // Unknown paths fall back to the homepage.
   useEffect(() => {
     if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isFeatures && !isDiagnostics && !collection) {
       navigate(HOME, { replace: true });
     }
   }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, isDiagnostics, collection]);
 
-  // On client-side navigation, request only the small common-styles font when
-  // bundled collection content or a font gallery will use it. Other glyphs
-  // remain demand-loaded by CSS.
+  // Load only the small common-math font on routes whose content needs it.
   useEffect(() => {
     const hasCommonMath = collection?.bios.some((bio) => /[\u{1d400}-\u{1d433}\u{1d5d4}-\u{1d607}\u{1d670}-\u{1d6a3}]/u.test(bio.text));
     if ((hasCommonMath || path === '/stylish-name-generator' || path === '/fancy-font-generator') && document.fonts?.load) {
@@ -84,15 +80,12 @@ export default function ToolShell() {
     }
   }, [path, collection]);
 
-  // Remember tool visits (localStorage only) for the "Recently used" rail.
   useEffect(() => {
     if (isToolRoute) record(tool.key);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, isToolRoute]);
 
-  // After in-app navigation the workspace remounts (route swap), which would
-  // drop focus to <body>. Return focus to the panel so keyboard and
-  // screen-reader users land where the action is. Not on initial page load.
+  // Restore focus after client-side route changes, but never steal it on load.
   useEffect(() => {
     if (prevPath.current === null) {
       prevPath.current = path;
@@ -126,8 +119,8 @@ export default function ToolShell() {
     }
   }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, isDiagnostics, collection, tool]);
 
-  if (isDiagnostics && DiagnosticsPage) return <Suspense fallback={<p>Loading diagnostics…</p>}><DiagnosticsPage /></Suspense>;
-  if (isHome) return <HomePage />;
+  if (isDiagnostics && DiagnosticsPage) return <Suspense fallback={<div role="status">Loading diagnostics…</div>}><DiagnosticsPage /></Suspense>;
+  if (isHome) return <DeferredPage path={path}><HomePage /></DeferredPage>;
   if (isCategories) return <DeferredPage path={path}><CategoriesPage /></DeferredPage>;
   if (isCollectionsIndex) return <DeferredPage path={path}><BioCollectionsPage /></DeferredPage>;
   if (isBioEditor) return <DeferredPage path={path}><BioEditorPage /></DeferredPage>;
@@ -157,7 +150,7 @@ export default function ToolShell() {
       </section>
     );
   }
-  if (path === '/features') return <DeferredPage path={path}><FeaturesPage /></DeferredPage>;
+  if (isFeatures) return <DeferredPage path={path}><FeaturesPage /></DeferredPage>;
   if (infoPage) return <DeferredPage path={path}><InfoPage path={path} /></DeferredPage>;
-  return <HomePage />; // transient state while the replace-navigation lands
+  return <DeferredPage path={path}><HomePage /></DeferredPage>;
 }
