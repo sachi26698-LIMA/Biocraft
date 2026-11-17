@@ -1,6 +1,6 @@
 # BIOCRAFT — Critical Fix & Stabilisation: Final Acceptance Report
 
-Branch `arena/92b611c5-biocraft` · 2026-11-09
+Branch `arena/92b611c5-biocraft` · 2026-11-09 · updated after merging `main`
 Project: `jvpadtzfsuekixrquzjv` (existing only, no new project created)
 
 Every row is marked **PASS**, **FAIL** or **NOT VERIFIED**. Nothing is marked PASS
@@ -212,14 +212,36 @@ redesigned UI, worth a dedicated pass but not a blocker (still well under 0.1).
 I have **not** merged, **not** enabled the public Supabase link, and **not** changed
 `bc_app_v1` or any table — those need the approvals above.
 
-## 13. Test totals
+## 13. Found while merging `main`
+
+Merging `main` surfaced one pre-existing failure, reproduced identically on
+`origin/main` in a clean worktree, so it was **not** caused by this branch:
+
+- **`Copy all` on the symbol grid had no visible confirmation.** It copied the
+  right text and announced it to assistive tech, but the button's own label never
+  changed, so a sighted user could not tell the copy happened. Every other copy
+  control in the tool swaps to a check. Fixed in `SymbolGenerator.tsx` to match.
+- **The workflow test assumed every copy button is clickable.** The new
+  Basic/Advanced toggle hides the combo chips behind `display: none`, giving them
+  a 0×0 box that no scroll can bring into view. The test now selects visible
+  buttons, so it still fails when a tool renders no usable output.
+
+I verified the Advanced section separately: all 61 copy buttons become visible and
+the combos work in Advanced mode. The product was hiding them by design.
+
+Two harness ordering constraints are documented rather than "fixed", because the
+behaviour is intentional: `test:admin-build-matrix` and `test:admin-bundle-secrets`
+both build and then **delete** `dist/`, so any suite that needs a built preview
+must run after them. The runs above respect that order.
+
+## 14. Test totals
 
 | Suite | Result |
 |---|---|
 | `tsc --noEmit` | **PASS** |
 | Production build | **PASS** — 14 shells, 2 chunks |
 | Preview build (both flag states) | **PASS** |
-| Non-browser + browser suites | **48 / 48 PASS** |
+| Non-browser + browser suites | **54 / 54 PASS** (after merging `main`) |
 | `admin-postgres` on a fresh cluster | **PASS** — PostgreSQL 18.6 |
 | `build-admin-entry` both directions | **PASS** |
 | New guards added | `admin-build-matrix`, `admin-routes-14`, `admin-api-authz`, `admin-bundle-secrets` |
