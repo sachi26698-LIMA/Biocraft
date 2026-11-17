@@ -58,6 +58,10 @@
     "test:admin-csv-export": "node tests/admin-csv-export-browser.cjs",
     "test:build-admin-entry": "node tests/build-admin-entry.cjs",
     "test:admin-allowlist": "node tests/admin-allowlist.mjs",
+    "test:admin-build-matrix": "node tests/admin-build-matrix.mjs",
+    "test:admin-routes-14": "node tests/admin-routes-14-browser.mjs",
+    "test:admin-api-authz": "node tests/admin-api-authz.mjs",
+    "test:admin-bundle-secrets": "node tests/admin-bundle-secrets.mjs",
     "test:regression": "esbuild review-harness.tsx --bundle --platform=node --format=cjs --outfile=review-harness.bundle.cjs && node review-check.cjs",
     "test:responsive": "node responsive-audit.cjs",
     "test:browser": "playwright test"

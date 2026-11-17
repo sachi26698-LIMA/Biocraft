@@ -162,11 +162,20 @@ async function runTool(browser, tool) {
   // changed and that the clipboard holds what the button claims to copy.
   const copyButtons = page.locator('button[aria-label*="opy"], button[aria-label*="handle"]');
   const copyCount = await copyButtons.count();
-  if (copyCount === 0) {
+  // Tools can hide whole sections behind a Basic/Advanced toggle. A hidden
+  // control is still a real control: it exists in the DOM at display:none, so
+  // its box is 0x0 and scrolling it into view can never succeed. The symbol
+  // grid ships its combo chips that way — 12 of 61 buttons sit in the Advanced
+  // section, which is closed by default. Asserting on the visible ones keeps
+  // this test measuring "the tool produced usable output" rather than "the
+  // default mode renders every control", which was never the intent.
+  const visibleCopyButtons = copyButtons.filter({visible: true});
+  const visibleCount = await visibleCopyButtons.count();
+  if (visibleCount === 0) {
     fail(`${tool.key}: no copy buttons — the tool produced no output`);
   } else {
     await ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
-    const first = copyButtons.first();
+    const first = visibleCopyButtons.first();
     const label = await first.getAttribute('aria-label');
     await first.scrollIntoViewIfNeeded();
     // Feedback may be text ("Copied") or an icon swap. Capture the rendered
@@ -182,7 +191,7 @@ async function runTool(browser, tool) {
     } else if (before === after) {
       fail(`${tool.key}: no copy feedback — markup and class unchanged after the click`);
     } else {
-      ok(`${tool.key}: ${copyCount} copy buttons; "${label}" copied ${clip.trim().length} chars`);
+      ok(`${tool.key}: ${visibleCount} copy buttons; "${label}" copied ${clip.trim().length} chars`);
     }
 
     // Pressing again must still work — the state machine is not one-shot.

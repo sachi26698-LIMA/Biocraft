@@ -56,7 +56,7 @@ const session = {
     await page.goto(`${BASE}/admin/analytics`, { waitUntil: 'networkidle' });
     await page.getByRole('heading', { name: /analytics/i }).first().waitFor({ timeout: 20000 });
 
-    const button = page.getByRole('button', { name: 'Download metrics as CSV' });
+    const button = page.getByRole('button', { name: /Export CSV/i });
     assert.equal(await button.count(), 1, 'the CSV export control should be present');
     assert.equal(await button.isDisabled(), false, 'the export control should be enabled once rows exist');
 
