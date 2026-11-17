@@ -59,6 +59,7 @@ export default function SymbolGenerator() {
   const [copiedGlyph, setCopiedGlyph] = useState<string | null>(null);
   const [copiedCombo, setCopiedCombo] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('');
+  const [copyAllDone, setCopyAllDone] = useState(false);
   const timer = useRef<number | null>(null);
   const { favs, toggle: toggleFav, count: favCount } = useSymbolFavourites();
   const { recents, record } = useSymbolRecents();
@@ -108,6 +109,14 @@ export default function SymbolGenerator() {
   const copyAll = async () => {
     const succeeded = await copyText(results.map((symbol) => symbol.glyph).join(' '));
     if (timer.current !== null) window.clearTimeout(timer.current);
+    // Announce for screen readers and also show the state on the button, so a
+    // sighted user gets the same confirmation. Every other copy affordance in
+    // this tool swaps its glyph or label; "Copy all" previously only announced,
+    // which left the visible button unchanged after a successful copy.
+    if (succeeded) {
+      setCopyAllDone(true);
+      timer.current = window.setTimeout(() => setCopyAllDone(false), 1600);
+    }
     announce(
       succeeded
         ? `Copied ${results.length} symbols to clipboard.`
@@ -168,12 +177,18 @@ export default function SymbolGenerator() {
           </p>
           <button
             type="button"
-            className="btn btn-secondary btn-small copy-all-inline"
+            className={`btn btn-secondary btn-small copy-all-inline${copyAllDone ? ' is-copied' : ''}`}
             onClick={() => void copyAll()}
             disabled={results.length === 0}
             aria-label={`Copy all ${results.length} matching symbols to clipboard`}
           >
-            Copy all
+            {copyAllDone ? (
+              <>
+                <CheckIcon size={16} /> Copied
+              </>
+            ) : (
+              'Copy all'
+            )}
           </button>
           <DownloadButton text={results.map((symbol) => symbol.glyph).join(' ')} filename="biocraft-symbols.txt" label="Download" />
         </div>
