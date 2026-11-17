@@ -12,9 +12,15 @@ that was not actually executed.
 
 **https://biocraft-bice.vercel.app/admin** — deployed and live.
 
-The Phase 1 fix is **built and committed but not yet deployed**: this branch
-contains the build-gate fix, and production currently runs the previous gate.
-Shipping it requires a PR merge, which is your decision (§12).
+The Phase 1 fix **is now deployed**. PR #8 merged as `5dfcf7e`, Vercel built
+`dpl_GefeM675hB4cL8MtjyXuyxSA3QBG` (READY, PROMOTED) and the build log shows the
+admin chunk in the output (`admin-DrOc2XBr.css`), so the blank-page defect is gone
+from production.
+
+**But the console is not yet usable, and this is the headline blocker:** every
+privileged call fails. `/api/admin/v1/health` returns
+`503 {"error":{"code":"UNAVAILABLE"}}`, so the UI correctly falls back to
+"Preview Mode · Read-Only". See §11.1.
 
 ## 2. Preview Admin URL
 
@@ -79,6 +85,7 @@ and was confirmed load-bearing by reintroducing the branch list (it failed).
 | Unauthorized login rejected | **PASS** | `tests/admin-allowlist.mjs`, `providerCalls=0` for a denied address |
 | Fail-closed when allow-list unset | **PASS** | 3 fixtures in `admin-app-local` |
 | Supabase Auth service live | **PASS** | GoTrue `v2.198.0`, `ACTIVE_HEALTHY` |
+| Production Admin API reachable | **FAIL** | 503 `UNAVAILABLE` on `/api/admin/v1/health` — §11.1 |
 | TOTP enrolment / verify logic | **PASS** | `admin-totp-enrolment`, `admin-totp-recovery` |
 | Rate limit / lockout | **PASS** | `password-login` cap 5, 1-min window, per-network **and** per-account |
 | Session expiry | **PASS** | capped at 1 h, `requires aal2` |
@@ -126,7 +133,7 @@ from production. Say the word and it goes.
 | Preview uses same rotated credential | **PASS** — updated in the same rotation |
 | No credential in any bundle | **PASS** — 123 built files scanned, 0 values, 0 server-only names |
 | Obsolete duplicate var removed | **PASS** — lowercase `vite_supabase_publishable_key` deleted |
-| **Live DB connection from the deployed function** | **NOT VERIFIED** — needs one real login (§11) |
+| **Live DB connection from the deployed function** | **NOT VERIFIED** — blocked by the 503 (§11.1) |
 
 No value was ever read, printed or committed. The pooler host/port/user appear only
 as non-secret identifiers.
@@ -189,28 +196,65 @@ redesigned UI, worth a dedicated pass but not a blocker (still well under 0.1).
 
 ## 11. Remaining blockers
 
-1. **Live password + TOTP on the real domain — NOT VERIFIED.** This sandbox can
+### 11.1 Admin API answers 503 on production — BLOCKER
+
+| Fact | Evidence |
+|---|---|
+| Function is deployed and reachable | The 503 body is the function's own JSON (`{"error":{"code":"UNAVAILABLE"}}`), not a Vercel error page |
+| `ADMIN_BACKEND_ENABLED=true` **is** set for production | Vercel env listing |
+| All 14 required variables **exist** for production | Vercel env listing, length > 0, `securityIssues: []` |
+| The code path is sound | Loading the real config with complete values reports `enabled: true` |
+| Production build has the admin chunk | Build log: `admin-DrOc2XBr.css 57.62 kB` |
+| **Which value is wrong** | **NOT DETERMINED** |
+
+Something makes the loader take its fail-closed path, and the function
+deliberately does not say what. I added `scripts/admin-config-check.mjs`, which
+runs the real loader against a real env file and prints **the first failing gate**
+— presence, length and an 8-character fingerprint only, never a value:
+
+```
+vercel env pull .env.admin-check --environment=production
+node scripts/admin-config-check.mjs .env.admin-check
+rm .env.admin-check
+```
+
+The output names the culprit, e.g.
+`Deployment answers 503 because: ADMIN_SUPABASE_PUBLISHABLE_KEY is a usable publishable key`.
+
+**Why I stopped rather than fixing it blind.** Vercel returns **encrypted
+envelopes** for this project's variables — not values — so I cannot read what is
+actually deployed, and overwriting a variable whose value I cannot see risks
+breaking a working configuration (the `VITE_*` pair is live and used by the
+Preview). One `vercel env pull` gives you the answer.
+
+### 11.2 Other blockers
+
+- **Live password + TOTP on the real domain — NOT VERIFIED.** This sandbox can
    reach only 4 hosts; `example.com` and `cloudflare.com` fail identically, so
    Supabase and Vercel are unreachable from here. Everything reachable was tested.
-2. **Email delivery — NOT VERIFIED.** No delivery test was run, so no claim is made.
-3. **Phase 1 fix not yet deployed** — needs a merge to `main` (§12).
-4. **Public site not wired** — §8, options A or B.
-5. **Total-password lockout** — a 5/minute cap exists. Supabase returns the same
+- **Email delivery — NOT VERIFIED.** No delivery test was run, so no claim is made.
+- **Public site not wired** — §8. You chose **option A** (populate first, then
+  connect); no wiring has been done yet.
+- **A stale Preview env var still exists.** `ADMIN_ALLOWED_EMAILS` at
+  `Pv2J5p87IojXtUIv` is scoped to the old branch `arena/5e351ec3-biocraft`,
+  which no longer exists. Production's entry is correct and unaffected. I left it
+  rather than delete a security control unasked.
+- **Total-password lockout** — a 5/minute cap exists. Supabase returns the same
    error for wrong password and unknown account, so no enumeration through login,
    but a hard lockout needs a password-verification hook. Not implemented.
-6. **CLS regression** on tablet/desktop from the redesign (§10).
+- **CLS regression** on tablet/desktop from the redesign (§10).
 
 ## 12. What needs your approval
 
 | # | Change | Impact (Hindi) |
 |---|---|---|
-| 1 | Merge this branch to `main` | Production par naya build jayega jo blank-page defect fix karta hai. Bina iske live Admin routes par wahi purana risk rahega. |
-| 2 | Option A: 5 collections ki rows add karna | Public site par 5 pages jo abhi bundled data se chal rahe hain, wahi dikhte rahenge. Kuch bhi blank nahi hoga. |
-| 3 | Option B: public site ko Supabase se jodna | Site live data use karegi, lekin 5 collections ke pages khaali ho sakte hain jab tak rows add na hon. |
-| 4 | Coarse lockout (needs a provider hook) | Galat password par account thodi der band ho jayega. Abhi sirf 5/minute ki limit hai. |
+| 1 | ~~Merge to `main`~~ — **done**, PRs #8 and #9 merged | Production par naya build chala gaya; blank-page defect khatam. |
+| 2 | **Option A chosen** — 5 collections ki rows add karna | Public site par wahi 5 pages bundled data se chalte rahenge; kuch bhi blank nahi hoga. Rows add hone ke baad hi Supabase se jodenge. |
+| 3 | `vercel env pull` chala kar diagnostic dena | Isse pata chalega ki kaun sa variable Admin API ko band kar raha hai. Bina iske live login start nahi ho sakta. |
+| 4 | Coarse lockout — **you declined**, no change made | Galat password par sirf 5/minute ki limit lagti hai. |
 
-I have **not** merged, **not** enabled the public Supabase link, and **not** changed
-`bc_app_v1` or any table — those need the approvals above.
+I have **not** enabled the public Supabase link and **not** changed `bc_app_v1` or
+any table. No credential was ever read or printed.
 
 ## 13. Found while merging `main`
 
