@@ -68,7 +68,10 @@
     "test:browser": "playwright test",
     "test:global-content": "node tests/global-content-intelligence.mjs",
     "import:data": "node scripts/import-data.mjs",
-    "test:library-search": "node tests/library-search-ui.cjs"
+    "test:library-search": "node tests/library-search-ui.cjs",
+    "sync": "node scripts/sync.mjs",
+    "sync:status": "node scripts/sync.mjs --status",
+    "test:sync": "node tests/sync-bootstrap.mjs > /tmp/sync-db-url && TEST_DATABASE_URL=$(cat /tmp/sync-db-url) node tests/sync-engine.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

@@ -61,7 +61,7 @@ const codepoints = (s) => [...s].map((c) => 'U+' + c.codePointAt(0).toString(16)
  * Unicode emoji — from `unicode-emoji-json`, MIT, derived from Unicode CLDR.
  * Source of truth: the package itself, loaded at runtime.
  */
-async function adaptEmoji() {
+export async function adaptEmoji() {
   let data;
   try {
     // The package's ESM entry is a bare .json file with no import attribute,
@@ -89,7 +89,7 @@ async function adaptEmoji() {
  * Names are not shipped as a flat map, so labels come from the code point by
  * rule, and the *category* is the genuine UCD general category.
  */
-async function adaptSymbols() {
+export async function adaptSymbols() {
   let mod;
   try {
     mod = await import('@unicode/unicode-15.1.0/General_Category/Symbol/code-points.mjs');
@@ -123,7 +123,7 @@ async function adaptSymbols() {
  * Google Fonts catalogue — from `google-font-metadata`, MIT.
  * `.APIDirect` is the real API-shaped array of 1,908 families.
  */
-async function adaptFonts() {
+export async function adaptFonts() {
   let f;
   try {
     f = (await import('google-font-metadata')).APIDirect ?? (await import('google-font-metadata')).default?.APIDirect;
@@ -156,7 +156,7 @@ async function adaptFonts() {
 
 /* ---------------------------------------------------------------- validation */
 
-function validate(kind, rows) {
+export function validate(kind, rows) {
   const errors = [];
   const seen = new Set();
   let dropped = 0;
@@ -180,7 +180,7 @@ async function ensureSource(db, slug) {
   return rows[0]?.id ?? null;
 }
 
-async function importRows(db, kind, source, rows) {
+export async function importRows(db, kind, source, rows) {
   const sourceId = await ensureSource(db, source.slug);
   const license = source.license;
   let inserted = 0, updated = 0, skipped = 0;
@@ -257,7 +257,7 @@ async function importRows(db, kind, source, rows) {
 
 /* ---------------------------------------------------------------------- main */
 
-const SOURCES = {
+export const SOURCES = {
   emoji: { slug: 'unicode-emoji-json', adapt: adaptEmoji, kind: 'emoji', label: 'Unicode Emoji' },
   symbols: { slug: 'unicode-15.1', adapt: adaptSymbols, kind: 'symbol', label: 'Unicode Symbols' },
   fonts: { slug: 'google-fonts-metadata', adapt: adaptFonts, kind: 'font', label: 'Google Fonts' },
@@ -331,4 +331,9 @@ async function main() {
   if (report.some((r) => !r.available)) process.exitCode = 1;
 }
 
-main().catch((e) => { console.error('IMPORT FAILED:', e.message); process.exit(1); });
+// Only run the CLI when invoked directly, so the sync engine can reuse the
+// adapters without triggering an import as a side effect of importing this file.
+const invokedDirectly = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+if (invokedDirectly) {
+  main().catch((e) => { console.error('IMPORT FAILED:', e.message); process.exit(1); });
+}
