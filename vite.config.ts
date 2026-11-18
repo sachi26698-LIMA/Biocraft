@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv } from 'vite';
-import { publicSupabaseConfig } from './shared/supabase-config.mjs';
+import { SUPABASE_URL, publicSupabaseConfig } from './shared/supabase-config.mjs';
 import react from '@vitejs/plugin-react';
 
 // The Admin console is emitted into whichever scope has been explicitly enabled.
@@ -27,8 +27,14 @@ const adminPreview =
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
-  const url = env.VITE_SUPABASE_URL;
   const key = env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  // The project URL is a public constant in shared/supabase-config.mjs, not a
+  // secret. The Preview scope only defines the publishable key, so a build that
+  // demanded both variables failed at config load while the client itself would
+  // have fallen back to the bundled registry. Validate against the constant
+  // when the URL is unset; a *wrong* URL still fails, because
+  // publicSupabaseConfig rejects anything that is not this project.
+  const url = env.VITE_SUPABASE_URL ?? (key ? SUPABASE_URL : undefined);
   if ((url || key) && !publicSupabaseConfig(url, key)) {
     throw new Error('Set both public Supabase variables with the BioCraft project URL and a publishable or matching anon key. Never use a service key.');
   }

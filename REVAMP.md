@@ -312,5 +312,9 @@ Size: CSS 29.0 → 28.1 kB gzip, total JS 285.2 → 278.4 kB, `HomePage` chunk 5
   here; verification is jsdom + computed-CSS audit, as in phase 1. The specs stay in the repo for CI.
 - Vercel previews are behind **deployment protection (SSO)**, so anonymous URL checks return the
   login page; verify signed in, or against a local `npm run preview`.
-- Preview env still lacks `VITE_SUPABASE_URL` (only the publishable key), so collection pages use the
-  bundled fallback with a visible notice. No backend/env change was made.
+- Preview env lacks `VITE_SUPABASE_URL` (only the publishable key), so collection pages use the
+  bundled fallback with a visible notice. No backend/env change was made. Main's new `vite.config.ts`
+  guard required *both* variables and therefore failed every Preview build at config load; the config
+  now validates the key against the public `SUPABASE_URL` constant when the URL is unset (a wrong URL
+  or a non-publishable key still aborts the build), which is exactly what the runtime client already
+  did. Preview builds succeed again without touching any Vercel environment variable.
