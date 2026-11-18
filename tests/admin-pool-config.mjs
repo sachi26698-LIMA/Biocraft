@@ -28,3 +28,27 @@ for(const good of ['aws-1-us-east-1.pooler.supabase.com','aws-0-ap-southeast-2.p
  assert.equal(createPostgresPool({host:good,user:`admin_executor.${ref}`,password:'x',port:5432}).options.port,5432);
 await okDirect.end();await okPooler.end();
 console.log('PASS pool configuration guard: project direct/pooler hosts only, project-scoped login, TLS verification required; no connection opened');
+
+// Multiple Supavisor connection failures share XX000. Report fixed categories,
+// never the raw driver message or a value hiding inside an arbitrary error code.
+const {inspectAdminDatabase,databaseReady} = await import('../admin-backend/server/db-readiness.mjs');
+for (const [code,message,issue] of [
+ ['XX000','Tenant or user not found','tenant_or_user_lookup'],
+ ['XX000','(ENOTFOUND) tenant/user private.user not found','tenant_or_user_lookup'],
+ ['XX000','(EAUTHQUERY) failed to retrieve authentication secrets: private','pooler_role_lookup'],
+ ['28P01','password authentication failed for user private','login_rejected'],
+ ['not-for-the-response','private','unknown'],
+]) {
+ const report=await inspectAdminDatabase({connect:async()=>{throw Object.assign(Error(message),{code})}});
+ assert.deepEqual(report,{database:'unreachable',sqlstate:code==='not-for-the-response'?'unknown':code,connection_issue:issue});
+ assert.equal(databaseReady(report),false);
+}
+for (const [safe,ready] of [[false,true],[true,false],[true,true]]) {
+ const calls=[];
+ const report=await inspectAdminDatabase({connect:async()=>({query:async sql=>{calls.push(sql);return {rows:[{safe,ready}]};},release:()=>calls.push('released')})});
+ assert.deepEqual(calls.slice(-2),['rollback','released']);
+ assert.equal(calls[0],'begin read only');
+ assert.equal(databaseReady(report),safe&&ready);
+ assert.equal(report.limited_role,safe?'ok':'failed');
+}
+console.log('PASS single-connection readiness, fail-closed role/commands, redacted connection categories');

@@ -18,7 +18,9 @@ import {issueRecoveryGrant,revokeRecoveryGrant,runCleanup,redeemRecoveryCode,fac
 import {verifyProviderIdentity} from './identity.mjs';
 import {createCookieGateway} from './session-cookie.mjs';
 import {createAdminHandler} from './api.mjs';
-import {createDatabaseExecutor,createPostgresPool,assertLimitedRole} from './database.mjs';
+import {createDatabaseExecutor,createPostgresPool} from './database.mjs';
+import {inspectAdminDatabase,databaseReady} from './db-readiness.mjs';
+export {verifyAdminDatabase} from './db-readiness.mjs';
 import {createAuthStorage} from './auth-storage.mjs';
 import {isEmailAllowed} from './auth-flow.mjs';
 import {createProviderLogout} from './provider-logout.mjs';
@@ -196,13 +198,7 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    // `?diagnose=1` additionally reports which dependency answers. It is gated on
    // the same proxy HMAC signature the rate limiter uses, so a direct caller
    // learns nothing about the deployment.
-   if(request.method!=='GET') return health(request.method);
-   if(url.searchParams.get('diagnose')==='1'&&clientKey(request,{trustedHeader,ingressSecret})!==null){
-    const [ready,diagnostics]=await Promise.all([health('GET'),app.diagnose()]);
-    const ok=ready.ok && diagnostics.database==='reachable' && diagnostics.limited_role==='ok' && diagnostics.provider==='reachable';
-    return new Response(JSON.stringify({ok,diagnostics}),{status:ok?200:503,headers:ready.headers});
-   }
-   return health(request.method);
+   return health(request.method,url.searchParams.get('diagnose')==='1');
   }
   if(url.pathname.startsWith('/api/admin/v1/')) return gateway(request);
   return bad(404);
@@ -210,64 +206,34 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  app.configuration={enabled:true,origin,trustedHeader,limits:{maxBodyBytes:32768}};
  app.shutdown=async()=>{await pool.end()};
  app.execute=execute;
- // Runtime diagnosis. Configuration can be complete and the service still fail on
- // the first real database round-trip. `diagnose()` reports WHICH dependency is
- // not answering, using fixed labels and a coarse SQLSTATE — never a driver
- // message, host, user or secret. It runs no content query and changes nothing:
- // a transaction is opened, the same limited-role assertion the startup path uses
- // is executed, and it is rolled back.
- app.diagnose=async()=>{
-  const report={database:'unknown',provider:'unknown'};
-  let client;
-  try {
-   client=await pool.connect();
-   report.database='reachable';
-   try {
-    await client.query('begin');
-    await assertLimitedRole(client);
-    report.limited_role='ok';
-   } catch (e) {
-    // A role that is not limited is a security stop, not a transient fault.
-    report.limited_role='failed';
-    report.sqlstate=typeof e?.code==='string'?e.code:'unknown';
-   } finally {try{await client.query('rollback')}catch{} }
-  } catch (e) {
-   report.database='unreachable';
-   report.sqlstate=typeof e?.code==='string'?e.code:'unknown';
-  } finally {try{client?.release()}catch{} }
+ // Cache an in-flight DB check as well as the result. A diagnostic and a
+ // normal health check must not make duplicate login attempts during an outage.
+ function dbReport() {
+  if(!readiness||readiness.expires<=now()) readiness={expires:now()+10_000,result:inspectAdminDatabase(pool)};
+  return readiness.result;
+ }
+ async function providerHealth() {
   try {
    const probe=await fetch(`${PROJECT_URL}/auth/v1/health`,{headers:{apikey:publishableKey},redirect:'error',signal:AbortSignal.timeout(3500)});
-   report.provider=probe.ok?'reachable':'unavailable';
    await probe.body?.cancel();
-  } catch {report.provider='unreachable';}
-  return report;
+   return probe.ok?'reachable':'unavailable';
+  } catch {return 'unreachable';}
+ }
+ app.diagnose=async()=>{
+  const [database,provider]=await Promise.all([dbReport(),providerHealth()]);
+  return {...database,provider};
  };
  return app;
  function bad(status){return new Response(JSON.stringify({error:{code:status===404?'NOT_FOUND':'FORBIDDEN'}}),{status,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}})}
- async function health(method) {
+ async function health(method,diagnose=false) {
   const headers={'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'};
   if(method!=='GET') return new Response(JSON.stringify({error:{code:'METHOD_NOT_ALLOWED'}}),{status:405,headers:{...headers,Allow:'GET'}});
-  if(!readiness||readiness.expires<=now()) readiness={expires:now()+10_000,result:verifyAdminDatabase(pool).then(()=>true,()=>false)};
-  const ok=await readiness.result;
+  if(diagnose) {
+   const diagnostics=await app.diagnose();
+   const ok=databaseReady(diagnostics)&&diagnostics.provider==='reachable';
+   return new Response(JSON.stringify({ok,diagnostics}),{status:ok?200:503,headers});
+  }
+  const ok=databaseReady(await dbReport());
   return new Response(JSON.stringify(ok?{ok:true}:{error:{code:'UNAVAILABLE'}}),{status:ok?200:503,headers});
  }
-}
-
-/** Check that the committed SQL surface exists and can be called by a limited
- * executor. Readiness never creates a session, consumes attempts or mutates data. */
-export async function verifyAdminDatabase(pool) {
- const client=await pool.connect();
- try {
-  await client.query('begin read only');
-  await client.query("set local statement_timeout = '3000ms'");
-  await assertLimitedRole(client);
-  const {rows}=await client.query(`select pg_catalog.has_schema_privilege(current_user,'bc_admin_v1','USAGE')
-    and bool_and(coalesce(pg_catalog.has_function_privilege(current_user,pg_catalog.to_regprocedure(signature),'EXECUTE'),false)) as ready
-    from unnest($1::text[]) as signatures(signature)`,[[
-      'bc_admin_v1.consume_rate_limit(text,bytea)', 'bc_admin_v1.require_actor(text)',
-      'bc_admin_v1.store_login_flow(bytea,bytea,integer)', 'bc_admin_v1.take_login_flow(bytea)',
-      'bc_admin_v1.factor_gate(uuid)', 'bc_admin_v1.open_admin_session(uuid)', 'bc_admin_v1.session_identity()',
-    ]]);
-  if(rows[0]?.ready!==true) throw new Error('Admin database commands unavailable');
- } finally {try{await client.query('rollback')}catch{}client.release()}
 }
