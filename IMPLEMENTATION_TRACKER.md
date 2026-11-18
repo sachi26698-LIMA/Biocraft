@@ -90,9 +90,31 @@ On a disposable Postgres (never production):
 
 ---
 
+## Batch 2 — Unified global search UI ✅ VERIFIED
+
+`/library-search` — one search across bios, captions, hashtags, symbols, fonts,
+emoji. Backed by `search_global()` over the trigger-maintained index.
+
+| Behaviour | Verified how |
+|---|---|
+| Renders stored rows, real count | `tests/library-search-ui.cjs` (DOM) |
+| Debounce collapses keystrokes | DOM test asserts < 3 calls for 3 keystrokes |
+| Stale response can't overwrite newer | DOM test with a held promise |
+| `hasMore` from a +1 probe, no COUNT | asserted p_limit bounds |
+| Domain filter is server-side | asserts `p_domain` reaches the RPC |
+| Honest when backend absent | mutation-tested both paths |
+| Deep links `?q=` | router `useSearch`, build + route 200 |
+
+- ✅ `npm run test:library-search` — **7/7**
+- ✅ mutation-tested: faking rows on "not configured" fails; hiding a `42883`
+  outage fails
+- ✅ `tsc --noEmit` clean; `npm run build` clean; 49 route shells
+- ✅ `/library-search` and `/library-search?q=travel` both serve 200 on preview
+- ✅ header overlay gains one additive "Search all content libraries" entry; no
+  existing overlay behaviour changed
+
 ## Not yet done
 
-- [ ] Unified global search **UI** (API surface exists: `search_global`)
 - [ ] Design assets: generators for gradients/palettes/icons beyond the tables
 - [ ] Translation workflow surface (tables + status semantics exist; no UI)
 - [ ] Admin master control: library management, source health, sync controls, reviews
