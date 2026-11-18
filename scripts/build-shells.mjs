@@ -448,9 +448,10 @@ if (adminPreview) {
   });
   // Noindex static shells for every BioCraft Master Admin module route.
   for (const section of [
-    '', '/login', '/users', '/bios', '/categories', '/collections',
+    '', '/login', '/recovery', '/users', '/bios', '/categories', '/collections',
     '/platforms', '/generators', '/content', '/analytics',
     '/audit-logs', '/security', '/settings', '/backup',
+    ...JSON.parse(readFileSync(join(root, 'shared/admin-extra-modules.json'), 'utf8')).map(({key}) => `/${key}`),
   ]) {
     ROUTES.push({ path: `/admin${section}`, title: 'BioCraft Master Admin',
       description: 'BioCraft Master Admin workspace.', ogTitle: 'BioCraft Master Admin',

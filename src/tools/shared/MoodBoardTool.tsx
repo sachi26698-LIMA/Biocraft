@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, type FormEvent } from 'react';
 import type { Language } from '../../types';
 import SegmentedControl from '../../components/SegmentedControl';
+import CountControl from '../../components/CountControl';
 import CopyButton from '../../components/CopyButton';
 import DownloadButton from '../../components/DownloadButton';
 import CharCounter from '../../components/CharCounter';
@@ -20,12 +21,6 @@ const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
   { value: 'hi', label: 'हिन्दी', lang: 'hi' },
   { value: 'hg', label: 'Hinglish' },
-] as const;
-
-const COUNT_OPTIONS = [
-  { value: '5', label: '5' },
-  { value: '10', label: '10' },
-  { value: '20', label: '20' },
 ] as const;
 
 interface MoodBoardToolProps<C extends string> {
@@ -62,7 +57,7 @@ export default function MoodBoardTool<C extends string>({
   const [categoryId, setCategoryId] = useState<C>(categories[0].id as C);
   const [language, setLanguage] = useState<Language>('en');
   const [noEmoji, setNoEmoji] = useState(false);
-  const [count, setCount] = useState<'5' | '10' | '20'>('5');
+  const [count, setCount] = useState<number>(5);
   const [lines, setLines] = useState<string[]>([]);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [announcement, setAnnouncement] = useState('');
@@ -71,7 +66,7 @@ export default function MoodBoardTool<C extends string>({
   const { copy } = useCopyToClipboard(2000);
   const generationLanguage: Language = toolMode === 'basic' ? 'en' : language;
   const generationNoEmoji = toolMode === 'basic' ? false : noEmoji;
-  const generationCount = toolMode === 'basic' ? 5 : Number(count);
+  const generationCount = toolMode === 'basic' ? 5 : count;
 
   const activeCategory = useMemo(
     () => categories.find((item) => item.id === categoryId) ?? categories[0],
@@ -174,10 +169,9 @@ export default function MoodBoardTool<C extends string>({
         </div>
 
           <div className="generator-options">
-            <SegmentedControl
+            <CountControl
               label="How many options"
-              visibleLabel="How many"
-              options={COUNT_OPTIONS}
+              noun="options"
               value={count}
               onChange={setCount}
             />

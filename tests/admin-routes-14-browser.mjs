@@ -14,13 +14,15 @@
 // Then the same URL is reloaded to prove a cold load works.
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright-core';
+import {readFileSync} from 'node:fs';
 
 const BASE = process.env.ADMIN_BASE_URL || 'http://127.0.0.1:4190';
 const ROUTES = [
   '/admin', '/admin/login', '/admin/users', '/admin/bios', '/admin/categories',
   '/admin/collections', '/admin/platforms', '/admin/generators', '/admin/content',
   '/admin/analytics', '/admin/audit-logs', '/admin/security', '/admin/settings',
-  '/admin/backup',
+  '/admin/backup', '/admin/recovery',
+  ...JSON.parse(readFileSync(new URL('../shared/admin-extra-modules.json', import.meta.url),'utf8')).map(({key})=>`/admin/${key}`),
 ];
 
 const browser = await chromium.launch({

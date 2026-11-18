@@ -5,7 +5,7 @@ import {createAuthController} from '../admin-backend/server/auth-controller.mjs'
 import {createRecoveryController} from '../admin-backend/server/recovery-controller.mjs';
 const url='https://jvpadtzfsuekixrquzjv.supabase.co',origin='https://preview.example',uid='11111111-1111-4111-8111-111111111111',sid='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',factor='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const expiry=Math.floor(Date.now()/1000)+300,token=aal=>['eyJhbGciOiJub25lIn0',Buffer.from(JSON.stringify({iss:url+'/auth/v1',aud:'authenticated',role:'authenticated',aal,is_anonymous:false,sub:uid,session_id:sid,exp:expiry})).toString('base64url'),Buffer.from('signature').toString('base64url')].join('.');
-const user={id:uid,aud:'authenticated',role:'authenticated',is_anonymous:false,factors:[{id:factor,factor_type:'totp',status:'verified'}]},paths=[];
+const user={id:uid,email:'synthetic@example.com',email_confirmed_at:'2026-01-01T00:00:00Z',aud:'authenticated',role:'authenticated',is_anonymous:false,factors:[{id:factor,factor_type:'totp',status:'verified'}]},paths=[];
 const orig=globalThis.fetch;
 try {
  globalThis.fetch=async(resource,init={})=>{const u=new URL(String(resource)),method=init.method??'GET',body=init.body?JSON.parse(init.body):{};paths.push(`${method} ${u.pathname}${u.search}`);
@@ -30,11 +30,11 @@ try {
  const csrf=(await login.json()).csrf,cookie=login.headers.get('set-cookie').split(';')[0];
  const mfa=await handler(post('/api/admin/v1/auth/mfa',{csrf,code:'123456'},cookie),'synthetic-ip');assert.equal(mfa.status,200,JSON.stringify({status:mfa.status,paths,body:await mfa.clone().json()}));
  assert(mfa.headers.getSetCookie().some(c=>c.startsWith('__Host-biocraft-admin=')));assert(paths.some(p=>p.includes('/verify')));
- const ops=[];const recovery=createRecoveryController({enabled:true,origin,createClient:mk,flowStore:store,limiter:async()=>true,execute:async ({operation})=>{ops.push(operation);return []}});
- assert.equal((await recovery(post('/api/admin/v1/auth/recovery/request',{email:'synthetic@example.com'}),'synthetic-ip')).status,202);
- const exchange=await recovery(post('/api/admin/v1/auth/recovery/exchange',{tokenHash:'a'.repeat(64)}),'synthetic-ip');assert.equal(exchange.status,200);
+ const ops=[];const recovery=createRecoveryController({emailAllowed: email=>email==='synthetic@example.com',checkMembership:async()=>true,enabled:true,origin,createClient:mk,flowStore:store,limiter:async()=>true,execute:async ({operation})=>{ops.push(operation);return []}});
+ assert.equal((await recovery(post('/api/admin/v1/auth/password-reset/request',{email:'synthetic@example.com'}),'synthetic-ip')).status,202);
+ const exchange=await recovery(post('/api/admin/v1/auth/password-reset/exchange',{tokenHash:'a'.repeat(64)}),'synthetic-ip');assert.equal(exchange.status,200);
  const recoveryCsrf=(await exchange.json()).csrf,recoveryCookie=exchange.headers.get('set-cookie').split(';')[0];
- const completed=await recovery(post('/api/admin/v1/auth/recovery/complete',{code:'123456',csrf:recoveryCsrf,password:'synthetic new password'},recoveryCookie),'synthetic-ip');
+ const completed=await recovery(post('/api/admin/v1/auth/password-reset/complete',{code:'123456',csrf:recoveryCsrf,password:'synthetic new password'},recoveryCookie),'synthetic-ip');
  assert.equal(completed.status,200,JSON.stringify({status:completed.status,paths,body:await completed.clone().json()}));
  assert.deepEqual(ops,['sessionOpen','sessionRevokeAll']);assert(paths.includes('PUT /auth/v1/user'));assert(paths.some(p=>p.startsWith('POST /auth/v1/logout')));
  console.log('PASS real Supabase SDK login/MFA/recovery HTTP shape with intercepted synthetic responses; no live Supabase Auth');

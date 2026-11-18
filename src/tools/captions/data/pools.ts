@@ -86,6 +86,12 @@ export const TEMPLATES: Record<CaptionTone, Record<Language, string[]>> = {
       'Very demure, very mindful, very {topic}.',
       'My camera roll and my personality, all {topic}.',
       'Plot twist: {topic} is the main plot.',
+      'Nobody warned me {topic} would take over my entire personality.',
+      'Therapist: stop making everything about {topic}. Me: no.',
+      '{topic} called. It wants its personality back. I said no.',
+      'Some people have hobbies. I have a {topic} problem.',
+      'My screen time report is 90% {topic} and I regret nothing.',
+      'Started {topic} for fun. Fun left. {topic} stayed.',
     ],
     hi: [
       'जब {topic} शौक नहीं, पहचान बन जाए।',
@@ -136,6 +142,12 @@ export const TEMPLATES: Record<CaptionTone, Record<Language, string[]>> = {
       'Slow mornings and {topic}.',
       'Soft moments, {topic} edition.',
       'Romanticising ordinary {topic} days.',
+      'Soft light, slow mornings, and a little {topic}.',
+      '{topic}, but make it quiet and golden.',
+      'Old film grain and {topic} nostalgia.',
+      'Small rituals: coffee, a window, and {topic}.',
+      '{topic} in muted tones and unhurried hours.',
+      'Collecting {topic} moments like pressed flowers.',
     ],
     hi: [
       '{topic} के धीमे, मुलायम पल।',
@@ -186,6 +198,12 @@ export const TEMPLATES: Record<CaptionTone, Record<Language, string[]>> = {
       'No permission needed for {topic}.',
       'Limitless {topic} energy.',
       'Silent moves, loud {topic} results.',
+      'This is your sign to go all in on {topic}.',
+      'Stop waiting for permission. Start {topic}.',
+      '{topic} is not a phase. It is the plan.',
+      'Loud, unapologetic, and completely {topic}.',
+      'If it does not scare you a little, it is not {topic}.',
+      'I did not come this far to whisper about {topic}.',
     ],
     hi: [
       '{topic} पहले। बाकी सब बाद में।',
@@ -236,6 +254,12 @@ export const TEMPLATES: Record<CaptionTone, Record<Language, string[]>> = {
       'Trust the {topic} timing.',
       'Growth looks good on you — like {topic} does.',
       'The story isn’t over — {topic} is the plot twist.',
+      'Every small step in {topic} is still a step forward.',
+      'You do not have to be great at {topic} to begin.',
+      '{topic} taught me that patience is a skill, not a mood.',
+      'Some days {topic} is hard. Those are the days it counts.',
+      'Keep showing up for your {topic}. It is noticing.',
+      'Progress in {topic} is quiet before it is loud.',
     ],
     hi: [
       '{topic} में छोटे कदम ही बड़े बदलाव लाते हैं।',
@@ -286,6 +310,12 @@ export const TEMPLATES: Record<CaptionTone, Record<Language, string[]>> = {
       'Process over noise — the {topic} edition.',
       'Every great {topic} story starts with showing up.',
       'Precision, patience and {topic}.',
+      'Sharing a few notes from my recent {topic} work.',
+      '{topic}: what I have learned building it consistently.',
+      'A short thread on doing {topic} well, not just often.',
+      'Three lessons from a year of focused {topic}.',
+      'If you are starting in {topic}, here is where I would begin.',
+      '{topic} rewards consistency over intensity.',
     ],
     hi: [
       '{topic} — वही अनुशासन, जो मैं हर काम में लाता हूँ।',
@@ -336,6 +366,12 @@ export const TEMPLATES: Record<CaptionTone, Record<Language, string[]>> = {
       'ordinary {topic}, made special.',
       'just {topic}.',
       '{topic} — that’s it.',
+      '{topic}.',
+      'A little {topic}. Nothing more.',
+      'Quiet {topic} day.',
+      '{topic}, kept simple.',
+      'Just {topic} and good light.',
+      'Fewer things. More {topic}.',
     ],
     hi: [
       '{topic}, बस।',
@@ -356,7 +392,6 @@ export const TEMPLATES: Record<CaptionTone, Record<Language, string[]>> = {
     hg: [
       '{topic}, quietly.',
       'Bas {topic}.',
-      '{topic}.',
       'Slow {topic}.',
       '{topic}, always.',
       'Noise kam, {topic} zyada.',
@@ -386,6 +421,12 @@ export const TEMPLATES: Record<CaptionTone, Record<Language, string[]>> = {
       'Low effort, high {topic}.',
       'Currently {topic}-ing, brb.',
       'Just me, myself and {topic}.',
+      'Spent the afternoon on {topic} and honestly? Worth it.',
+      'Not much today, just {topic} and a nap.',
+      'Anyone else deep in a {topic} phase right now?',
+      'Making {topic} plans I will probably reschedule.',
+      '{topic} kind of day. Snacks included.',
+      'Text me back after my {topic} break.',
     ],
     hi: [
       'बस {topic} और सुकून…',
@@ -434,6 +475,12 @@ export const TEMPLATES: Record<CaptionTone, Record<Language, string[]>> = {
       'Less logos, more {topic}.',
       'The art of doing {topic} quietly.',
       'Expensive taste, homegrown {topic}.',
+      '{topic}, considered down to the last detail.',
+      'Effortless is really just careful {topic}.',
+      'An unhurried {topic} afternoon. Nothing else on the calendar.',
+      '{topic}, in quiet luxury.',
+      'The best {topic} is the kind nobody sees you working on.',
+      'Understated {topic}. Everything intentional.',
     ],
     hi: [
       'चुपचाप {topic} — शोर की कोई ज़रूरत नहीं।',
@@ -514,6 +561,9 @@ export function generateCaptions(
   tone: CaptionTone,
   language: Language,
   options: CaptionOptions = {},
+  /** How many captions this run should return. Previously hardcoded to 5 via a
+   *  slice, which made any other count impossible to request. */
+  count: number = 5,
 ): string[] {
   const topic = TOPICS.find((item) => item.id === topicId) ?? TOPICS[0];
   const word = language === 'hi' ? topic.wordHi : language === 'hg' ? topic.wordHg : topic.wordEn;
@@ -521,8 +571,26 @@ export function generateCaptions(
   const emojiOn = options.emoji ?? true;
   const cta = options.cta ?? 'none';
 
-  return shuffle(templates)
-    .slice(0, 5)
+  // Ask for `count`. When the template pool for a tone/language is smaller than
+  // the request, reshuffle rather than silently returning fewer: the caller asked
+  // for a number and reporting a smaller set without saying so is the exact
+  // "quietly downgrade" behaviour the expansion policy forbids.
+  const requested = Math.max(1, Math.floor(count));
+  const picked: string[] = [];
+  const seen = new Set<string>();
+  let rounds = 0;
+  while (picked.length < requested && rounds < 50) {
+    rounds++;
+    for (const template of shuffle(templates)) {
+      if (picked.length >= requested) break;
+      if (seen.has(template)) continue;
+      seen.add(template);
+      picked.push(template);
+    }
+    // The pool is exhausted and fully used; stop rather than loop forever.
+    if (seen.size === templates.length) break;
+  }
+  return picked
     .map((template) => {
       let caption = template.replaceAll('{topic}', word);
       if (!emojiOn) caption = stripEmoji(caption);

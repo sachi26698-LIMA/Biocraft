@@ -16,6 +16,7 @@ import SegmentedControl from '../../components/SegmentedControl';
 import AdvancedOptions from '../../components/ui/AdvancedOptions';
 import { BioGeneratingSkeleton } from '../../components/skeleton/toolSkeletons';
 import { ErrorState } from '../../components/ui/States';
+import CountControl from '../../components/CountControl';
 import { ClipboardIcon, RefreshIcon } from '../../components/icons';
 import { copyText } from '../../lib/clipboard';
 import { useToolkit } from '../../lib/toolkit';
@@ -44,12 +45,6 @@ const LANGUAGE_OPTIONS = [
   { value: 'hg', label: 'Hinglish' },
 ] as const;
 
-const BIO_COUNT_OPTIONS = [
-  { value: '5', label: '5' },
-  { value: '10', label: '10' },
-  { value: '20', label: '20' },
-] as const;
-
 export default function BioTool() {
   const [mode, setMode] = useState<Mode>('personal');
   const { mode: userMode } = useToolMode();
@@ -60,7 +55,7 @@ export default function BioTool() {
   const [errors, setErrors] = useState<PersonalFormErrors>({});
   const [showSummary, setShowSummary] = useState(false);
   const [categoryId, setCategoryId] = useState('creator');
-  const [count, setCount] = useState<5 | 10 | 20>(5);
+  const [count, setCount] = useState<number>(5);
   const [bios, setBios] = useState<string[]>([]);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [announcement, setAnnouncement] = useState('');
@@ -280,12 +275,11 @@ export default function BioTool() {
         </div>
 
           <div className="generator-options">
-            <SegmentedControl
+            <CountControl
               label="How many bios"
-              visibleLabel="How many"
-              options={BIO_COUNT_OPTIONS}
-              value={String(count) as '5' | '10' | '20'}
-              onChange={(value) => setCount(Number(value) as 5 | 10 | 20)}
+              noun="bios"
+              value={count}
+              onChange={setCount}
             />
           </div>
         </AdvancedOptions>

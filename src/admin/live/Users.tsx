@@ -8,7 +8,7 @@ import { ConfirmDialog, Modal } from '../ui/Modal';
 import { useToast } from '../ui/Toast';
 import { Badge, EmptyState, Field, MessageBox, PageHead, Panel, SearchField, SelectField, StatCard, StateNotice, Toolbar } from './common';
 import type { RoleRow, StaffRow } from './types';
-import { mutate, request, useLive } from './useLive';
+import { mutate, request, useLive, usePaged } from './useLive';
 
 const ROLE_LABEL: Record<string, string> = {
   super_admin: 'Super Admin',
@@ -27,7 +27,7 @@ type Editable = { enabled: boolean; roles: string[] };
 
 export default function LiveUsers() {
   const toast = useToast();
-  const staff = useLive<{ items: StaffRow[] }>('/staff?limit=50');
+  const staff = usePaged<StaffRow>('/staff?limit=50', row => row?.user_id ?? null);
   const catalog = useLive<{ items: RoleRow[] }>('/roles');
 
   const [query, setQuery] = useState('');
@@ -45,7 +45,7 @@ export default function LiveUsers() {
   const [confirmReset, setConfirmReset] = useState<StaffRow | null>(null);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
 
-  const allStaff = staff.data?.items ?? [];
+  const allStaff = staff.data ?? [];
   const enabledCount = allStaff.filter(r => r.enabled).length;
   const disabledCount = allStaff.length - enabledCount;
   const superAdminCount = allStaff.filter(r => (r.roles ?? []).includes('super_admin')).length;
@@ -200,7 +200,7 @@ export default function LiveUsers() {
 
       {staff.state === 'ready' && (
         <div className="ad-stats-grid ad-stats-grid--4">
-          <StatCard icon="users" label="Total Staff" value={allStaff.length} caption="Provisioned accounts" tint="lavender" />
+          <StatCard icon="users" label="Loaded staff" value={allStaff.length} caption="Provisioned accounts" tint="lavender" />
           <StatCard icon="checkCircle" label="Enabled" value={enabledCount} caption="Active sign-in access" tint="mint" />
           <StatCard icon="lock" label="Disabled" value={disabledCount} caption="Access suspended" tint="rose" />
           <StatCard icon="shieldCheck" label="Super Admins" value={superAdminCount} caption="Protected minimum ≥ 1" tint="sky" />
@@ -303,6 +303,9 @@ export default function LiveUsers() {
             </div>
           </>
         )}
+
+        {staff.state === 'ready' && staff.error && <p role="status">{staff.error}</p>}
+        {staff.hasMore && <button type="button" className="ad-btn ad-btn--secondary" disabled={staff.loadingMore} onClick={staff.loadMore}>{staff.loadingMore ? 'Loading…' : staff.error ? 'Retry page' : 'Load more staff'}</button>}
 
         {issuedCode && (
           <div className="ad-recovery-banner" role="status">

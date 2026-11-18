@@ -22,7 +22,7 @@ try {
  if(!data.startsWith('/tmp/biocraft-pg-')||meta.rows[0].db!=='postgres'||fs.readFileSync(data+'/BIOCRAFT_TEST_ONLY','utf8')!=='Local disposable Biocraft test cluster only\n')throw Error('Refusing non-disposable cluster');
  const blank=await admin.query("select exists(select 1 from pg_namespace where nspname in ('bc_admin_v1','auth')) as used, exists(select 1 from pg_roles where rolname in ('anon','authenticated','bc_fixture_executor')) as roles");
  if(blank.rows[0].used||blank.rows[0].roles)throw Error('Cluster is not blank; provision a new disposable cluster');
- await admin.query(`create role anon;create role authenticated;create role bc_fixture_executor login;
+ await admin.query(`create role anon;create role authenticated;create role service_role;create role bc_fixture_executor login;
  create schema auth;create table auth.users(id uuid primary key);create table auth.sessions(id uuid primary key,user_id uuid references auth.users(id));
  create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
  create function auth.uid() returns uuid language sql stable as $$select nullif(auth.jwt()->>'sub','')::uuid$$;`);
@@ -99,20 +99,20 @@ try {
  await admin.query('insert into auth.sessions(id,user_id) values($1,$2)',[recoverySid,uid]);
  const token=['eyJhbGciOiJub25lIn0',Buffer.from(JSON.stringify({iss:'https://jvpadtzfsuekixrquzjv.supabase.co/auth/v1',aud:'authenticated',role:'authenticated',aal:'aal2',is_anonymous:false,sub:uid,session_id:recoverySid,exp:Math.floor(Date.now()/1000)+300,amr:[{method:'totp',timestamp:Math.floor(Date.now()/1000)}]})).toString('base64url'),'signature'].join('.');
  let changed=false,globalSignout=false;const provider=()=>({auth:{
-  resetPasswordForEmail:async()=>({error:null}),verifyOtp:async()=>({data:{session:{access_token:'aal1',refresh_token:'fixture-refresh'}}}),
-  setSession:async()=>({data:{session:{access_token:'aal1'}}}),getUser:async()=>({data:{user:{id:uid,is_anonymous:false}}}),
+  resetPasswordForEmail:async()=>({error:null}),verifyOtp:async()=>({data:{session:{access_token:token,refresh_token:'fixture-refresh'}}}),
+  setSession:async()=>({data:{session:{access_token:'aal1'}}}),getUser:async()=>({data:{user:{id:uid,email:'synthetic@example.com',email_confirmed_at:'2026-01-01T00:00:00Z',is_anonymous:false}}}),
   mfa:{listFactors:async()=>({data:{totp:[{id:factor,status:'verified'}]}}),challengeAndVerify:async({code})=>code==='123456'?{data:{access_token:token,refresh_token:'fixture-refresh'}}:{error:{}}},
   updateUser:async()=>{assert.equal((await admin.query('select count(*)::int n from bc_admin_v1.admin_sessions where user_id=$1 and revoked_at is null',[uid])).rows[0].n,0);changed=true;return {error:null}},
   signOut:async({scope})=>{if(scope==='global')globalSignout=true;return {error:null}}
  }});
- const recovery=createRecoveryController({enabled:true,origin,createClient:provider,flowStore:storage,limiter:storage.limit,execute:exec});
+ const recovery=createRecoveryController({emailAllowed: email=>email==='synthetic@example.com',checkMembership:async identity=>(await exec({identity,operation:'factorGate',args:[randomUUID()]}))[0]?.outcome!=='denied',enabled:true,origin,createClient:provider,flowStore:storage,limiter:storage.limit,execute:exec});
  const post=(url,value,cookie)=>new Request(origin+url,{method:'POST',headers:{origin,'content-type':'application/json',...(cookie?{cookie}:{})},body:JSON.stringify(value)});
- assert.equal((await recovery(post('/api/admin/v1/auth/recovery/request',{email:'synthetic@example.com'}),'recovery-ip')).status,202);
- let exchange=await recovery(post('/api/admin/v1/auth/recovery/exchange',{tokenHash:'a'.repeat(64)}),'recovery-ip');assert.equal(exchange.status,200);
+ assert.equal((await recovery(post('/api/admin/v1/auth/password-reset/request',{email:'synthetic@example.com'}),'recovery-ip')).status,202);
+ let exchange=await recovery(post('/api/admin/v1/auth/password-reset/exchange',{tokenHash:'a'.repeat(64)}),'recovery-ip');assert.equal(exchange.status,200);
  let csrf=(await exchange.json()).csrf,cookie=exchange.headers.get('set-cookie').split(';')[0];
- assert.equal((await recovery(post('/api/admin/v1/auth/recovery/complete',{code:'000000',csrf,password:'synthetic password'},cookie),'recovery-ip')).status,401);assert.equal(changed,false);
- exchange=await recovery(post('/api/admin/v1/auth/recovery/exchange',{tokenHash:'b'.repeat(64)}),'recovery-ip');csrf=(await exchange.json()).csrf;cookie=exchange.headers.get('set-cookie').split(';')[0];
- assert.equal((await recovery(post('/api/admin/v1/auth/recovery/complete',{code:'123456',csrf,password:'synthetic password'},cookie),'recovery-ip')).status,200);
+ assert.equal((await recovery(post('/api/admin/v1/auth/password-reset/complete',{code:'000000',csrf,password:'synthetic password'},cookie),'recovery-ip')).status,401);assert.equal(changed,false);
+ exchange=await recovery(post('/api/admin/v1/auth/password-reset/exchange',{tokenHash:'b'.repeat(64)}),'recovery-ip');csrf=(await exchange.json()).csrf;cookie=exchange.headers.get('set-cookie').split(';')[0];
+ assert.equal((await recovery(post('/api/admin/v1/auth/password-reset/complete',{code:'123456',csrf,password:'synthetic password'},cookie),'recovery-ip')).status,200);
  assert(changed&&globalSignout);assert.equal((await admin.query("select count(*)::int n from bc_admin_v1.admin_audit_logs where action='session.revoke_all'")).rows[0].n,1);
  await assert.rejects(exec({identity:{...identity,sessionId:recoverySid},operation:'sessionCheck',args:[]}),e=>e.code==='42501');
  // 010 module reads run as the limited executor against real public tables. Reopen the recovered Admin session first: it was
@@ -254,7 +254,7 @@ try {
  await admin.query("delete from auth.sessions where user_id=$1",[target]);
  assert.equal((await exec({identity:recovering,operation:'factorGate',args:[randomUUID()]}))[0].outcome,'denied');
  const gates=await admin.query("select details->>'outcome' o from bc_admin_v1.admin_audit_logs where action='auth.factor_gate' order by id");
- assert.deepEqual(gates.rows.map(r=>r.o),['enrol','recover','denied','denied','denied']);
+ assert.deepEqual(gates.rows.map(r=>r.o),['recover','recover','enrol','recover','denied','denied','denied']);
  // ---- D2 reset: the operator closes a recovery without reopening a bypass ----
  // `reset_factor_enrolment` requires staff.manage inside the function, so an
  // editor session is refused even though the executor holds EXECUTE on it.
@@ -306,6 +306,29 @@ try {
  // Submit, then review. The reviewer must be independent of the author.
  await exec({...asAuthor,operation:'submit',args:[pubDraft,1,reviewer,randomUUID()]});
  await exec({...asReviewer,operation:'reviewApprove',args:[pubDraft,2,randomUUID()]});
+ const editorial = 'admin-backend/proposals/015-editorial-discovery/';
+ const originalMeasurements = await admin.query('select (select count(*) from bc_admin_v1.admin_drafts) drafts,(select count(*) from public.bios) bios');
+ await admin.query(fs.readFileSync(editorial+'apply.sql','utf8'));
+ for (const role of ['anon','authenticated','service_role','bc_fixture_executor']) {
+  for (const fn of ['list_eligible_bio_reviewers','list_approved_bio_queue']) {
+   const allowed = await admin.query("select has_function_privilege($1,'bc_admin_v1.'||$2||'(integer,uuid)','EXECUTE') as allowed",[role,fn]);
+   assert.equal(allowed.rows[0].allowed,false);
+  }
+ }
+ await admin.query(fs.readFileSync(editorial+'grant.sql','utf8').replace('to bc_admin_executor','to bc_fixture_executor'));
+ assert((await exec({...asAuthor,operation:'reviewerDirectory',args:[100,null]})).some(row=>row.user_id===reviewer));
+ assert(!(await exec({...asAuthor,operation:'reviewerDirectory',args:[100,null]})).some(row=>row.user_id===author));
+ assert((await exec({...asPublisher,operation:'publisherQueue',args:[100,null]})).some(row=>row.draft_id===pubDraft));
+ await assert.rejects(exec({...asAuthor,operation:'publisherQueue',args:[100,null]}), e=>e.code==='42501');
+ await admin.query("insert into bc_admin_v1.admin_user_roles(user_id,role_id) values($1,'admin')",[author]);
+ assert(!(await exec({...asAuthor,operation:'publisherQueue',args:[100,null]})).some(row=>row.draft_id===pubDraft));
+ await admin.query("delete from bc_admin_v1.admin_user_roles where user_id=$1 and role_id='admin'",[author]);
+ assert(!(await exec({...asReviewer,operation:'publisherQueue',args:[100,null]})).some(row=>row.draft_id===pubDraft));
+ await assert.rejects(exec({...asPublisher,operation:'publisherQueue',args:[101,null]}), e=>e.code==='22023');
+ await admin.query(fs.readFileSync(editorial+'rollback.sql','utf8'));
+ assert.deepEqual((await admin.query('select (select count(*) from bc_admin_v1.admin_drafts) drafts,(select count(*) from public.bios) bios')).rows,originalMeasurements.rows);
+ await assert.rejects(exec({...asPublisher,operation:'publisherQueue',args:[100,null]}), e=>e.code==='42883');
+ console.log('PASS proposed editorial discovery commands: fixture-only grant, browser-role denial, distinct publisher, bounds and data-preserving rollback');
  // Three refusals: a stale version, the author publishing their own work, and a
  // publisher who was also the approver. Each fails on a distinct rule.
  await assert.rejects(exec({...asPublisher,operation:'publish',args:[pubDraft,1,null,randomUUID()]}),e=>e.code==='40001');

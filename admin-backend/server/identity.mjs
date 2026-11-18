@@ -5,8 +5,9 @@
 // boundary: writes must re-check membership/session inside the write transaction.
 import { createClient } from '@supabase/supabase-js';
 
-const PROJECT_REF = 'jvpadtzfsuekixrquzjv';
-const ISSUER = `https://${PROJECT_REF}.supabase.co/auth/v1`;
+import { SUPABASE_URL, publicSupabaseConfig } from '../../shared/supabase-config.mjs';
+
+const ISSUER = `${SUPABASE_URL}/auth/v1`;
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const permissionName = /^[a-z][a-z0-9_.]{1,99}$/;
 
@@ -27,22 +28,13 @@ function claimsFrom(token) {
 /** Create a server-only provider client using the existing project URL and a
  * publishable/anon key. Never pass a service-role or secret key to this function. */
 export function createProviderClient(url, publishableKey) {
-  if (url !== `https://${PROJECT_REF}.supabase.co` || typeof publishableKey !== 'string' || !publishableKey || publishableKey.length > 4096)
+  if (url !== SUPABASE_URL || publishableKey?.length > 4096 || !publicSupabaseConfig(url, publishableKey))
     throw new Error('Invalid admin Auth configuration');
-  // Legacy JWT anon keys are permitted; secret keys and legacy service role keys
-  // must never be used here. JWT claims are decoded only to reject unsafe keys,
-  // not for authentication; unknown/malformed JWT keys are rejected.
-  if (publishableKey.startsWith('sb_secret_')) throw new Error('Secret keys are forbidden');
-  if (!publishableKey.startsWith('sb_publishable_')) {
-    let role;
-    try { role = claimsFrom(publishableKey).role; } catch { throw new Error('Invalid publishable key'); }
-    if (role !== 'anon') throw new Error('Only publishable keys are permitted');
-  }
   return createClient(url, publishableKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
 }
 /** Verify identity with the actual Supabase Auth user endpoint before using any
  * untrusted claim. No Admin authorization or session revocation is implied. */
-export async function verifyProviderIdentity({token, provider, now = Date.now(), allowAal1 = false}) {
+export async function verifyProviderIdentity({token, provider, now = Date.now(), allowAal1 = false, emailAllowed}) {
   if (!provider?.auth?.getUser) denied('UNAVAILABLE');
   const claims = claimsFrom(token);
   if (claims.iss !== ISSUER || !(claims.aud === 'authenticated' || (Array.isArray(claims.aud) && claims.aud.includes('authenticated'))) ||
@@ -53,6 +45,7 @@ export async function verifyProviderIdentity({token, provider, now = Date.now(),
   let result;
   try { result = await provider.auth.getUser(token); } catch { denied('UNAVAILABLE'); }
   if (result?.error || !result?.data?.user || result.data.user.id !== claims.sub || result.data.user.is_anonymous === true) denied('UNAUTHENTICATED');
+  if (emailAllowed && (!result.data.user.email_confirmed_at || !emailAllowed(result.data.user.email))) denied('FORBIDDEN');
   // AAL2 does not itself prove fresh MFA. Extract only a provider-verified TOTP
   // event with a non-future Unix timestamp; missing/unknown AMR fails closed
   // for sensitive operations. Actual project claim semantics require live test.

@@ -8,6 +8,11 @@ declare const __BIOCRAFT_PREVIEW_DIAGNOSTICS__: boolean;
 interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
   readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
+  /** Configurable ceilings — see src/lib/limits.ts. Raising these needs no code change. */
+  readonly VITE_GENERATION_MAX_PER_REQUEST?: string;
+  readonly VITE_CONTENT_PAGE_SIZE?: string;
+  readonly VITE_SEARCH_PAGE_SIZE?: string;
+  readonly VITE_SEARCH_MAX_PAGE_SIZE?: string;
 }
 
 interface ImportMeta {

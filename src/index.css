@@ -3457,3 +3457,19 @@ img, svg, video, canvas { max-width: 100%; }
     .site-footer { contain-intrinsic-size: auto 450px; }
   }
 }
+
+/* Count control — shared by every generator. Replaces the fixed 5/10/20
+   segmented buttons so any per-run count can be requested. */
+.count-control { display: flex; flex-direction: column; gap: 0.4rem; }
+.count-control-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.count-control-field { min-width: 6.5rem; }
+.count-control-field input {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  font-variant-numeric: tabular-nums;
+}
+.count-control .panel-note { margin: 0; }
+@media (max-width: 480px) {
+  .count-control-row { align-items: stretch; }
+  .count-control-field { min-width: 100%; }
+}

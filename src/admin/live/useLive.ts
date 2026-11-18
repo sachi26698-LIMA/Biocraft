@@ -48,6 +48,7 @@ export function isDenied(error: unknown): boolean {
 
 export function describeError(error: unknown): string {
   const code = (error as { code?: unknown } | null)?.code;
+  if (code === 'PREVIEW_READ_ONLY') return 'Shared changes are disabled on this Preview.';
   if (isDenied(error)) return 'Your account does not have permission for this module.';
   if (code === 'RATE_LIMITED') return 'Too many requests just now. Wait a moment and try again.';
   if (code === 'UNAVAILABLE') return 'The Admin service is not reachable right now.';
@@ -63,68 +64,69 @@ export function describeError(error: unknown): string {
  * last row I hold" — never an offset that could skip a row if something changed
  * in between. `loadMore` appends; `reload` starts over.
  */
-export function usePaged<T>(path: string | null, take: (last: T | null) => string | null): LiveResult<T[]> & { loadMore: () => void; hasMore: boolean } {
+export function usePaged<T>(path: string | null, take: (last: T | null) => string | null, cursorParam: 'after' | 'before' = 'after'): LiveResult<T[]> & { loadMore: () => void; hasMore: boolean; loadingMore: boolean } {
   const [state, setState] = useState<LiveState>('idle');
   const [rows, setRows] = useState<T[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [cursor, setCursor] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
   const [more, setMore] = useState(false);
   const [appending, setAppending] = useState(false);
-  const live = useRef(true);
+  const scope = useRef<AbortController | null>(null);
+  const pendingPage = useRef(false);
+  const limit = Number(path?.match(/[?&]limit=(\d+)/)?.[1]) || 1;
 
   useEffect(() => {
-    live.current = true;
-    return () => { live.current = false; };
-  }, []);
-
-  useEffect(() => {
-    if (!path) { setState('idle'); setRows([]); setError(null); return; }
+    if (!path) { setState('idle'); setRows([]); setError(null); setMore(false); return; }
     const controller = new AbortController();
+    scope.current = controller;
+    pendingPage.current = false;
+    setAppending(false);
     setState('loading');
     setError(null);
-    setCursor(null);
     setMore(false);
     request<{ items: T[] }>(path, { signal: controller.signal })
       .then(body => {
-        if (!live.current || controller.signal.aborted) return;
-        const items = Array.isArray(body.items) ? body.items : [];
-        setRows(items);
-        // A full page means the server may hold more; a short page means it does not.
-        setMore(items.length > 0);
+        if (controller.signal.aborted) return;
+        if (!Array.isArray(body?.items)) throw new Error('Invalid page');
+        setRows(body.items);
+        setMore(body.items.length >= limit);
         setState('ready');
       })
       .catch((cause: unknown) => {
-        if (!live.current || controller.signal.aborted) return;
+        if (controller.signal.aborted) return;
         setRows([]);
         setState(isDenied(cause) ? 'denied' : 'error');
         setError(describeError(cause));
       });
     return () => controller.abort();
-  }, [path, nonce]);
+  }, [path, nonce, limit]);
 
   const loadMore = useCallback(() => {
-    if (!path || appending) return;
-    const last = rows.length > 0 ? rows[rows.length - 1] : null;
-    const next = take(last);
+    const controller = scope.current;
+    if (!path || !controller || controller.signal.aborted || pendingPage.current || !more || state !== 'ready') return;
+    const next = take(rows[rows.length - 1] ?? null);
     if (!next) { setMore(false); return; }
-    if (next === cursor) return;
+    pendingPage.current = true;
     setAppending(true);
-    setCursor(next);
+    setError(null);
     const separator = path.includes('?') ? '&' : '?';
-    request<{ items: T[] }>(`${path}${separator}after=${encodeURIComponent(next)}`)
+    request<{ items: T[] }>(`${path}${separator}${cursorParam}=${encodeURIComponent(next)}`, { signal: controller.signal })
       .then(body => {
-        if (!live.current) return;
-        const items = Array.isArray(body.items) ? body.items : [];
-        setRows(previous => [...previous, ...items]);
-        setMore(items.length > 0);
+        if (controller.signal.aborted) return;
+        if (!Array.isArray(body?.items) || (body.items.length > 0 && take(body.items[body.items.length - 1]) === next)) throw new Error('Invalid next page');
+        setRows(previous => [...previous, ...body.items]);
+        setMore(body.items.length >= limit);
       })
-      .catch((cause: unknown) => { if (live.current) setError(describeError(cause)); })
-      .finally(() => { if (live.current) setAppending(false); });
-  }, [path, rows, cursor, appending, take]);
+      .catch((cause: unknown) => { if (!controller.signal.aborted) setError(describeError(cause)); })
+      .finally(() => {
+        if (controller.signal.aborted) return;
+        pendingPage.current = false;
+        setAppending(false);
+      });
+  }, [path, rows, more, state, take, limit, cursorParam]);
 
-  const reload = useCallback(() => setNonce(value => value + 1), []);
-  return { state, data: state === 'ready' ? rows : null, error, reload, loadMore, hasMore: more };
+  const reload = useCallback(() => { scope.current?.abort(); setNonce(value => value + 1); }, []);
+  return { state, data: state === 'ready' ? rows : null, error, reload, loadMore, hasMore: more, loadingMore: appending };
 }
 
 /** POST/PUT a write and report what happened, without pretending it worked. */

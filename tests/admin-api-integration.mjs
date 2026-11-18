@@ -9,7 +9,7 @@ const {PGlite}=createRequire(import.meta.url)('@electric-sql/pglite');
 const a='11111111-1111-4111-8111-111111111111',b='22222222-2222-4222-8222-222222222222',outsider='33333333-3333-4333-8333-333333333333',sa='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',sb='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const db=new PGlite();
 try {
- await db.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);create table auth.sessions(id uuid primary key,user_id uuid not null references auth.users(id));
+ await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;create table auth.users(id uuid primary key);create table auth.sessions(id uuid primary key,user_id uuid not null references auth.users(id));
  create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
  create function auth.uid() returns uuid language sql stable as $$select nullif(auth.jwt()->>'sub','')::uuid$$;
  -- Minimal synthetic public tables mirroring the real columns read by 010.
@@ -47,7 +47,10 @@ try {
  const token=(sub,sessionId,extra={})=>['eyJhbGciOiJub25lIn0',Buffer.from(JSON.stringify({iss:'https://jvpadtzfsuekixrquzjv.supabase.co/auth/v1',aud:'authenticated',role:'authenticated',aal:'aal2',is_anonymous:false,sub,session_id:sessionId,exp:Math.floor(Date.now()/1000)+300,amr:[{method:'totp',timestamp:Math.floor(Date.now()/1000)}],...extra})).toString('base64url'),'signature'].join('.');
  const provider={auth:{getUser:async(t)=>t==='invalid.signature.value'?{error:{},data:{user:null}}:{data:{user:{id:JSON.parse(Buffer.from(t.split('.')[1],'base64url')).sub,is_anonymous:false}}}}};
  const rules={instagram:{count:'unicode_code_points',max:150}};
- const handler=createAdminHandler({enabled:true,provider,execute,rateLimit:async()=>true,platformRules:rules});
+ const catalogCalls=[];
+ const handler=createAdminHandler({enabled:true,provider,execute,rateLimit:async()=>true,platformRules:rules,
+  readSystemStatus:async()=>({database:'ready',guest_content:'ready'}),
+  readPublicCatalog:async args=>{catalogCalls.push(args);return [{id:b,text:'Published fixture'}]}});
  const call=(path,method='GET',body,tk=token(a,sa))=>handler(new Request(`https://admin.example${path}`,{method,headers:{Authorization:`Bearer ${tk}`,...(body!==undefined?{'Content-Type':'application/json'}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{})}));
  assert.equal((await createAdminHandler()(new Request('https://admin.example/api/admin/v1/bio-drafts'))).status,503);
  assert.equal((await call('/api/admin/v1/bio-drafts','GET',undefined,token(a,sa,{aal:'aal1'}))).status,401);
@@ -55,6 +58,19 @@ try {
  assert.equal((await call('/api/admin/v1/session','POST')).status,200);
  assert.equal((await call('/api/admin/v1/session','POST',undefined,token(b,sb))).status,200);
  assert.equal((await call('/api/admin/v1/bio-drafts?limit=101')).status,422);
+ assert.equal((await call('/api/admin/v1/fonts?after=invalid')).status,422);
+ assert.equal((await call('/api/admin/v1/fonts?limit=101')).status,422);
+ assert.equal((await call('/api/admin/v1/fonts','GET',undefined,token(outsider,sa))).status,403);
+ assert.deepEqual(catalogCalls,[]);
+ const fonts=await call(`/api/admin/v1/fonts?limit=10&after=${a}`);
+ assert.equal(fonts.status,200);
+ assert.deepEqual((await fonts.json()).items,[{id:b,text:'Published fixture'}]);
+ assert.deepEqual(catalogCalls,[{kind:'fonts',after:a,limit:10}]);
+ assert.equal((await call('/api/admin/v1/system/status')).status,403);
+ const system=await call('/api/admin/v1/system/status','GET',undefined,token(b,sb));
+ assert.equal(system.status,200);
+ assert.equal((await system.json()).guest_content,'ready');
+ assert.equal((await call('/api/admin/v1/settings?after=site.maintenance','GET',undefined,token(b,sb))).status,200);
  const bio={content:'Hello',language:'en',platform:'instagram',active:true,featured:false};
  assert.equal((await call('/api/admin/v1/bio-drafts','POST',{key:'x',bio:{...bio,language:'bad'}})).status,422);
  assert.equal((await call('/api/admin/v1/bio-drafts','POST',{key:'bio-one',bio},token(a,sa,{amr:undefined}))).status,403);
@@ -74,6 +90,18 @@ try {
  response=await call(`/api/admin/v1/bio-drafts/${draft_id}/review`,'POST',{expectedVersion:3,decision:'approve'});assert.equal(response.status,403);
  response=await call(`/api/admin/v1/bio-drafts/${draft_id}/review`,'POST',{expectedVersion:3,decision:'approve'},token(b,sb));assert.equal(response.status,200);
  assert.equal((await db.query('select count(*)::int n from bc_admin_v1.admin_audit_logs')).rows[0].n,6);
+ assert.equal((await call('/api/admin/v1/bio-reviewers')).status,503,'unapproved SQL must stay disabled by default');
+ const proposal='admin-backend/proposals/015-editorial-discovery/';
+ await db.exec(fs.readFileSync(proposal+'apply.sql','utf8'));
+ await db.exec(fs.readFileSync(proposal+'grant.sql','utf8').replace('to bc_admin_executor','to fixture_executor'));
+ const editorial=createAdminHandler({enabled:true,provider,execute,rateLimit:async()=>true,platformRules:rules,editorialDirectory:true});
+ const editorialGet=(path,tk)=>editorial(new Request(`https://admin.example/api/admin/v1/${path}`,{headers:{Authorization:`Bearer ${tk}`}}));
+ const directory=await editorialGet('bio-reviewers',token(a,sa));
+ assert.equal(directory.status,200);assert.deepEqual((await directory.json()).items,[{user_id:b}]);
+ assert.equal((await editorialGet(`bio-reviewers?after=${b}`,token(a,sa))).status,200);
+ assert.equal((await editorialGet('bio-publish-queue',token(a,sa))).status,403);
+ assert.deepEqual((await (await editorialGet('bio-publish-queue',token(b,sb))).json()).items,[],'approving reviewer is not an eligible publisher');
+ await db.exec(fs.readFileSync(proposal+'rollback.sql','utf8'));
  // 013 publication routes: shape validation, history paging, and the reviewed
  // publish/revert pair. The seeded public platform is 'instagram' from the fixture.
  const pubGet=(path,tk)=>call(path,'GET',undefined,tk);
@@ -89,9 +117,11 @@ try {
  assert.equal((await call(`/api/admin/v1/bio-drafts/${draft_id}/publish`,'POST',{expectedVersion:4,bioId:'nope'})).status,422);
  assert.equal((await call(`/api/admin/v1/bio-drafts/${draft_id}/publish`,'POST',{expectedVersion:4,bioId:null,extra:1})).status,422);
  // The revert route validates its anchor before touching anything.
- assert.equal((await call(`/api/admin/v1/bio-drafts/${draft_id}/revert`,'POST',{expectedVersion:4,publicationId:0})).status,422);
+ assert.equal((await call('/api/admin/v1/publications/0/revert','POST',{})).status,422);
+ assert.equal((await call('/api/admin/v1/publications/9223372036854775808/revert','POST',{})).status,422);
+ assert.equal((await call('/api/admin/v1/publications/9223372036854775807/revert','POST',{})).status,404);
  // A named-but-missing publication is a not-found, never a silent revert.
- assert.equal((await call(`/api/admin/v1/bio-drafts/${draft_id}/revert`,'POST',{expectedVersion:4,publicationId:999})).status,404);
+ assert.equal((await call('/api/admin/v1/publications/999/revert','POST',{})).status,404);
  // Staff administration (007) was unreachable over HTTP until now.
  assert.equal((await call('/api/admin/v1/staff','PATCH',{userId:b,expectedVersion:1,enabled:true,roles:['editor']})).status,403);
  assert.equal((await call('/api/admin/v1/staff','PATCH',{userId:'nope',expectedVersion:1,enabled:true,roles:['editor']})).status,422);
