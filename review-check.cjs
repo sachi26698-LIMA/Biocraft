@@ -200,15 +200,15 @@ const runAxe = async (routeName) => {
   await bundle.mount();
   const { act } = bundle;
 
-  console.log('\n--- Homepage (light tool-first: hero + discovery sections removed by request) ---');
+  console.log('\n--- Homepage (tool-first: the laptop stage leads, no hero copy) ---');
   check('page renders exactly one h1', $$('h1').length === 1);
-  check('h1 is the visible toolkit description', ($$('h1')[0]?.textContent ?? '').includes('All-in-One Social Media Toolkit') && !($$('h1')[0]?.classList.contains('sr-only')));
-  check('hero leads with a real headline, one line of copy and two actions',
-    Boolean($('.home-hero #home-title')) &&
-    ($('.home-hero-sub')?.textContent ?? '').trim().length > 40 &&
-    $$('.home-hero-actions .btn').length === 2);
-  check('hero actions point at the workspace and the ready-made collections',
-    $$('.home-hero-actions a').map((a) => a.getAttribute('href')).join(',') === '#workspace,/bio-collections');
+  check('h1 keeps the toolkit description for assistive tech, visually hidden',
+    ($$('h1')[0]?.textContent ?? '').includes('All-in-One Social Media Toolkit') && ($$('h1')[0]?.classList.contains('sr-only') ?? false));
+  check('no hero copy sits above the laptop stage',
+    !$('.home-hero') && !$('.home-hero-eyebrow') && !$('.home-hero-title')
+    && !$('.home-hero-sub') && !$('.home-hero-actions') && !$('.home-hero-facts'));
+  check('the stage is the first section in the homepage shell',
+    document.querySelector('.home-shell > section')?.classList.contains('platform-stage') === true);
   check('hero is removed', !$('.hero'));
   check('explore-by-category section is removed', !$('#explore-category-title') && $$('.pastel-grid').length === 0);
   check('choose-your-platform section is removed', !$('#platform-cards-title') && $$('.platform-grid').length === 0);
@@ -251,10 +251,9 @@ const runAxe = async (routeName) => {
   check('second FAQ question toggles closed', $$('.faq-question')[1].getAttribute('aria-expanded') === 'false');
   check('final CTA section was removed in the hero rework', !$('#final-cta-title'));
 
-  console.log('\n--- Section order (Header→Hero→Stage→Toolkit→Ready-Made→FAQ→Footer) ---');
+  console.log('\n--- Section order (Header→Stage→Toolkit→Ready-Made→FAQ→Footer) ---');
   const markers = [
     ['site-header', '.site-header'],
-    ['homepage hero', '.home-hero'],
     ['platform stage', '.platform-stage'],
     ['live toolkit workspace', '.toolkit-workspace'],
     ['ready-made bios', '#rmb-home-title'],
@@ -262,7 +261,7 @@ const runAxe = async (routeName) => {
     ['site footer', '.site-footer'],
   ];
   const markerEls = markers.map(([name, sel]) => [name, $(sel)]);
-  check('all seven landmark regions are present', markerEls.every(([, el]) => Boolean(el)));
+  check('all six landmark regions are present', markerEls.length === 6 && markerEls.every(([, el]) => Boolean(el)));
   check('sections render in the designed order', markerEls.every(([, el], i) => i === 0 || Boolean(markerEls[i - 1][1] && el && (markerEls[i - 1][1].compareDocumentPosition(el) & 4))), );
 
   console.log('\n--- Toolkit shell (route /) ---');

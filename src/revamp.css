@@ -1058,70 +1058,14 @@ p, li { text-wrap: pretty; }
 .lib-card-link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 
 /* ================================================================
-   15. Homepage design pass
-   A real, visible hero; calmer rhythm; two-column FAQ on desktop.
+   15. Homepage rhythm
+   The laptop stage leads the page (no hero copy above it): a clean
+   gap under the sticky header, calmer rhythm, two-column FAQ.
    ================================================================ */
 
-.home-hero {
-  position: relative;
-  padding: clamp(1.6rem, 5vw, 2.75rem) 0 clamp(0.6rem, 2vw, 1.1rem);
-}
-.home-hero-inner {
-  position: relative;
-  z-index: 4; /* above the decorative starfield */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 0.5rem;
-}
-.home-hero-eyebrow {
-  margin: 0;
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-.home-hero-title {
-  margin: 0;
-  max-width: 26ch;
-  font-family: var(--font-display);
-  font-size: clamp(1.7rem, 7.2vw, 3rem);
-  line-height: 1.08;
-  letter-spacing: -0.02em;
-  color: var(--text);
-}
-.home-hero-sub {
-  margin: 0;
-  max-width: 60ch;
-  color: var(--text-2);
-  font-size: clamp(0.92rem, 2.4vw, 1.05rem);
-  line-height: 1.6;
-}
-.home-hero-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
-  margin-top: 0.4rem;
-}
-.home-hero-actions .btn { justify-content: center; }
-@media (min-width: 560px) {
-  .home-hero-actions { flex-direction: row; justify-content: center; width: auto; }
-  .home-hero-actions .btn { flex: 0 0 auto; }
-}
-.home-hero-facts {
-  margin: 0.3rem 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.3rem 0.45rem;
-  font-size: 0.78rem;
-  font-weight: 650;
-  color: var(--muted);
-}
-.home-hero-facts > span[aria-hidden] { color: var(--line-strong); }
+/* Keep the machine clear of the floating header pill — the stage is the
+   first thing on the page now, so its own top padding is the only gap. */
+.home-shell > .platform-stage { padding-top: clamp(0.85rem, 2.4vw, 1.5rem); }
 
 /* Calmer vertical rhythm on the homepage than the generic .section padding. */
 .home-shell > .section { padding-block: clamp(2.2rem, 5vw, 3.4rem); }

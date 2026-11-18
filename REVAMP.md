@@ -257,7 +257,7 @@ sections, each earning its height:
 ### Kept
 | Section | Why it stays |
 | --- | --- |
-| **Hero** (new) | Visible `h1`, one sentence of positioning, two actions (“Write my bio” → `#workspace`, “Browse 506 ready-made bios” → `/bio-collections`) and three factual proof points. Previously the only `h1` was `sr-only`, so the page had no words at the top. |
+| ~~Hero~~ (**removed again in P3.2**) | A visible `h1`, one sentence, two actions and three proof points lived here for one commit. The product owner rejected it on sight, so the laptop stage leads the page again. |
 | **Platform stage** | The laptop is the brand and the live screen re-themes with the selected platform. |
 | **Generator workspace** | The primary action — platform pills, tool tabs, form, results. |
 | **Ready-Made Bios** | Six featured collections + the real category chips (with counts) + a route to the hub. |
@@ -275,6 +275,34 @@ Cleanup: dead CSS for the removed blocks (`.chip-cloud`, `.section-sub-link`, `.
 `.rmb-home-rail*`, `.rmb-home-design*`, `.rmb-home-facets*`), and the responsive-audit expectations
 that referenced them. Homepage CSS/JS is slightly smaller than before the pass
 (CSS 29.4 → 29.0 kB gzip, total JS 286.7 → 285.2 kB gzip, homepage chunk 6.3 → 5.4 kB).
+
+## P3.2 Hero removal — the stage leads again (this commit)
+
+The hero introduced in `a301d2c` was rejected as soon as it was on screen: a homepage that opens with a
+laptop should open with the laptop. The block was deleted rather than restyled.
+
+- **Deleted from `src/pages/HomePage.tsx`**: `section.home-hero` and everything in it — the eyebrow
+  (“Free forever · no sign-up · nothing uploaded”), the visible `h1`, the positioning paragraph, both
+  `btn-large` actions (“Write my bio”, “Browse 506 ready-made bios”) and the proof-points row
+  (“12 tools · 506 copy-ready bios · Runs in your browser”). The `READY_MADE_STATS` import went with
+  them; `TOOLS` and `handleAnchorClick` stay because favourites and the FAQ still use them.
+- **Accessibility unchanged**: `<h1 className="sr-only">BioCraft — All-in-One Social Media Toolkit</h1>`
+  replaces it, so the page still has exactly one `h1`, in document order before the first `h2`, it is
+  just invisible again. Axe: 0 violations on `/`.
+- **Deleted from `src/revamp.css`**: the whole `.home-hero*` set (`.home-hero`, `-inner`, `-eyebrow`,
+  `-title`, `-sub`, `-actions` + its 560 px media query, `-facts`, `-facts > span[aria-hidden]`).
+  Section 15 is now “Homepage rhythm” and keeps only the `.home-shell > .section` / `.rmb-home`
+  spacing and the two-column FAQ grid, plus one new rule:
+  `.home-shell > .platform-stage { padding-top: clamp(0.85rem, 2.4vw, 1.5rem) }` — the gap under the
+  floating header pill, so the lid never touches it and no blank band replaces the text.
+- **Unchanged**: the laptop (same photoreal chassis, live platform screen, clock, parallax), the
+  starfield background, platform pills, generator workspace, Ready-Made Bios, favourites, FAQ, footer.
+- **Tests**: `review-check.cjs` drops “hero leads with a real headline…”, “hero actions point at…”
+  and the `homepage hero` marker; it adds “no hero copy sits above the laptop stage” and “the stage is
+  the first section in the homepage shell”, and the order check is now six landmarks
+  (header → stage → workspace → Ready-Made Bios → FAQ → footer). 352/352.
+
+Size: CSS 29.0 → 28.1 kB gzip, total JS 285.2 → 278.4 kB, `HomePage` chunk 5.4 → 5.1 kB.
 
 ## P3.1 Blockers (unchanged, environment-level)
 

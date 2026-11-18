@@ -6,7 +6,6 @@ import { handleAnchorClick } from '../lib/router';
 import { TOOLS } from '../tools/registry';
 import { useFavourites } from '../lib/toolbox';
 import ReadyMadeBiosSection from '../components/ReadyMadeBiosSection';
-import { READY_MADE_STATS } from '../lib/readyMadeBios';
 import { PlusIcon } from '../components/icons';
 
 const FAQ = [
@@ -87,32 +86,8 @@ export default function HomePage() {
           </svg>
         ))}
       </div>
-      {/* ============ Hero — what this is, and the two things people come for ============ */}
-      <section className="home-hero" aria-labelledby="home-title">
-        <div className="container home-hero-inner">
-          <p className="home-hero-eyebrow">Free forever · no sign-up · nothing uploaded</p>
-          <h1 id="home-title" className="home-hero-title">
-            BioCraft — All-in-One Social Media Toolkit
-          </h1>
-          <p className="home-hero-sub">
-            Bios, usernames, captions, hashtags and fonts for Instagram, Facebook, Threads, TikTok, X,
-            LinkedIn, WhatsApp and Snapchat — in English, हिन्दी and Hinglish.
-          </p>
-          <div className="home-hero-actions">
-            <a className="btn btn-primary btn-large" href="#workspace">Write my bio</a>
-            <a className="btn btn-secondary btn-large" href="/bio-collections" onClick={handleAnchorClick}>
-              Browse {READY_MADE_STATS.bios} ready-made bios
-            </a>
-          </div>
-          <p className="home-hero-facts">
-            <span>{TOOLS.length} tools</span>
-            <span aria-hidden="true">·</span>
-            <span>{READY_MADE_STATS.bios} copy-ready bios</span>
-            <span aria-hidden="true">·</span>
-            <span>Runs in your browser</span>
-          </p>
-        </div>
-      </section>
+      {/* The page title lives for screen readers only — the stage is the visual lead. */}
+      <h1 className="sr-only">BioCraft — All-in-One Social Media Toolkit</h1>
 
       {/* ============ Platform stage — the toolkit, in one laptop ============ */}
       <PlatformStage />
