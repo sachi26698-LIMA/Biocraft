@@ -13,6 +13,7 @@ import CharCounter from '../components/CharCounter';
 import CopyButton from '../components/CopyButton';
 import DownloadButton from '../components/DownloadButton';
 import ToolModeToggle from '../components/ToolModeToggle';
+import AdvancedOptions from '../components/ui/AdvancedOptions';
 import { useToolMode } from '../lib/toolMode';
 import { useSymbolFavourites, useSymbolRecents } from '../lib/toolbox';
 import { WandIcon, RefreshIcon, CloseIcon } from '../components/icons';
@@ -187,7 +188,8 @@ export default function BioEditorPage() {
               </div>
             </div>
 
-            <div className="field tool-advanced">
+            <AdvancedOptions title="Styling & dividers" description="Font, divider, spacing and card design">
+            <div className="field">
               <label htmlFor="bio-editor-font">Font style</label>
               <select id="bio-editor-font" value={styleId} onChange={(event) => setStyleId(event.target.value)}>
                 <option value="none">Original (no style)</option>
@@ -198,7 +200,7 @@ export default function BioEditorPage() {
               <p className="field-hint">Devanagari stays untouched — Unicode has no styled Devanagari alphabets.</p>
             </div>
 
-            <div className="field-row tool-advanced">
+            <div className="field-row">
               <div className="field">
                 <label htmlFor="bio-editor-divider">Decorative divider</label>
                 <select id="bio-editor-divider" value={dividerId} onChange={(event) => setDividerId(event.target.value)}>
@@ -218,7 +220,7 @@ export default function BioEditorPage() {
               </div>
             </div>
 
-            <fieldset className="plain-fieldset tool-advanced">
+            <fieldset className="plain-fieldset">
               <legend className="option-label" id="editor-spacing-label">Line spacing <span className="field-hint-inline">(preview only)</span></legend>
               <div className="chip-row" role="group" aria-labelledby="editor-spacing-label">
                 {LINE_SPACINGS.map((item) => (
@@ -235,7 +237,7 @@ export default function BioEditorPage() {
               </div>
             </fieldset>
 
-            <div className="field tool-advanced">
+            <div className="field">
               <label htmlFor="bio-editor-design">Card design</label>
               <select id="bio-editor-design" value={design} onChange={(event) => setDesign(event.target.value as BioDesignKey)}>
                 {BIO_DESIGNS.map((item) => (
@@ -243,6 +245,7 @@ export default function BioEditorPage() {
                 ))}
               </select>
             </div>
+            </AdvancedOptions>
 
             {/* ------- Emoji insert ------- */}
             <div className="bio-editor-emojis">

@@ -1,0 +1,379 @@
+/* ============================================================
+   BioCraft Revamp — mobile-first layout, skeleton system,
+   accordion/dropdown primitives. Loaded AFTER index.css +
+   upgrade.css so these rules win the cascade without editing
+   the 3,400-line base stylesheet.
+   ============================================================ */
+
+/* ---------- 1. Global overflow + layout safety ---------- */
+html, body {
+  overflow-x: clip;
+  max-width: 100%;
+}
+body { overflow-wrap: break-word; }
+#root { min-width: 0; }
+img, svg, video, canvas, iframe { max-width: 100%; }
+.container { min-width: 0; overflow-wrap: anywhere; }
+h1, h2, h3, h4, p, li, dd, dt { overflow-wrap: anywhere; text-wrap: balance; }
+p, li { text-wrap: pretty; }
+
+/* Inputs: 16px prevents iOS auto-zoom; scroll-margin keeps the
+   focused field clear of the sticky header + on-screen keyboard. */
+.field input, .field textarea, .field select, .select,
+.search-input, .bc-search-input, .symbol-search-box input {
+  font-size: 16px;
+  scroll-margin-top: 5.5rem;
+  scroll-margin-bottom: 1rem;
+}
+@media (min-width: 640px) {
+  .field input, .field textarea, .field select, .select { font-size: 1rem; }
+}
+
+/* ---------- 2. Platform selector — grid, never clipped ---------- */
+/* Was: horizontal scroll row (8 × 74px = 592px → clipped on phones).
+   Now: 4-column grid on phones, 8 across on desktop. No page scroll. */
+.platform-pills {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  overflow: visible;
+  max-width: 100%;
+  padding: 0.4rem 0.15rem 0.8rem;
+  margin: 0 auto;
+  justify-content: stretch;
+}
+.platform-pills-compact { gap: 0.4rem; }
+@media (min-width: 900px) {
+  .platform-pills { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 0.6rem; }
+}
+.platform-pill {
+  min-width: 0;
+  min-height: 44px;
+  width: 100%;
+  padding: 0.55rem 0.35rem 0.5rem;
+  gap: 0.35rem;
+}
+.platform-pill-icon { width: 44px; height: 44px; border-radius: 13px; }
+@media (min-width: 900px) {
+  .platform-pill { min-width: 0; }
+  .platform-pill-icon { width: 48px; height: 48px; }
+}
+.platform-pill-label {
+  font-size: 0.68rem;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 900px) { .platform-pill-label { font-size: 0.72rem; } }
+
+/* ---------- 3. Tool tabs + chip rows — wrap, never clip ---------- */
+.tool-tabs-list {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+@media (max-width: 599px) {
+  .tool-tabs-list {
+    flex-wrap: wrap;
+    overflow: visible;
+    padding-inline: 0.15rem;
+  }
+  .tool-tab { min-height: 44px; }
+}
+.chip-row { flex-wrap: wrap; overflow: visible; }
+@media (max-width: 640px) {
+  .chip-row { flex-wrap: wrap; overflow: visible; padding-bottom: 0; }
+}
+.bc-nav { flex-wrap: wrap; overflow: visible; }
+@media (min-width: 900px) { .bc-nav { flex-wrap: wrap; overflow-x: visible; } }
+
+/* ---------- 4. Generator layout (was unstyled divs) ---------- */
+.generator-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
+}
+.generator-panel { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+@media (min-width: 1024px) {
+  .generator-card { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 1.75rem; }
+}
+
+/* ---------- 5. Mobile spacing + typography tightening ---------- */
+.workspace-card { padding: clamp(0.75rem, 2.5vw, 2rem); }
+.workspace-heading { font-size: clamp(1.3rem, 5.2vw, 2rem); }
+.workspace-subheading { font-size: 0.95rem; }
+.section-title { font-size: clamp(1.4rem, 5.5vw, 2.3rem); }
+.info-title { font-size: clamp(1.6rem, 7vw, 3rem); }
+.features-title { font-size: clamp(1.8rem, 8vw, 3.5rem); }
+@media (min-width: 640px) {
+  .workspace-heading { font-size: clamp(1.4rem, 2.6vw, 2rem); }
+  .section-title { font-size: clamp(1.55rem, 3.6vw, 2.3rem); }
+  .info-title { font-size: clamp(2rem, 4.6vw, 3rem); }
+  .features-title { font-size: clamp(2.15rem, 6.2vw, 3.5rem); }
+}
+
+/* Header: keep actions reachable at 320px */
+@media (max-width: 480px) {
+  .site-header-inner { padding-inline: 0.6rem; gap: 0.3rem; }
+  .icon-action { width: 40px; height: 40px; }
+  .logo-word { font-size: 1.05rem; }
+}
+
+/* Hub filter select: full width on phones (was fixed 230px → overflow) */
+@media (max-width: 640px) {
+  .hub-filter-select { width: 100%; min-width: 0; }
+  .hub-filter { flex-direction: column; align-items: stretch; }
+  .hub-filter-label { margin-bottom: 0.1rem; }
+}
+.field-select { min-width: 0; flex: 1 1 160px; }
+
+/* Detail head stacks on phones */
+@media (max-width: 560px) {
+  .bc-detail-head { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .bc-detail-icon { width: 64px; height: 64px; }
+  .profile-preview-stats { gap: 0.7rem; flex-wrap: wrap; }
+  .hub-header-icon { width: 52px; height: 52px; }
+  .hub-header-count { align-self: flex-start; }
+}
+
+/* Results actions: wrap + full-width primary on phones */
+@media (max-width: 640px) {
+  .results-actions { width: 100%; }
+  .results-actions .btn, .results-actions .copy-button { flex: 1 1 auto; justify-content: center; }
+  .generate-button { width: 100%; }
+  .btn-large { min-height: 52px; }
+}
+
+/* Touch targets: 44px minimum on coarse pointers */
+@media (pointer: coarse) {
+  .chip, .tool-tab, .segmented-option, .copy-button,
+  .dropdown-toggle, .accordion-toggle { min-height: 44px; }
+  .platform-pill { min-height: 56px; }
+  .bio-icon-button, .username-copy-button { min-width: 44px; min-height: 44px; }
+}
+
+/* Sticky header safe-area */
+.site-header { top: max(0.65rem, env(safe-area-inset-top)); }
+
+/* Loading fallback: modest reserved area (was 100vh blank) */
+.tool-loading, .route-loading { min-height: 320px; }
+
+/* ---------- 6. Skeleton system ---------- */
+:root {
+  --skel-base: rgba(139, 75, 192, 0.12);
+  --skel-hi: rgba(255, 255, 255, 0.75);
+  --skel-line: rgba(36, 27, 53, 0.1);
+}
+:root[data-theme='dark'] {
+  --skel-base: rgba(203, 173, 232, 0.14);
+  --skel-hi: rgba(255, 255, 255, 0.08);
+  --skel-line: rgba(255, 255, 255, 0.12);
+}
+.skel-region { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.skel {
+  display: block;
+  border-radius: 10px;
+  background: var(--skel-base);
+  border: 1px solid var(--skel-line);
+  overflow: hidden;
+  position: relative;
+}
+.skel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, var(--skel-hi) 50%, transparent 70%);
+  opacity: 0.5;
+  animation: skel-pulse 1.6s ease-in-out infinite;
+}
+@keyframes skel-pulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.6; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel::after { animation: none; opacity: 0.35; }
+}
+.skel-line { border-radius: 6px; border: none; }
+.skel-avatar { border-radius: 50%; }
+.skel-input { border-radius: var(--radius-sm); }
+.skel-textarea { border-radius: var(--radius-sm); }
+.skel-button { border-radius: var(--radius-md); }
+.skel-chip { border-radius: var(--radius-pill); }
+.skel-card {
+  display: flex; flex-direction: column; gap: 0.5rem;
+  padding: 0.8rem 0.9rem; border-radius: var(--radius-md);
+}
+.skel-card .skel-line { flex: 0 0 auto; }
+.skel-chip-row { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.skel-cell-grid {
+  display: grid; gap: 0.4rem;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+}
+.skel-cell { aspect-ratio: 1; min-height: 52px; border-radius: var(--radius-sm); }
+.skel-rows { display: flex; flex-direction: column; gap: 0.5rem; }
+.skel-row { display: flex; gap: 0.75rem; align-items: center; }
+.skel-panel-head { display: flex; flex-direction: column; gap: 0.5rem; }
+.skel-actions-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.skel-form-col { display: flex; flex-direction: column; gap: 0.85rem; min-width: 0; }
+.skel-field { display: flex; flex-direction: column; gap: 0.4rem; }
+.skel-results-col { display: flex; flex-direction: column; gap: 0.65rem; min-width: 0; }
+.skel-results-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.skel-two-col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+@media (min-width: 1024px) { .skel-two-col { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 1.75rem; } }
+.skel-username-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.55rem; }
+@media (min-width: 560px) { .skel-username-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.skel-mix-grid { display: grid; gap: 0.7rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+.skel-hero { display: flex; flex-direction: column; gap: 0.6rem; align-items: center; text-align: center; padding: 1.5rem 0; }
+.skel-hero-stage { width: min(560px, 100%); border-radius: var(--radius-lg); }
+.skel-workspace { display: flex; flex-direction: column; gap: 1rem; }
+.skel-tile-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.9rem; }
+@media (min-width: 640px) { .skel-tile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .skel-tile-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.skel-hub-head { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.skel-hub-body { display: flex; flex-direction: column; gap: 0.4rem; flex: 1 1 200px; min-width: 0; }
+.skel-detail-head { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.skel-bio-grid { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); }
+.skel-admin-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 0.75rem; }
+
+/* ---------- 7. Accordion + Dropdown ---------- */
+.accordion {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  overflow: hidden;
+}
+.accordion-head { margin: 0; }
+.accordion-toggle {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+  width: 100%; min-height: 52px; padding: 0.7rem 0.9rem;
+  background: transparent; border: none; cursor: pointer;
+  font: inherit; text-align: left; color: var(--text);
+}
+.accordion-toggle:hover { background: var(--accent-soft); }
+.accordion-toggle-text { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.accordion-title { font-weight: 750; font-size: 0.95rem; }
+.accordion-desc { font-size: 0.8rem; color: var(--muted); }
+.accordion-chevron { flex: 0 0 auto; display: grid; place-items: center; color: var(--accent); transition: transform 180ms ease; }
+.accordion-chevron.is-open { transform: rotate(180deg); }
+.accordion-panel { padding: 0.9rem; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 0.85rem; }
+.advanced-options-basic { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; }
+.advanced-options-note { margin: 0; font-size: 0.88rem; color: var(--muted); max-width: 60ch; }
+.advanced-options-body { display: flex; flex-direction: column; gap: 0.85rem; }
+
+.dropdown { position: relative; display: inline-flex; }
+.dropdown-toggle { gap: 0.4rem; }
+.dropdown-menu {
+  position: absolute; top: calc(100% + 6px); z-index: 50;
+  display: flex; flex-direction: column; gap: 2px;
+  min-width: 200px; max-width: calc(100vw - 2rem);
+  padding: 0.35rem;
+  background: var(--card-strong);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+.dropdown-menu--end { right: 0; }
+.dropdown-menu--start { left: 0; }
+.dropdown-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  min-height: 44px; padding: 0.5rem 0.75rem;
+  border: none; border-radius: var(--radius-sm);
+  background: transparent; color: var(--text);
+  font: inherit; font-size: 0.9rem; font-weight: 600;
+  text-align: left; cursor: pointer; white-space: nowrap;
+}
+.dropdown-item:hover, .dropdown-item:focus-visible { background: var(--accent-soft); }
+.dropdown-item:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ---------- 8. Unified states ---------- */
+.error-state {
+  border: 1px solid rgba(180, 35, 24, 0.3);
+  border-left: 4px solid var(--error);
+  border-radius: var(--radius-md);
+  background: var(--error-tint);
+  padding: 1.25rem 1rem;
+  text-align: center;
+  display: flex; flex-direction: column; gap: 0.4rem; align-items: center;
+}
+.error-state-title { margin: 0; font-weight: 750; color: var(--error); }
+.error-state-text { margin: 0; color: var(--text-2); font-size: 0.9rem; max-width: 55ch; }
+.empty-state-action { margin-top: 0.6rem; display: flex; justify-content: center; }
+.success-note {
+  margin: 0; padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(14, 122, 77, 0.3);
+  background: var(--success-tint);
+  color: var(--success);
+  font-size: 0.88rem; font-weight: 650;
+}
+
+/* ---------- 9. Focus + reduced motion polish ---------- */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  .accordion-chevron, .dropdown-menu { transition: none; }
+  .skel::after { animation: none; }
+}
+
+/* ---------- 10. Tool-specific refinements ---------- */
+.results-live { display: flex; flex-direction: column; gap: 0.65rem; }
+.accordion.advanced-options { margin-block: 0.25rem; }
+.generator-panel > .accordion.advanced-options { margin-block: 0.25rem; }
+/* Give the tool accordions breathing room inside single-column tool cards. */
+.tool-card > .accordion.advanced-options { margin-block: 0.25rem; }
+/* Symbol studio: chips stay readable at 320px. */
+@media (max-width: 480px) {
+  .symbol-categories { gap: 0.3rem; }
+  .symbol-categories .chip { font-size: 0.78rem; padding-inline: 0.55rem; }
+  .symbol-combo { min-width: 44px; }
+}
+
+/* Live-library sync indicator (BioCollectionPage) */
+.bc-sync-note {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin: 0 0 0.6rem;
+  font-size: 0.82rem; font-weight: 650; color: var(--muted);
+}
+.bc-sync-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  animation: bc-sync-pulse 1.1s ease-in-out infinite;
+}
+@keyframes bc-sync-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .bc-sync-dot { animation: none; opacity: 0.8; } }
+
+/* ---------- 11. Mobile menu sheet ---------- */
+/* The sheet can be taller than a phone viewport (7 destinations + CTA):
+   cap it, scroll inside, and respect the home indicator. */
+.mobile-nav {
+  max-height: min(72vh, calc(100dvh - 7rem));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: max(0.85rem, env(safe-area-inset-bottom));
+}
+@media (max-width: 380px) {
+  .mobile-nav { padding: 0.6rem 0.5rem 0.7rem; }
+  .mobile-nav-link { padding: 0.55rem 0.6rem; }
+  .mobile-nav-label { font-size: 0.92rem; }
+}
+/* Sticky header must never cover an in-page anchor target. */
+[id] { scroll-margin-top: 6rem; }
+
+/* Laptop-screen mock skeleton: occupies the display so the lazy chunk swap is CLS-free */
+.stage-mock-skeleton {
+  display: flex; flex-direction: column; gap: 0.6rem;
+  width: 100%; height: 100%;
+  padding: 0.9rem;
+  background: #0a0612;
+}
+.stage-mock-skeleton-top { display: flex; align-items: center; gap: 0.6rem; }
+.stage-mock-skeleton-meta { display: flex; flex-direction: column; gap: 0.35rem; flex: 1 1 auto; min-width: 0; }
+.stage-mock-skeleton-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.45rem; }
+
+/* Categories hub: filter + sort row wraps cleanly on phones */
+.hub-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.hub-filter .hub-filter-select { flex: 1 1 200px; }
+.hub-sort { flex: 0 0 auto; }
+.hub-filter .hub-showing { flex: 1 1 100%; margin: 0; }
+@media (min-width: 720px) {
+  .hub-filter .hub-showing { flex: 1 1 auto; text-align: right; margin-left: auto; }
+}

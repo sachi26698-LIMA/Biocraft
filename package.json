@@ -2,7 +2,7 @@
   "name": "biocraft",
   "private": true,
   "version": "1.0.0",
-  "description": "BioCraft — All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
+  "description": "BioCraft \u2014 All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -63,6 +63,7 @@
     "test:admin-api-authz": "node tests/admin-api-authz.mjs",
     "test:admin-bundle-secrets": "node tests/admin-bundle-secrets.mjs",
     "test:regression": "esbuild review-harness.tsx --bundle --platform=node --format=cjs --outfile=review-harness.bundle.cjs && node review-check.cjs",
+    "test:revamp": "node tests/revamp-ui.cjs",
     "test:responsive": "node responsive-audit.cjs",
     "test:browser": "playwright test"
   },

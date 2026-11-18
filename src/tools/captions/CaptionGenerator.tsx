@@ -18,6 +18,8 @@ import CharCounter from '../../components/CharCounter';
 import CopyButton from '../../components/CopyButton';
 import DownloadButton from '../../components/DownloadButton';
 import { useToolMode } from '../../lib/toolMode';
+import AdvancedOptions from '../../components/ui/AdvancedOptions';
+import { EmptyState } from '../../components/ui/States';
 import { CAPTION_FRAMES, applyCaptionFrame } from './captionFrames';
 
 const LANGUAGE_OPTIONS = [
@@ -58,7 +60,6 @@ export default function CaptionGenerator() {
 
   return (
     <div className="tool-card">
-      <div className="tool-advanced">
       <fieldset className="plain-fieldset">
         <legend className="option-label" id="caption-topic-legend">Topic</legend>
         <div className="chip-row" role="group" aria-labelledby="caption-topic-legend">
@@ -93,6 +94,7 @@ export default function CaptionGenerator() {
         </div>
       </fieldset>
 
+      <AdvancedOptions title="More options" description="Language, emojis, call to action and caption frame">
       <div className="generator-options">
         <SegmentedControl
           label="Caption language"
@@ -155,7 +157,7 @@ export default function CaptionGenerator() {
           </select>
         </div>
       </div>
-      </div>
+      </AdvancedOptions>
 
       <button type="button" className="btn btn-primary btn-large generate-button" onClick={runGeneration}>
         Generate 5 captions
@@ -205,12 +207,10 @@ export default function CaptionGenerator() {
             ))}
           </ol>
         ) : (
-          <div className="empty-state">
-            <p className="empty-state-title">Your five captions will appear here.</p>
-            <p className="empty-state-text">
-              Pick a topic, a tone and a language — then press “Generate 5 captions”.
-            </p>
-          </div>
+          <EmptyState
+            title="Your five captions will appear here."
+            text="Pick a topic, a tone and a language — then press “Generate 5 captions”."
+          />
         )}
 
         <p className="sr-only" role="status" aria-live="polite">

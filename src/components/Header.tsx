@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { handleAnchorClick, usePath } from '../lib/router';
 import {
   CloseIcon,
@@ -46,6 +46,8 @@ export default function Header() {
     try { return window.localStorage.getItem('biocraft:theme') === 'dark'; } catch { return false; }
   });
   const path = usePath();
+  const menuToggleRef = useRef<HTMLButtonElement>(null);
+  const mobileNavRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
@@ -69,9 +71,15 @@ export default function Header() {
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {
+        setOpen(false);
+        menuToggleRef.current?.focus();
+      }
     };
     window.addEventListener('keydown', onKey);
+    // Focus the first destination so keyboard and screen-reader users land
+    // inside the sheet instead of tabbing through the page behind it.
+    mobileNavRef.current?.querySelector<HTMLAnchorElement>('a')?.focus({ preventScroll: true });
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
@@ -116,6 +124,7 @@ export default function Header() {
             Explore Tools <ArrowRightIcon size={16} />
           </a>
           <button
+            ref={menuToggleRef}
             type="button"
             className="menu-toggle"
             aria-expanded={open}
@@ -129,7 +138,7 @@ export default function Header() {
       </div>
 
       {open && (
-        <nav className="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
+        <nav ref={mobileNavRef} className="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
           <p className="mobile-nav-eyebrow">Menu — quick jump</p>
           <ul>
             {MENU_ICONS.map((item, index) => {

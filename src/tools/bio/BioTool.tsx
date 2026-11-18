@@ -13,6 +13,8 @@ import { useToolMode } from '../../lib/toolMode';
 import CategoryPicker from './CategoryPicker';
 import PersonalizedForm, { FIELD_ORDER, fieldId } from './PersonalizedForm';
 import SegmentedControl from '../../components/SegmentedControl';
+import AdvancedOptions from '../../components/ui/AdvancedOptions';
+import { BioGeneratingSkeleton } from '../../components/skeleton/toolSkeletons';
 import { ClipboardIcon, RefreshIcon } from '../../components/icons';
 import { copyText } from '../../lib/clipboard';
 import { useToolkit } from '../../lib/toolkit';
@@ -210,7 +212,7 @@ export default function BioTool() {
     <div className="generator-card">
       {/* ------- Left: controls ------- */}
       <div className="generator-panel">
-        <div className="tabs tool-advanced" role="tablist" aria-label="Bio generation mode" onKeyDown={handleTabKeyDown}>
+        <div className="tabs" role="tablist" aria-label="Bio generation mode" onKeyDown={handleTabKeyDown}>
           <button
             ref={personalTabRef}
             type="button"
@@ -232,14 +234,15 @@ export default function BioTool() {
             aria-selected={activeMode === 'category'}
             aria-controls="panel-category"
             tabIndex={activeMode === 'category' ? 0 : -1}
-            className={`tab tool-advanced${activeMode === 'category' ? ' is-active' : ''}`}
+            className={`tab${activeMode === 'category' ? ' is-active' : ''}`}
             onClick={() => switchMode('category')}
           >
             By category
           </button>
         </div>
 
-        <div className="generator-options tool-advanced">
+        <AdvancedOptions title="Language & style" description="Bio language, emojis and how many results">
+        <div className="generator-options">
           {isLinkedIn ? (
             <p className="tool-note tool-note-inline" role="note">
               LinkedIn professional bios are generated in English.
@@ -270,6 +273,17 @@ export default function BioTool() {
             </button>
           </div>
         </div>
+
+          <div className="generator-options">
+            <SegmentedControl
+              label="How many bios"
+              visibleLabel="How many"
+              options={BIO_COUNT_OPTIONS}
+              value={String(count) as '5' | '10' | '20'}
+              onChange={(value) => setCount(Number(value) as 5 | 10 | 20)}
+            />
+          </div>
+        </AdvancedOptions>
 
         <form className="generator-form" onSubmit={handleSubmit} noValidate>
           {activeMode === 'personal' && showSummary && errorMessages.length > 0 && (
@@ -306,16 +320,6 @@ export default function BioTool() {
             </p>
           </div>
 
-          <div className="tool-advanced">
-          <SegmentedControl
-            label="How many bios"
-            visibleLabel="How many"
-            options={BIO_COUNT_OPTIONS}
-            value={String(count) as '5' | '10' | '20'}
-            onChange={(value) => setCount(Number(value) as 5 | 10 | 20)}
-          />
-
-          </div>
           <button type="submit" className="btn btn-primary btn-large generate-button" disabled={generating}>
             {generating ? 'Generating…' : `Generate ${generationCount} bios`}
           </button>
@@ -353,7 +357,11 @@ export default function BioTool() {
           )}
         </div>
 
-        {hasGenerated ? (
+        {generating && !hasGenerated ? (
+          <div className="results-live">
+            <BioGeneratingSkeleton />
+          </div>
+        ) : hasGenerated ? (
           <>
             <p className="results-note">
               Each bio stays within the {platformConfig.name} limit of {bioLimit} characters.

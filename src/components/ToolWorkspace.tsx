@@ -7,6 +7,7 @@ import { useToolMode } from '../lib/toolMode';
 import ToolModeToggle from './ToolModeToggle';
 import PlatformPills from './PlatformPills';
 import ToolTabs from './ToolTabs';
+import { TOOL_SKELETONS } from './skeleton/toolSkeletons';
 
 /**
  * The unified toolkit workspace:
@@ -40,6 +41,7 @@ export default function ToolWorkspace({
     : (TOOLS.find((entry) => entry.key === effectiveKey) ?? TOOLS[0]);
 
   const Panel = effectiveTool.Component;
+  const ToolSkeleton = TOOL_SKELETONS[effectiveKey];
 
   const bio = effectiveKey === 'bio';
   const heading = bio ? config.bioHeading : effectiveTool.heading;
@@ -101,16 +103,7 @@ export default function ToolWorkspace({
                 </button>
               </div>
             </header>
-            <Suspense fallback={
-              <div className={`tool-loading tool-loading-${effectiveKey}`} role="status" aria-live="polite">
-                Loading this tool…
-                {effectiveKey === 'symbols' && (
-                  <span className="tool-loading-skeleton" aria-hidden="true">
-                    {Array.from({ length: 48 }, (_, index) => <i key={index} />)}
-                  </span>
-                )}
-              </div>
-            }>
+            <Suspense fallback={<ToolSkeleton />}>
               <Panel key={resetKey} />
             </Suspense>
           </div>

@@ -6,6 +6,15 @@ import { HeartIcon, GridIcon } from '../components/icons';
 import { TOOLS, type ToolKey } from '../tools/registry';
 import { CATEGORY_META } from '../lib/categoryMeta';
 import { useFavourites, useRecentlyUsed } from '../lib/toolbox';
+import Dropdown from '../components/ui/Dropdown';
+
+type SortMode = 'default' | 'az' | 'recent';
+
+const SORT_LABELS: Record<SortMode, string> = {
+  default: 'Default order',
+  az: 'A–Z',
+  recent: 'Recently used',
+};
 
 const TOOL_BY_KEY = new Map(TOOLS.map((tool) => [tool.key, tool]));
 
@@ -13,11 +22,21 @@ export default function CategoriesPage() {
   const { favs } = useFavourites();
   const { recent } = useRecentlyUsed();
   const [filter, setFilter] = useState<string>('all');
+  const [sort, setSort] = useState<SortMode>('default');
 
   const favTools = [...favs].map((key) => TOOL_BY_KEY.get(key as ToolKey)).filter((t): t is (typeof TOOLS)[number] => Boolean(t));
   const recentTools = recent.map((key) => TOOL_BY_KEY.get(key as ToolKey)).filter((t): t is (typeof TOOLS)[number] => Boolean(t));
   const activeFilter = CATEGORY_META.find((category) => category.id === filter);
-  const shownTools = activeFilter ? TOOLS.filter((tool) => activeFilter.tools.includes(tool.key)) : TOOLS;
+  const filteredTools = activeFilter ? TOOLS.filter((tool) => activeFilter.tools.includes(tool.key)) : TOOLS;
+  /** Sort is a real, local control: default registry order, A–Z, or recency. */
+  const shownTools = (() => {
+    if (sort === 'az') return [...filteredTools].sort((a, b) => a.heading.localeCompare(b.heading));
+    if (sort === 'recent') {
+      const rank = new Map(recent.map((key, index) => [key, index]));
+      return [...filteredTools].sort((a, b) => (rank.get(a.key) ?? 99) - (rank.get(b.key) ?? 99));
+    }
+    return filteredTools;
+  })();
 
   return (
     <section className="page categories-page">
@@ -105,6 +124,15 @@ export default function CategoriesPage() {
                 </option>
               ))}
             </select>
+            <Dropdown
+              label={`Sort: ${SORT_LABELS[sort]}`}
+              className="hub-sort"
+              items={[
+                { id: 'default', label: 'Default order', onSelect: () => setSort('default') },
+                { id: 'az', label: 'A–Z', onSelect: () => setSort('az') },
+                { id: 'recent', label: 'Recently used first', onSelect: () => setSort('recent') },
+              ]}
+            />
             <p className="hub-showing" role="status">
               Showing {shownTools.length} of {TOOLS.length} tools
             </p>

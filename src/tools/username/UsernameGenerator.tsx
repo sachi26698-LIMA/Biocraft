@@ -13,6 +13,7 @@ import { copyText } from '../../lib/clipboard';
 import { CheckIcon, ClipboardIcon, RefreshIcon } from '../../components/icons';
 import DownloadButton from '../../components/DownloadButton';
 import { useToolMode } from '../../lib/toolMode';
+import AdvancedOptions from '../../components/ui/AdvancedOptions';
 
 const VIBE_OPTIONS: Array<{ id: UsernameVibe; en: string; hi: string }> = [
   { id: 'aesthetic', en: 'Aesthetic', hi: 'सौंदर्य' },
@@ -144,7 +145,7 @@ export default function UsernameGenerator() {
             )}
           </div>
 
-          <div className="field tool-advanced">
+          <div className="field">
             <label htmlFor={fieldId('keyword')}>Keyword or niche</label>
             <input
               id={fieldId('keyword')}
@@ -171,7 +172,7 @@ export default function UsernameGenerator() {
         </div>
 
 
-        <div className="fieldset-row tool-advanced">
+        <AdvancedOptions title="Username vibe & length" description="Style options and handle length"><div className="fieldset-row">
           <fieldset className="plain-fieldset plain-fieldset-grow">
             <legend className="option-label" id="vibe-legend">Vibe <span lang="hi" className="option-label-hi">वाइब</span></legend>
             <div className="chip-row" role="group" aria-labelledby="vibe-legend">
@@ -206,6 +207,7 @@ export default function UsernameGenerator() {
             </select>
           </div>
         </div>
+        </AdvancedOptions>
 
         <button type="submit" className="btn btn-primary btn-large generate-button">
           Generate {USERNAME_TARGET} usernames

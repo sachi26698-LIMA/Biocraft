@@ -13,6 +13,8 @@ import {
 } from './moodBoard';
 import type { MoodBoardPools } from './moodBoard';
 import { useToolMode } from '../../lib/toolMode';
+import AdvancedOptions from '../../components/ui/AdvancedOptions';
+import { EmptyState } from '../../components/ui/States';
 
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
@@ -140,7 +142,8 @@ export default function MoodBoardTool<C extends string>({
           </div>
         </fieldset>
 
-        <div className="generator-options tool-advanced">
+        <AdvancedOptions title="Language & style" description="Language, emojis and how many options">
+        <div className="generator-options">
           <SegmentedControl
             label="Language"
             visibleLabel="Language"
@@ -166,16 +169,18 @@ export default function MoodBoardTool<C extends string>({
           </div>
         </div>
 
-        <form className="generator-form" onSubmit={handleSubmit} noValidate>
-          <div className="tool-advanced">
-          <SegmentedControl
-            label="How many options"
-            visibleLabel="How many"
-            options={COUNT_OPTIONS}
-            value={count}
-            onChange={setCount}
-          />
+          <div className="generator-options">
+            <SegmentedControl
+              label="How many options"
+              visibleLabel="How many"
+              options={COUNT_OPTIONS}
+              value={count}
+              onChange={setCount}
+            />
           </div>
+        </AdvancedOptions>
+
+        <form className="generator-form" onSubmit={handleSubmit} noValidate>
 
           <button type="submit" className="btn btn-primary btn-large generate-button">
             {generateLabel.replace('{n}', String(generationCount))}
@@ -242,12 +247,10 @@ export default function MoodBoardTool<C extends string>({
             ))}
           </ol>
         ) : (
-          <div className="empty-state">
-            <p className="empty-state-title">Your {noun} options will appear here.</p>
-            <p className="empty-state-text">
-              Pick a vibe — or ask the studio for all three languages — press “Generate” and grab the one that fits.
-            </p>
-          </div>
+          <EmptyState
+            title={`Your ${noun} options will appear here.`}
+            text="Pick a vibe, press Generate, and grab the one that fits."
+          />
         )}
 
         <p className="sr-only" role="status" aria-live="polite">

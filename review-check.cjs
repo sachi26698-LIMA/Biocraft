@@ -122,6 +122,15 @@ const setInputValue = async (element, value, prototype) => {
   });
 };
 
+// Progressive disclosure: advanced settings live in collapsed accordions.
+// Tests must open them the way a user would before touching their controls.
+const expandAccordion = async (label) => {
+  const toggle = $$('.accordion-toggle').find((button) =>
+    (button.textContent || '').includes(label) && button.getAttribute('aria-expanded') === 'false');
+  if (toggle) await click(toggle);
+  return Boolean(toggle);
+};
+
 const clickTab = async (href) => {
   const el = $$('.tool-tab').find((a) => a.getAttribute('href') === href);
   if (!el) throw new Error(`no tool tab for ${href}`);
@@ -372,6 +381,7 @@ const runAxe = async (routeName) => {
   await click($('.bio-card .copy-button'));
   check('edited bio draft copies exactly', clipboardText === 'My edited bio draft');
   await click($$('.tool-mode-toggle button').find((button) => button.textContent === 'Advanced'));
+  await expandAccordion('Language & style');
   await click($$('.segmented-option').find((button) => button.textContent.includes('हिन्दी')));
   await click($$('.tool-mode-toggle button').find((button) => button.textContent === 'Basic'));
   await click($('.generate-button'));
@@ -398,6 +408,7 @@ const runAxe = async (routeName) => {
 
   console.log('\n--- Bio: Hindi ---');
   await click($$('.tabs [role="tab"]')[0]);
+  await expandAccordion('Language & style');
   const hiButton = $$('.segmented-option').find((el) => el.textContent.trim() === 'हिन्दी');
   await click(hiButton);
   check('हिन्दी segmented button aria-pressed=true', hiButton.getAttribute('aria-pressed') === 'true');
@@ -636,6 +647,8 @@ const runAxe = async (routeName) => {
   check('regenerate yields 20 unique tags again', tags2.length === 20 && new Set(tags2.map((t) => t.toLowerCase())).size === 20);
   check('regenerate produces a fresh set (not identical)', tags2.join(',') !== tagsAfter);
 
+  await expandAccordion('Refine your hashtags');
+  check('hashtag refinement controls live in a discoverable accordion', $('#hashtag-keywords') !== null);
   await setInputValue($('#hashtag-keywords'), '!!!', 'input');
   await click($('.generate-button'));
   check('unusable keywords show an inline error', Boolean($('.field-error[role="alert"]')));
@@ -689,6 +702,7 @@ const runAxe = async (routeName) => {
   check('second caption copies byte-exact too', clipboardText === captionTexts[1]);
 
   // Hindi + different tone
+  await expandAccordion('More options');
   const hiCaptionButton = $$('.segmented-option').find((el) => el.textContent.trim() === 'हिन्दी');
   await click(hiCaptionButton);
   const boldChip = $$('.chip').find((el) => el.textContent.trim() === 'Bold');
@@ -901,6 +915,7 @@ const runAxe = async (routeName) => {
   await click($('.generate-button'));
   check('headline form validates required role', Boolean($('#linkedin-headline-role-error')));
   await setInputValue($('#linkedin-headline-role'), 'Product Designer', 'input');
+  await expandAccordion('Add more context');
   await setInputValue($('#linkedin-headline-focus'), 'accessible products', 'input');
   await click($('.generate-button'));
   check('headline form generates five editable options', $$('.results-block .bio-card').length === 5 && $$('.results-block .result-editable').length === 5);
@@ -908,6 +923,7 @@ const runAxe = async (routeName) => {
 
   await goto('/linkedin-summary-generator');
   await setInputValue($('#linkedin-summary-role'), 'Product Designer', 'input');
+  await expandAccordion('Add more context');
   await setInputValue($('#linkedin-summary-focus'), 'accessible products', 'input');
   await click($('.generate-button'));
   check('summary form generates five editable drafts', $$('.results-block .bio-card').length === 5 && $$('.results-block .result-editable').length === 5);

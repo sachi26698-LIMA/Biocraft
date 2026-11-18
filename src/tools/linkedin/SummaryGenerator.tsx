@@ -4,6 +4,7 @@ import CopyButton from '../../components/CopyButton';
 import DownloadButton from '../../components/DownloadButton';
 import { RefreshIcon } from '../../components/icons';
 import { useToolMode } from '../../lib/toolMode';
+import AdvancedOptions from '../../components/ui/AdvancedOptions';
 import { generateSummaries, SUMMARY_LIMIT, isSafeLinkedinInput } from './lib/linkedin';
 
 /**
@@ -88,7 +89,7 @@ export default function SummaryGenerator() {
           )}
         </div>
 
-        <div className="field tool-advanced">
+        <AdvancedOptions title="Add more context" description="Focus area for a more specific summary"><div className="field">
           <label htmlFor="linkedin-summary-focus">Focus or domain <span className="optional">(optional)</span></label>
           <input
             id="linkedin-summary-focus"
@@ -106,6 +107,7 @@ export default function SummaryGenerator() {
             </p>
           )}
         </div>
+        </AdvancedOptions>
 
         <p className="tool-note" role="note">
           Five structured drafts built from your inputs only — no invented employers, dates or
