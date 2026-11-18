@@ -109,8 +109,11 @@ once and skeletons arrive with the existing route chunks. No new network request
 
 Commit: `1ae77b5` · branch `arena/decd8f08-biocraft` · preview only (production untouched).
 
-Preview deployment: `dpl_DRsjjsQXTZZUfjbvcKiK8au2jNzW` → <https://biocraft-c52emid5q-sachi26698-6758s-projects.vercel.app>
-(branch alias <https://biocraft-git-arena-decd8f08-biocraft-sachi26698-6758s-projects.vercel.app>).
+Preview deployments (commit `1ae77b5`, then `b047b59`):
+<https://biocraft-c52emid5q-sachi26698-6758s-projects.vercel.app> ·
+<https://biocraft-kahisvwyi-sachi26698-6758s-projects.vercel.app> (`dpl_3SYDJ9bTP92RzY6wdXfmPZ3RYWCw`, newest).
+The branch alias <https://biocraft-git-arena-decd8f08-biocraft-sachi26698-6758s-projects.vercel.app>
+always points at the latest build of this branch.
 Local equivalent: `npm run preview` (verified on port 4180 — `/`, `/bio-collections/`, `/bio-library/`,
 `/bio-library/?category=boys`, `/bio-editor/`, `/instagram-bio-for-boys/`, `/categories/`, `/resources/`
 all return their own 200 shell; unknown paths fall back to the SPA and redirect home).
