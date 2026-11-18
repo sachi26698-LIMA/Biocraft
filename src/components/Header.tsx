@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { handleAnchorClick, usePath } from '../lib/router';
 import {
   CloseIcon,
@@ -13,6 +13,7 @@ import {
   ZapIcon,
   InfoIcon,
   HelpIcon,
+  SparkIcon,
 } from './icons';
 import Logo from './Logo';
 import SearchOverlay from './SearchOverlay';
@@ -35,6 +36,25 @@ const MENU_ICONS: Array<{
 ];
 
 /**
+ * Mobile sheet destinations: the section links plus Ready-Made Bios, which sits
+ * right after Home because it is the discovery entry point. Rendered with the
+ * exact same row design as every other destination — no special band.
+ */
+const READY_MADE_MENU_ITEM = {
+  label: 'Ready-Made Bios',
+  href: '/bio-collections',
+  Icon: SparkIcon,
+  from: '#F6ECFF',
+  to: '#E2CDFA',
+  deep: '#6D28A8',
+  soft: 'rgba(139, 75, 192, 0.12)',
+  line: 'rgba(139, 75, 192, 0.38)',
+  glow: 'rgba(139, 75, 192, 0.42)',
+} as const;
+
+const MOBILE_MENU = [MENU_ICONS[0], READY_MADE_MENU_ITEM, ...MENU_ICONS.slice(1)];
+
+/**
  * Floating light-glass navbar: logo · centered section links · search,
  * favourites and the Explore Tools CTA. On mobile: compact logo, search
  * icon and a hamburger that opens a glass sheet with the same destinations.
@@ -46,6 +66,8 @@ export default function Header() {
     try { return window.localStorage.getItem('biocraft:theme') === 'dark'; } catch { return false; }
   });
   const path = usePath();
+  const menuToggleRef = useRef<HTMLButtonElement>(null);
+  const mobileNavRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
@@ -69,9 +91,15 @@ export default function Header() {
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {
+        setOpen(false);
+        menuToggleRef.current?.focus();
+      }
     };
     window.addEventListener('keydown', onKey);
+    // Focus the first destination so keyboard and screen-reader users land
+    // inside the sheet instead of tabbing through the page behind it.
+    mobileNavRef.current?.querySelector<HTMLAnchorElement>('a')?.focus({ preventScroll: true });
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
 
@@ -116,6 +144,7 @@ export default function Header() {
             Explore Tools <ArrowRightIcon size={16} />
           </a>
           <button
+            ref={menuToggleRef}
             type="button"
             className="menu-toggle"
             aria-expanded={open}
@@ -129,11 +158,12 @@ export default function Header() {
       </div>
 
       {open && (
-        <nav className="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
-          <p className="mobile-nav-eyebrow">Menu — quick jump</p>
+        <nav ref={mobileNavRef} className="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
           <ul>
-            {MENU_ICONS.map((item, index) => {
-              const active = item.href === path;
+            {MOBILE_MENU.map((item, index) => {
+              const active =
+                item.href === path ||
+                (item.href === '/bio-collections' && (path === '/bio-collections' || path === '/bio-library'));
               return (
                 <li key={item.href} style={{ '--mi-delay': `${index * 55}ms` } as CSSProperties}>
                   <a
@@ -160,7 +190,7 @@ export default function Header() {
                 </li>
               );
             })}
-            <li className="mobile-nav-cta" style={{ '--mi-delay': `${MENU_ICONS.length * 55 + 40}ms` } as CSSProperties}>
+            <li className="mobile-nav-cta" style={{ '--mi-delay': `${MOBILE_MENU.length * 55 + 40}ms` } as CSSProperties}>
               <a className="btn btn-primary btn-large" href="/resources" onClick={handleAnchorClick}>
                 Explore Tools <ArrowRightIcon size={17} />
               </a>

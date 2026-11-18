@@ -1,7 +1,7 @@
 /**
  * Static responsive-layout audit (no browser required).
  *
- * Loads src/index.css, evaluates the min/max-width media conditions against the
+ * Loads src/index.css, src/upgrade.css and src/revamp.css, evaluates the min/max-width media conditions against the
  * requested phone/tablet breakpoints and resolves the cascade for a matrix of layout-critical
  * selectors. It answers "what would compute at W px?" for grid tracks, visibility
  * and sizing — the parts of layout that come from CSS, without pixel rendering.
@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const css = ['index.css', 'upgrade.css']
+const css = ['index.css', 'upgrade.css', 'revamp.css']
   .map((file) => fs.readFileSync(path.join(__dirname, 'src', file), 'utf8'))
   .join('\n')
   .replace(/\/\*[\s\S]*?\*\//g, '');
@@ -78,6 +78,11 @@ const CASES = [
   ['.tile-grid', 'grid-template-columns'],
   ['.footer-grid', 'grid-template-columns'],
   ['.footer-brand', 'grid-column'],
+  ['.rmb-collection-grid', 'grid-template-columns'],
+  ['.rmb-cat-grid', 'grid-template-columns'],
+  ['.lib-grid', 'grid-template-columns'],
+  ['.lib-facets', 'grid-template-columns'],
+  ['.home-tools-grid', 'grid-template-columns'],
   ['.form-grid', 'grid-template-columns'],
   ['.username-grid', 'grid-template-columns'],
   ['.category-grid', 'grid-template-columns'],
@@ -101,6 +106,13 @@ const CASES = [
   ['.tool-mode-toggle', 'display'],
   ["[data-tool-mode='basic'] .tool-advanced", 'display'],
   ['.workspace-tool-actions', 'flex-wrap'],
+  // Revamp layer
+  ['.platform-pills', 'grid-template-columns'],
+  ['.platform-pill', 'min-width'],
+  ['.tool-tabs-list', 'flex-wrap'],
+  ['.chip-row', 'flex-wrap'],
+  ['.accordion-toggle', 'min-height'],
+  ['.mobile-nav', 'max-height'],
 ];
 
 let failures = 0;
@@ -119,8 +131,13 @@ for (const row of rows) {
 const EXPECT = [
   ['.pastel-grid', 'grid-template-columns', { 320: 'minmax(0, 1fr)', 375: 'minmax(0, 1fr)', 600: 'repeat(2, minmax(0, 1fr))', 768: 'repeat(2, minmax(0, 1fr))', 1024: 'repeat(3, minmax(0, 1fr))' }],
   ['.tile-grid', 'grid-template-columns', { 320: 'minmax(0, 1fr)', 640: 'repeat(2, minmax(0, 1fr))', 1024: 'repeat(3, minmax(0, 1fr))', 1440: 'repeat(3, minmax(0, 1fr))' }],
-  ['.footer-grid', 'grid-template-columns', { 320: 'repeat(2, minmax(0, 1fr))', 430: 'repeat(2, minmax(0, 1fr))', 768: 'repeat(3, minmax(0, 1fr))', 1440: 'minmax(0, 1.3fr) repeat(5, minmax(0, 1fr))' }],
+  ['.footer-grid', 'grid-template-columns', { 320: 'repeat(2, minmax(0, 1fr))', 430: 'repeat(2, minmax(0, 1fr))', 768: 'repeat(3, minmax(0, 1fr))', 1440: 'minmax(0, 1.2fr) repeat(6, minmax(0, 1fr))' }],
   ['.footer-brand', 'grid-column', { 320: '1 / -1', 768: null, 1440: null }],
+  ['.rmb-collection-grid', 'grid-template-columns', { 320: 'minmax(0, 1fr)', 640: 'repeat(2, minmax(0, 1fr))', 1080: 'repeat(3, minmax(0, 1fr))' }],
+  ['.rmb-cat-grid', 'grid-template-columns', { 320: 'minmax(0, 1fr)', 375: 'repeat(2, minmax(0, 1fr))', 768: 'repeat(3, minmax(0, 1fr))', 1440: 'repeat(5, minmax(0, 1fr))' }],
+  ['.lib-grid', 'grid-template-columns', { 320: 'minmax(0, 1fr)', 640: 'repeat(2, minmax(0, 1fr))', 1440: 'repeat(3, minmax(0, 1fr))' }],
+  ['.lib-facets', 'grid-template-columns', { 320: 'minmax(0, 1fr)', 430: 'repeat(2, minmax(0, 1fr))', 1440: 'repeat(6, minmax(0, 1fr))' }],
+  ['.home-tools-grid', 'grid-template-columns', { 320: 'minmax(0, 1fr)', 640: 'repeat(2, minmax(0, 1fr))', 1440: 'repeat(3, minmax(0, 1fr))' }],
   ['.form-grid', 'grid-template-columns', { 320: 'minmax(0, 1fr)', 768: 'minmax(0, 1fr) minmax(0, 1fr)' }],
   ['.category-grid', 'grid-template-columns', { 320: 'repeat(2, minmax(0, 1fr))', 768: 'repeat(3, minmax(0, 1fr))' }],
   ['.generate-button', 'width', { 320: '100%', 640: '100%', 768: null, 1440: null }],
@@ -140,6 +157,21 @@ const EXPECT = [
   ['.tool-mode-toggle', 'display', { 320: 'inline-flex', 390: 'inline-flex', 820: 'inline-flex', 1440: 'inline-flex' }],
   ["[data-tool-mode='basic'] .tool-advanced", 'display', { 320: 'none !important', 820: 'none !important', 1440: 'none !important' }],
   ['.workspace-tool-actions', 'flex-wrap', { 320: 'wrap', 820: 'wrap', 1440: 'wrap' }],
+  // Platform selector must never need page-level scrolling: 4-up grid on
+  // phones, 8-up from 900px, and no fixed min-width that can overflow.
+  ['.platform-pills', 'grid-template-columns', {
+    320: 'repeat(4, minmax(0, 1fr))',
+    430: 'repeat(4, minmax(0, 1fr))',
+    768: 'repeat(4, minmax(0, 1fr))',
+    1024: 'repeat(8, minmax(0, 1fr))',
+    1440: 'repeat(8, minmax(0, 1fr))',
+  }],
+  ['.platform-pill', 'min-width', { 320: '0', 768: '0', 1440: '0' }],
+  // Chip and tab rows wrap instead of clipping important controls.
+  ['.tool-tabs-list', 'flex-wrap', { 320: 'wrap', 390: 'wrap', 1024: 'wrap' }],
+  ['.chip-row', 'flex-wrap', { 320: 'wrap', 430: 'wrap', 1024: 'wrap' }],
+  // Disclosure controls keep a 52px touch target at every width.
+  ['.accordion-toggle', 'min-height', { 320: '52px', 768: '52px', 1440: '52px' }],
 ];
 
 console.log('\nexpectations\n');

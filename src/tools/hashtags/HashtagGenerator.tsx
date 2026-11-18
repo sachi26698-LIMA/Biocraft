@@ -13,6 +13,7 @@ import type { Language } from '../../types';
 import SegmentedControl from '../../components/SegmentedControl';
 import CountControl from '../../components/CountControl';
 import { useToolMode } from '../../lib/toolMode';
+import AdvancedOptions from '../../components/ui/AdvancedOptions';
 
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
@@ -115,7 +116,7 @@ export default function HashtagGenerator() {
 
   return (
     <div className="tool-card">
-      <fieldset className="plain-fieldset tool-advanced">
+      <fieldset className="plain-fieldset">
         <legend className="option-label" id="hashtag-niche-legend">Niche</legend>
         <div className="chip-row" role="group" aria-labelledby="hashtag-niche-legend">
           {NICHES.map((niche) => (
@@ -132,7 +133,8 @@ export default function HashtagGenerator() {
         </div>
       </fieldset>
 
-      <div className="generator-options tool-advanced">
+      <AdvancedOptions title="Refine your hashtags" description="Language, count and your own keywords">
+      <div className="generator-options">
         <SegmentedControl
           label="Hashtag language"
           visibleLabel="Hashtag language"
@@ -148,7 +150,7 @@ export default function HashtagGenerator() {
         />
       </div>
 
-      <div className="field tool-advanced">
+      <div className="field">
         <label htmlFor="hashtag-keywords">Your keywords (optional)</label>
         <input
           id="hashtag-keywords"
@@ -172,6 +174,7 @@ export default function HashtagGenerator() {
           </p>
         )}
       </div>
+      </AdvancedOptions>
 
       <button type="button" className="btn btn-primary btn-large generate-button" onClick={runGeneration}>
         Generate {generationSize} hashtags

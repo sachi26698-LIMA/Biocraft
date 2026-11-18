@@ -6,6 +6,16 @@ import { TOOLS, toolForPath } from '../tools/registry';
 import { useRecentlyUsed } from '../lib/toolbox';
 import { infoPageForPath } from '../pages/info';
 import { collectionForPath } from '../lib/bioCollections';
+import {
+  BioEditorSkeleton,
+  BioLibrarySkeleton,
+  CategoriesSkeleton,
+  CollectionDetailSkeleton,
+  CollectionsIndexSkeleton,
+  FeaturesSkeleton,
+  HomeSkeleton,
+  InfoSkeleton,
+} from './skeleton/toolSkeletons';
 
 const HomePage = lazy(() => import('../pages/HomePage'));
 const InfoPage = lazy(() => import('../pages/InfoPage'));
@@ -14,10 +24,12 @@ const CategoriesPage = lazy(() => import('../pages/CategoriesPage'));
 const BioCollectionsPage = lazy(() => import('../pages/BioCollectionsPage'));
 const BioCollectionPage = lazy(() => import('../pages/BioCollectionPage'));
 const BioEditorPage = lazy(() => import('../pages/BioEditorPage'));
+const BioLibraryPage = lazy(() => import('../pages/BioLibraryPage'));
 
 const TOOL_PATHS = new Set(TOOLS.map((tool) => tool.path));
 const COLLECTIONS_INDEX = '/bio-collections';
 const BIO_EDITOR = '/bio-editor';
+const BIO_LIBRARY = '/bio-library';
 const HOME = '/';
 // This import is removed from production builds; the route is not linked publicly.
 const diagnosticsEnabled = typeof __BIOCRAFT_PREVIEW_DIAGNOSTICS__ !== 'undefined' && __BIOCRAFT_PREVIEW_DIAGNOSTICS__;
@@ -27,13 +39,26 @@ const DiagnosticsPage = diagnosticsEnabled ? lazy(() => import('../pages/Preview
 function ReadyPage({ path, children }: { path: string; children: ReactNode }) {
   useEffect(() => {
     const hash = window.location.hash.slice(1);
-    if (hash) document.getElementById(hash)?.scrollIntoView?.({ block: 'start' });
+    if (!hash) return;
+    // Lazy page content has just mounted — land on the requested section.
+    const target = document.getElementById(hash);
+    if (target) target.scrollIntoView({ block: 'start' });
+    else window.scrollTo(0, 0);
   }, [path]);
   return children;
 }
-function DeferredPage({ path, children }: { path: string; children: ReactNode }) {
+function DeferredPage({
+  path,
+  skeleton,
+  children,
+}: {
+  path: string;
+  /** Route-specific composition that mirrors this page's real layout. */
+  skeleton: ReactNode;
+  children: ReactNode;
+}) {
   return (
-    <Suspense fallback={<div className="tool-loading" role="status" aria-live="polite">Loading page…</div>}>
+    <Suspense fallback={skeleton}>
       <ReadyPage path={path}>{children}</ReadyPage>
     </Suspense>
   );
@@ -58,6 +83,7 @@ export default function ToolShell() {
   const isCategories = path === '/categories';
   const isCollectionsIndex = path === COLLECTIONS_INDEX;
   const isBioEditor = path === BIO_EDITOR;
+  const isBioLibrary = path === BIO_LIBRARY;
   const isFeatures = path === '/features';
   const isDiagnostics = diagnosticsEnabled && path === '/preview-diagnostics';
   const collection = collectionForPath(path);
@@ -67,10 +93,10 @@ export default function ToolShell() {
   const { record } = useRecentlyUsed();
 
   useEffect(() => {
-    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isFeatures && !isDiagnostics && !collection) {
+    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isBioLibrary && !isFeatures && !isDiagnostics && !collection) {
       navigate(HOME, { replace: true });
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, isDiagnostics, collection]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isDiagnostics, collection]);
 
   // Load only the small common-math font on routes whose content needs it.
   useEffect(() => {
@@ -110,6 +136,8 @@ export default function ToolShell() {
       document.title = 'Categories — BioCraft Social Media Toolkit';
     } else if (isCollectionsIndex) {
       document.title = 'Ready-Made Bio Collections — BioCraft Social Media Toolkit';
+    } else if (isBioLibrary) {
+      document.title = 'Bio Library — Search 506 Ready-Made Bios | BioCraft';
     } else if (isFeatures) {
       document.title = 'Features — BioCraft Social Media Toolkit';
     } else if (isBioEditor) {
@@ -117,14 +145,15 @@ export default function ToolShell() {
     } else if (collection) {
       document.title = collection.seoTitle;
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isFeatures, isDiagnostics, collection, tool]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isDiagnostics, collection, tool]);
 
   if (isDiagnostics && DiagnosticsPage) return <Suspense fallback={<div role="status">Loading diagnostics…</div>}><DiagnosticsPage /></Suspense>;
-  if (isHome) return <DeferredPage path={path}><HomePage /></DeferredPage>;
-  if (isCategories) return <DeferredPage path={path}><CategoriesPage /></DeferredPage>;
-  if (isCollectionsIndex) return <DeferredPage path={path}><BioCollectionsPage /></DeferredPage>;
-  if (isBioEditor) return <DeferredPage path={path}><BioEditorPage /></DeferredPage>;
-  if (collection) return <DeferredPage path={path}><BioCollectionPage slug={collection.slug} /></DeferredPage>;
+  if (isHome) return <DeferredPage path={path} skeleton={<HomeSkeleton />}><HomePage /></DeferredPage>;
+  if (isCategories) return <DeferredPage path={path} skeleton={<CategoriesSkeleton />}><CategoriesPage /></DeferredPage>;
+  if (isCollectionsIndex) return <DeferredPage path={path} skeleton={<CollectionsIndexSkeleton />}><BioCollectionsPage /></DeferredPage>;
+  if (isBioEditor) return <DeferredPage path={path} skeleton={<BioEditorSkeleton />}><BioEditorPage /></DeferredPage>;
+  if (isBioLibrary) return <DeferredPage path={path} skeleton={<BioLibrarySkeleton />}><BioLibraryPage /></DeferredPage>;
+  if (collection) return <DeferredPage path={path} skeleton={<CollectionDetailSkeleton />}><BioCollectionPage slug={collection.slug} /></DeferredPage>;
   if (isToolRoute) {
     return (
       <section className="tool-page">
@@ -150,7 +179,7 @@ export default function ToolShell() {
       </section>
     );
   }
-  if (isFeatures) return <DeferredPage path={path}><FeaturesPage /></DeferredPage>;
-  if (infoPage) return <DeferredPage path={path}><InfoPage path={path} /></DeferredPage>;
-  return <DeferredPage path={path}><HomePage /></DeferredPage>;
+  if (isFeatures) return <DeferredPage path={path} skeleton={<FeaturesSkeleton />}><FeaturesPage /></DeferredPage>;
+  if (infoPage) return <DeferredPage path={path} skeleton={<InfoSkeleton />}><InfoPage path={path} /></DeferredPage>;
+  return <DeferredPage path={path} skeleton={<HomeSkeleton />}><HomePage /></DeferredPage>;
 }

@@ -422,24 +422,6 @@ body {
   pointer-events: none;
   z-index: -1;
 }
-.mobile-nav-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin: 0 0.25rem 0.55rem;
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.mobile-nav-eyebrow::before {
-  content: '';
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--rose));
-  box-shadow: 0 0 8px rgba(139, 75, 192, 0.55);
-}
 .mobile-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
 .mobile-nav-link {
   display: grid;
@@ -1100,9 +1082,6 @@ h1, h2, h3, h4 { text-wrap: balance; }
 }
 .chip-bilingual { flex-direction: column; align-items: flex-start; gap: 0; padding-block: 0.35rem; }
 .chip-bilingual small { font-size: 0.68rem; color: inherit; opacity: 0.75; }
-
-.chip-cloud { display: flex; flex-wrap: wrap; gap: 0.55rem; justify-content: center; list-style: none; margin: 0; padding: 0; max-width: 880px; margin-inline: auto; }
-.chip-cloud .chip { min-height: 44px; padding: 0 1.15rem; font-size: 0.9rem; }
 
 .symbol-grid {
   display: grid;
@@ -1865,7 +1844,7 @@ h1, h2, h3, h4 { text-wrap: balance; }
   .footer-brand { grid-column: 1 / -1; }
 }
 @media (min-width: 720px) { .footer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (min-width: 1100px) { .footer-grid { grid-template-columns: minmax(0, 1.3fr) repeat(5, minmax(0, 1fr)); gap: 1.5rem; } }
+@media (min-width: 1100px) { .footer-grid { grid-template-columns: minmax(0, 1.2fr) repeat(6, minmax(0, 1fr)); gap: 1.25rem; } }
 
 .footer-brand { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
 .footer-tagline { margin: 0; color: var(--muted); font-size: 0.9rem; max-width: 38ch; }
@@ -2043,7 +2022,6 @@ img, svg, video, canvas { max-width: 100%; }
   .platform-pill.is-active .platform-pill-icon { animation: icon3d-pop 0.48s cubic-bezier(.34, 1.56, .64, 1); }
 }
 
-
 /* Workspace re-theme — clicking a tool tab swaps the accent soup to the tool's hue */
 .toolkit-workspace .workspace-heading {
   position: relative;
@@ -2086,7 +2064,6 @@ img, svg, video, canvas { max-width: 100%; }
 .toolkit-workspace .char-bar-fill {
   background: linear-gradient(90deg, var(--tool-accent, #B794F6), var(--tool-deep, #8B4BC0));
 }
-
 
 /* ============================================================
    Generate area re-themes with the selected social platform.

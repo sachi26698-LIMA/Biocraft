@@ -130,7 +130,7 @@ export default function SymbolGenerator() {
     <div className="tool-card tool-card--split">
       <div className="symbol-side">
       {/* ------- Signature combos ------- */}
-      <div className="symbol-combos tool-advanced">
+      <div className="symbol-combos">
         <p className="option-label symbol-combos-label" id="symbol-combos-label">
           Signature combos — one tap to copy
         </p>
@@ -194,7 +194,7 @@ export default function SymbolGenerator() {
         </div>
       </div>
 
-      <div className="symbol-categories tool-advanced" role="group" aria-label="Symbol category">
+      <div className="symbol-categories" role="group" aria-label="Symbol category">
         <button
           type="button"
           className={`chip${activeCategory === 'all' ? ' is-selected' : ''}`}

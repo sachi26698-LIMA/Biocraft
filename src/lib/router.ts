@@ -55,16 +55,24 @@ export function getSearch(): string {
   return currentParts.search;
 }
 
-const scrollToTarget = (hash: string) => {
-  if (!isBrowser) return;
-  if (hash) {
-    const target = document.getElementById(hash.slice(1));
-    if (target) {
-      target.scrollIntoView({ block: 'start' });
-      return;
-    }
-  }
-  window.scrollTo(0, 0);
+/**
+ * Scroll policy — one rule per navigation type, so nothing ever lands on a
+ * stale offset:
+ *  - new page (path change)            → the #hash target if it exists, else top
+ *  - same page, new hash               → the #hash target
+ *  - same page, query/filter change    → leave the scroll position alone
+ *  - Back/Forward to another page      → same as a new page
+ */
+const scrollToHash = (hash: string): boolean => {
+  if (!hash) return false;
+  const target = document.getElementById(hash.slice(1));
+  if (!target) return false;
+  target.scrollIntoView({ block: 'start' });
+  return true;
+};
+
+const scrollToTop = () => {
+  if (isBrowser) window.scrollTo(0, 0);
 };
 
 export function navigate(to: string, options: { replace?: boolean } = {}): void {
@@ -77,7 +85,7 @@ export function navigate(to: string, options: { replace?: boolean } = {}): void 
     url === window.location.pathname + window.location.search + window.location.hash;
 
   if (sameUrl) {
-    scrollToTarget(next.hash);
+    scrollToHash(next.hash);
     return;
   }
 
@@ -87,10 +95,17 @@ export function navigate(to: string, options: { replace?: boolean } = {}): void 
     window.history.pushState(null, '', url);
   }
   const searchChanged = next.search !== currentParts.search;
+  const pathChanged = next.path !== currentParts.path;
   currentParts = next;
   notify();
   if (searchChanged) notifySearch();
-  scrollToTarget(next.hash);
+  if (pathChanged) {
+    // A hash target may belong to lazy content that has not mounted yet;
+    // ToolShell's ReadyPage re-runs the scroll once the chunk is present.
+    if (!scrollToHash(next.hash)) scrollToTop();
+  } else if (next.hash) {
+    scrollToHash(next.hash);
+  }
   const panel = document.getElementById('tool-panel');
   if (panel) panel.focus({ preventScroll: true });
 }
@@ -122,12 +137,19 @@ export function useSearch(): string {
 }
 
 if (isBrowser) {
+  // Deterministic scrolling: the browser must not restore an old offset for us.
+  if ('scrollRestoration' in window.history) window.history.scrollRestoration = 'manual';
   window.addEventListener('popstate', () => {
     const previousSearch = currentParts.search;
+    const previousPath = currentParts.path;
     currentParts = readLocation();
     notify();
     if (currentParts.search !== previousSearch) notifySearch();
-    scrollToTarget(currentParts.hash);
+    if (currentParts.path !== previousPath) {
+      if (!scrollToHash(currentParts.hash)) scrollToTop();
+    } else if (currentParts.hash) {
+      scrollToHash(currentParts.hash);
+    }
   });
 }
 

@@ -20,6 +20,8 @@ import CopyButton from '../../components/CopyButton';
 import CountControl from '../../components/CountControl';
 import DownloadButton from '../../components/DownloadButton';
 import { useToolMode } from '../../lib/toolMode';
+import AdvancedOptions from '../../components/ui/AdvancedOptions';
+import { EmptyState } from '../../components/ui/States';
 import { CAPTION_FRAMES, applyCaptionFrame } from './captionFrames';
 
 const LANGUAGE_OPTIONS = [
@@ -68,7 +70,6 @@ export default function CaptionGenerator() {
 
   return (
     <div className="tool-card">
-      <div className="tool-advanced">
       <fieldset className="plain-fieldset">
         <legend className="option-label" id="caption-topic-legend">Topic</legend>
         <div className="chip-row" role="group" aria-labelledby="caption-topic-legend">
@@ -103,6 +104,7 @@ export default function CaptionGenerator() {
         </div>
       </fieldset>
 
+      <AdvancedOptions title="More options" description="Language, emojis, call to action and caption frame">
       <div className="generator-options">
         <SegmentedControl
           label="Caption language"
@@ -165,7 +167,7 @@ export default function CaptionGenerator() {
           </select>
         </div>
       </div>
-      </div>
+      </AdvancedOptions>
 
       <div className="tool-advanced">
         <CountControl
@@ -224,12 +226,10 @@ export default function CaptionGenerator() {
             ))}
           </ol>
         ) : (
-          <div className="empty-state">
-            <p className="empty-state-title">Your captions will appear here.</p>
-            <p className="empty-state-text">
-              Pick a topic, a tone and a language — then press “Generate 5 captions”.
-            </p>
-          </div>
+          <EmptyState
+            title="Your captions will appear here."
+            text="Pick a topic, a tone and a language — then press “Generate 5 captions”."
+          />
         )}
 
         {/* A shortfall must be visible, not only announced: the previous build

@@ -5,30 +5,8 @@ import ToolTile from '../components/ToolTile';
 import { handleAnchorClick } from '../lib/router';
 import { TOOLS } from '../tools/registry';
 import { useFavourites } from '../lib/toolbox';
-import { BIO_COLLECTIONS, BIO_DESIGNS, COLLECTION_NAV, RECENTLY_ADDED_COLLECTIONS, TOTAL_BIOS } from '../lib/bioCollections';
-import CollectionIcon from '../components/CollectionIcon';
-import {
-  ArrowRightIcon,
-  PlusIcon,
-} from '../components/icons';
-
-const POPULAR_CHIPS: Array<{ id: string; label: string }> = [
-  { id: 'creator', label: 'Creator' },
-  { id: 'photographer', label: 'Photographer' },
-  { id: 'travel', label: 'Travel' },
-  { id: 'fitness', label: 'Fitness' },
-  { id: 'food', label: 'Food' },
-  { id: 'fashion', label: 'Fashion' },
-  { id: 'music', label: 'Music' },
-  { id: 'developer', label: 'Developer' },
-  { id: 'artist', label: 'Artist' },
-  { id: 'writer', label: 'Writer' },
-  { id: 'beauty', label: 'Beauty' },
-  { id: 'business', label: 'Business' },
-];
-
-/** The six designer-card styles showcased in the "Recently Added Designs" rail. */
-const RECENT_DESIGN_KEYS = ['royal', 'dark', 'creative', 'devotional', 'vip', 'aesthetic'] as const;
+import ReadyMadeBiosSection from '../components/ReadyMadeBiosSection';
+import { PlusIcon } from '../components/icons';
 
 const FAQ = [
   { q: 'Does BioCraft really cost nothing?', a: 'Yes. Every generator, every platform, every run — $0, forever. No tiers, no trials, no credits, no sign-up. It is a static, browser-based app with no paid backend to recoup costs from.', href: '/pricing', hrefLabel: 'See the pricing page' },
@@ -108,23 +86,28 @@ export default function HomePage() {
           </svg>
         ))}
       </div>
-      {/* ============ Platform stage — full-screen 3D picker, re-themes everything ============ */}
+      {/* The page title lives for screen readers only — the stage is the visual lead. */}
       <h1 className="sr-only">BioCraft — All-in-One Social Media Toolkit</h1>
+
+      {/* ============ Platform stage — the toolkit, in one laptop ============ */}
       <PlatformStage />
 
       {/* ============ Tool workspace — follows the stage (tool-first) ============ */}
       <ToolWorkspace path="/" headingLevel="h2" />
 
+      {/* ============ Ready-Made Bios — featured discovery ============ */}
+      <ReadyMadeBiosSection />
+
       {/* ============ Your Favourite Tools — only when you have some ============ */}
       {favToolKeys.length > 0 && (
-        <section className="section" aria-labelledby="home-favourites-title">
+        <section className="section section-alt" aria-labelledby="home-favourites-title">
           <div className="container">
             <div className="section-head">
               <p className="eyebrow">Pinned by You</p>
               <h2 id="home-favourites-title" className="section-title">Your Favourite Tools</h2>
               <p className="section-sub">Saved on this device only — nothing leaves your browser.</p>
             </div>
-            <ul className="tile-grid">
+            <ul className="home-tools-grid">
               {favToolKeys.map((key) => (
                 <ToolTile key={key} toolKey={key as (typeof TOOLS)[number]['key']} />
               ))}
@@ -132,101 +115,6 @@ export default function HomePage() {
           </div>
         </section>
       )}
-
-      {/* ============ Explore Ready-Made Bios ============ */}
-      <section className="section" aria-labelledby="bio-collections-title">
-        <div className="container">
-          <div className="section-head">
-            <p className="eyebrow">Ready-Made Bios</p>
-            <h2 id="bio-collections-title" className="section-title">Explore Ready-Made Bios</h2>
-            <p className="section-sub">{TOTAL_BIOS} original, copy-ready bios across {BIO_COLLECTIONS.length} collections — English, Hindi and Hinglish, plus styled Unicode. One tap to copy, zero editing required.</p>
-          </div>
-          <ul className="bc-home-grid">
-            {BIO_COLLECTIONS.filter((collection) => ['instagram-bio-for-boys', 'instagram-bio-for-girls', 'stylish-instagram-bio', 'attitude-bio', 'love-bio', 'vip-bio', 'hindi-bio', 'english-bio'].includes(collection.slug)).map((collection) => (
-              <li key={collection.slug}>
-                <a className="bc-home-card" href={`/${collection.slug}`} onClick={handleAnchorClick}>
-                  <span className="bc-home-icon" aria-hidden="true"><CollectionIcon name={collection.icon} size={22} /></span>
-                  <span className="bc-home-name">{collection.name}</span>
-                  <span className="bc-home-desc">{collection.description}</span>
-                  <span className="bc-home-link">Explore <ArrowRightIcon size={15} aria-hidden="true" /></span>
-                </a>
-              </li>
-            ))}
-          </ul>
-          <div className="bc-home-rails">
-            <div className="bc-home-rail">
-              <h3>Popular collections</h3>
-              <ul className="bc-chip-row">
-                {COLLECTION_NAV.slice(0, 6).map((item) => {
-                  const target = BIO_COLLECTIONS.find((collection) => collection.slug === item.slug);
-                  return (
-                    <li key={item.slug}>
-                      <a className="chip bc-chip" href={`/${item.slug}`} onClick={handleAnchorClick}>
-                        <CollectionIcon name={target?.icon ?? 'spark'} size={16} /> {target?.name ?? item.label}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-            <div className="bc-home-rail">
-              <h3>Recently added</h3>
-              <ul className="bc-chip-row">
-                {RECENTLY_ADDED_COLLECTIONS.map((slug) => {
-                  const target = BIO_COLLECTIONS.find((collection) => collection.slug === slug);
-                  return target ? (
-                    <li key={slug}>
-                      <a className="chip bc-chip" href={`/${slug}`} onClick={handleAnchorClick}>
-                        <CollectionIcon name={target.icon} size={16} /> {target.name}
-                      </a>
-                    </li>
-                  ) : null;
-                })}
-              </ul>
-            </div>
-            <div className="bc-home-rail">
-              <h3>Recently Added Designs</h3>
-              <ul className="bc-chip-row">
-                {RECENT_DESIGN_KEYS.map((key) => {
-                  const target = BIO_DESIGNS.find((item) => item.key === key);
-                  return target ? (
-                    <li key={key}>
-                      <a className="chip bc-chip" href={`/bio-editor?design=${key}`} onClick={handleAnchorClick}>
-                        {target.label}
-                      </a>
-                    </li>
-                  ) : null;
-                })}
-              </ul>
-            </div>
-          </div>
-          <div className="bc-home-cta">
-            <a className="btn btn-primary" href="/bio-collections" onClick={handleAnchorClick}>
-              See all {BIO_COLLECTIONS.length} collections <ArrowRightIcon size={17} aria-hidden="true" />
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* ============ Popular Categories — twelve niches ============ */}
-      <section className="section section-alt" aria-labelledby="popular-categories-title">
-        <div className="container">
-          <div className="section-head">
-            <p className="eyebrow">Popular Categories</p>
-            <h2 id="popular-categories-title" className="section-title">Jump Straight Into a Niche</h2>
-            <p className="section-sub">Bio recipes tuned for the niche — tap one and start generating.</p>
-          </div>
-          <ul className="chip-cloud">
-            {POPULAR_CHIPS.map(({ id, label }) => (
-              <li key={id}>
-                <a className="chip" href={`/bio-generator?tab=category&category=${id}#workspace`} onClick={handleAnchorClick}>
-                  {label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
 
       {/* ============ FAQ ============ */}
       <section className="section" aria-labelledby="faq-title">

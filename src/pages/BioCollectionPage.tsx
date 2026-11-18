@@ -18,6 +18,7 @@ import CollectionIcon from '../components/CollectionIcon';
 import { fetchCollectionBios } from '../lib/biosRemote';
 import {
   COLLECTION_NAV,
+  TOTAL_BIOS,
   collectionBySlug,
   type BioEntry,
 } from '../lib/bioCollections';
@@ -87,6 +88,8 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
   /** Associate remote rows with their collection so navigation never shows stale bios. */
   const [remoteBios, setRemoteBios] = useState<{ slug: string; bios: BioEntry[] } | null>(null);
   const [remoteError, setRemoteError] = useState(false);
+  /** True only while the live Supabase request is genuinely in flight. */
+  const [remotePending, setRemotePending] = useState(true);
   const [retryTick, setRetryTick] = useState(0);
 
   useEffect(() => {
@@ -96,9 +99,11 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
   useEffect(() => {
     let cancelled = false;
     setRemoteError(false);
+    setRemotePending(true);
     fetchCollectionBios(slug)
       .then((result) => {
         if (cancelled) return;
+        setRemotePending(false);
         // An empty successful live result is authoritative too: resurrecting
         // bundled rows would show stale content after all live rows are removed.
         if (result.source === 'supabase') {
@@ -107,6 +112,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
       })
       .catch(() => {
         if (cancelled) return;
+        setRemotePending(false);
         console.warn('Supabase unavailable — using the bundled collection.');
         setRemoteBios(null);
         setRemoteError(true);
@@ -271,6 +277,13 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
           </div>
         </div>
 
+        {remotePending && (
+          <p className="bc-sync-note" role="status">
+            <span className="bc-sync-dot" aria-hidden="true" />
+            Checking the live library…
+          </p>
+        )}
+
         {remoteError && (
           <div className="bc-remote-notice" role="status">
             <p>The live library couldn’t be reached — showing the built-in collection instead.</p>
@@ -280,7 +293,8 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
           </div>
         )}
 
-        {/* Bio grid */}
+        {/* Bio grid — aria-busy while the live library syncs; real content stays visible. */}
+        <div aria-busy={remotePending}>
         {visible.length > 0 ? (
           <BioGrid visible={visible} displayed={displayed} swaps={swaps} slug={collection.slug} name={collection.name} onRegenerate={regenerateAt} />
         ) : (
@@ -292,6 +306,7 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
             </button>
           </div>
         )}
+        </div>
 
         {/* Generator cross-link */}
         <aside className="bc-upsell">
@@ -316,6 +331,28 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
                 </a>
               </li>
             ))}
+          </ul>
+        </section>
+
+        {/* Cross-links into the wider ready-made library */}
+        <section className="bc-related" aria-labelledby="bc-library-title">
+          <h2 id="bc-library-title">More from the Bio Library</h2>
+          <ul className="bc-chip-row">
+            <li>
+              <a className="chip bc-chip" href={`/bio-library?collection=${collection.slug}`} onClick={handleAnchorClick}>
+                Filter the library to this collection
+              </a>
+            </li>
+            <li>
+              <a className="chip bc-chip" href="/bio-library" onClick={handleAnchorClick}>
+                All {TOTAL_BIOS} ready-made bios
+              </a>
+            </li>
+            <li>
+              <a className="chip bc-chip" href="/bio-collections" onClick={handleAnchorClick}>
+                Every collection
+              </a>
+            </li>
           </ul>
         </section>
 

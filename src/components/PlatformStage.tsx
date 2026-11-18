@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { SkeletonBlock, SkeletonLine } from './skeleton/Skeleton';
 import { useToolkit } from '../lib/toolkit';
 import { platformById, type PlatformId } from '../tools/platforms';
 
@@ -52,6 +53,31 @@ function StageClock() {
  * platform-reactive app screen with a live clock footer. Pink glow behind,
  * floating in idle sway + parallax.
  */
+/**
+ * Screen-shaped placeholder for the lazily loaded platform mock. It fills the
+ * laptop display so the chunk swap causes no layout shift, and it is purely
+ * decorative (the screen region already carries an accessible label).
+ */
+function StageMockSkeleton() {
+  return (
+    <div className="stage-mock-skeleton" aria-hidden="true">
+      <div className="stage-mock-skeleton-top">
+        <SkeletonBlock width={44} height={44} style={{ borderRadius: '50%' }} />
+        <div className="stage-mock-skeleton-meta">
+          <SkeletonLine width="52%" height={12} />
+          <SkeletonLine width="34%" height={10} />
+        </div>
+      </div>
+      <SkeletonBlock height={64} />
+      <div className="stage-mock-skeleton-grid">
+        {Array.from({ length: 6 }, (_, index) => (
+          <SkeletonBlock key={index} height={54} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function PlatformStage() {
   const stageRef = useRef<HTMLElement>(null);
   const parallaxRef = useRef<HTMLDivElement>(null);
@@ -162,7 +188,7 @@ export default function PlatformStage() {
                           ref={screenRef}
                           style={{ '--mock-scale': mockScale } as CSSProperties}
                         >
-                          <Suspense fallback={null}><Mock key={config.id} /></Suspense>
+                          <Suspense fallback={<StageMockSkeleton />}><Mock key={config.id} /></Suspense>
                         </div>
 
                         {/* Screen footer: live date/time + system icons */}

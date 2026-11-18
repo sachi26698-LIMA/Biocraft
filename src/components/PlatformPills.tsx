@@ -24,18 +24,39 @@ const PLATFORM_ICONS: Record<PlatformId, (props: { size?: number }) => JSX.Eleme
 };
 
 /**
- * The eight-platform selector. Tappable pills with platform accent glows;
- * scrolls horizontally on small screens. Selection drives the whole
- * workspace via the toolkit context.
+ * The eight-platform selector. Selection drives the whole workspace via the
+ * toolkit context.
+ *
+ * Layout: a 4-column grid on phones (all eight visible, nothing clipped) and
+ * eight across from 900px (see revamp.css). Keyboard: arrow keys, Home and End
+ * move focus between pills; each pill is a 44px+ touch target with an
+ * aria-pressed state and an explicit accessible name.
  */
 export default function PlatformPills({ compact = false }: { compact?: boolean }) {
   const { platform, setPlatform } = useToolkit();
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const keys = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End'];
+    if (!keys.includes(event.key)) return;
+    const pills = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('.platform-pill'));
+    const current = pills.indexOf(document.activeElement as HTMLButtonElement);
+    if (current === -1) return;
+    event.preventDefault();
+    const forward = event.key === 'ArrowRight' || event.key === 'ArrowDown';
+    let next = forward ? current + 1 : current - 1;
+    if (event.key === 'Home') next = 0;
+    if (event.key === 'End') next = pills.length - 1;
+    if (next < 0) next = pills.length - 1;
+    if (next >= pills.length) next = 0;
+    pills[next]?.focus();
+  };
 
   return (
     <div
       className={`platform-pills${compact ? ' platform-pills-compact' : ''}`}
       role="group"
       aria-label="Choose a platform"
+      onKeyDown={onKeyDown}
     >
       {PLATFORMS.map((item, index) => {
         const Icon = PLATFORM_ICONS[item.id];
@@ -46,6 +67,7 @@ export default function PlatformPills({ compact = false }: { compact?: boolean }
             type="button"
             className={`platform-pill${active ? ' is-active' : ''}`}
             aria-pressed={active}
+            aria-label={`${item.name}${active ? ' — selected' : ''}`}
             onClick={() => setPlatform(item.id)}
             style={{
               '--platform-accent': item.accent,

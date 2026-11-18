@@ -32,6 +32,8 @@ async function main() {
   await click(button('By category'));
   await click(button('Generate 5 bios'));
   assert.equal(calls.length, 1);
+  // Language settings live inside the "Language & style" accordion.
+  await click([...document.querySelectorAll('.accordion-toggle')][0]);
   await click(button('हिन्दी'));
   assert.equal(calls.length, 2);
   assert.equal(calls[1].job.language, 'hi');
