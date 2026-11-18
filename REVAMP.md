@@ -249,7 +249,34 @@ Favourites (only when pinned) → niche chips → FAQ → footer. Their dead CSS
   About · Help · Favourite Tools`) plus the Explore Tools CTA; the cap was raised to `76vh` so it
   still fits without clipping, and the band/eyebrow CSS was deleted rather than left orphaned.
 
-## P2.10 Blockers (unchanged, environment-level)
+## P3. Homepage design pass (commit `a301d2c`)
+
+The homepage was carrying everything that had ever been requested. It is now four purposeful
+sections, each earning its height:
+
+### Kept
+| Section | Why it stays |
+| --- | --- |
+| **Hero** (new) | Visible `h1`, one sentence of positioning, two actions (“Write my bio” → `#workspace`, “Browse 506 ready-made bios” → `/bio-collections`) and three factual proof points. Previously the only `h1` was `sr-only`, so the page had no words at the top. |
+| **Platform stage** | The laptop is the brand and the live screen re-themes with the selected platform. |
+| **Generator workspace** | The primary action — platform pills, tool tabs, form, results. |
+| **Ready-Made Bios** | Six featured collections + the real category chips (with counts) + a route to the hub. |
+| **Favourites** | Only renders when the visitor has pinned a tool; per-device, honest. |
+| **FAQ** | Seven answers that also serve as internal links; now two columns from 980 px. |
+
+### Removed
+| Removed | Reason |
+| --- | --- |
+| 3 secondary rails inside the Ready-Made block (recently added, designs, languages/platforms) | Duplicated `/bio-collections` one click away; made the homepage long without adding a choice. |
+| 12-chip “Jump Straight Into a Niche” wall | A second chip taxonomy next to the bio categories; the generator already has its own category picker and `?tab=category=` deep links still work. |
+| “Quick platform pick” + “Popular tools” (earlier turn) | Duplicated the workspace pills and the header/footer tool listings. |
+
+Cleanup: dead CSS for the removed blocks (`.chip-cloud`, `.section-sub-link`, `.rmb-home-secondary`,
+`.rmb-home-rail*`, `.rmb-home-design*`, `.rmb-home-facets*`), and the responsive-audit expectations
+that referenced them. Homepage CSS/JS is slightly smaller than before the pass
+(CSS 29.4 → 29.0 kB gzip, total JS 286.7 → 285.2 kB gzip, homepage chunk 6.3 → 5.4 kB).
+
+## P3.1 Blockers (unchanged, environment-level)
 
 - **No browser binary in this sandbox** — Playwright/Chromium cannot be installed (download blocked)
   and the alternative `@sparticuz/chromium` needs `libnss3`, which cannot be installed without root.
