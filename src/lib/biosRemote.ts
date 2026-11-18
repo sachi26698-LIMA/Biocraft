@@ -7,6 +7,7 @@
  * content ever appears — if the fetch fails we say so (see BioCollectionPage).
  */
 import { supabase } from './supabase';
+import { CONTENT_PAGE_SIZE, SEARCH_DEFAULT_PAGE_SIZE, SEARCH_MAX_PAGE_SIZE } from './limits';
 import type { BioEntry, BioLang } from './bioCollections';
 
 export type BioSource = 'local' | 'supabase';
@@ -47,7 +48,9 @@ export function fetchCollectionBios(slug: string): Promise<RemoteBioResult> {
   return request;
 }
 
-const COLLECTION_PAGE_SIZE = 500;
+// Page size comes from configuration (src/lib/limits.ts) rather than a literal,
+// so a larger collection is served by more pages, never by a bigger cap.
+const COLLECTION_PAGE_SIZE = CONTENT_PAGE_SIZE;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function readCollectionBios(slug: string): Promise<RemoteBioResult> {
@@ -159,7 +162,9 @@ export async function searchBios(filters: BioSearchFilters): Promise<BioSearchRo
     p_styled_only: filters.styledOnly ?? false,
     p_featured: filters.featuredOnly ?? false,
     p_trending: filters.trendingOnly ?? false,
-    p_limit: Math.min(Math.max(filters.limit ?? 24, 1), 100),
+    // The server enforces its own ceiling from public.app_limits; this only
+    // keeps an obviously bad value from leaving the browser.
+    p_limit: Math.min(Math.max(filters.limit ?? SEARCH_DEFAULT_PAGE_SIZE, 1), SEARCH_MAX_PAGE_SIZE),
     p_offset: Math.max(filters.offset ?? 0, 0),
   });
   if (error) throw new Error(error.message);
