@@ -84,7 +84,7 @@ hashtags: result block chars 1117 | count visible: 40
 `HashtagSize` was `5 | 10 | 20 | 30` indexed into a `SIZE_MIX` lookup, so **any
 other value threw**. The mix is now computed proportionally for any number.
 
-### 2.4 The SQL ceiling — PASS (verified locally, not yet on production)
+### 2.4 The SQL ceiling — PASS (applied to production)
 
 `search_bios` ended in `limit greatest(1, least(p_limit, 100))`. The 100 is now
 read from `public.app_limits.search_page_max`.
@@ -104,6 +104,29 @@ offset paging reaches every row: 600 / 600 OK
 
 So: the ceiling is adjustable without a deploy, still enforced, and **paging
 reaches every row regardless** — growth is served by paging, not by a bigger cap.
+
+**Applied to the live project after approval.** Migration
+`infinite_expansion_limits` ran against `jvpadtzfsuekixrquzjv`. Rollback snapshot
+(the exact previous function definition) was captured first and matches
+migration 0004.
+
+Live verification afterwards:
+
+```
+bios 506 | captions 3888 | hashtags 1155 | symbols 629 | categories 33
+app_limits 2 rows | ceiling = 500
+
+ask  50  -> 50
+ask 200  -> 200      <- 100 was the hard ceiling before
+ask 1000 -> 500      <- infrastructure ceiling still enforced
+```
+
+All 7 indexes present (`bios_active_created_id_idx`,
+`bios_source_active_created_id_idx`, `bios_language_idx`, `bios_category_id_idx`,
+`bios_platform_id_idx`, `bios_featured_idx`, `bios_trending_idx`).
+
+RLS re-checked across all 11 public tables: `rls = true`, 1 policy each,
+`anon` SELECT granted on every one, **including the new `app_limits`**.
 
 ### 2.5 Admin API pagination — PASS
 
@@ -220,10 +243,10 @@ again once reverted.
 
 ---
 
-## 8. What needs your approval
+## 8. Applied changes (approved and done)
 
-Migration 0005 is **written and proven locally but NOT applied to the shared
-database**, per your rule on shared-DB changes.
+Migration 0005 was **approved and applied to the shared database**. This section
+is kept as the record of exactly what changed and how to undo it.
 
 | Change | Impact (Hindi) |
 |---|---|
@@ -235,8 +258,9 @@ database**, per your rule on shared-DB changes.
 the old function body. Nothing destructive, nothing irreversible — no column is
 dropped and no row is changed.
 
-Tested end to end on a local PostgreSQL 18.6 cluster: all four migrations
-(0001, 0002, 0004, 0005) apply cleanly, and the ceiling behaviour is proven above.
+Tested end to end on a local PostgreSQL 18.6 cluster first: all four migrations
+(0001, 0002, 0004, 0005) applied cleanly there, and the ceiling behaviour was
+proven locally before being applied to the shared project.
 
 ---
 
@@ -244,7 +268,6 @@ Tested end to end on a local PostgreSQL 18.6 cluster: all four migrations
 
 - **Public site still not wired to Supabase.** Unchanged from before — you chose
   "populate first, then connect", and that backfill has not been done.
-- **Migration 0005 not applied to production** — needs your approval (§8).
 - **New tools still need code.** See §5.
 - **Production Admin API still returns 503** — a separate, pre-existing
   configuration issue tracked outside this work.
@@ -271,3 +294,36 @@ Tested end to end on a local PostgreSQL 18.6 cluster: all four migrations
 | Limits transparent and configurable | **PASS** — `app_limits` + env vars |
 | Supabase data, auth, RLS preserved | **PASS** — 6,750 rows untouched; RLS unchanged |
 | No new project | **PASS** — `jvpadtzfsuekixrquzjv` only |
+
+---
+
+## 11. Deployed and verified on production
+
+PR #11 merged as `fbc5864`; Vercel deployment `dpl_9NxwPw3RuvKzgkukoXLb4fsQTVhC`
+reported success.
+
+Fetched from **https://biocraft-bice.vercel.app/hashtag-generator** live:
+
+> How many — 5 10 20 50
+> Presets are a shortcut. Type any number up to 100 hashtags per run — there is no
+> cap on how many runs or how much you keep.
+> Generate 20 hashtags
+
+The free-entry control and the disclosed ceiling are live, not just local.
+
+| Item | Result |
+|---|---|
+| PR #11 merged | **PASS** — `fbc5864` |
+| Production deploy | **PASS** — status success |
+| New UI control live | **PASS** — fetched from the real domain |
+| Migration applied | **PASS** — §2.4 |
+| Data intact | **PASS** — 6,750 rows still present |
+| RLS intact | **PASS** — 11/11 tables |
+
+### One inconsistency I did not fix
+
+The tool's static how-to blurb still reads "five unique results, one tap to
+clipboard" in the body copy. It is SEO/marketing text baked into the page shell,
+not the generator logic, and it now understates what the tool does. I left it
+rather than rewrite marketing copy unasked — say the word and it becomes
+"any number of results".
