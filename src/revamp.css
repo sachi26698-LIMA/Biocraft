@@ -341,10 +341,10 @@ p, li { text-wrap: pretty; }
 @media (prefers-reduced-motion: reduce) { .bc-sync-dot { animation: none; opacity: 0.8; } }
 
 /* ---------- 11. Mobile menu sheet ---------- */
-/* The sheet can be taller than a phone viewport (7 destinations + CTA):
+/* The sheet can be taller than a phone viewport (8 destinations + CTA):
    cap it, scroll inside, and respect the home indicator. */
 .mobile-nav {
-  max-height: min(72vh, calc(100dvh - 7rem));
+  max-height: min(76vh, calc(100dvh - 6.5rem));
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -1061,54 +1061,6 @@ p, li { text-wrap: pretty; }
 }
 .search-foot-link:hover { background: var(--lav); }
 .search-foot-link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-
-/* Mobile menu: Ready-Made Bios feature band (real totals, direct routes) */
-.mobile-nav-feature {
-  display: flex;
-  align-items: stretch;
-  gap: 0.35rem;
-  margin: 0 0.1rem 0.5rem;
-  padding: 0.5rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--accent-line);
-  background: linear-gradient(150deg, #FBF3FF, #FFFFFF);
-}
-.mobile-nav-feature-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  flex: 1 1 auto;
-  min-width: 0;
-  text-decoration: none;
-  color: inherit;
-  padding: 0.15rem 0.3rem;
-}
-.mobile-nav-feature-eyebrow {
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-.mobile-nav-feature-title { font-size: 0.9rem; font-weight: 750; color: var(--text); }
-.mobile-nav-feature-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.1rem;
-  align-self: center;
-  flex: 0 0 auto;
-  padding: 0.35rem 0.5rem;
-  border-radius: var(--radius-pill);
-  background: #fff;
-  border: 1px solid var(--line);
-  font-size: 0.76rem;
-  font-weight: 750;
-  color: var(--accent);
-  text-decoration: none;
-  min-height: 34px;
-}
-.mobile-nav-feature-main:focus-visible,
-.mobile-nav-feature-link:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
 
 /* "All categories" chip on the homepage niche row */
 .chip--all { border-style: dashed; color: var(--accent); font-weight: 750; }

@@ -315,7 +315,12 @@ const runAxe = async (routeName) => {
   check('mobile nav panel renders when opened', Boolean($('#mobile-nav')));
   check('mobile menu lists the six section destinations', ['/', '/resources', '/categories', '/features', '/about', '/help'].every((href) => Boolean($(`#mobile-nav a[href="${href}"]`))));
   check('mobile menu exposes Favourite Tools + Explore Tools CTA', Boolean($('#mobile-nav a[href="/categories#favourites"]')) && Boolean($('#mobile-nav a.btn[href="/resources"]')));
-  check('mobile menu lists seven destinations (six + favourites)', $$('#mobile-nav .mobile-nav-link').length === 7);
+  check('mobile menu lists eight destinations (Home + Ready-Made Bios + six sections + favourites)',
+    $$('#mobile-nav .mobile-nav-link').length === 8);
+  check('Ready-Made Bios is a regular menu row, not a special band',
+    Boolean($('#mobile-nav a.mobile-nav-link[href="/bio-collections"]')) &&
+    !$('#mobile-nav .mobile-nav-feature') &&
+    !$('#mobile-nav .mobile-nav-eyebrow'));
   await click(toggle);
   check('menu toggle closes the panel again', toggle?.getAttribute('aria-expanded') === 'false' && !$('#mobile-nav'));
 

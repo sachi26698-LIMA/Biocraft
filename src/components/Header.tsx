@@ -13,6 +13,7 @@ import {
   ZapIcon,
   InfoIcon,
   HelpIcon,
+  SparkIcon,
 } from './icons';
 import Logo from './Logo';
 import SearchOverlay from './SearchOverlay';
@@ -33,6 +34,25 @@ const MENU_ICONS: Array<{
   { label: 'Help', href: '/help', Icon: HelpIcon, from: '#D9F6F0', to: '#B4E8DE', deep: '#0E5257', soft: 'rgba(18, 137, 124, 0.13)', line: 'rgba(18, 137, 124, 0.38)', glow: 'rgba(18, 137, 124, 0.4)' },
   { label: 'Favourite Tools', href: '/categories#favourites', Icon: HeartIcon, from: '#FFE9F3', to: '#FFC9DE', deep: '#B03060', soft: 'rgba(214, 83, 143, 0.12)', line: 'rgba(214, 83, 143, 0.38)', glow: 'rgba(214, 83, 143, 0.4)' },
 ];
+
+/**
+ * Mobile sheet destinations: the section links plus Ready-Made Bios, which sits
+ * right after Home because it is the discovery entry point. Rendered with the
+ * exact same row design as every other destination — no special band.
+ */
+const READY_MADE_MENU_ITEM = {
+  label: 'Ready-Made Bios',
+  href: '/bio-collections',
+  Icon: SparkIcon,
+  from: '#F6ECFF',
+  to: '#E2CDFA',
+  deep: '#6D28A8',
+  soft: 'rgba(139, 75, 192, 0.12)',
+  line: 'rgba(139, 75, 192, 0.38)',
+  glow: 'rgba(139, 75, 192, 0.42)',
+} as const;
+
+const MOBILE_MENU = [MENU_ICONS[0], READY_MADE_MENU_ITEM, ...MENU_ICONS.slice(1)];
 
 /**
  * Floating light-glass navbar: logo · centered section links · search,
@@ -139,19 +159,11 @@ export default function Header() {
 
       {open && (
         <nav ref={mobileNavRef} className="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
-          <p className="mobile-nav-eyebrow">Menu — quick jump</p>
-          <div className="mobile-nav-feature">
-            <a className="mobile-nav-feature-main" href="/bio-collections" onClick={handleAnchorClick}>
-              <span className="mobile-nav-feature-eyebrow">Ready-Made Bios</span>
-              <span className="mobile-nav-feature-title">Copy-ready bios, organised</span>
-            </a>
-            <a className="mobile-nav-feature-link" href="/bio-library" onClick={handleAnchorClick}>
-              Library <ChevronRightIcon size={15} />
-            </a>
-          </div>
           <ul>
-            {MENU_ICONS.map((item, index) => {
-              const active = item.href === path;
+            {MOBILE_MENU.map((item, index) => {
+              const active =
+                item.href === path ||
+                (item.href === '/bio-collections' && (path === '/bio-collections' || path === '/bio-library'));
               return (
                 <li key={item.href} style={{ '--mi-delay': `${index * 55}ms` } as CSSProperties}>
                   <a
@@ -178,7 +190,7 @@ export default function Header() {
                 </li>
               );
             })}
-            <li className="mobile-nav-cta" style={{ '--mi-delay': `${MENU_ICONS.length * 55 + 40}ms` } as CSSProperties}>
+            <li className="mobile-nav-cta" style={{ '--mi-delay': `${MOBILE_MENU.length * 55 + 40}ms` } as CSSProperties}>
               <a className="btn btn-primary btn-large" href="/resources" onClick={handleAnchorClick}>
                 Explore Tools <ArrowRightIcon size={17} />
               </a>

@@ -422,24 +422,6 @@ body {
   pointer-events: none;
   z-index: -1;
 }
-.mobile-nav-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin: 0 0.25rem 0.55rem;
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.mobile-nav-eyebrow::before {
-  content: '';
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), var(--rose));
-  box-shadow: 0 0 8px rgba(139, 75, 192, 0.55);
-}
 .mobile-nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
 .mobile-nav-link {
   display: grid;
