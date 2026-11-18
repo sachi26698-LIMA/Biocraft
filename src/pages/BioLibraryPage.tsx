@@ -4,7 +4,7 @@ import CollectionIcon from '../components/CollectionIcon';
 import { handleAnchorClick, navigate, useSearch } from '../lib/router';
 import { copyText } from '../lib/clipboard';
 import { toast } from '../lib/toast';
-import { CloseIcon, ClipboardIcon, SearchIcon } from '../components/icons';
+import { ChevronRightIcon, ClipboardIcon, CloseIcon, SearchIcon } from '../components/icons';
 import {
   CATEGORY_FACETS,
   COLLECTION_FACETS,
@@ -258,8 +258,8 @@ export default function BioLibraryPage() {
                           >
                             <ClipboardIcon size={15} aria-hidden="true" /> Copy
                           </button>
-                          <a className="btn btn-ghost btn-small" href={`/${bio.collectionSlug}`} onClick={handleAnchorClick}>
-                            Open collection
+                          <a className="lib-card-link" href={`/${bio.collectionSlug}`} onClick={handleAnchorClick}>
+                            Open collection <ChevronRightIcon size={14} aria-hidden="true" />
                           </a>
                         </div>
                       </div>

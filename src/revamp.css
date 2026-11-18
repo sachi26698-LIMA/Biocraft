@@ -1160,3 +1160,19 @@ p, li { text-wrap: pretty; }
 .section-sub-link { color: var(--accent); font-weight: 700; text-decoration: none; border-bottom: 1px solid var(--accent-line); }
 .section-sub-link:hover { color: var(--accent-hover); }
 .section-sub-link:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 4px; }
+
+/* Library card secondary action — a real link with a 44px tap target */
+.lib-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  min-height: 34px;
+  padding: 0.25rem 0.3rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+}
+.lib-card-link:hover { background: var(--accent-soft); }
+.lib-card-link:focus-visible { outline: none; box-shadow: var(--focus-ring); }

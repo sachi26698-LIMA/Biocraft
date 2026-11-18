@@ -264,7 +264,7 @@ async function main() {
     $$('.lib-card-collection').every((el) => isRealHref(el.getAttribute('href'))));
   check('bio card actions are real buttons/links',
     $$('.lib-card-actions button').length === $$('.lib-card').length &&
-    $$('.lib-card-actions a').every((el) => isRealHref(el.getAttribute('href'))));
+    $$('.lib-card-actions a, .lib-card-actions .lib-card-link').every((el) => isRealHref(el.getAttribute('href'))));
 
   const beforeMore = $$('.lib-card').length;
   await click($('.lib-more .btn'));
