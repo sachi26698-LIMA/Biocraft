@@ -41,12 +41,13 @@ function paging(url,allowed,expect={}) {
   if(type==='time'&&(!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?Z$/.test(value)||!Number.isFinite(Date.parse(value))))fail(422,'INVALID');
   if(type==='bigint'&&! /^\d{1,18}$/.test(value))fail(422,'INVALID');
   if(type==='slug'&&!/^[a-z0-9][a-z0-9-]{0,199}$/.test(value))fail(422,'INVALID');
+  if(type==='setting'&&!/^[a-z][a-z0-9_.-]{0,99}$/.test(value))fail(422,'INVALID');
   if(type==='uuid'&&!uid.test(value))fail(422,'INVALID');
   if(type==='text'&&value.length>120)fail(422,'INVALID');
   if(type==='boolean'&&value!=='true'&&value!=='false')fail(422,'INVALID');
  }
 }
-export function createAdminHandler({provider,execute,rateLimit,platformRules,recovery=null,readPublicCatalog=null,emailAllowed,enabled=false}={}) {
+export function createAdminHandler({provider,execute,rateLimit,platformRules,recovery=null,readPublicCatalog=null,readSystemStatus=null,emailAllowed,sharedWrites=true,enabled=false}={}) {
  return async function handle(request) {
   const id=requestId();
   try {
@@ -56,6 +57,11 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
    const match=request.headers.get('authorization')?.match(/^Bearer ([A-Za-z0-9_.-]{1,8192})$/);
    if(!match)fail(401,'UNAUTHENTICATED');
    const identity=await verifyProviderIdentity({token:match[1],provider,emailAllowed});
+   // Preview authentication/session operations can be tested without enabling
+   // shared editorial, maintenance or staff mutations. Unknown writes fail closed.
+   if(!sharedWrites && request.method!=='GET' && ![
+    'POST /api/admin/v1/session','DELETE /api/admin/v1/session','POST /api/admin/v1/sessions/revoke-all',
+   ].includes(`${request.method} ${url.pathname}`)) fail(403,'PREVIEW_READ_ONLY');
    let permitted;try{permitted=await rateLimit({userId:identity.userId,operation:'admin-api'});}catch{fail(503,'UNAVAILABLE')}
    if(permitted!==true)fail(429,'RATE_LIMITED');
    let operation,args;
@@ -111,6 +117,9 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     const items=await readPublicCatalog({kind:url.pathname.split('/').at(-1),after:url.searchParams.get('after'),limit});
     if(!Array.isArray(items))fail(503,'UNAVAILABLE');
     return json(200,{items,request_id:id});
+   } else if(url.pathname==='/api/admin/v1/system/status' && request.method==='GET' && !url.search) {
+    if(typeof readSystemStatus!=='function') fail(503,'UNAVAILABLE');
+    operation='systemStatusAccess';args=[];
    } else if(url.pathname==='/api/admin/v1/analytics' && request.method==='GET' && !url.search) {
     operation='analytics';args=[];
    } else if(['/api/admin/v1/platforms','/api/admin/v1/categories','/api/admin/v1/generators','/api/admin/v1/seo-pages'].includes(url.pathname) && request.method==='GET') {
@@ -118,8 +127,9 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     operation={platforms:'platformList',categories:'categoryList',generators:'generatorList','seo-pages':'seoList'}[url.pathname.split('/').at(-1)];
     args=[pageLimit(url),url.searchParams.get('after')];
    } else if(['/api/admin/v1/collections','/api/admin/v1/settings'].includes(url.pathname) && request.method==='GET') {
-    paging(url,['limit','after'],{after:'slug'});
-    operation=url.pathname.endsWith('collections')?'collectionList':'settingList';
+    const collection=url.pathname.endsWith('collections');
+    paging(url,['limit','after'],{after:collection?'slug':'setting'});
+    operation=collection?'collectionList':'settingList';
     args=[pageLimit(url),url.searchParams.get('after')];
    } else if(url.pathname==='/api/admin/v1/settings' && request.method==='PUT') {
     const body=await bodyJson(request);keys(body,['key','value','expectedVersion']);integer(body.expectedVersion,1,Number.MAX_SAFE_INTEGER);
@@ -237,6 +247,10 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
    const rows=await execute({identity,operation,args});
    if(!Array.isArray(rows))fail(503,'UNAVAILABLE');
    // "Revoke all my sessions" must name the caller's own action, not another one.
+   if(operation==='systemStatusAccess') {
+    if(rows.length!==1||rows[0]?.active!==true) fail(403,'FORBIDDEN');
+    return json(200,{...await readSystemStatus(),request_id:id});
+   }
    if(operation==='sessionRevokeAll') {
     const revoked=Number(rows[0]?.revoked);
     if(rows.length!==1||!Number.isSafeInteger(revoked)||revoked<0)fail(503,'UNAVAILABLE');
@@ -268,7 +282,7 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     if(typeof row?.user_id!=='string'||!Array.isArray(row.roles)||!Array.isArray(row.permissions))fail(503,'UNAVAILABLE');
     const expires=typeof row.session_expires_at==='string'?row.session_expires_at:new Date(row.session_expires_at).toISOString();
     return json(200,{user:{id:row.user_id,roles:row.roles,permissions:row.permissions},
-      expires_at:expires,created_at:row.session_created_at,request_id:id});
+      expires_at:expires,shared_writes:sharedWrites,created_at:row.session_created_at,request_id:id});
    }
    if(operation==='analytics')return json(200,{metrics:rows,request_id:id});
 

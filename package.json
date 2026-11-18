@@ -67,7 +67,8 @@
     "test:responsive": "node responsive-audit.cjs",
     "test:browser": "playwright test",
     "test:public-content-status": "node tests/public-content-status.mjs",
-    "test:published-catalog-browser": "node tests/published-catalog-browser.mjs"
+    "test:published-catalog-browser": "node tests/published-catalog-browser.mjs",
+    "test:admin-password-reset-browser": "node tests/admin-password-reset-browser.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

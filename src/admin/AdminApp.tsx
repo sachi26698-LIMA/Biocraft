@@ -26,6 +26,7 @@ import { ToastProvider, useToast } from './ui/Toast';
 import './admin.css';
 
 // Lazy-loaded Live modules for fast route switching & minimal bundle on first paint
+const PasswordReset = lazy(() => import('./PasswordReset'));
 const LiveOverview = lazy(() => import('./live/Overview'));
 const LiveBiosLibrary = lazy(() => import('./live/Library'));
 const LiveCategories = lazy(() => import('./live/Catalog').then(m => ({ default: m.Categories })));
@@ -134,7 +135,6 @@ function AdminShell() {
   const [session, setSession] = useState<AdminSession | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
 
-  const probedOnce = useRef(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -160,12 +160,11 @@ function AdminShell() {
     }
   }, [loadSession]);
 
-  // Single-shot mount probe (avoids React StrictMode double fetch)
+  // The request layer coalesces both StrictMode mounts. Each effect owns only
+  // its subscription, so cleaning up one will not abort another consumer.
   useEffect(() => {
-    if (probedOnce.current) return;
-    probedOnce.current = true;
     const controller = new AbortController();
-    probeBackend(controller.signal)
+    probeBackend()
       .then(result => {
         if (controller.signal.aborted) return;
         setBackend(result);
@@ -284,6 +283,10 @@ function AdminShell() {
 
   const openBioModal = useCallback(
     (preset?: BioDraftPreset) => {
+      if (session?.sharedWrites === false) {
+        toast.push('Shared changes are disabled in Preview', { tone: 'info' });
+        return;
+      }
       if (backend === 'ready' || !live) {
         setBioPreset(preset ?? null);
         setBioModalOpen(true);
@@ -292,7 +295,7 @@ function AdminShell() {
         navigate('/admin/login');
       }
     },
-    [backend, live, navigate, toast],
+    [backend, live, navigate, session?.sharedWrites, toast],
   );
 
   const handleSignOut = async () => {
@@ -326,7 +329,9 @@ function AdminShell() {
   const activeNav = NAV_ITEMS.find(n => n.path === path);
 
   let content: ReactNode;
-  if (!activeNav && path === '/admin/login') {
+  if (path === '/admin/recovery') {
+    content = <PasswordReset />;
+  } else if (!activeNav && path === '/admin/login') {
     content = (
       <>
         <PageHead
@@ -703,6 +708,7 @@ function AdminShell() {
 
           {/* Main Route Viewport */}
           <main id="admin-main" className="ad-main">
+            {session?.sharedWrites === false && <p role="status" className="ad-auth-note">Read-only Preview: shared content, staff and setting changes are disabled.</p>}
             <Suspense fallback={<RouteFallback />}>{content}</Suspense>
             <footer className="ad-footer">
               <span>{live ? 'BioCraft Master Admin v2.0' : 'BioCraft Admin Preview'}</span>

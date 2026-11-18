@@ -440,7 +440,7 @@ if (adminPreview) {
   });
   // Noindex static shells for every BioCraft Master Admin module route.
   for (const section of [
-    '', '/login', '/users', '/bios', '/categories', '/collections',
+    '', '/login', '/recovery', '/users', '/bios', '/categories', '/collections',
     '/platforms', '/generators', '/content', '/analytics',
     '/audit-logs', '/security', '/settings', '/backup',
   ]) {

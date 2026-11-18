@@ -35,6 +35,6 @@ function Entries({ kind }: { kind: Kind }) {
         </table>
       </div>)}
     {list.state === 'ready' && list.error && <p role="status">{list.error}</p>}
-    {list.hasMore && <button type="button" className="ad-btn ad-btn--secondary" onClick={list.loadMore}>Load more</button>}
+    {list.hasMore && <button type="button" className="ad-btn ad-btn--secondary" disabled={list.loadingMore} onClick={list.loadMore}>{list.loadingMore ? 'Loading…' : list.error ? 'Retry page' : 'Load more'}</button>}
   </>;
 }

@@ -9,7 +9,7 @@ import { ConfirmDialog, Modal } from '../ui/Modal';
 import { useToast } from '../ui/Toast';
 import { Badge, EmptyState, Field, MessageBox, PageHead, Panel, StateNotice } from './common';
 import type { SettingRow } from './types';
-import { formatDate, mutate, useLive } from './useLive';
+import { formatDate, mutate, useLive, usePaged } from './useLive';
 
 const FRIENDLY: Record<string, string> = {
   'site.maintenance': 'Maintenance mode',
@@ -18,9 +18,11 @@ const FRIENDLY: Record<string, string> = {
 };
 
 export default function LiveSettings() {
-  const { navigate } = useAdminContext();
+  const { navigate, session } = useAdminContext();
   const toast = useToast();
-  const settings = useLive<{ items: SettingRow[] }>('/settings?limit=100');
+  const settings = usePaged<SettingRow>('/settings?limit=100', row => row?.key ?? null);
+  const allowChanges = session?.sharedWrites !== false;
+  const system = useLive<{database: string; auth: string; guest_content: string; runtime: string; password_reset: boolean; shared_writes: boolean}>('/system/status');
 
   const [editing, setEditing] = useState<SettingRow | null>(null);
   const [draftJson, setDraftJson] = useState('');
@@ -114,11 +116,11 @@ export default function LiveSettings() {
         title="Settings"
         icon="settings"
         description="Every change is versioned, requires a fresh second factor, and is written to the audit trail."
-        aside={settings.state === 'ready' ? <Badge tone="green">{settings.data?.items.length ?? 0} keys</Badge> : undefined}
+        aside={settings.state === 'ready' ? <Badge tone="green">{settings.data?.length ?? 0} keys</Badge> : undefined}
       >
         {settings.state !== 'ready' ? (
           <StateNotice state={settings.state} error={settings.error} reload={settings.reload} />
-        ) : (settings.data?.items.length ?? 0) === 0 ? (
+        ) : (settings.data?.length ?? 0) === 0 ? (
           <EmptyState icon="settings" title="No settings recorded" text="The settings table is empty. Defaults apply until a value is written." />
         ) : (
           <div className="ad-table-wrap" tabIndex={0} role="region" aria-label="Settings table">
@@ -133,7 +135,7 @@ export default function LiveSettings() {
                 </tr>
               </thead>
               <tbody>
-                {settings.data!.items.map(row => (
+                {settings.data?.map(row => (
                   <tr key={row.key}>
                     <td>
                       <strong>{FRIENDLY[row.key] ?? row.key}</strong>
@@ -146,6 +148,7 @@ export default function LiveSettings() {
                       <button
                         type="button"
                         className="ad-btn ad-btn--secondary ad-btn--sm"
+                        disabled={!allowChanges}
                         onClick={() => {
                           setEditing(row);
                           setDraftJson(JSON.stringify(row.value, null, 2));
@@ -162,7 +165,22 @@ export default function LiveSettings() {
             </table>
           </div>
         )}
+        {settings.state === 'ready' && settings.error && <p role="status">{settings.error}</p>}
+        {settings.hasMore && <button type="button" className="ad-btn ad-btn--secondary" disabled={settings.loadingMore} onClick={settings.loadMore}>{settings.loadingMore ? 'Loading…' : settings.error ? 'Retry page' : 'Load more settings'}</button>}
         <MessageBox message={message} failure={failure} />
+      </Panel>
+
+      <Panel title="Integration status" icon="database" description="Checked by the server for this Admin request, not deployment metadata."
+        aside={<button type="button" className="ad-btn ad-btn--secondary" onClick={system.reload}>Check again</button>}>
+        <StateNotice state={system.state} error={system.error} reload={system.reload} />
+        {system.state === 'ready' && system.data && <ul>
+          <li>Admin database: {system.data.database === 'ready' ? 'Connected' : 'Unavailable'}</li>
+          <li>Supabase Auth: {system.data.auth === 'verified' ? 'Session verified' : 'Not verified'}</li>
+          <li>Public catalogue read: {system.data.guest_content === 'ready' ? 'Connected' : 'Unavailable'}</li>
+          <li>Deployment environment: {system.data.runtime}</li>
+          <li>Shared writes: {system.data.shared_writes ? 'Enabled, permission checks apply' : 'Disabled'}</li>
+          <li>Password reset: {system.data.password_reset ? 'Enabled; email delivery not checked' : 'Disabled'}</li>
+        </ul>}
       </Panel>
 
       <div className="ad-two-col">

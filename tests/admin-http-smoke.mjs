@@ -24,7 +24,7 @@ globalThis.fetch=async (url,opts)=>{
  if(String(url)===SUPABASE_URL+'/auth/v1/logout?scope=local') {providerLogout=true;return new Response(null,{status:204});}
  throw Error('Unexpected provider call');
 };
-const app=createAdminApp({env:{ADMIN_BACKEND_ENABLED:'true',ADMIN_ORIGIN:origin,ADMIN_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_local_fixture',
+const app=createAdminApp({env:{VERCEL_ENV:'preview',ADMIN_PASSWORD_RESET_ENABLED:'true',ADMIN_BACKEND_ENABLED:'true',ADMIN_ORIGIN:origin,ADMIN_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_local_fixture',
  ADMIN_DB_USER:'bc_fixture_executor',ADMIN_DB_PASSWORD:'fixture',ADMIN_COOKIE_KEY_HEX:cookieKey.toString('hex'),
  ADMIN_FLOW_KEY_HEX:randomBytes(32).toString('hex'),ADMIN_HASH_KEY_HEX:randomBytes(32).toString('hex'),
  ADMIN_TRUSTED_CLIENT_HEADER:'x-forwarded-for',ADMIN_INGRESS_SECRET_HEX:secret.toString('hex'),
@@ -65,9 +65,13 @@ try {
  const getSession=()=>fetch(base+'/api/admin/v1/session',{headers:{cookie}});
  assert.equal((await getSession()).status,403);
  confirmed=true;
- const response=await getSession();assert.equal(response.status,200);assert.equal((await response.json()).user.id,uid);
+ const response=await getSession();assert.equal(response.status,200);
+ const userSession=await response.json();assert.equal(userSession.user.id,uid);assert.equal(userSession.shared_writes,false);
+ const noWrites=await fetch(base+'/api/admin/v1/bio-drafts',{method:'POST',headers:{cookie,origin,'x-csrf-token':session.csrf,'content-type':'application/json'},body:'{}'});
+ assert.equal(noWrites.status,403);assert.equal((await noWrites.json()).error.code,'PREVIEW_READ_ONLY');
+ assert.equal((await fetch(base+'/api/admin/v1/auth/password-reset/status')).status,503);
  const loggedOut=await fetch(base+'/api/admin/v1/session',{method:'DELETE',headers:{cookie,origin,'x-csrf-token':session.csrf}});
  assert.equal(loggedOut.status,200);assert.equal(providerLogout,true);
  assert.equal((await getSession()).status,403);
- console.log('PASS local HTTP admin app over a real (non-hosted) socket: health, trusted-proxy signing, unauthenticated denial, origin and body validation, confirmed-email check, DB limiter and token-bound provider logout');
+ console.log('PASS local HTTP admin app over a real (non-hosted) socket: health, trusted-proxy signing, unauthenticated denial, origin and body validation, confirmed-email check, DB limiter token-bound provider logout, Preview read-only guard and disabled recovery');
 } finally {globalThis.fetch=originalFetch;server.close();await pool.end()}

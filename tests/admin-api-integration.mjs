@@ -49,6 +49,7 @@ try {
  const rules={instagram:{count:'unicode_code_points',max:150}};
  const catalogCalls=[];
  const handler=createAdminHandler({enabled:true,provider,execute,rateLimit:async()=>true,platformRules:rules,
+  readSystemStatus:async()=>({database:'ready',guest_content:'ready'}),
   readPublicCatalog:async args=>{catalogCalls.push(args);return [{id:b,text:'Published fixture'}]}});
  const call=(path,method='GET',body,tk=token(a,sa))=>handler(new Request(`https://admin.example${path}`,{method,headers:{Authorization:`Bearer ${tk}`,...(body!==undefined?{'Content-Type':'application/json'}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{})}));
  assert.equal((await createAdminHandler()(new Request('https://admin.example/api/admin/v1/bio-drafts'))).status,503);
@@ -65,6 +66,11 @@ try {
  assert.equal(fonts.status,200);
  assert.deepEqual((await fonts.json()).items,[{id:b,text:'Published fixture'}]);
  assert.deepEqual(catalogCalls,[{kind:'fonts',after:a,limit:10}]);
+ assert.equal((await call('/api/admin/v1/system/status')).status,403);
+ const system=await call('/api/admin/v1/system/status','GET',undefined,token(b,sb));
+ assert.equal(system.status,200);
+ assert.equal((await system.json()).guest_content,'ready');
+ assert.equal((await call('/api/admin/v1/settings?after=site.maintenance','GET',undefined,token(b,sb))).status,200);
  const bio={content:'Hello',language:'en',platform:'instagram',active:true,featured:false};
  assert.equal((await call('/api/admin/v1/bio-drafts','POST',{key:'x',bio:{...bio,language:'bad'}})).status,422);
  assert.equal((await call('/api/admin/v1/bio-drafts','POST',{key:'bio-one',bio},token(a,sa,{amr:undefined}))).status,403);

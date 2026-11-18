@@ -42,6 +42,7 @@ const ROUTES = [
   ['GET', '/api/admin/v1/audit-logs'],
   ['GET', '/api/admin/v1/backups'],
   ['GET', '/api/admin/v1/settings'],
+  ['GET', '/api/admin/v1/system/status'],
   ['POST', '/api/admin/v1/settings'],
   ['GET', '/api/admin/v1/notifications'],
   ['POST', '/api/admin/v1/notifications/read'],

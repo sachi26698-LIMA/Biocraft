@@ -20,6 +20,7 @@ export interface AdminSession {
   permissions: readonly string[];
   expiresAt: string;
   assuranceLevel: 'aal2';
+  sharedWrites?: boolean;
 }
 export interface AdminError { code: string; message: string; requestId?: string }
 export interface AdminPage<T> { items: T[]; nextCursor: string | null; asOf: string }
@@ -87,6 +88,7 @@ export async function currentSession(signal?: AbortSignal): Promise<AdminSession
     permissions: Array.isArray(body.user.permissions) ? body.user.permissions : [],
     expiresAt: String(body.expires_at ?? ''),
     assuranceLevel: 'aal2',
+    sharedWrites: body.shared_writes !== false,
   };
 }
 

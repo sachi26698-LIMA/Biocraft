@@ -6,6 +6,7 @@
  * submit when the backend probe reports `unavailable`.
  */
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { handleAnchorClick } from '../lib/router';
 import { ADMIN_BASE, probeBackend, type BackendStatus } from './backend';
 import { Icon } from './icons';
 import { Badge } from './ui/Primitives';
@@ -28,9 +29,9 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
   useEffect(() => {
     mounted.current = true;
     const controller = new AbortController();
-    probeBackend(controller.signal)
+    probeBackend()
       .then(result => {
-        if (!mounted.current) return;
+        if (controller.signal.aborted) return;
         setStatus(result);
         if (result === 'unavailable') {
           setStage('blocked');
@@ -44,7 +45,7 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
         setStage('signin');
       })
       .catch(() => {
-        if (mounted.current) {
+        if (!controller.signal.aborted) {
           setStatus('unavailable');
           setStage('blocked');
         }
@@ -392,6 +393,7 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
           </button>
         </form>
       )}
+      {stage === 'signin' && <p><a href="/admin/recovery" onClick={handleAnchorClick}>Forgot your password?</a></p>}
       {message && (
         <p className="ad-auth-error" role="alert">
           {message}

@@ -12,6 +12,7 @@
 // Failure is closed: missing configuration returns 503 for every route.
 import {randomUUID} from 'node:crypto';
 import {createProviderClient} from './identity.mjs';
+import {createRecoveryController} from './recovery-controller.mjs';
 import {createAuthController} from './auth-controller.mjs';
 import {issueRecoveryGrant,revokeRecoveryGrant,runCleanup,redeemRecoveryCode,factorGate,recoveryGrantState,resetFactorEnrolment} from './recovery-grant.mjs';
 import {verifyProviderIdentity} from './identity.mjs';
@@ -24,6 +25,7 @@ import {createProviderLogout} from './provider-logout.mjs';
 import {createHash,createHmac,timingSafeEqual} from 'node:crypto';
 import {PLATFORM_RULES} from '../domain/platform-rules.mjs';
 
+import {checkPublicContent} from '../../shared/public-content-check.mjs';
 import {SUPABASE_URL as PROJECT_URL} from '../../shared/supabase-config.mjs';
 const HEX64=/^[0-9a-f]{64}$/;
 const key32=value=>typeof value==='string'&&HEX64.test(value)?Buffer.from(value,'hex'):null;
@@ -61,7 +63,8 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  if (typeof origin!=='string'||!/^https:\/\/[a-z0-9.-]{1,200}$/i.test(origin)) return fail('invalid origin');
  const cookieKey=key32(env.ADMIN_COOKIE_KEY_HEX),flowKey=key32(env.ADMIN_FLOW_KEY_HEX),hashKey=key32(env.ADMIN_HASH_KEY_HEX);
  if (!cookieKey||!flowKey||!hashKey||cookieKey.equals(flowKey)||cookieKey.equals(hashKey)||flowKey.equals(hashKey)) return fail('invalid keys');
- if (typeof env.ADMIN_SUPABASE_PUBLISHABLE_KEY!=='string'||!env.ADMIN_SUPABASE_PUBLISHABLE_KEY) return fail('missing publishable key');
+ const publishableKey=env.ADMIN_SUPABASE_PUBLISHABLE_KEY ?? env.VITE_SUPABASE_PUBLISHABLE_KEY;
+ if (typeof publishableKey!=='string'||!publishableKey) return fail('missing publishable key');
  if (typeof env.ADMIN_DB_USER!=='string'||!env.ADMIN_DB_USER||typeof env.ADMIN_DB_PASSWORD!=='string'||!env.ADMIN_DB_PASSWORD) return fail('missing database credentials');
  // Sign-in is closed to everyone unless an operator names the permitted accounts.
  // Failing here is deliberate: a missing allow-list is a configuration error, not
@@ -69,11 +72,12 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  const allowList=typeof env.ADMIN_ALLOWED_EMAILS==='string'?env.ADMIN_ALLOWED_EMAILS:'';
  if (!allowList.trim()) return fail('missing admin allow-list');
  const emailAllowed=email=>isEmailAllowed(email,allowList);
- const trustedHeader=typeof env.ADMIN_TRUSTED_CLIENT_HEADER==='string'&&/^[a-z0-9-]{1,64}$/.test(env.ADMIN_TRUSTED_CLIENT_HEADER)?env.ADMIN_TRUSTED_CLIENT_HEADER:null;
+ const trustedHeader=env.ADMIN_TRUSTED_CLIENT_HEADER==='x-forwarded-for'?env.ADMIN_TRUSTED_CLIENT_HEADER:null;
  const ingressSecret=key32(env.ADMIN_INGRESS_SECRET_HEX);
  if (!trustedHeader||!ingressSecret) return fail('missing trusted client header');
+ if ([cookieKey,flowKey,hashKey].some(key=>key.equals(ingressSecret))) return fail('invalid keys');
  let provider;
- try {provider=createProviderClient(PROJECT_URL,env.ADMIN_SUPABASE_PUBLISHABLE_KEY);} catch {return fail('invalid provider configuration');}
+ try {provider=createProviderClient(PROJECT_URL,publishableKey);} catch {return fail('invalid provider configuration');}
  // Direct connection by default; set ADMIN_DB_HOST to the Supavisor pooler host
  // (with a project-scoped ADMIN_DB_USER) when IPv4 egress is required.
  const dbHost=typeof env.ADMIN_DB_HOST==='string'&&env.ADMIN_DB_HOST?env.ADMIN_DB_HOST:'db.jvpadtzfsuekixrquzjv.supabase.co';
@@ -87,7 +91,7 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  const execute=createDatabaseExecutor(pool,{now});
  const storage=createAuthStorage({pool,encryptionKey:flowKey,hashKey});
  // Supabase clients must be per-request so sessions never leak between requests.
- const client=()=>createProviderClient(PROJECT_URL,env.ADMIN_SUPABASE_PUBLISHABLE_KEY);
+ const client=()=>createProviderClient(PROJECT_URL,publishableKey);
  const rateLimit=storage.limit;
  if (typeof storage.limit!=='function') return fail('invalid storage');
  // Recovery authorisation and bounded cleanup (012). The service is injected so
@@ -111,7 +115,17 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    if(error) throw new Error('Catalogue unavailable');
    return data;
  };
- const api=createAdminHandler({enabled:true,provider,execute,rateLimit,platformRules:PLATFORM_RULES,recovery:recoveryService,readPublicCatalog,emailAllowed});
+ const isPreviewOrUnknownHosted=env.VERCEL_ENV==='preview'||(env.VERCEL==='1'&&env.VERCEL_ENV!=='production');
+ const sharedWrites=!isPreviewOrUnknownHosted||env.ADMIN_SHARED_WRITES_ENABLED==='true';
+ const passwordReset=sharedWrites&&env.ADMIN_PASSWORD_RESET_ENABLED==='true';
+ const readSystemStatus=async()=>({
+  database:'ready', // settings.read and the live session were just checked in Postgres.
+  auth:'verified', // this request's token was verified by Supabase Auth.
+  guest_content:await checkPublicContent(env)?'ready':'unavailable',
+  runtime: ['preview','production','development'].includes(env.VERCEL_ENV)?env.VERCEL_ENV:'local',
+  shared_writes:sharedWrites, password_reset:passwordReset,
+ });
+ const api=createAdminHandler({sharedWrites,readSystemStatus,enabled:true,provider,execute,rateLimit,platformRules:PLATFORM_RULES,recovery:recoveryService,readPublicCatalog,emailAllowed});
  // Enrolment gate: live Admin membership + provider session, checked in the DB
  // before any TOTP factor is created. It is the only pre-AAL2 database call.
  const enrolment=async identity=>{
@@ -148,13 +162,23 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
   } catch { return false; }
  };
  const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:storage,limiter:rateLimit,sessionHandler:api,enrolment,recovery:factorDecision,factorGate:factorDecision,allowList});
- const gateway=createCookieGateway({key:cookieKey,origin,delegate:api,providerLogout:createProviderLogout({url:PROJECT_URL,publishableKey:env.ADMIN_SUPABASE_PUBLISHABLE_KEY})});
+ const recoverPassword=createRecoveryController({enabled:passwordReset,origin,createClient:client,flowStore:storage,limiter:rateLimit,execute,emailAllowed,
+  checkMembership:async identity=>['enrol','recover'].includes(await factorGate({execute,identity}))});
+ const gateway=createCookieGateway({key:cookieKey,origin,delegate:api,providerLogout:createProviderLogout({url:PROJECT_URL,publishableKey})});
  let readiness;
  const app=async function handle(request){
   const key=clientKey(request,{trustedHeader,ingressSecret});
   if(!key) return new Response(JSON.stringify({error:{code:'UNAVAILABLE'}}),{status:503,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8'}});
   let url;try{url=new URL(request.url)}catch{return bad(400)}
   if(url.origin!==origin) return bad(403);
+  if(url.pathname.startsWith('/api/admin/v1/auth/password-reset/')) {
+   if(url.pathname==='/api/admin/v1/auth/password-reset/status'&&request.method==='GET'&&!url.search) {
+    if(passwordReset) return health('GET');
+    return new Response(JSON.stringify({error:{code:'UNAVAILABLE'}}),{status:503,headers:{'Cache-Control':'no-store','Content-Type':'application/json'}});
+   }
+   return recoverPassword(request,key);
+  }
+  if(!sharedWrites&&url.pathname==='/api/admin/v1/auth/recovery/complete'&&request.method==='POST') return bad(403);
   if(url.pathname.startsWith('/api/admin/v1/auth/')) return auth(request,key);
   if(url.pathname==='/api/admin/v1/health') return health(request.method);
   if(url.pathname.startsWith('/api/admin/v1/')) return gateway(request);

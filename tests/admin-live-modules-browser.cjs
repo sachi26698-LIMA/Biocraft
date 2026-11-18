@@ -109,6 +109,7 @@ const replies = {
       revoked_at: null,
     }],
   },
+  '/system/status': { database:'ready', auth:'verified', guest_content:'ready', runtime:'preview', shared_writes:false, password_reset:false },
   '/settings': {
     items: [{ key: 'content.review_required', value: { enabled: true }, version: 2, updated_at: '2026-11-01T09:00:00.000Z' }],
   },
@@ -275,6 +276,26 @@ const replies = {
       await page.locator('h1', { hasText: 'Settings' }).waitFor();
       assert.match(await page.getByRole('region', { name: 'Settings table' }).innerText(), /Require independent review/);
       await page.getByText('Not configurable here').waitFor();
+      await page.getByText('Public catalogue read: Connected', {exact:true}).waitFor();
+
+      if (name === 'desktop') {
+        let attempts = 0;
+        const cursor = 'setting.test_099';
+        await page.route('**/api/admin/v1/settings?*', async route => {
+          const after = new URL(route.request().url()).searchParams.get('after');
+          const base = {value:{enabled:true},version:1};
+          if (!after) return route.fulfill({json:{items:Array.from({length:100},(_,i)=>({...base,key:`setting.test_${String(i).padStart(3,'0')}`}))}});
+          assert.equal(after,cursor);
+          if (++attempts === 1) return route.fulfill({status:503,json:{error:{code:'UNAVAILABLE'}}});
+          return route.fulfill({json:{items:[{...base,key:'setting.extra_page'}]}});
+        });
+        await page.reload();
+        await page.getByRole('button',{name:'Load more settings'}).click();
+        await page.getByRole('button',{name:'Retry page'}).click();
+        await page.getByText('setting.extra_page', {exact:true}).first().waitFor();
+        assert.equal(attempts,2);
+        assert.equal(await page.getByRole('button',{name:'Load more settings'}).count(),0);
+      }
 
       // 13. Backup & Recovery (new dedicated module)
       await page.goto(`${base}/admin/backup`, { waitUntil: 'networkidle' });
