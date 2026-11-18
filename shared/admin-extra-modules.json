@@ -5,7 +5,7 @@
   {"key":"fonts","label":"Fonts","section":"CONTENT","icon":"content","description":"Browse active font records served by the public generator."},
   {"key":"seo","label":"SEO","section":"CONTENT","icon":"content","description":"Inspect recorded SEO metadata without changing the public site."},
   {"key":"content-intelligence","label":"Global Content Intelligence","section":"INSIGHTS","icon":"analytics","description":"Inspect existing inventory and editorial throughput. These are database aggregates, not audience telemetry or AI predictions."},
-  {"key":"data-sources","label":"Data Sources","section":"SYSTEM","icon":"database","description":"Inspect source slugs recorded on BioCraft bios and their visibility counts."},
+  {"key":"data-sources","label":"Data Sources","section":"SYSTEM","icon":"database","description":"Inspect the Supabase source registry, last successful sync and recent import jobs."},
   {"key":"imports","label":"Imports","section":"SYSTEM","icon":"database","description":"Validate a local bio import file without uploading or writing to the database."},
   {"key":"ai-configuration","label":"AI Configuration","section":"SYSTEM","icon":"settings","description":"See whether the Admin has an approved AI integration."},
   {"key":"notifications","label":"Notifications","section":"PEOPLE","icon":"bell","description":"Read your own review decisions and publication notices from the Admin inbox."},

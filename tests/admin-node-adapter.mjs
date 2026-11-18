@@ -35,6 +35,8 @@ console.log('PASS Node adapter: platform-derived client identity, forged signatu
  // Default export with no env configured returns 503 before parsing anything.
  const r1=res();await disabled.default({method:'POST',url:'/api/admin/v1/auth/login',headers:{'x-real-ip':'1.2.3.4'},body:{}},r1);
  assert.equal(r1.statusCode,503);assert.equal(r1.body.toString(),'{"error":{"code":"UNAVAILABLE"}}');
+ const diagnostic=res();await disabled.default({method:'GET',url:'/api/admin/v1/health',headers:{}},diagnostic);
+ assert.equal(diagnostic.statusCode,503);assert.deepEqual(JSON.parse(diagnostic.body),{error:{code:'UNAVAILABLE',stage:'disabled'}});
  const fake=async function(){};fake.configuration={enabled:true,origin};
  const handler=createHandler(fake,{secret});
  const r2=res();await handler({method:'GET',url:'/api/admin/v1/health',headers:{'x-real-ip':'1.2.3.4'}},r2);

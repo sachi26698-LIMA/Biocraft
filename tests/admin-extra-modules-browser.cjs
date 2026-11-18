@@ -6,7 +6,7 @@ const uid = '11111111-1111-4111-8111-111111111111';
 const browserUrl = process.env.ADMIN_BASE_URL || 'http://127.0.0.1:4178';
 const text = {
   captions:'Synthetic caption', hashtags:'#synthetic', fonts:'Synthetic font sample', seo:'Synthetic SEO title',
-  'content-intelligence':'Content Mix', 'data-sources':'fixture-source', notifications:'Review completed',
+  'content-intelligence':'Content Mix', 'data-sources':'Unicode fixture', notifications:'Review completed',
   roles:'Review administrator', permissions:'content.review', 'db-management':'snapshot-fixture',
   'api-management':'API version: v1', 'vercel-status':'Build revision: abcdef012345', 'supabase-health':'Guest catalogue REST: Connected',
   'ai-configuration':'AI integration not connected', templates:'Template store not connected', imports:'Local validation only',
@@ -25,6 +25,8 @@ const text = {
         const items={
           captions:[{id:uid,text:'Synthetic caption'}], hashtags:[{id:uid,text:'#synthetic'}], fonts:[{id:uid,text:'Synthetic font sample'}],
           'seo-pages':[{id:uid,title:'Synthetic SEO title',page_slug:'fixture-seo',is_active:true}],
+          'data-sources':[{id:uid,name:'Unicode fixture',license_code:'MIT',status:'never_synced',last_sync_at:null,last_sync_count:null,next_cursor:'fixture'}],
+          'sync-jobs':[{id:uid,source_name:'Index fixture',status:'succeeded',items_seen:7,items_inserted:1,items_updated:0,items_skipped:6,finished_at:new Date().toISOString()}],
           collections:[{source_slug:'fixture-source',active_bios:7,archived_bios:1}],
           notifications:[{id:uid,category:'review.decided',message:'Review completed',unread:true,created_at:new Date().toISOString()}],
           roles:[{id:'reviewer',description:'Review administrator',permissions:['content.review']}],
@@ -43,6 +45,7 @@ const text = {
         await page.goto(`${browserUrl}/admin/${module.key}`);
         await page.getByRole('heading',{name:module.label,exact:true,level:1}).waitFor();
         await page.getByText(text[module.key],{exact:true}).first().waitFor();
+        if(module.key==='data-sources') { await page.getByText('Index fixture',{exact:true}).waitFor(); await page.getByText('Never',{exact:true}).waitFor(); }
         assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${module.key} at ${width}px overflowed`);
       }
       if(width===1440) {

@@ -198,7 +198,9 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    // learns nothing about the deployment.
    if(request.method!=='GET') return health(request.method);
    if(url.searchParams.get('diagnose')==='1'&&clientKey(request,{trustedHeader,ingressSecret})!==null){
-    return app.diagnose().then(r=>new Response(JSON.stringify({ok:true,diagnostics:r}),{status:200,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}})).catch(()=>health(request.method));
+    const [ready,diagnostics]=await Promise.all([health('GET'),app.diagnose()]);
+    const ok=ready.ok && diagnostics.database==='reachable' && diagnostics.limited_role==='ok' && diagnostics.provider==='reachable';
+    return new Response(JSON.stringify({ok,diagnostics}),{status:ok?200:503,headers:ready.headers});
    }
    return health(request.method);
   }
@@ -234,14 +236,10 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    report.sqlstate=typeof e?.code==='string'?e.code:'unknown';
   } finally {try{client?.release()}catch{} }
   try {
-   const probe=await provider.auth.getUser('');
-   // Any well-formed refusal means the provider answered; provider.auth.getUser
-   // resolves with {data:{user:null},error:{...}} rather than throwing.
-   report.provider=probe&&typeof probe==='object'?'reachable':'unexpected';
-  } catch (e) {
-   // A network/DNS failure reaching Supabase is distinguishable from a 401.
-   report.provider=e?.name==='AuthRetryableFetchError'?'unreachable':'reachable';
-  }
+   const probe=await fetch(`${PROJECT_URL}/auth/v1/health`,{headers:{apikey:publishableKey},redirect:'error',signal:AbortSignal.timeout(3500)});
+   report.provider=probe.ok?'reachable':'unavailable';
+   await probe.body?.cancel();
+  } catch {report.provider='unreachable';}
   return report;
  };
  return app;

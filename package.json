@@ -80,6 +80,7 @@
     "test:language": "node tests/language-engine.mjs",
     "test:library": "node tests/library-provenance.mjs && node tests/library-import-scale.mjs",
     "import:library": "node scripts/import-library.mjs",
+    "test:catalogue-reconciliation": "node tests/catalogue-reconciliation.mjs",
     "test:public-content-status": "node tests/public-content-status.mjs",
     "test:published-catalog-browser": "node tests/published-catalog-browser.mjs",
     "test:admin-password-reset-browser": "node tests/admin-password-reset-browser.cjs",

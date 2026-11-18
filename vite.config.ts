@@ -1,5 +1,5 @@
 import { defineConfig, loadEnv } from 'vite';
-import { SUPABASE_URL, publicSupabaseConfig } from './shared/supabase-config.mjs';
+import { publicSupabaseConfig } from './shared/supabase-config.mjs';
 import react from '@vitejs/plugin-react';
 
 // The Admin console is emitted into whichever scope has been explicitly enabled.
@@ -34,8 +34,8 @@ export default defineConfig(({ mode }) => {
   // have fallen back to the bundled registry. Validate against the constant
   // when the URL is unset; a *wrong* URL still fails, because
   // publicSupabaseConfig rejects anything that is not this project.
-  const url = env.VITE_SUPABASE_URL ?? (key ? SUPABASE_URL : undefined);
-  if ((url || key) && !publicSupabaseConfig(url, key)) {
+  const url = env.VITE_SUPABASE_URL;
+  if ((url !== undefined || key) && !publicSupabaseConfig(url, key)) {
     throw new Error('Set both public Supabase variables with the BioCraft project URL and a publishable or matching anon key. Never use a service key.');
   }
   // Vite exposes every VITE_ variable; reject unexpected Supabase variables
