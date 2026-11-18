@@ -67,7 +67,8 @@
     "test:responsive": "node responsive-audit.cjs",
     "test:browser": "playwright test",
     "test:global-content": "node tests/global-content-intelligence.mjs",
-    "import:data": "node scripts/import-data.mjs"
+    "import:data": "node scripts/import-data.mjs",
+    "test:library-search": "node tests/library-search-ui.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

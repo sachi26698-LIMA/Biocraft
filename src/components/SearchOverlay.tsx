@@ -114,6 +114,20 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
             </li>
           )}
         </ul>
+        {/* Additive: the overlay only ever knew the static tool registry. This
+            hands the query to the database-backed library search instead of
+            pretending stored content was searched here. */}
+        <button
+          type="button"
+          className="search-result search-all-libraries"
+          onClick={() => go(`/library-search${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ''}`)}
+        >
+          <span className="search-result-label">
+            Search all content libraries{query.trim() ? ` for “${query.trim()}”` : ''}
+          </span>
+          <span className="search-result-hint">Bios, captions, hashtags, fonts…</span>
+          <ChevronRightIcon size={16} aria-hidden="true" />
+        </button>
       </div>
     </div>
   );

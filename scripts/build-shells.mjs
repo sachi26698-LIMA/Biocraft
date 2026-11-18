@@ -341,6 +341,14 @@ const ROUTES = [
     ogDescription: 'Browse the BioCraft toolkit by category — bios, names, fonts, hashtags, captions and more.',
   },
   {
+    path: '/library-search',
+    title: 'Search Every Library — BioCraft',
+    description:
+      'One search across BioCraft bios, captions, hashtags, symbols, fonts and emoji. Every result is a real stored entry you can open and use.',
+    ogTitle: 'Search Every Library — BioCraft',
+    ogDescription: 'One search across every BioCraft content library.',
+  },
+  {
     path: '/resources',
     title: 'Resources — BioCraft Social Media Toolkit',
     description:
