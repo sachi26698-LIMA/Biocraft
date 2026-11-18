@@ -5,9 +5,8 @@ import ToolTile from '../components/ToolTile';
 import { handleAnchorClick } from '../lib/router';
 import { TOOLS } from '../tools/registry';
 import { useFavourites } from '../lib/toolbox';
-import { PLATFORMS } from '../tools/platforms';
 import ReadyMadeBiosSection from '../components/ReadyMadeBiosSection';
-import { ArrowRightIcon, PlusIcon } from '../components/icons';
+import { PlusIcon } from '../components/icons';
 
 const POPULAR_CHIPS: Array<{ id: string; label: string }> = [
   { id: 'creator', label: 'Creator' },
@@ -23,9 +22,6 @@ const POPULAR_CHIPS: Array<{ id: string; label: string }> = [
   { id: 'beauty', label: 'Beauty' },
   { id: 'business', label: 'Business' },
 ];
-
-/** Tools surfaced in the homepage "Popular tools" band (real registry keys). */
-const POPULAR_TOOL_KEYS = ['captions', 'hashtags', 'stylish-name', 'fancy-fonts', 'design-studio', 'username'] as const;
 
 const FAQ = [
   { q: 'Does BioCraft really cost nothing?', a: 'Yes. Every generator, every platform, every run — $0, forever. No tiers, no trials, no credits, no sign-up. It is a static, browser-based app with no paid backend to recoup costs from.', href: '/pricing', hrefLabel: 'See the pricing page' },
@@ -111,57 +107,6 @@ export default function HomePage() {
 
       {/* ============ Tool workspace — follows the stage (tool-first) ============ */}
       <ToolWorkspace path="/" headingLevel="h2" />
-
-      {/* ============ Quick platform selection ============ */}
-      <section className="section section-alt home-platforms" aria-labelledby="home-platforms-title">
-        <div className="container">
-          <div className="home-platforms-head">
-            <div>
-              <p className="eyebrow">Quick platform pick</p>
-              <h2 id="home-platforms-title" className="section-title home-platforms-title">Which app are you writing for?</h2>
-            </div>
-            <p className="home-platforms-note">
-              Tapping a platform re-themes the generator above and applies its real character limit.
-            </p>
-          </div>
-          <ul className="home-platform-row">
-            {PLATFORMS.map((platform) => (
-              <li key={platform.id}>
-                <a
-                  className="home-platform-pill"
-                  href={`/bio-generator?platform=${platform.id}#workspace`}
-                  onClick={handleAnchorClick}
-                  style={{ '--pill-accent': platform.accent, '--pill-deep': platform.deep } as CSSProperties}
-                >
-                  <span className="home-platform-pill-name">{platform.shortName}</span>
-                  <span className="home-platform-pill-limit">{platform.bioLimit} bio</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* ============ Popular tools ============ */}
-      <section className="section home-tools" aria-labelledby="home-tools-title">
-        <div className="container">
-          <div className="section-head section-head--split">
-            <div>
-              <p className="eyebrow">Popular tools</p>
-              <h2 id="home-tools-title" className="section-title">Everything else you need</h2>
-              <p className="section-sub">Captions, hashtags, stylish names, fancy fonts and more — all free, all local.</p>
-            </div>
-            <a className="btn btn-secondary btn-small" href="/resources" onClick={handleAnchorClick}>
-              All {TOOLS.length} tools <ArrowRightIcon size={15} aria-hidden="true" />
-            </a>
-          </div>
-          <ul className="home-tools-grid">
-            {POPULAR_TOOL_KEYS.map((key) => (
-              <ToolTile key={key} toolKey={key as (typeof TOOLS)[number]['key']} />
-            ))}
-          </ul>
-        </div>
-      </section>
 
       {/* ============ Ready-Made Bios — featured discovery ============ */}
       <ReadyMadeBiosSection />

@@ -896,50 +896,13 @@ p, li { text-wrap: pretty; }
 @media (min-width: 560px) { .rmb-home-facets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .rmb-home-facet-label { margin: 0 0 0.4rem; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
 
-/* ---------- Homepage platform quick-pick ---------- */
-.home-platforms-head { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.85rem; }
-.home-platforms-title { margin: 0; font-size: clamp(1.15rem, 4.4vw, 1.6rem); }
-.home-platforms-note { margin: 0; color: var(--muted); font-size: 0.85rem; line-height: 1.5; max-width: 60ch; }
-@media (min-width: 860px) {
-  .home-platforms-head { flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 2rem; }
-  .home-platforms-note { text-align: right; flex: 0 0 42ch; }
-}
-.home-platform-row {
-  list-style: none; margin: 0; padding: 0;
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem;
-}
-@media (min-width: 640px) { .home-platform-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-@media (min-width: 1080px) { .home-platform-row { grid-template-columns: repeat(8, minmax(0, 1fr)); } }
-.home-platform-pill {
-  display: flex; flex-direction: column; gap: 0.1rem;
-  height: 100%;
-  padding: 0.5rem 0.6rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--pill-accent, var(--accent));
-  background: var(--card-solid);
-  text-decoration: none; color: inherit;
-  min-width: 0;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
-}
-.home-platform-pill:hover { box-shadow: var(--shadow-sm); transform: translateY(-1px); border-left-color: var(--pill-deep, var(--accent-hover)); }
-.home-platform-pill:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.home-platform-pill-name { font-weight: 750; font-size: 0.84rem; color: var(--text); overflow-wrap: anywhere; }
-.home-platform-pill-limit { font-size: 0.68rem; font-weight: 650; color: var(--muted); }
-
-/* ---------- Homepage popular tools ---------- */
+/* ---------- Homepage favourites grid (tool cards) ---------- */
 .home-tools-grid {
   list-style: none; margin: 0; padding: 0;
   display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.8rem;
 }
 @media (min-width: 640px) { .home-tools-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1024px) { .home-tools-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-.section-head--split { display: flex; flex-direction: column; gap: 0.6rem; }
-.section-head--split .btn { align-self: flex-start; white-space: nowrap; }
-@media (min-width: 820px) {
-  .section-head--split { flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 1.5rem; }
-  .section-head--split .btn { align-self: flex-end; }
-}
 
 /* ================================================================
    13. Bio Library (/bio-library)
