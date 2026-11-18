@@ -6,6 +6,7 @@ import {randomUUID} from 'node:crypto';
 import {verifyProviderIdentity,AccessError} from './identity.mjs';
 import {validateBio,ValidationError} from '../domain/bio.mjs';
 const uid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const PUBLIC_CATALOGS=new Set(['/api/admin/v1/captions','/api/admin/v1/hashtags','/api/admin/v1/fonts']);
 const head={'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'};
 class ApiError extends Error { constructor(status,code){super(code);this.status=status;this.code=code;} }
 const fail=(status,code)=>{throw new ApiError(status,code)};
@@ -45,7 +46,7 @@ function paging(url,allowed,expect={}) {
   if(type==='boolean'&&value!=='true'&&value!=='false')fail(422,'INVALID');
  }
 }
-export function createAdminHandler({provider,execute,rateLimit,platformRules,recovery=null,enabled=false}={}) {
+export function createAdminHandler({provider,execute,rateLimit,platformRules,recovery=null,readPublicCatalog=null,emailAllowed,enabled=false}={}) {
  return async function handle(request) {
   const id=requestId();
   try {
@@ -54,7 +55,7 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
    if(url.search.length>2000)fail(400,'INVALID');
    const match=request.headers.get('authorization')?.match(/^Bearer ([A-Za-z0-9_.-]{1,8192})$/);
    if(!match)fail(401,'UNAUTHENTICATED');
-   const identity=await verifyProviderIdentity({token:match[1],provider});
+   const identity=await verifyProviderIdentity({token:match[1],provider,emailAllowed});
    let permitted;try{permitted=await rateLimit({userId:identity.userId,operation:'admin-api'});}catch{fail(503,'UNAVAILABLE')}
    if(permitted!==true)fail(429,'RATE_LIMITED');
    let operation,args;
@@ -101,6 +102,15 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     operation='bioList';
     args=[pageLimit(url),url.searchParams.get('after'),url.searchParams.get('search'),url.searchParams.get('language'),
       url.searchParams.get('active')===null?null:url.searchParams.get('active')==='true'];
+   } else if(PUBLIC_CATALOGS.has(url.pathname) && request.method==='GET') {
+    paging(url,['limit','after'],{after:'uuid'});
+    const limit=pageLimit(url,1,100,25);
+    if(typeof readPublicCatalog!=='function') fail(503,'UNAVAILABLE');
+    const access=await execute({identity,operation:'publicCatalogAccess',args:[]});
+    if(access?.length!==1||access[0]?.active!==true) fail(403,'FORBIDDEN');
+    const items=await readPublicCatalog({kind:url.pathname.split('/').at(-1),after:url.searchParams.get('after'),limit});
+    if(!Array.isArray(items))fail(503,'UNAVAILABLE');
+    return json(200,{items,request_id:id});
    } else if(url.pathname==='/api/admin/v1/analytics' && request.method==='GET' && !url.search) {
     operation='analytics';args=[];
    } else if(['/api/admin/v1/platforms','/api/admin/v1/categories','/api/admin/v1/generators','/api/admin/v1/seo-pages'].includes(url.pathname) && request.method==='GET') {

@@ -301,7 +301,8 @@ function AdminShell() {
       await logoutSession();
       toast.push('Signed out cleanly', { tone: 'info' });
     } catch {
-      toast.push('Session ended', { tone: 'info' });
+      toast.push('Could not confirm sign-out. Retry before leaving this device.', { tone: 'error' });
+      return;
     }
     setSession(null);
     setBackend('unauthenticated');
@@ -312,7 +313,7 @@ function AdminShell() {
     const unreadIds = notifications.filter(n => n.unread).map(n => n.id);
     if (unreadIds.length === 0) return;
     try {
-      await mutate('/notifications/read', { ids: unreadIds });
+      await mutate('/notifications/read', {});
       setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
       toast.push('Notifications marked as read', { tone: 'success' });
     } catch {

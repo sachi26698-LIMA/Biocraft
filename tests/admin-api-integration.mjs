@@ -47,7 +47,9 @@ try {
  const token=(sub,sessionId,extra={})=>['eyJhbGciOiJub25lIn0',Buffer.from(JSON.stringify({iss:'https://jvpadtzfsuekixrquzjv.supabase.co/auth/v1',aud:'authenticated',role:'authenticated',aal:'aal2',is_anonymous:false,sub,session_id:sessionId,exp:Math.floor(Date.now()/1000)+300,amr:[{method:'totp',timestamp:Math.floor(Date.now()/1000)}],...extra})).toString('base64url'),'signature'].join('.');
  const provider={auth:{getUser:async(t)=>t==='invalid.signature.value'?{error:{},data:{user:null}}:{data:{user:{id:JSON.parse(Buffer.from(t.split('.')[1],'base64url')).sub,is_anonymous:false}}}}};
  const rules={instagram:{count:'unicode_code_points',max:150}};
- const handler=createAdminHandler({enabled:true,provider,execute,rateLimit:async()=>true,platformRules:rules});
+ const catalogCalls=[];
+ const handler=createAdminHandler({enabled:true,provider,execute,rateLimit:async()=>true,platformRules:rules,
+  readPublicCatalog:async args=>{catalogCalls.push(args);return [{id:b,text:'Published fixture'}]}});
  const call=(path,method='GET',body,tk=token(a,sa))=>handler(new Request(`https://admin.example${path}`,{method,headers:{Authorization:`Bearer ${tk}`,...(body!==undefined?{'Content-Type':'application/json'}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{})}));
  assert.equal((await createAdminHandler()(new Request('https://admin.example/api/admin/v1/bio-drafts'))).status,503);
  assert.equal((await call('/api/admin/v1/bio-drafts','GET',undefined,token(a,sa,{aal:'aal1'}))).status,401);
@@ -55,6 +57,14 @@ try {
  assert.equal((await call('/api/admin/v1/session','POST')).status,200);
  assert.equal((await call('/api/admin/v1/session','POST',undefined,token(b,sb))).status,200);
  assert.equal((await call('/api/admin/v1/bio-drafts?limit=101')).status,422);
+ assert.equal((await call('/api/admin/v1/fonts?after=invalid')).status,422);
+ assert.equal((await call('/api/admin/v1/fonts?limit=101')).status,422);
+ assert.equal((await call('/api/admin/v1/fonts','GET',undefined,token(outsider,sa))).status,403);
+ assert.deepEqual(catalogCalls,[]);
+ const fonts=await call(`/api/admin/v1/fonts?limit=10&after=${a}`);
+ assert.equal(fonts.status,200);
+ assert.deepEqual((await fonts.json()).items,[{id:b,text:'Published fixture'}]);
+ assert.deepEqual(catalogCalls,[{kind:'fonts',after:a,limit:10}]);
  const bio={content:'Hello',language:'en',platform:'instagram',active:true,featured:false};
  assert.equal((await call('/api/admin/v1/bio-drafts','POST',{key:'x',bio:{...bio,language:'bad'}})).status,422);
  assert.equal((await call('/api/admin/v1/bio-drafts','POST',{key:'bio-one',bio},token(a,sa,{amr:undefined}))).status,403);

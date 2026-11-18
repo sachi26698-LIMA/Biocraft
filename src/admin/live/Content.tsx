@@ -10,6 +10,7 @@ import { ConfirmDialog, Modal } from '../ui/Modal';
 import { SearchableSelect } from '../ui/SearchableSelect';
 import { useToast } from '../ui/Toast';
 import { SeoPages } from './Catalog';
+import PublishedLibrary from './PublishedLibrary';
 import { Badge, EmptyState, Field, MessageBox, PageHead, Panel, SegmentedControl, StatCard, StateNotice } from './common';
 import { LANGUAGE_LABEL, STATE_LABEL, type DraftRow, type JobRow, type PublicationRow } from './types';
 import { downloadCsv, formatDate, mutate, request, useLive } from './useLive';
@@ -49,7 +50,7 @@ export default function LiveContent() {
   const jobs = useLive<{ items: JobRow[] }>('/publication-jobs?limit=25', refreshTick);
   const staff = useLive<{ items: { user_id: string; enabled: boolean; roles: string[] | null }[] }>('/staff?limit=100');
 
-  const [tab, setTab] = useState<'all' | 'drafts' | 'review' | 'seo' | 'jobs'>('all');
+  const [tab, setTab] = useState<'all' | 'drafts' | 'review' | 'seo' | 'jobs' | 'catalogue'>('all');
   const [openDraft, setOpenDraft] = useState<DraftRow | null>(null);
   const [picking, setPicking] = useState<string | null>(null);
   const [reviewer, setReviewer] = useState('');
@@ -188,6 +189,7 @@ export default function LiveContent() {
             { value: 'drafts', label: 'My Drafts', count: draftItems.length },
             { value: 'review', label: 'Review Queue', count: queueItems.length },
             { value: 'seo', label: 'SEO Pages' },
+            { value: 'catalogue', label: 'Published Catalogue' },
             { value: 'jobs', label: 'Publications', count: jobItems.length },
           ]}
         />
@@ -414,6 +416,7 @@ export default function LiveContent() {
       )}
 
       {(tab === 'all' || tab === 'seo') && <SeoPages />}
+      {tab === 'catalogue' && <PublishedLibrary />}
 
       {historyFor && (
         <Panel
