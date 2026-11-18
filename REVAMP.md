@@ -113,7 +113,7 @@ Preview deployments (commit `1ae77b5`, then `b047b59`):
 <https://biocraft-c52emid5q-sachi26698-6758s-projects.vercel.app> ·
 <https://biocraft-kahisvwyi-sachi26698-6758s-projects.vercel.app> (`dpl_3SYDJ9bTP92RzY6wdXfmPZ3RYWCw`, newest).
 The branch alias <https://biocraft-git-arena-decd8f08-biocraft-sachi26698-6758s-projects.vercel.app>
-always points at the latest build of this branch.
+always points at the latest build of this branch — use it, not a per-deployment URL.
 Local equivalent: `npm run preview` (verified on port 4180 — `/`, `/bio-collections/`, `/bio-library/`,
 `/bio-library/?category=boys`, `/bio-editor/`, `/instagram-bio-for-boys/`, `/categories/`, `/resources/`
 all return their own 200 shell; unknown paths fall back to the SPA and redirect home).
@@ -225,7 +225,20 @@ library never re-flattens the registry; results are paginated at 36 cards and `u
 keeps typing responsive. Header/footer intentionally do **not** import the data layer, so the new
 surfaces cost nothing on tool pages.
 
-## P2.8 Blockers (unchanged, environment-level)
+## P2.8 Homepage trim (follow-up, commit `4d676f6`)
+
+Per review feedback the two added homepage bands were removed again:
+
+- **Quick platform picker** (8 platform pills) — removed. Platform selection stays where it belongs:
+  the 3D platform stage at the top and the platform pills inside the generator workspace.
+- **Popular tools band** (6 tool cards + “All 12 tools”) — removed. Every tool remains reachable from
+  the header (Explore Tools → `/resources`), `/categories`, the footer's All Tools column and search.
+
+Homepage order is now: hero / platform stage → generator → **Featured Ready-Made Bios** →
+Favourites (only when pinned) → niche chips → FAQ → footer. Their dead CSS and the matching
+`responsive-audit` expectations were deleted too (no orphan rules, no stale tests).
+
+## P2.9 Blockers (unchanged, environment-level)
 
 - **No browser binary in this sandbox** — Playwright/Chromium cannot be installed (download blocked)
   and the alternative `@sparticuz/chromium` needs `libnss3`, which cannot be installed without root.
