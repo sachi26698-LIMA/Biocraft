@@ -10,10 +10,11 @@ import { ConfirmDialog, Modal } from '../ui/Modal';
 import { SearchableSelect } from '../ui/SearchableSelect';
 import { useToast } from '../ui/Toast';
 import { SeoPages } from './Catalog';
+import PublicationHistory from './PublicationHistory';
 import PublishedLibrary from './PublishedLibrary';
 import { Badge, EmptyState, Field, MessageBox, PageHead, Panel, SegmentedControl, StatCard, StateNotice } from './common';
-import { LANGUAGE_LABEL, STATE_LABEL, type DraftRow, type JobRow, type PublicationRow } from './types';
-import { downloadCsv, formatDate, mutate, request, useLive } from './useLive';
+import { LANGUAGE_LABEL, STATE_LABEL, type DraftRow, type JobRow } from './types';
+import { formatDate, mutate, useLive, usePaged } from './useLive';
 
 const STATE_TONE: Record<string, 'neutral' | 'purple' | 'green' | 'amber' | 'red'> = {
   draft: 'neutral',
@@ -42,29 +43,34 @@ function reason(error: unknown): string {
 }
 
 export default function LiveContent() {
-  const { openBioModal, refreshTick } = useAdminContext();
+  const { openBioModal, refreshTick, session } = useAdminContext();
   const toast = useToast();
 
   const drafts = useLive<{ items: DraftRow[] }>('/bio-drafts?limit=50', refreshTick);
   const queue = useLive<{ items: DraftRow[] }>('/bio-review-queue?limit=50', refreshTick);
   const jobs = useLive<{ items: JobRow[] }>('/publication-jobs?limit=25', refreshTick);
-  const staff = useLive<{ items: { user_id: string; enabled: boolean; roles: string[] | null }[] }>('/staff?limit=100');
+  const directory = session?.editorialDirectory === true;
+  const canPublish = session?.permissions.includes('content.publish') === true;
+  const writes = session?.sharedWrites !== false;
+  const approved = usePaged<DraftRow>(directory && canPublish ? '/bio-publish-queue?limit=25' : null, row => row?.draft_id ?? null);
+  const reviewersPage = usePaged<{user_id: string}>(directory && session?.permissions.includes('content.draft') ? '/bio-reviewers?limit=50' : null, row => row?.user_id ?? null);
+  const staff = useLive<{ items: { user_id: string; enabled: boolean; roles: string[] | null }[] }>(!directory && session?.permissions.includes('staff.read') ? '/staff?limit=100' : null);
+  const roles = useLive<{items: {id: string; permissions: string[]}[]}>(!directory && session?.permissions.includes('staff.read') ? '/roles' : null);
+
 
   const [tab, setTab] = useState<'all' | 'drafts' | 'review' | 'seo' | 'jobs' | 'catalogue'>('all');
   const [openDraft, setOpenDraft] = useState<DraftRow | null>(null);
   const [picking, setPicking] = useState<string | null>(null);
   const [reviewer, setReviewer] = useState('');
   const [confirmPublish, setConfirmPublish] = useState<DraftRow | null>(null);
-  const [history, setHistory] = useState<PublicationRow[] | null>(null);
   const [historyFor, setHistoryFor] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
 
-  const reviewers = (staff.data?.items ?? []).filter(
-    member =>
-      member.enabled &&
-      (member.roles ?? []).some(role => ['admin', 'content_manager', 'super_admin', 'moderator'].includes(role)),
+  const eligibleRoles = new Set((roles.data?.items ?? []).filter(role => role.permissions?.includes('content.review')).map(role => role.id));
+  const reviewers = directory ? (reviewersPage.data ?? []).map(row => ({...row, roles: [] as string[]})) : (staff.data?.items ?? []).filter(
+    member => member.enabled && member.user_id !== session?.userId && member.roles?.some(role => eligibleRoles.has(role)),
   );
 
   const run = useCallback(
@@ -79,6 +85,7 @@ export default function LiveContent() {
         drafts.reload();
         queue.reload();
         jobs.reload();
+        approved.reload();
         return true;
       } catch (error) {
         const err = reason(error);
@@ -89,7 +96,7 @@ export default function LiveContent() {
         setBusy(null);
       }
     },
-    [drafts, queue, jobs, toast],
+    [drafts, queue, jobs, approved, toast],
   );
 
   async function submit(row: DraftRow) {
@@ -131,29 +138,11 @@ export default function LiveContent() {
             : result.action === 'archived'
               ? 'The bio was archived (hidden from guests)'
               : 'Existing identical text was reused';
-      return `Published. ${verb}. Visible on the public site immediately.`;
+      setHistoryFor(result.bio_id);
+      return `Publication recorded. ${verb}.`;
     });
     setConfirmPublish(null);
     setPicking(null);
-  }
-
-  async function showHistory(row: DraftRow) {
-    setHistoryFor(row.draft_id);
-    setHistory(null);
-    try {
-      const jobsPage = await request<{ items: JobRow[] }>('/publication-jobs?limit=100');
-      const job = (jobsPage.items ?? []).find(item => item.draft_id === row.draft_id);
-      if (!job) {
-        setHistory([]);
-        return;
-      }
-      const page = await request<{ items: PublicationRow[] }>(`/publications?bio_id=${job.draft_id}&limit=50`).catch(() => ({
-        items: [] as PublicationRow[],
-      }));
-      setHistory(page.items ?? []);
-    } catch {
-      setHistory([]);
-    }
   }
 
   const draftItems = drafts.data?.items ?? [];
@@ -276,21 +265,6 @@ export default function LiveContent() {
                                 </button>
                               </>
                             )}
-                            {row.state === 'approved' && (
-                              <button
-                                type="button"
-                                className="ad-btn ad-btn--primary ad-btn--sm"
-                                onClick={() => setConfirmPublish(row)}
-                                disabled={busy !== null}
-                              >
-                                {busy === `publish:${row.draft_id}` ? 'Publishing…' : 'Publish'}
-                              </button>
-                            )}
-                            {row.state === 'published' && (
-                              <button type="button" className="ad-btn ad-btn--secondary ad-btn--sm" onClick={() => void showHistory(row)}>
-                                History
-                              </button>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -311,11 +285,11 @@ export default function LiveContent() {
                     {reviewers.length === 0 ? (
                       <div className="ad-inline-alert ad-inline-alert--error" role="alert">
                         <Icon name="alert" size={16} />
-                        <span>No eligible reviewer available. Another enabled staff member with review permission is required.</span>
+                        <span>{directory && reviewersPage.state !== 'ready' ? 'The reviewer directory is not available.' : !directory && staff.state !== 'ready' ? 'Reviewer discovery requires the approved directory or staff-read access.' : 'No eligible reviewer was returned. Another enabled staff member with review permission is required.'}</span>
                       </div>
                     ) : (
                       <div style={{ maxWidth: 420, marginTop: 12 }}>
-                        <Field label="Reviewer" hint="Only enabled members with a reviewing role are listed.">
+                        <Field label="Reviewer" hint="Only enabled members with review permission are listed.">
                           <SearchableSelect
                             label="Reviewer"
                             placeholder="Choose a reviewer…"
@@ -329,6 +303,8 @@ export default function LiveContent() {
                             }))}
                           />
                         </Field>
+                        {reviewersPage.error && <p role="status">{reviewersPage.error}</p>}
+                        {reviewersPage.hasMore && <button type="button" className="ad-btn ad-btn--secondary" disabled={reviewersPage.loadingMore} onClick={reviewersPage.loadMore}>{reviewersPage.error ? 'Retry reviewer page' : 'Load more reviewers'}</button>}
                         <div className="ad-action-row" style={{ marginTop: 12 }}>
                           <button
                             type="button"
@@ -418,66 +394,21 @@ export default function LiveContent() {
       {(tab === 'all' || tab === 'seo') && <SeoPages />}
       {tab === 'catalogue' && <PublishedLibrary />}
 
-      {historyFor && (
-        <Panel
-          title="Publication history"
-          icon="audit"
-          description="Append-only record of what this draft published."
-          aside={
-            <button type="button" className="ad-btn ad-btn--secondary ad-btn--sm" onClick={() => { setHistoryFor(null); setHistory(null); }}>
-              Close
-            </button>
-          }
-        >
-          {history === null ? (
-            <StateNotice state="loading" />
-          ) : history.length === 0 ? (
-            <EmptyState title="No publication recorded for this id" text="Publication history is recorded against the published bio row." />
-          ) : (
-            <>
-              <div className="ad-table-wrap" tabIndex={0} role="region" aria-label="Publication history table">
-                <table className="ad-table">
-                  <thead>
-                    <tr>
-                      <th>Action</th>
-                      <th>Bio</th>
-                      <th>By</th>
-                      <th>When</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {history.map(entry => (
-                      <tr key={String(entry.id)}>
-                        <td>
-                          <Badge tone={entry.action === 'archived' ? 'red' : entry.action === 'restored' ? 'amber' : 'green'}>
-                            {entry.action}
-                          </Badge>
-                        </td>
-                        <td><code className="ad-mono">{entry.bio_id}</code></td>
-                        <td><code className="ad-mono">{entry.actor_id}</code></td>
-                        <td className="ad-nowrap">{formatDate(entry.published_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="ad-action-row" style={{ marginTop: 12 }}>
-                <button
-                  type="button"
-                  className="ad-btn ad-btn--secondary ad-btn--sm"
-                  onClick={() =>
-                    downloadCsv('publications.csv', history as unknown as Record<string, unknown>[], [
-                      'id', 'bio_id', 'draft_id', 'action', 'actor_id', 'published_at',
-                    ])
-                  }
-                >
-                  <Icon name="download" size={14} /> Download CSV
-                </button>
-              </div>
-            </>
-          )}
-        </Panel>
-      )}
+      {historyFor && <PublicationHistory key={historyFor} bioId={historyFor} close={() => setHistoryFor(null)} />}
+
+      {(tab === 'all' || tab === 'jobs') && canPublish && <Panel title="Independent publisher queue" description="Only approved drafts eligible for this publisher. The database validates separation of duties again on publish.">
+        {!directory ? <p>The queue requires the reviewed editorial directory commands; it is not enabled here.</p> : <>
+          <StateNotice state={approved.state} error={approved.error} reload={approved.reload} />
+          {approved.state === 'ready' && (approved.data?.length ? <ul className="ad-health-list">
+            {approved.data.map(row => <li key={row.draft_id}><span>{row.resource_key} · {row.payload.language} · v{String(row.row_version)}</span>
+              <button type="button" className="ad-btn ad-btn--secondary ad-btn--sm" onClick={() => setOpenDraft(row)}>Read approved text</button>
+              <button type="button" className="ad-btn ad-btn--primary ad-btn--sm" disabled={!writes || busy !== null} onClick={() => setConfirmPublish(row)}>Publish</button>
+            </li>)}
+          </ul> : <EmptyState title="No eligible drafts" text="No approved drafts are eligible for publication by this account." />)}
+          {approved.state === 'ready' && approved.error && <p role="status">{approved.error}</p>}
+          {approved.hasMore && <button type="button" className="ad-btn ad-btn--secondary" disabled={approved.loadingMore} onClick={approved.loadMore}>{approved.error ? 'Retry page' : 'Load more approved drafts'}</button>}
+        </>}
+      </Panel>}
 
       {(tab === 'all' || tab === 'jobs') && (
         <Panel

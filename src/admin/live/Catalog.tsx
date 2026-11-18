@@ -198,7 +198,7 @@ export function Generators() {
 }
 
 /** Dedicated Collections module reading /api/admin/v1/collections live. */
-export function LiveCollections() {
+export function LiveCollections({embedded = false}: {embedded?: boolean}) {
   const toast = useToast();
   const list = usePaged<CollectionRow>('/collections?limit=50', last => last?.source_slug ?? null);
   const [query, setQuery] = useState('');
@@ -224,7 +224,7 @@ export function LiveCollections() {
 
   return (
     <>
-      <PageHead
+      {!embedded && <PageHead
         eyebrow="CONTENT COLLECTIONS"
         title="Collections"
         description="Live bio collections derived from bios.source_slug with active and archived counts."
@@ -242,7 +242,7 @@ export function LiveCollections() {
             </button>
           )
         }
-      />
+      />}
 
       {list.state === 'ready' && (
         <div className="ad-stats-grid ad-stats-grid--3">

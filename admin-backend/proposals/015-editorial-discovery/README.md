@@ -1,0 +1,9 @@
+# Editorial discovery commands — approval required, not applied
+
+The existing author query returns only an author's own drafts; the review query is limited to assigned, in-review drafts. A third identity can publish through the SQL bridge but cannot discover eligible work in the console. Also, draft-only users cannot read the general staff directory.
+
+- [Exact additive SQL](apply.sql): two bounded, fixed-search-path `SECURITY DEFINER` reads. The reviewer directory checks `content.draft` and returns only UUIDs of other enabled members holding `content.review`; no emails or session records. The publication queue checks `content.publish` and returns approved bio draft data only if an independent publication would be allowed. Neither creates/updates/deletes any row. Mutations retain their current authorization and audit requirements.
+- [Exact narrow grant](grant.sql): execute these commands only as the existing `bc_admin_executor`; no schema/table/public Auth grants. Definers must be the reviewed private-schema owner. Apply through the existing managed migration workflow only after reviewing current definitions and confirming the existing grants/ownership. Do not replay migrations 001–014.
+- `ADMIN_EDITORIAL_DIRECTORY_ENABLED` is unset/off by default. Enable only after SQL review, after confirming expected ACLs, in an authorized deployment. This does not override the Preview write guard or turn on hosted Admin.
+- [Rollback SQL](rollback.sql): unset the feature flag and redeploy first; dropping these two new functions removes their EXECUTE grants without touching drafts, roles, or public rows.
+- This queue does not create additional identities, override the three-person rule, or verify MFA. Submission still uses the existing function's enabled-member check. A separate reviewed change would be needed to enforce the discovered role eligibility inside that write operation.

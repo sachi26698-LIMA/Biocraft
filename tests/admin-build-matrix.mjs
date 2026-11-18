@@ -67,7 +67,8 @@ for (const testCase of cases) {
       'admin', 'admin/analytics', 'admin/audit-logs', 'admin/backup', 'admin/bios', 'admin/categories',
       'admin/collections', 'admin/content', 'admin/generators', 'admin/login', 'admin/platforms',
       'admin/recovery', 'admin/security', 'admin/settings', 'admin/users',
-    ]);
+      ...JSON.parse(readFileSync('shared/admin-extra-modules.json', 'utf8')).map(({key}) => `admin/${key}`),
+    ].sort());
     for (const shell of shells) {
       const shellHtml = readFileSync(`${DIST}/${shell}/index.html`, 'utf8');
       for (const chunk of chunks) {

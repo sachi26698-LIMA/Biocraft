@@ -25,6 +25,7 @@ const replies = {
       permissions: ['dashboard.read', 'staff.manage', 'content.read', 'content.draft', 'content.review', 'content.publish', 'settings.manage', 'audit.read', 'analytics.read'],
     },
     expires_at: new Date(Date.now() + 3600e3).toISOString(),
+    editorial_directory: true,
   },
   '/analytics': {
     metrics: [
@@ -110,6 +111,8 @@ const replies = {
     }],
   },
   '/system/status': { database:'ready', auth:'verified', guest_content:'ready', runtime:'preview', shared_writes:false, password_reset:false },
+  '/bio-publish-queue': {items:[{draft_id:DRAFT,resource_key:'approved-fixture',state:'approved',row_version:3,payload,created_at:'2026-11-01T09:00:00.000Z'}]},
+  '/bio-reviewers': {items:[]},
   '/settings': {
     items: [{ key: 'content.review_required', value: { enabled: true }, version: 2, updated_at: '2026-11-01T09:00:00.000Z' }],
   },

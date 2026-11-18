@@ -22,7 +22,7 @@ try {
  if(!data.startsWith('/tmp/biocraft-pg-')||meta.rows[0].db!=='postgres'||fs.readFileSync(data+'/BIOCRAFT_TEST_ONLY','utf8')!=='Local disposable Biocraft test cluster only\n')throw Error('Refusing non-disposable cluster');
  const blank=await admin.query("select exists(select 1 from pg_namespace where nspname in ('bc_admin_v1','auth')) as used, exists(select 1 from pg_roles where rolname in ('anon','authenticated','bc_fixture_executor')) as roles");
  if(blank.rows[0].used||blank.rows[0].roles)throw Error('Cluster is not blank; provision a new disposable cluster');
- await admin.query(`create role anon;create role authenticated;create role bc_fixture_executor login;
+ await admin.query(`create role anon;create role authenticated;create role service_role;create role bc_fixture_executor login;
  create schema auth;create table auth.users(id uuid primary key);create table auth.sessions(id uuid primary key,user_id uuid references auth.users(id));
  create function auth.jwt() returns jsonb language sql stable as $$select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb$$;
  create function auth.uid() returns uuid language sql stable as $$select nullif(auth.jwt()->>'sub','')::uuid$$;`);
@@ -306,6 +306,29 @@ try {
  // Submit, then review. The reviewer must be independent of the author.
  await exec({...asAuthor,operation:'submit',args:[pubDraft,1,reviewer,randomUUID()]});
  await exec({...asReviewer,operation:'reviewApprove',args:[pubDraft,2,randomUUID()]});
+ const editorial = 'admin-backend/proposals/015-editorial-discovery/';
+ const originalMeasurements = await admin.query('select (select count(*) from bc_admin_v1.admin_drafts) drafts,(select count(*) from public.bios) bios');
+ await admin.query(fs.readFileSync(editorial+'apply.sql','utf8'));
+ for (const role of ['anon','authenticated','service_role','bc_fixture_executor']) {
+  for (const fn of ['list_eligible_bio_reviewers','list_approved_bio_queue']) {
+   const allowed = await admin.query("select has_function_privilege($1,'bc_admin_v1.'||$2||'(integer,uuid)','EXECUTE') as allowed",[role,fn]);
+   assert.equal(allowed.rows[0].allowed,false);
+  }
+ }
+ await admin.query(fs.readFileSync(editorial+'grant.sql','utf8').replace('to bc_admin_executor','to bc_fixture_executor'));
+ assert((await exec({...asAuthor,operation:'reviewerDirectory',args:[100,null]})).some(row=>row.user_id===reviewer));
+ assert(!(await exec({...asAuthor,operation:'reviewerDirectory',args:[100,null]})).some(row=>row.user_id===author));
+ assert((await exec({...asPublisher,operation:'publisherQueue',args:[100,null]})).some(row=>row.draft_id===pubDraft));
+ await assert.rejects(exec({...asAuthor,operation:'publisherQueue',args:[100,null]}), e=>e.code==='42501');
+ await admin.query("insert into bc_admin_v1.admin_user_roles(user_id,role_id) values($1,'admin')",[author]);
+ assert(!(await exec({...asAuthor,operation:'publisherQueue',args:[100,null]})).some(row=>row.draft_id===pubDraft));
+ await admin.query("delete from bc_admin_v1.admin_user_roles where user_id=$1 and role_id='admin'",[author]);
+ assert(!(await exec({...asReviewer,operation:'publisherQueue',args:[100,null]})).some(row=>row.draft_id===pubDraft));
+ await assert.rejects(exec({...asPublisher,operation:'publisherQueue',args:[101,null]}), e=>e.code==='22023');
+ await admin.query(fs.readFileSync(editorial+'rollback.sql','utf8'));
+ assert.deepEqual((await admin.query('select (select count(*) from bc_admin_v1.admin_drafts) drafts,(select count(*) from public.bios) bios')).rows,originalMeasurements.rows);
+ await assert.rejects(exec({...asPublisher,operation:'publisherQueue',args:[100,null]}), e=>e.code==='42883');
+ console.log('PASS proposed editorial discovery commands: fixture-only grant, browser-role denial, distinct publisher, bounds and data-preserving rollback');
  // Three refusals: a stale version, the author publishing their own work, and a
  // publisher who was also the approver. Each fails on a distinct rule.
  await assert.rejects(exec({...asPublisher,operation:'publish',args:[pubDraft,1,null,randomUUID()]}),e=>e.code==='40001');

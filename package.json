@@ -68,7 +68,8 @@
     "test:browser": "playwright test",
     "test:public-content-status": "node tests/public-content-status.mjs",
     "test:published-catalog-browser": "node tests/published-catalog-browser.mjs",
-    "test:admin-password-reset-browser": "node tests/admin-password-reset-browser.cjs"
+    "test:admin-password-reset-browser": "node tests/admin-password-reset-browser.cjs",
+    "test:admin-extra-modules": "node tests/admin-extra-modules-browser.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

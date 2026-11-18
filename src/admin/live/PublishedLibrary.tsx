@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { EmptyState, Panel, SegmentedControl, StateNotice } from './common';
 import { usePaged } from './useLive';
 
-type Kind = 'captions' | 'hashtags' | 'fonts';
+export type Kind = 'captions' | 'hashtags' | 'fonts';
 type Row = { id: string; title?: string | null; text?: string | null; language?: string; tone?: string; font_type?: string; popularity?: string };
 const takeId = (row: Row | null) => row?.id ?? null;
 const options = [
@@ -19,7 +19,7 @@ export default function PublishedLibrary() {
   </Panel>;
 }
 
-function Entries({ kind }: { kind: Kind }) {
+export function Entries({ kind }: { kind: Kind }) {
   const list = usePaged<Row>(`/${kind}?limit=25`, takeId);
   const entries = list.data ?? [];
   return <>

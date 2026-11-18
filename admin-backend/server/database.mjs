@@ -4,10 +4,8 @@
 // DB EXECUTE/schema grants and owner design need separate security review.
 import pg from 'pg';
 const {Pool}=pg;
-// Version numbers and counts are non-negative and far below 2^53. Returning
-// them as JavaScript numbers keeps API validation explicit instead of relying
-// on string comparison of PostgreSQL int8 values.
-pg.types.setTypeParser(20,value=>Number(value));
+// Preserve exact bigint keys outside the safe JS integer range.
+pg.types.setTypeParser(20,value=>Number.isSafeInteger(Number(value))?Number(value):value);
 /** Only direct TLS connections to the specified existing project are supported.
  * Credentials must be injected server-side; never commit or log them. The pool
  * is lazy and does not connect until a request is executed. A dedicated limited
@@ -81,6 +79,8 @@ const OPERATIONS = Object.freeze({
   sessionRevokeAll: {permission:'dashboard.read',sql:'select bc_admin_v1.revoke_my_sessions($1::uuid) as revoked'},
   sessionCheck: {permission:'dashboard.read',sql:'select true as active'},
   systemStatusAccess: {permission:'settings.read',sql:'select true as active'},
+  reviewerDirectory: {permission:'content.draft',sql:'select * from bc_admin_v1.list_eligible_bio_reviewers($1::integer,$2::uuid)'},
+  publisherQueue: {permission:'content.publish',sql:'select * from bc_admin_v1.list_approved_bio_queue($1::integer,$2::uuid)'},
   publicCatalogAccess: {permission:'content.read',sql:'select true as active'},
   // Who am I, from membership rather than from a claim. Backs GET /session.
   sessionIdentity: {permission:'dashboard.read',sql:'select * from bc_admin_v1.session_identity()'},

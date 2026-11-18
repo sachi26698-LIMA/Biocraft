@@ -124,8 +124,9 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
   guest_content:await checkPublicContent(env)?'ready':'unavailable',
   runtime: ['preview','production','development'].includes(env.VERCEL_ENV)?env.VERCEL_ENV:'local',
   shared_writes:sharedWrites, password_reset:passwordReset,
+  revision: /^[0-9a-f]{40}$/.test(env.VERCEL_GIT_COMMIT_SHA??'')?env.VERCEL_GIT_COMMIT_SHA.slice(0,12):null,
  });
- const api=createAdminHandler({sharedWrites,readSystemStatus,enabled:true,provider,execute,rateLimit,platformRules:PLATFORM_RULES,recovery:recoveryService,readPublicCatalog,emailAllowed});
+ const api=createAdminHandler({sharedWrites,editorialDirectory:env.ADMIN_EDITORIAL_DIRECTORY_ENABLED==='true',readSystemStatus,enabled:true,provider,execute,rateLimit,platformRules:PLATFORM_RULES,recovery:recoveryService,readPublicCatalog,emailAllowed});
  // Enrolment gate: live Admin membership + provider session, checked in the DB
  // before any TOTP factor is created. It is the only pre-AAL2 database call.
  const enrolment=async identity=>{

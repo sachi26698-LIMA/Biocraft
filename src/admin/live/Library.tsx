@@ -3,14 +3,15 @@
  * Includes rich filtering, bulk CSV export, detail modal, responsive mobile cards,
  * and direct launch of the Rich Bio Editor modal to open new private drafts.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAdminContext } from '../context';
 import { Icon } from '../icons';
 import { Modal } from '../ui/Modal';
 import { useToast } from '../ui/Toast';
 import { Badge, BulkActionBar, EmptyState, PageHead, Panel, SearchField, SelectField, StatCard, StateNotice, Toolbar } from './common';
+import PublicationHistory from './PublicationHistory';
 import { LANGUAGE_LABEL, type BioRow } from './types';
-import { downloadCsv, formatDate, request } from './useLive';
+import { downloadCsv, formatDate, usePaged } from './useLive';
 
 const PAGE = 50;
 
@@ -18,48 +19,25 @@ export default function LiveLibrary() {
   const { openBioModal, refreshTick } = useAdminContext();
   const toast = useToast();
 
-  const [rows, setRows] = useState<BioRow[]>([]);
-  const [state, setState] = useState<'loading' | 'ready' | 'denied' | 'error'>('loading');
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [committedSearch, setCommittedSearch] = useState('');
   const [language, setLanguage] = useState('');
   const [active, setActive] = useState('');
-  const [busy, setBusy] = useState(false);
   const [detail, setDetail] = useState<string | null>(null);
+  const [historyFor, setHistoryFor] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-
-  const load = useCallback(
-    async (append = false) => {
-      setBusy(true);
-      if (!append) setState('loading');
-      try {
-        const params = new URLSearchParams({ limit: String(PAGE) });
-        if (search.trim()) params.set('search', search.trim());
-        if (language) params.set('language', language);
-        if (active) params.set('active', active);
-        if (append && rows.length > 0) params.set('after', rows[rows.length - 1].id);
-        const page = await request<{ items: BioRow[] }>(`/bios?${params.toString()}`);
-        setRows(previous => (append ? [...previous, ...(page.items ?? [])] : page.items ?? []));
-        setState('ready');
-        setError(null);
-      } catch (cause) {
-        const code = (cause as { code?: string } | null)?.code;
-        setState(code === 'FORBIDDEN' ? 'denied' : 'error');
-        setError(code === 'FORBIDDEN' ? 'Your account does not have permission to read the bio library.' : 'The bio library could not be read.');
-      } finally {
-        setBusy(false);
-      }
-    },
-    [search, language, active, rows],
-  );
-
+  const params = new URLSearchParams({limit: String(PAGE)});
+  if (committedSearch) params.set('search', committedSearch);
+  if (language) params.set('language', language);
+  if (active) params.set('active', active);
+  const { state, data, error, reload, loadMore, hasMore, loadingMore } = usePaged<BioRow>(`/bios?${params}`, row => row?.id ?? null);
+  const rows = data ?? [];
   useEffect(() => {
-    const timer = setTimeout(() => {
-      void load(false);
-    }, 220);
+    const timer = setTimeout(() => setCommittedSearch(search.trim().slice(0, 120)), 220);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, language, active, refreshTick]);
+  }, [search]);
+  useEffect(() => { if (refreshTick) reload(); }, [refreshTick, reload]);
+  useEffect(() => { setSelectedIds([]); setDetail(null); setHistoryFor(null); }, [committedSearch, language, active]);
 
   const counts = useMemo(
     () => ({
@@ -148,7 +126,7 @@ export default function LiveLibrary() {
         </BulkActionBar>
 
         {state !== 'ready' ? (
-          <StateNotice state={state === 'loading' ? 'loading' : state} error={error} reload={() => void load(false)} />
+          <StateNotice state={state === 'loading' ? 'loading' : state} error={error} reload={reload} />
         ) : rows.length === 0 ? (
           <EmptyState
             icon="bios"
@@ -219,19 +197,22 @@ export default function LiveLibrary() {
               </table>
             </div>
 
+            {error && <p role="status">{error}</p>}
             <div className="ad-pagination">
               <span className="ad-pagination-meta">
-                {rows.length} loaded{busy ? ' — loading…' : ''}
+                {rows.length} loaded{loadingMore ? ' — loading…' : ''}
               </span>
               <div className="ad-pagination-controls">
-                <button type="button" onClick={() => void load(true)} disabled={busy || rows.length < PAGE}>
-                  Load more
+                <button type="button" onClick={loadMore} disabled={loadingMore || !hasMore}>
+                  {error ? 'Retry page' : 'Load more'}
                 </button>
               </div>
             </div>
           </>
         )}
       </Panel>
+
+      {historyFor && <PublicationHistory key={historyFor} bioId={historyFor} close={() => setHistoryFor(null)} />}
 
       <Modal
         open={Boolean(selectedRow)}
@@ -244,6 +225,7 @@ export default function LiveLibrary() {
               <button type="button" className="ad-btn ad-btn--secondary" onClick={() => setDetail(null)}>
                 Close
               </button>
+              <button type="button" className="ad-btn ad-btn--secondary" onClick={() => { setDetail(null); setHistoryFor(selectedRow.id); }}>View publication history</button>
               <button
                 type="button"
                 className="ad-btn ad-btn--primary"

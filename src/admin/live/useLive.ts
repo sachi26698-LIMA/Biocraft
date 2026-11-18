@@ -64,7 +64,7 @@ export function describeError(error: unknown): string {
  * last row I hold" — never an offset that could skip a row if something changed
  * in between. `loadMore` appends; `reload` starts over.
  */
-export function usePaged<T>(path: string | null, take: (last: T | null) => string | null): LiveResult<T[]> & { loadMore: () => void; hasMore: boolean; loadingMore: boolean } {
+export function usePaged<T>(path: string | null, take: (last: T | null) => string | null, cursorParam: 'after' | 'before' = 'after'): LiveResult<T[]> & { loadMore: () => void; hasMore: boolean; loadingMore: boolean } {
   const [state, setState] = useState<LiveState>('idle');
   const [rows, setRows] = useState<T[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -110,7 +110,7 @@ export function usePaged<T>(path: string | null, take: (last: T | null) => strin
     setAppending(true);
     setError(null);
     const separator = path.includes('?') ? '&' : '?';
-    request<{ items: T[] }>(`${path}${separator}after=${encodeURIComponent(next)}`, { signal: controller.signal })
+    request<{ items: T[] }>(`${path}${separator}${cursorParam}=${encodeURIComponent(next)}`, { signal: controller.signal })
       .then(body => {
         if (controller.signal.aborted) return;
         if (!Array.isArray(body?.items) || (body.items.length > 0 && take(body.items[body.items.length - 1]) === next)) throw new Error('Invalid next page');
@@ -123,7 +123,7 @@ export function usePaged<T>(path: string | null, take: (last: T | null) => strin
         pendingPage.current = false;
         setAppending(false);
       });
-  }, [path, rows, more, state, take, limit]);
+  }, [path, rows, more, state, take, limit, cursorParam]);
 
   const reload = useCallback(() => { scope.current?.abort(); setNonce(value => value + 1); }, []);
   return { state, data: state === 'ready' ? rows : null, error, reload, loadMore, hasMore: more, loadingMore: appending };

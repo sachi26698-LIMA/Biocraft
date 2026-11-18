@@ -4,7 +4,7 @@
  * Strict Light Theme Only: Zero dark mode toggle, zero dark theme CSS,
  * pure white / soft lavender-white surfaces, frosted glass topbar & sidebar,
  * Cmd+K Spotlight search, notification bell & profile menus, collapsible sidebar
- * organized into Overview / Content / People / Insights / System across all 13
+ * organized into Overview / Content / People / Insights / System across the workspace
  * modules, mobile drawer with focus trap, and mobile bottom navigation bar.
  *
  * Dual-mode architecture preserved cleanly:
@@ -12,6 +12,7 @@
  * - When /api/admin/v1/health is unreachable → honest read-only Preview mode.
  */
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import extraModules from '../../shared/admin-extra-modules.json';
 import { handleAnchorClick, navigate as routerNavigate, usePath } from '../lib/router';
 import { currentSession, logoutSession, probeBackend, type AdminSession, type BackendStatus } from './backend';
 import { AdminContext, type BioDraftPreset } from './context';
@@ -26,6 +27,7 @@ import { ToastProvider, useToast } from './ui/Toast';
 import './admin.css';
 
 // Lazy-loaded Live modules for fast route switching & minimal bundle on first paint
+const ExtraModule = lazy(() => import('./live/ExtraModules'));
 const PasswordReset = lazy(() => import('./PasswordReset'));
 const LiveOverview = lazy(() => import('./live/Overview'));
 const LiveBiosLibrary = lazy(() => import('./live/Library'));
@@ -51,7 +53,7 @@ const PreviewPlatforms = lazy(() => import('./preview/PreviewCatalog').then(m =>
 const PreviewGenerators = lazy(() => import('./preview/PreviewCatalog').then(m => ({ default: m.PreviewGenerators })));
 const PreviewRestricted = lazy(() => import('./preview/PreviewRestricted'));
 
-type NavKey =
+type LegacyNavKey =
   | 'overview'
   | 'bios'
   | 'categories'
@@ -69,7 +71,7 @@ type NavKey =
 type NavSection = 'OVERVIEW' | 'CONTENT' | 'PEOPLE' | 'INSIGHTS' | 'SYSTEM';
 
 interface NavItem {
-  key: NavKey;
+  key: string;
   label: string;
   shortLabel: string;
   path: string;
@@ -78,7 +80,7 @@ interface NavItem {
   keywords: string;
 }
 
-const NAV_ITEMS: readonly NavItem[] = [
+const LEGACY_NAV: readonly (NavItem & {key: LegacyNavKey})[] = [
   { key: 'overview', label: 'Overview', shortLabel: 'Home', path: '/admin', icon: 'overview', section: 'OVERVIEW', keywords: 'dashboard home kpi summary status' },
   { key: 'bios', label: 'Bios Library', shortLabel: 'Bios', path: '/admin/bios', icon: 'bios', section: 'CONTENT', keywords: 'bio text library copy catalog search' },
   { key: 'categories', label: 'Categories', shortLabel: 'Categories', path: '/admin/categories', icon: 'categories', section: 'CONTENT', keywords: 'niche taxonomy labels generator' },
@@ -93,6 +95,11 @@ const NAV_ITEMS: readonly NavItem[] = [
   { key: 'settings', label: 'Settings', shortLabel: 'Settings', path: '/admin/settings', icon: 'settings', section: 'SYSTEM', keywords: 'configuration flags maintenance cleanup' },
   { key: 'backup', label: 'Backup & Recovery', shortLabel: 'Backup', path: '/admin/backup', icon: 'backup', section: 'SYSTEM', keywords: 'snapshot restore health recovery database' },
 ];
+
+const NAV_ITEMS: readonly NavItem[] = [...LEGACY_NAV, ...extraModules.map(module => ({
+  key: module.key, label: module.label, shortLabel: module.label, path: `/admin/${module.key}`,
+  icon: module.icon as IconName, section: module.section as NavSection, keywords: module.description,
+}))];
 
 const NAV_GROUPS: readonly { section: NavSection; label: string }[] = [
   { section: 'OVERVIEW', label: 'OVERVIEW' },
@@ -128,7 +135,7 @@ function AdminShell() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
-  const [notifLoaded, setNotifLoaded] = useState(false);
+  const [notifState, setNotifState] = useState<'idle'|'loading'|'ready'|'error'>('idle');
 
   const [backend, setBackend] = useState<BackendStatus>('unavailable');
   const [probed, setProbed] = useState(false);
@@ -182,16 +189,58 @@ function AdminShell() {
 
   const live = backend === 'ready' || backend === 'unauthenticated';
 
-  // Fetch notifications when bell opens in live ready state
+  // Revalidate without extending the server-side session window. A known
+  // expiry or rejected session clears private UI and cached notification data.
   useEffect(() => {
-    if (!notifOpen || backend !== 'ready' || notifLoaded) return;
-    request<{ items: NotificationRow[] }>('/notifications?limit=12')
+    if (!session) return;
+    const controller = new AbortController();
+    let checking = false;
+    function invalidate() {
+      controller.abort();
+      setSession(null);
+      setBackend('unauthenticated');
+      setBioModalOpen(false);
+      setNotifOpen(false);
+    }
+    const expires = Date.parse(session.expiresAt);
+    const timer = Number.isFinite(expires) ? setTimeout(invalidate, Math.max(0, expires - Date.now())) : undefined;
+    async function revalidate() {
+      if (document.hidden || checking || controller.signal.aborted) return;
+      checking = true;
+      try {
+        const fresh = await currentSession(controller.signal);
+        if (controller.signal.aborted) return;
+        if (!fresh) invalidate();
+        else setSession(previous => previous && JSON.stringify(previous) !== JSON.stringify(fresh) ? fresh : previous);
+      } catch { /* offline or in flight; server expiry remains authoritative */ }
+      finally { checking = false; }
+    }
+    document.addEventListener('visibilitychange', revalidate);
+    window.addEventListener('biocraft:admin-session-rejected', invalidate);
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', revalidate);
+      window.removeEventListener('biocraft:admin-session-rejected', invalidate);
+    };
+  }, [session]);
+
+  // An unopened, failed, or stale inbox is not an empty inbox.
+  useEffect(() => {
+    if (!notifOpen || !session?.userId) return;
+    const controller = new AbortController();
+    setNotifState('loading');
+    request<{ items: NotificationRow[] }>('/notifications?limit=12', {signal: controller.signal})
       .then(res => {
-        setNotifications(res.items ?? []);
-        setNotifLoaded(true);
+        if (controller.signal.aborted) return;
+        if (!Array.isArray(res?.items)) throw new Error('Invalid inbox');
+        setNotifications(res.items);
+        setNotifState('ready');
       })
-      .catch(() => setNotifLoaded(true));
-  }, [notifOpen, backend, notifLoaded]);
+      .catch(() => { if (!controller.signal.aborted) setNotifState('error'); });
+    return () => controller.abort();
+  }, [notifOpen, session?.userId]);
+  useEffect(() => { setNotifications([]); setNotifState('idle'); }, [session?.userId]);
 
   // Document title & strict light color-scheme
   useEffect(() => {
@@ -324,12 +373,15 @@ function AdminShell() {
     }
   };
 
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const unreadCount = session && (notifState === 'ready' || !notifOpen) ? notifications.filter(n => n.unread).length : 0;
 
-  const activeNav = NAV_ITEMS.find(n => n.path === path);
+  const activeNav = LEGACY_NAV.find(n => n.path === path);
+  const extraModule = extraModules.find(module => `/admin/${module.key}` === path);
 
   let content: ReactNode;
-  if (path === '/admin/recovery') {
+  if (extraModule) {
+    content = <ExtraModule key={extraModule.key} module={extraModule} authorized={backend === 'ready' && session !== null} />;
+  } else if (path === '/admin/recovery') {
     content = <PasswordReset />;
   } else if (!activeNav && path === '/admin/login') {
     content = (
@@ -351,6 +403,8 @@ function AdminShell() {
         </a>
       </>
     );
+  } else if (live && !session) {
+    content = <><PageHead eyebrow="ADMIN ACCESS" title={activeNav.label} description="An active Admin session is required." /><a href="/admin/login" onClick={handleAnchorClick}>Go to Admin sign-in</a></>;
   } else if (live) {
     switch (activeNav.key) {
       case 'overview':
@@ -580,7 +634,7 @@ function AdminShell() {
               <nav className="ad-breadcrumb" aria-label="Breadcrumb">
                 <span className="ad-crumb-root">Workspace</span>
                 <span className="ad-crumb-sep" aria-hidden="true">/</span>
-                <strong>{activeNav?.label ?? (path === '/admin/login' ? 'Sign in' : 'Not found')}</strong>
+                <strong>{activeNav?.label ?? extraModule?.label ?? (path === '/admin/login' ? 'Sign in' : path === '/admin/recovery' ? 'Password reset' : 'Not found')}</strong>
               </nav>
             </div>
 
@@ -621,7 +675,7 @@ function AdminShell() {
                   <div className="ad-popover" role="dialog" aria-label="Notifications panel">
                     <div className="ad-popover-head">
                       <strong>Notifications</strong>
-                      {unreadCount > 0 && (
+                      {unreadCount > 0 && session?.sharedWrites !== false && (
                         <button type="button" className="ad-text-link" onClick={() => void markNotificationsRead()}>
                           Mark all read
                         </button>
@@ -633,6 +687,10 @@ function AdminShell() {
                           ? 'Sign in with your authenticator to read inbox notifications.'
                           : 'Notifications require a live Admin backend connection.'}
                       </p>
+                    ) : notifState === 'error' ? (
+                      <p className="ad-popover-empty">Inbox could not be loaded. Reopen the panel to retry.</p>
+                    ) : notifState !== 'ready' ? (
+                      <p className="ad-popover-empty" role="status">Loading inbox…</p>
                     ) : notifications.length === 0 ? (
                       <p className="ad-popover-empty">You’re all caught up. No new alerts.</p>
                     ) : (
@@ -648,6 +706,7 @@ function AdminShell() {
                         ))}
                       </ul>
                     )}
+                    <a className="ad-text-link" href="/admin/notifications" onClick={handleAnchorClick}>Open notifications</a>
                   </div>
                 )}
               </div>

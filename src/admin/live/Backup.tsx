@@ -64,9 +64,9 @@ export default function LiveBackup() {
       />
 
       <div className="ad-stats-grid ad-stats-grid--4">
-        <StatCard icon="backup" label="Recorded Backups" value={formatNumber(rows.length)} caption="Provider references" tint="sky" />
-        <StatCard icon="checkCircle" label="Restore Verified" value={formatNumber(verifiedCount)} caption="Tested snapshots" tint="mint" />
-        <StatCard icon="database" label="Active Bios" value={formatNumber(values.get('bios.active') ?? 0)} caption="Public catalog live" tint="lavender" />
+        <StatCard icon="backup" label="Recorded Backups" value={backups.state === 'ready' ? formatNumber(rows.length) : '—'} caption="Provider references" tint="sky" />
+        <StatCard icon="checkCircle" label="Restore Verified" value={backups.state === 'ready' ? formatNumber(verifiedCount) : '—'} caption="Tested snapshots" tint="mint" />
+        <StatCard icon="database" label="Active Bios" value={formatNumber(values.get('bios.active'))} caption="Public catalog live" tint="lavender" />
         <StatCard icon="shieldCheck" label="Rollback Guard" value="Protected" caption="Evidence-preserving SQL" tint="amber" />
       </div>
 
@@ -122,7 +122,7 @@ export default function LiveBackup() {
             <li>
               <span className="ad-health-ico ad-tint--lavender"><Icon name="bios" size={15} /></span>
               <span>Public bios integrity</span>
-              <Badge tone="green">{formatNumber(values.get('bios.active') ?? 0)} active</Badge>
+              <Badge tone="green">{formatNumber(values.get('bios.active'))} active</Badge>
             </li>
             <li>
               <span className="ad-health-ico ad-tint--sky"><Icon name="categories" size={15} /></span>
