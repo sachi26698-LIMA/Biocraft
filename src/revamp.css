@@ -866,36 +866,6 @@ p, li { text-wrap: pretty; }
 .rmb-home-chip-count { font-size: 0.7rem; font-weight: 800; color: var(--accent); }
 .rmb-home-chip--all { border-style: dashed; color: var(--accent); font-weight: 750; }
 
-.rmb-home-secondary { margin-top: 1rem; display: grid; gap: 0.5rem; }
-.rmb-home-rail { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.rmb-home-rail-link {
-  display: inline-flex; align-items: center; gap: 0.35rem;
-  padding: 0.35rem 0.55rem;
-  border-radius: var(--radius-pill);
-  border: 1px solid var(--line);
-  background: #fff;
-  color: var(--text);
-  font-size: 0.79rem; font-weight: 650;
-  text-decoration: none;
-  min-height: 34px;
-}
-.rmb-home-rail-link:hover { border-color: var(--accent-line); }
-.rmb-home-rail-link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.rmb-home-rail-count { font-size: 0.69rem; font-weight: 800; color: var(--accent); }
-.rmb-home-design { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.5rem; border: 1px solid var(--line); border-radius: var(--radius-pill); background: #fff; font-size: 0.79rem; font-weight: 650; color: var(--text); text-decoration: none; min-height: 34px; }
-.rmb-home-design:hover { border-color: var(--accent-line); }
-.rmb-home-design:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.rmb-home-design-swatch { width: 14px; height: 14px; border-radius: 5px; background: linear-gradient(150deg, #C9A6F2, #8B4BC0); }
-.rmb-home-design--royal .rmb-home-design-swatch { background: linear-gradient(150deg, #2B2150, #C9A227); }
-.rmb-home-design--creative .rmb-home-design-swatch { background: linear-gradient(150deg, #FF7AB6, #8B4BC0); }
-.rmb-home-design--aesthetic .rmb-home-design-swatch { background: linear-gradient(150deg, #FBE3EF, #C9B6F2); }
-.rmb-home-design--vip .rmb-home-design-swatch { background: linear-gradient(150deg, #1B1B1B, #E4C97E); }
-.rmb-home-design--devotional .rmb-home-design-swatch { background: linear-gradient(150deg, #FF9933, #FFD9A0); }
-.rmb-home-design--dark .rmb-home-design-swatch { background: linear-gradient(150deg, #14101F, #4E445E); }
-.rmb-home-facets { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.9rem; }
-@media (min-width: 560px) { .rmb-home-facets { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.rmb-home-facet-label { margin: 0 0 0.4rem; font-size: 0.74rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
-
 /* ---------- Homepage favourites grid (tool cards) ---------- */
 .home-tools-grid {
   list-style: none; margin: 0; padding: 0;
@@ -1062,8 +1032,6 @@ p, li { text-wrap: pretty; }
 .search-foot-link:hover { background: var(--lav); }
 .search-foot-link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 
-/* "All categories" chip on the homepage niche row */
-.chip--all { border-style: dashed; color: var(--accent); font-weight: 750; }
 
 /* Library cards: keep action buttons from ever clipping at 320px */
 @media (max-width: 380px) {
@@ -1072,9 +1040,6 @@ p, li { text-wrap: pretty; }
   .lib-count { font-size: 0.78rem; }
   .rmb-stats dd { font-size: 1.2rem; }
 }
-.section-sub-link { color: var(--accent); font-weight: 700; text-decoration: none; border-bottom: 1px solid var(--accent-line); }
-.section-sub-link:hover { color: var(--accent-hover); }
-.section-sub-link:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 4px; }
 
 /* Library card secondary action — a real link with a 44px tap target */
 .lib-card-link {
@@ -1091,3 +1056,85 @@ p, li { text-wrap: pretty; }
 }
 .lib-card-link:hover { background: var(--accent-soft); }
 .lib-card-link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* ================================================================
+   15. Homepage design pass
+   A real, visible hero; calmer rhythm; two-column FAQ on desktop.
+   ================================================================ */
+
+.home-hero {
+  position: relative;
+  padding: clamp(1.6rem, 5vw, 2.75rem) 0 clamp(0.6rem, 2vw, 1.1rem);
+}
+.home-hero-inner {
+  position: relative;
+  z-index: 4; /* above the decorative starfield */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+}
+.home-hero-eyebrow {
+  margin: 0;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.home-hero-title {
+  margin: 0;
+  max-width: 26ch;
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 7.2vw, 3rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.home-hero-sub {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--text-2);
+  font-size: clamp(0.92rem, 2.4vw, 1.05rem);
+  line-height: 1.6;
+}
+.home-hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.4rem;
+}
+.home-hero-actions .btn { justify-content: center; }
+@media (min-width: 560px) {
+  .home-hero-actions { flex-direction: row; justify-content: center; width: auto; }
+  .home-hero-actions .btn { flex: 0 0 auto; }
+}
+.home-hero-facts {
+  margin: 0.3rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--muted);
+}
+.home-hero-facts > span[aria-hidden] { color: var(--line-strong); }
+
+/* Calmer vertical rhythm on the homepage than the generic .section padding. */
+.home-shell > .section { padding-block: clamp(2.2rem, 5vw, 3.4rem); }
+.home-shell > .rmb-home { padding-top: clamp(1.6rem, 4vw, 2.6rem); }
+
+/* FAQ: seven answers read better as two columns on a laptop. */
+.home-shell .faq-list { max-width: 1040px; }
+@media (min-width: 980px) {
+  .home-shell .faq-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem 1rem;
+    align-items: start;
+  }
+  .home-shell .faq-item { height: 100%; }
+}

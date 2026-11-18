@@ -1,28 +1,22 @@
-import type { CSSProperties } from 'react';
 import { handleAnchorClick } from '../lib/router';
 import { ArrowRightIcon, ChevronRightIcon } from './icons';
 import CollectionIcon from './CollectionIcon';
-import Accordion from './ui/Accordion';
 import {
-  BIO_LANG_META,
   CATEGORY_SUMMARIES,
-  COLLECTION_SUMMARIES,
   FEATURED_COLLECTIONS,
-  FEATURED_DESIGNS,
-  LANGUAGE_FACETS,
-  PLATFORM_FACETS,
   READY_MADE_STATS,
-  RECENT_COLLECTIONS,
 } from '../lib/readyMadeBios';
 
 /**
  * Homepage Ready-Made Bios block.
  *
- * Premium discovery, not a card dump: one headline with real stats, featured
- * collections, popular categories, then the secondary rails (recently added,
- * designs, languages, platforms) tucked into collapsible sections so the
- * homepage stays calm. Every link is a direct route — collections open their
- * own page, categories/designs/languages open the filtered library.
+ * Two ideas only: six collections worth opening first, and the real category
+ * list, then out to the hub or the library. The deeper rails (recently added,
+ * designs, languages, platforms) live on `/bio-collections` — repeating them
+ * here made the homepage long without adding a choice.
+ *
+ * Every link is a direct route: collections open their own page, categories open
+ * the filtered library.
  */
 export default function ReadyMadeBiosSection() {
   return (
@@ -77,82 +71,11 @@ export default function ReadyMadeBiosSection() {
               <span className="rmb-home-chip-count">{category.bios}</span>
             </a>
           ))}
-          <a className="rmb-home-chip rmb-home-chip--all" href="/bio-library" onClick={handleAnchorClick}>
-            All {READY_MADE_STATS.categories} categories
+          <a className="rmb-home-chip rmb-home-chip--all" href="/bio-collections" onClick={handleAnchorClick}>
+            All {READY_MADE_STATS.collections} collections <ChevronRightIcon size={14} aria-hidden="true" />
           </a>
         </div>
 
-        <div className="rmb-home-secondary">
-          <Accordion level={3} title="Recently added collections" description="The newest additions to the library">
-            <ul className="rmb-home-rail">
-              {RECENT_COLLECTIONS.map((collection) => (
-                <li key={collection.slug}>
-                  <a className="rmb-home-rail-link" href={collection.href} onClick={handleAnchorClick}>
-                    <span aria-hidden="true"><CollectionIcon name={collection.icon} size={16} /></span>
-                    {collection.name}
-                    <span className="rmb-home-rail-count">{collection.count} bios</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </Accordion>
-
-          <Accordion level={3} title="Popular designs" description="Royal, creative, aesthetic, VIP, devotional, dark">
-            <ul className="rmb-home-rail rmb-home-rail--designs">
-              {FEATURED_DESIGNS.map((design) => (
-                <li key={design.key}>
-                  <a
-                    className={`rmb-home-design rmb-home-design--${design.key}`}
-                    href={design.libraryHref}
-                    onClick={handleAnchorClick}
-                    style={{ '--rmb-design': design.key } as CSSProperties}
-                  >
-                    <span className="rmb-home-design-swatch" aria-hidden="true" />
-                    <span>{design.label}</span>
-                    <span className="rmb-home-rail-count">{design.count}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </Accordion>
-
-          <Accordion level={3} title="Languages & platforms" description="Filter the library by language or platform">
-            <div className="rmb-home-facets">
-              <div>
-                <p className="rmb-home-facet-label">Languages</p>
-                <ul className="rmb-home-rail">
-                  {LANGUAGE_FACETS.map((facet) => (
-                    <li key={facet.value}>
-                      <a className="rmb-home-rail-link" href={`/bio-library?lang=${facet.value}`} onClick={handleAnchorClick}>
-                        {BIO_LANG_META[facet.value as keyof typeof BIO_LANG_META].label}
-                        <span className="rmb-home-rail-count">{facet.count} bios</span>
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="rmb-home-facet-label">Platforms</p>
-                <ul className="rmb-home-rail">
-                  {PLATFORM_FACETS.map((facet) => (
-                    <li key={facet.value}>
-                      <a className="rmb-home-rail-link" href={`/bio-library?platform=${facet.value}`} onClick={handleAnchorClick}>
-                        {facet.label}
-                        <span className="rmb-home-rail-count">{facet.count} bios</span>
-                      </a>
-                    </li>
-                  ))}
-                  <li>
-                    <a className="rmb-home-rail-link" href="/bio-collections" onClick={handleAnchorClick}>
-                      Every platform generator
-                      <span className="rmb-home-rail-count">{COLLECTION_SUMMARIES.length} collections</span>
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </Accordion>
-        </div>
       </div>
     </section>
   );

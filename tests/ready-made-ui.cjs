@@ -319,13 +319,17 @@ async function main() {
     $$('.rmb-home-card').every((el) => isRealHref(el.getAttribute('href'))));
   check('homepage category chips are real filters',
     $$('.rmb-home-chip').every((el) => isRealHref(el.getAttribute('href'))));
-  check('secondary rails start collapsed (progressive disclosure)',
-    $$('.rmb-home .accordion-panel').length === 0 && $$('.rmb-home .accordion-toggle').length === 3);
-  const collapseButtons = $$('.rmb-home .accordion-toggle');
-  await click(collapseButtons[0]);
-  check('opening "recently added" reveals real collection links',
-    $$('.rmb-home-rail-link').length >= RECENT_COLLECTIONS.length &&
-    $$('.rmb-home-rail-link').every((el) => isRealHref(el.getAttribute('href'))));
+  check('homepage keeps only collections + categories (no duplicate rails)',
+    $$('.rmb-home .accordion').length === 0 &&
+    $$('.rmb-home-rail-link').length === 0 &&
+    $$('.rmb-home-design').length === 0);
+  check('homepage category row ends with a route to the full hub',
+    (() => {
+      const chips = $$('.rmb-home-chip');
+      return chips.length === 11 &&
+        chips[chips.length - 1].getAttribute('href') === '/bio-collections' &&
+        chips.slice(0, 10).every((el) => (el.getAttribute('href') ?? '').startsWith('/bio-library?category='));
+    })());
 
   // ---------------------------------------------------------------
   console.log('\n--- Navigation & scroll policy ---');
