@@ -10,19 +10,13 @@ import {
 } from './data/pools';
 import type { Language } from '../../types';
 import SegmentedControl from '../../components/SegmentedControl';
+import CountControl from '../../components/CountControl';
 import { useToolMode } from '../../lib/toolMode';
 
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
   { value: 'hi', label: 'हिन्दी', lang: 'hi' },
   { value: 'hg', label: 'Hinglish' },
-] as const;
-
-const SIZE_OPTIONS = [
-  { value: '5', label: '5 (IG cap)' },
-  { value: '10', label: '10' },
-  { value: '20', label: '20' },
-  { value: '30', label: '30' },
 ] as const;
 
 /**
@@ -145,12 +139,11 @@ export default function HashtagGenerator() {
           value={language}
           onChange={setLanguage}
         />
-        <SegmentedControl
+        <CountControl
           label="Number of hashtags"
-          visibleLabel="How many"
-          options={SIZE_OPTIONS}
-          value={String(size)}
-          onChange={(value) => setSize(Number(value) as HashtagSize)}
+          noun="hashtags"
+          value={size}
+          onChange={setSize}
         />
       </div>
 

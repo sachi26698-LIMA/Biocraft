@@ -31,9 +31,9 @@ export const NICHES: NicheDefinition[] = [
     labelHg: 'Photography',
     pools: {
       en: {
-        broad: ['#photography', '#photooftheday', '#photographyoftheday', '#picoftheday', '#portrait', '#streetphotography', '#naturephotography', '#landscapephotography', '#photographer', '#photo', '#portraitpage', '#moodygrams', '#photographyeveryday', '#lifestylephotography'],
-        medium: ['#portraitphotography', '#portraitphotographer', '#travelphotographer', '#streetphoto', '#portraiture', '#photographersofinstagram', '#photographyislife', '#natgeo', '#portraitcollective', '#35mmcommunity', '#portraitgallery', '#filmphotography'],
-        focused: ['#50mmlens', '#naturalight', '#ishootfilm', '#makeportraits', '#35mmfilm', '#portraitmood', '#primelens', '#shootingfilm', '#filmcommunity', '#filmisnotdead', '#shootfilmmag'],
+        broad: ['#photography', '#photooftheday', '#photographyoftheday', '#picoftheday', '#portrait', '#streetphotography', '#naturephotography', '#landscapephotography', '#photographer', '#photo', '#portraitpage', '#moodygrams', '#photographyeveryday', '#lifestylephotography', '#photogram', '#photoshoot', '#portraits', '#naturephoto', '#urbanphotography', '#photodaily', '#cameraclub', '#visualsoflife', '#photoart', '#capturethemoment'],
+        medium: ['#portraitphotography', '#portraitphotographer', '#travelphotographer', '#streetphoto', '#portraiture', '#photographersofinstagram', '#photographyislife', '#natgeo', '#portraitcollective', '#35mmcommunity', '#portraitgallery', '#filmphotography', '#photographylovers', '#portraitinspiration', '#travelportraits', '#streetstylephoto', '#moodyportraits', '#goldenhourphoto', '#documentaryphotography', '#fineartphotography'],
+        focused: ['#50mmlens', '#naturalight', '#ishootfilm', '#makeportraits', '#35mmfilm', '#portraitmood', '#primelens', '#shootingfilm', '#filmcommunity', '#filmisnotdead', '#shootfilmmag', '#85mmportrait', '#analoguephotography', '#mediumformat', '#photographyworkshop', '#naturallightportrait', '#filmphotographer', '#lightandshadowphoto'],
       },
       hi: {
         broad: ['#फोटोग्राफी', '#फोटो', '#तस्वीर', '#शटर', '#छायांकन', '#फोटोग्राफीइंडिया', '#कैमरा', '#फोटोग्राफीलव', '#क्लिक', '#फोटोज'],
@@ -41,9 +41,9 @@ export const NICHES: NicheDefinition[] = [
         focused: ['#फिल्मफोटोग्राफी', '#35एमएम', '#प्राइमलेंस', '#पोट्रेटफोटोग्राफी', '#ब्लैकएंडव्हाइटफोटो', '#मोनोक्रोम', '#50एमएम', '#नेचुरललाइटफोटोग्राफी', '#फिल्मफोटोग्राफर', '#फोटोग्राफीवर्कशॉप'],
       },
       hg: {
-        broad: ['#photography', '#photooftheday', '#myclicks', '#shutterbug', '#clicks', '#portrait', '#travelphoto', '#indiaclicks', '#lenslove', '#frame'],
-        medium: ['#photographyoftheday', '#portraitmood', '#streetphotoindia', '#35mmfilm', '#filmcommunity', '#indianphotographers', '#everydayindia', '#wanderlustclicks'],
-        focused: ['#ishootfilm', '#naturalight', '#35mmindia', '#shootfilm', '#primelens', '#filmisnotdead', '#shootfilmmag'],
+        broad: ['#photography', '#photooftheday', '#myclicks', '#shutterbug', '#clicks', '#portrait', '#travelphoto', '#indiaclicks', '#lenslove', '#frame', '#clicksindia', '#photoseries', '#instaclicks', '#framedaily', '#shotonphone', '#dailyclicks', '#photogram', '#lensculture', '#capturedmoments', '#visualdiary'],
+        medium: ['#photographyoftheday', '#portraitmood', '#streetphotoindia', '#35mmfilm', '#filmcommunity', '#indianphotographers', '#everydayindia', '#wanderlustclicks', '#portraitsofindia', '#streetsofindia', '#indianphotography', '#delhiphotographer', '#mumbaiphotographer', '#travelindiashots', '#desiphotographer'],
+        focused: ['#ishootfilm', '#naturalight', '#35mmindia', '#shootfilm', '#primelens', '#filmisnotdead', '#shootfilmmag', '#filmphotography', '#shootfilmindia', '#85mmlens', '#goldenhourindia', '#analogindia', '#mediumformatindia', '#monochromeindia'],
       },
     },
   },
@@ -54,9 +54,9 @@ export const NICHES: NicheDefinition[] = [
     labelHg: 'Food',
     pools: {
       en: {
-        broad: ['#food', '#foodie', '#foodporn', '#instafood', '#yummy', '#delicious', '#foodphotography', '#foodlover', '#foodiesofinstagram', '#khana', '#deliciousfood', '#nomnom', '#foodielife', '#kitchenmagic'],
-        medium: ['#instafoodie', '#foodstagram', '#homemadefood', '#foodblogger', '#foodgasm', '#foodstyling', '#foodieheaven', '#foodiegram', '#foodpics', '#foodaddict', '#buzzfeast', '#nomnomsies'],
-        focused: ['#streetfoodindia', '#indiansweets', '#swaad', '#homecooking', '#indianfoodblog', '#indiansnacks', '#regionalfood', '#desi', '#gujaratifood', '#southindianfood', '#bengalifood'],
+        broad: ['#food', '#foodie', '#foodporn', '#instafood', '#yummy', '#delicious', '#foodphotography', '#foodlover', '#foodiesofinstagram', '#khana', '#deliciousfood', '#nomnom', '#foodielife', '#kitchenmagic', '#foodie', '#foodstagram', '#instafood', '#foodlover', '#homemade', '#yummy', '#tasty', '#foodphotography', '#foodblogger', '#eatlocal'],
+        medium: ['#instafoodie', '#foodstagram', '#homemadefood', '#foodblogger', '#foodgasm', '#foodstyling', '#foodieheaven', '#foodiegram', '#foodpics', '#foodaddict', '#buzzfeast', '#nomnomsies', '#homecooking', '#recipeoftheday', '#foodiegram', '#weeknightdinner', '#comfortfood', '#streetfoodlover', '#farmtotable', '#foodstyling'],
+        focused: ['#streetfoodindia', '#indiansweets', '#swaad', '#homecooking', '#indianfoodblog', '#indiansnacks', '#regionalfood', '#desi', '#gujaratifood', '#southindianfood', '#bengalifood', '#castironcooking', '#sourdoughbaking', '#sheetpandinner', '#mealprepsunday', '#plantbasedrecipes', '#oneplatesupper', '#cookfromscratch'],
       },
       hi: {
         broad: ['#खाना', '#खानेशौकीन', '#फूड', '#स्वाद', '#देसीखाना', '#भारतीयभोजन', '#भोजन', '#खानाखाना', '#फूडली', '#स्नैक्स'],
@@ -64,9 +64,9 @@ export const NICHES: NicheDefinition[] = [
         focused: ['#स्ट्रीटफूडइंडिया', '#इंडियनस्ट्रीटफूड', '#घरपकवान', '#मिठाई', '#स्वादयात्रा', '#देसीफूड', '#सैंडविच', '#चाट', '#दाल', '#नाश्ता'],
       },
       hg: {
-        broad: ['#foodie', '#swaad', '#khana', '#indianfood', '#foodstagram', '#foodlove', '#khaanapaan', '#gharkafood', '#foodblogger', '#swaadanusaar'],
-        medium: ['#indiansweets', '#streetfoodindia', '#homemadefood', '#foodbloggerindia', '#swaadiculture', '#khanapeena', '#desiswag', '#flavoursoffindia'],
-        focused: ['#biryanilover', '#gujaratifood', '#panjaabifood', '#southindianfood', '#delhistreetfood', '#swaadyatra', '#gharpakwan'],
+        broad: ['#foodie', '#swaad', '#khana', '#indianfood', '#foodstagram', '#foodlove', '#khaanapaan', '#gharkafood', '#foodblogger', '#swaadanusaar', '#khanapeena', '#desifood', '#gharkakhana', '#foodieindia', '#indianfood', '#tastyindia', '#swad', '#foodbloggerindia', '#homemadeindia', '#recipesindia'],
+        medium: ['#indiansweets', '#streetfoodindia', '#homemadefood', '#foodbloggerindia', '#swaadiculture', '#khanapeena', '#desiswag', '#flavoursoffindia', '#indianrecipes', '#gharokakhana', '#streetfoodindia', '#mumbaifoodie', '#delhifoodie', '#desibreakfast', '#tiffinideas', '#regionalfoodindia'],
+        focused: ['#biryanilover', '#gujaratifood', '#panjaabifood', '#southindianfood', '#delhistreetfood', '#swaadyatra', '#gharpakwan', '#paneerrecipes', '#dalchawal', '#chaiandpakora', '#southindianfood', '#bengalifood', '#punjabifood', '#homecookedmeals'],
       },
     },
   },
@@ -386,15 +386,28 @@ const shuffle = <T>(items: T[]): T[] => {
   return array;
 };
 
-export type HashtagSize = 5 | 10 | 20 | 30;
+/**
+ * Any positive whole number of hashtags. This used to be the union `5|10|20|30`
+ * backed by a lookup table, so a request for 7 or 150 hashtags was impossible —
+ * an arbitrary catalog cap of exactly the kind the expansion policy forbids.
+ */
+export type HashtagSize = number;
 
-/** broad/medium/focused mix per result size. */
-const SIZE_MIX: Record<HashtagSize, [number, number, number]> = {
-  5: [1, 2, 2],
-  10: [3, 3, 4],
-  20: [6, 7, 7],
-  30: [9, 10, 11],
-};
+/**
+ * broad/medium/focused mix for any size.
+ *
+ * Derived proportionally instead of looked up: the old table only knew four
+ * values, so every other size fell through to `undefined` and threw. The ratio
+ * keeps the original balance (~30% broad, ~33% medium, remainder focused) and
+ * the focused bucket absorbs the rounding, so the buckets always sum to `size`.
+ */
+function mixFor(size: number): [number, number, number] {
+  const safe = Math.max(1, Math.floor(size));
+  const broad = Math.max(1, Math.round(safe * 0.3));
+  const medium = Math.max(1, Math.round(safe * 0.33));
+  const focused = Math.max(0, safe - broad - medium);
+  return [broad, medium, focused];
+}
 
 export interface HashtagResult {
   tags: string[];
@@ -416,7 +429,7 @@ export function generateHashtags(
   rawKeywords: string,
 ): HashtagResult {
   const niche = findNiche(nicheId);
-  const [needBroad, needMedium, needFocused] = SIZE_MIX[size];
+  const [needBroad, needMedium, needFocused] = mixFor(size);
 
   const seen = new Set<string>();
   const tags: string[] = [];

@@ -25,7 +25,13 @@ function integer(value,min,max){if(!Number.isSafeInteger(value)||value<min||valu
 function requestId(){return randomUUID()}
 // Bounded paging shared by read-only module endpoints. Unknown, repeated or
 // malformed parameters are rejected rather than silently ignored.
-function pageLimit(url,min=1,max=100,fallback=50){const raw=url.searchParams.get('limit')??String(fallback);if(!/^\d{1,4}$/.test(raw))fail(422,'INVALID');return integer(Number(raw),min,max)}
+//
+// The ceiling is configurable (MAX_PAGE_SIZE) instead of a hardcoded 100 so a
+// growing catalogue can be paged harder without a redeploy. It stays a ceiling
+// because an unbounded limit lets one request materialise a whole table; the
+// number is disclosed in the error and adjustable per deployment.
+const MAX_PAGE_SIZE=Math.max(1,Math.min(Number(process.env.MAX_PAGE_SIZE)||500,10000));
+function pageLimit(url,min=1,max=MAX_PAGE_SIZE,fallback=50){const raw=url.searchParams.get('limit')??String(fallback);if(!/^\d{1,6}$/.test(raw))fail(422,'INVALID');return integer(Number(raw),min,max)}
 function paging(url,allowed,expect={}) {
  for(const key of url.searchParams.keys()) if(!allowed.includes(key)) fail(400,'INVALID');
  for(const key of new Set(url.searchParams.keys())) if(url.searchParams.getAll(key).length!==1) fail(400,'INVALID');
@@ -114,7 +120,7 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     if([...url.searchParams.keys()].some(k=>!['limit','after'].includes(k)) || [...new Set(url.searchParams.keys())].some(k=>url.searchParams.getAll(k).length!==1))fail(400,'INVALID');
     const raw=url.searchParams.get('limit')??'50',after=url.searchParams.get('after');
     if(!/^\d{1,3}$/.test(raw)||(after!==null&&!uid.test(after)))fail(422,'INVALID');
-    operation='staffList';args=[integer(Number(raw),1,100),after];
+    operation='staffList';args=[integer(Number(raw),1,MAX_PAGE_SIZE),after];
    } else if(url.pathname==='/api/admin/v1/staff' && request.method==='PATCH' && !url.search) {
     // Membership administration (007). The SQL refuses a self-edit, a super-admin
     // promotion, the last super-admin demotion and a stale version, so this route
@@ -160,7 +166,7 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     return json(200,{deleted:cleaned.deleted,request_id:id});
    } else if(['/api/admin/v1/bio-drafts','/api/admin/v1/bio-review-queue'].includes(url.pathname) && request.method==='GET') {
     if([...url.searchParams.keys()].some(k=>!['limit','before_time','before_id'].includes(k)) || [...new Set(url.searchParams.keys())].some(k=>url.searchParams.getAll(k).length!==1))fail(400,'INVALID');
-    const raw=url.searchParams.get('limit')??'20';if(!/^\d{1,3}$/.test(raw))fail(422,'INVALID');const limit=integer(Number(raw),1,100);
+    const raw=url.searchParams.get('limit')??'20';if(!/^\d{1,6}$/.test(raw))fail(422,'INVALID');const limit=integer(Number(raw),1,MAX_PAGE_SIZE);
     const time=url.searchParams.get('before_time'),beforeId=url.searchParams.get('before_id');
     if((time===null)!==(beforeId===null) || (time!==null && (!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?Z$/.test(time) || !Number.isFinite(Date.parse(time)) || !uid.test(beforeId))))fail(422,'INVALID');
     operation=url.pathname.endsWith('bio-drafts')?'list':'reviewQueue';args=[limit,time,beforeId];
@@ -172,7 +178,7 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     const raw=url.searchParams.get('limit')??'50';if(!/^\d{1,3}$/.test(raw))fail(422,'INVALID');
     const before=url.searchParams.get('before');
     if(before!==null&&!/^\d{1,18}$/.test(before))fail(422,'INVALID');
-    operation='publications';args=[bioId,integer(Number(raw),1,100),before===null?null:Number(before)];
+    operation='publications';args=[bioId,integer(Number(raw),1,MAX_PAGE_SIZE),before===null?null:Number(before)];
    } else if(url.pathname==='/api/admin/v1/bio-drafts' && request.method==='POST') {
     const body=await bodyJson(request);keys(body,['key','bio']);
     if(typeof body.key!=='string'||!/^[a-z0-9][a-z0-9_-]{0,99}$/.test(body.key))fail(422,'INVALID');

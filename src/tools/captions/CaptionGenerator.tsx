@@ -16,6 +16,7 @@ import type { Language } from '../../types';
 import SegmentedControl from '../../components/SegmentedControl';
 import CharCounter from '../../components/CharCounter';
 import CopyButton from '../../components/CopyButton';
+import CountControl from '../../components/CountControl';
 import DownloadButton from '../../components/DownloadButton';
 import { useToolMode } from '../../lib/toolMode';
 import { CAPTION_FRAMES, applyCaptionFrame } from './captionFrames';
@@ -27,7 +28,7 @@ const LANGUAGE_OPTIONS = [
 ] as const;
 
 /**
- * Caption Generator — exactly five unique captions per run, shaped by topic,
+ * Caption Generator — any number of unique captions per run, shaped by topic,
  * tone and language. Optional Unicode caption frames wrap the result. Each
  * caption carries a live character counter (2,200-char caption limit) and a
  * one-tap copy button.
@@ -41,6 +42,7 @@ export default function CaptionGenerator() {
   const [cta, setCta] = useState<CaptionCta>('none');
   const [frame, setFrame] = useState('none');
   const [captions, setCaptions] = useState<string[] | null>(null);
+  const [count, setCount] = useState<number>(5);
   const [statusMessage, setStatusMessage] = useState('');
   const generationTopic: TopicId = toolMode === 'basic' ? 'photography' : topic;
   const generationTone: CaptionTone = toolMode === 'basic' ? 'witty' : tone;
@@ -51,9 +53,16 @@ export default function CaptionGenerator() {
   const framed = (caption: string) => applyCaptionFrame(caption, generationFrame);
 
   const runGeneration = () => {
-    const next = generateCaptions(generationTopic, generationTone, generationLanguage, { emoji: generationEmojis, cta: generationCta });
+    const next = generateCaptions(generationTopic, generationTone, generationLanguage, { emoji: generationEmojis, cta: generationCta }, count);
     setCaptions(next);
-    setStatusMessage(`${next.length} captions generated.`);
+    // Never imply we delivered more than we did. When the curated template pool
+    // for this tone is smaller than the request, say so instead of quietly
+    // returning fewer captions than the button promised.
+    setStatusMessage(
+      next.length < count
+        ? `${next.length} of ${count} captions generated — this tone has ${next.length} unique templates. Try another tone or language for more.`
+        : `${next.length} captions generated.`,
+    );
   };
 
   return (
@@ -157,20 +166,29 @@ export default function CaptionGenerator() {
       </div>
       </div>
 
+      <div className="tool-advanced">
+        <CountControl
+          label="How many captions"
+          noun="captions"
+          value={count}
+          onChange={setCount}
+        />
+      </div>
+
       <button type="button" className="btn btn-primary btn-large generate-button" onClick={runGeneration}>
-        Generate 5 captions
+        Generate {count} caption{count === 1 ? '' : 's'}
       </button>
 
       <div className="results-block" role="region" aria-label="Generated captions">
         <div className="results-header">
           <h2 className="results-title">
-            Your five captions <span className="results-count">{captions ? captions.length : 5}</span>
+            Your captions <span className="results-count">{captions ? captions.length : count}</span>
           </h2>
           {captions && (
             <div className="results-actions">
               <CopyButton
                 text={captions.map(framed).join('\n\n')}
-                ariaLabel="Copy all five captions to clipboard"
+                ariaLabel={`Copy all ${captions.length} captions to clipboard`}
                
               />
               <DownloadButton text={captions.map(framed).join('\n\n')} filename="biocraft-captions.txt" />
@@ -206,14 +224,16 @@ export default function CaptionGenerator() {
           </ol>
         ) : (
           <div className="empty-state">
-            <p className="empty-state-title">Your five captions will appear here.</p>
+            <p className="empty-state-title">Your captions will appear here.</p>
             <p className="empty-state-text">
               Pick a topic, a tone and a language — then press “Generate 5 captions”.
             </p>
           </div>
         )}
 
-        <p className="sr-only" role="status" aria-live="polite">
+        {/* A shortfall must be visible, not only announced: the previous build
+            reported every run as complete even when the pool could not fill it. */}
+        <p className="results-note" role="status" aria-live="polite">
           {statusMessage}
         </p>
       </div>
