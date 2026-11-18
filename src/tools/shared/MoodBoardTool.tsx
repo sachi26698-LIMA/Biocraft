@@ -14,7 +14,7 @@ import {
 import type { MoodBoardPools } from './moodBoard';
 import { useToolMode } from '../../lib/toolMode';
 import AdvancedOptions from '../../components/ui/AdvancedOptions';
-import { EmptyState } from '../../components/ui/States';
+import { EmptyState, ErrorState } from '../../components/ui/States';
 
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
@@ -66,6 +66,8 @@ export default function MoodBoardTool<C extends string>({
   const [lines, setLines] = useState<string[]>([]);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [announcement, setAnnouncement] = useState('');
+  /** Visible, honest empty-pool error (only reachable with emojis off). */
+  const [poolEmpty, setPoolEmpty] = useState(false);
   const { copy } = useCopyToClipboard(2000);
   const generationLanguage: Language = toolMode === 'basic' ? 'en' : language;
   const generationNoEmoji = toolMode === 'basic' ? false : noEmoji;
@@ -83,8 +85,10 @@ export default function MoodBoardTool<C extends string>({
       const { lines: picked } = composeMoodBoard(pools, categoryId, generationLanguage, nextCount, generationNoEmoji);
       if (picked.length === 0) {
         setAnnouncement('Nothing usable in this pool with emojis off — turn emojis back on.');
+        setPoolEmpty(true);
         return;
       }
+      setPoolEmpty(false);
       setLines(picked);
       setHasGenerated(true);
       setAnnouncement(`${picked.length} ${noun} options generated.`);
@@ -207,12 +211,21 @@ export default function MoodBoardTool<C extends string>({
                 <RefreshIcon size={16} />
                 Regenerate
               </button>
-              <button type="button" className="btn btn-secondary btn-small" onClick={() => { setLines([]); setHasGenerated(false); setAnnouncement('Results cleared.'); }}>
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => { setLines([]); setHasGenerated(false); setPoolEmpty(false); setAnnouncement('Results cleared.'); }}>
                 Reset results
               </button>
             </div>
           )}
         </div>
+
+        {poolEmpty && (
+          <ErrorState
+            title="No options with emojis off"
+            text={`Every ${noun} in this vibe relies on emoji. Turn emojis back on (Language & style) or pick another vibe.`}
+            onRetry={() => runGeneration()}
+            retryLabel="Try again"
+          />
+        )}
 
         {hasGenerated && lines.length > 0 ? (
           <ol className="results-list">

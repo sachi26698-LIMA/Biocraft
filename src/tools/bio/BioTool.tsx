@@ -15,6 +15,7 @@ import PersonalizedForm, { FIELD_ORDER, fieldId } from './PersonalizedForm';
 import SegmentedControl from '../../components/SegmentedControl';
 import AdvancedOptions from '../../components/ui/AdvancedOptions';
 import { BioGeneratingSkeleton } from '../../components/skeleton/toolSkeletons';
+import { ErrorState } from '../../components/ui/States';
 import { ClipboardIcon, RefreshIcon } from '../../components/icons';
 import { copyText } from '../../lib/clipboard';
 import { useToolkit } from '../../lib/toolkit';
@@ -64,6 +65,8 @@ export default function BioTool() {
   const [hasGenerated, setHasGenerated] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [generating, setGenerating] = useState(false);
+  /** Set only when a real generation attempt rejects. */
+  const [generationFailed, setGenerationFailed] = useState(false);
   const runnerRef = useRef<GenerationRunner | null>(null);
   if (!runnerRef.current) runnerRef.current = new GenerationRunner();
   useEffect(() => () => runnerRef.current?.dispose(), []);
@@ -97,6 +100,7 @@ export default function BioTool() {
 
   const submitJob = useCallback((job: GenerationJob, apply: (result: string[]) => void) => {
     setGenerating(true);
+    setGenerationFailed(false);
     setAnnouncement('Generating bios…');
     void runnerRef.current!.run(job).then((result) => {
       if (result === null) return; // superseded or unmounted
@@ -104,6 +108,7 @@ export default function BioTool() {
       apply(result);
     }).catch(() => {
       setGenerating(false);
+      setGenerationFailed(true);
       setAnnouncement('Could not generate bios. Please try again.');
     });
   }, []);
@@ -357,7 +362,13 @@ export default function BioTool() {
           )}
         </div>
 
-        {generating && !hasGenerated ? (
+        {generationFailed && !generating ? (
+          <ErrorState
+            title="We couldn’t generate your bios"
+            text="Nothing was lost — your details are still here. Try again, or regenerate a single card if results are showing."
+            onRetry={() => runGeneration()}
+          />
+        ) : generating && !hasGenerated ? (
           <div className="results-live">
             <BioGeneratingSkeleton />
           </div>

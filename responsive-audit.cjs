@@ -1,7 +1,7 @@
 /**
  * Static responsive-layout audit (no browser required).
  *
- * Loads src/index.css, evaluates the min/max-width media conditions against the
+ * Loads src/index.css, src/upgrade.css and src/revamp.css, evaluates the min/max-width media conditions against the
  * requested phone/tablet breakpoints and resolves the cascade for a matrix of layout-critical
  * selectors. It answers "what would compute at W px?" for grid tracks, visibility
  * and sizing — the parts of layout that come from CSS, without pixel rendering.
@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const css = ['index.css', 'upgrade.css']
+const css = ['index.css', 'upgrade.css', 'revamp.css']
   .map((file) => fs.readFileSync(path.join(__dirname, 'src', file), 'utf8'))
   .join('\n')
   .replace(/\/\*[\s\S]*?\*\//g, '');
@@ -101,6 +101,13 @@ const CASES = [
   ['.tool-mode-toggle', 'display'],
   ["[data-tool-mode='basic'] .tool-advanced", 'display'],
   ['.workspace-tool-actions', 'flex-wrap'],
+  // Revamp layer
+  ['.platform-pills', 'grid-template-columns'],
+  ['.platform-pill', 'min-width'],
+  ['.tool-tabs-list', 'flex-wrap'],
+  ['.chip-row', 'flex-wrap'],
+  ['.accordion-toggle', 'min-height'],
+  ['.mobile-nav', 'max-height'],
 ];
 
 let failures = 0;
@@ -140,6 +147,21 @@ const EXPECT = [
   ['.tool-mode-toggle', 'display', { 320: 'inline-flex', 390: 'inline-flex', 820: 'inline-flex', 1440: 'inline-flex' }],
   ["[data-tool-mode='basic'] .tool-advanced", 'display', { 320: 'none !important', 820: 'none !important', 1440: 'none !important' }],
   ['.workspace-tool-actions', 'flex-wrap', { 320: 'wrap', 820: 'wrap', 1440: 'wrap' }],
+  // Platform selector must never need page-level scrolling: 4-up grid on
+  // phones, 8-up from 900px, and no fixed min-width that can overflow.
+  ['.platform-pills', 'grid-template-columns', {
+    320: 'repeat(4, minmax(0, 1fr))',
+    430: 'repeat(4, minmax(0, 1fr))',
+    768: 'repeat(4, minmax(0, 1fr))',
+    1024: 'repeat(8, minmax(0, 1fr))',
+    1440: 'repeat(8, minmax(0, 1fr))',
+  }],
+  ['.platform-pill', 'min-width', { 320: '0', 768: '0', 1440: '0' }],
+  // Chip and tab rows wrap instead of clipping important controls.
+  ['.tool-tabs-list', 'flex-wrap', { 320: 'wrap', 390: 'wrap', 1024: 'wrap' }],
+  ['.chip-row', 'flex-wrap', { 320: 'wrap', 430: 'wrap', 1024: 'wrap' }],
+  // Disclosure controls keep a 52px touch target at every width.
+  ['.accordion-toggle', 'min-height', { 320: '52px', 768: '52px', 1440: '52px' }],
 ];
 
 console.log('\nexpectations\n');
