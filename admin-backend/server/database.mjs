@@ -103,7 +103,17 @@ const OPERATIONS = Object.freeze({
   settingUpdate: {permission:'settings.manage',sql:'select bc_admin_v1.update_setting($1,$2::jsonb,$3::bigint,$4::uuid) as version'},
   roleCatalog: {permission:'staff.read',sql:'select * from bc_admin_v1.list_role_catalog()'},
   mySessions: {permission:'dashboard.read',sql:'select * from bc_admin_v1.list_my_sessions($1,$2::timestamptz)'},
-  auditLogs: {permission:'audit.read',sql:'select * from bc_admin_v1.list_audit_logs($1,$2::bigint)'}
+  auditLogs: {permission:'audit.read',sql:'select * from bc_admin_v1.list_audit_logs($1,$2::bigint)'},
+  // 015: read surface for the content-intelligence libraries added by 0006/0007.
+  // Read-only; no operation below writes to public.*.
+  contentLibraryStats: {permission:'content.read',sql:'select * from bc_admin_v1.content_library_stats()'},
+  dataSourceList: {permission:'content.read',sql:'select * from bc_admin_v1.list_data_sources($1::integer,$2::text)'},
+  syncJobList: {permission:'content.read',sql:'select * from bc_admin_v1.list_sync_jobs($1::integer,$2::timestamptz)'},
+  fontList: {permission:'content.read',sql:'select * from bc_admin_v1.list_fonts($1::integer,$2::text,$3::text,$4::text)'},
+  emojiList: {permission:'content.read',sql:'select * from bc_admin_v1.list_emoji($1::integer,$2::text)'},
+  symbolList: {permission:'content.read',sql:'select * from bc_admin_v1.list_symbols($1::integer,$2::text,$3::text)'},
+  languageList: {permission:'content.read',sql:'select * from bc_admin_v1.list_languages()'},
+  translationList: {permission:'content.read',sql:'select * from bc_admin_v1.list_translations($1::integer,$2::text)'}
 });
 /** The trusted gateway verifies the provider token before calling this adapter.
  * DB locks and authorization checks occur within the same transaction as the
