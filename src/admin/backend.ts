@@ -7,9 +7,7 @@
  * `/api/admin/v1/*` endpoints with `credentials: 'same-origin'` and a CSRF
  * header taken from the server.
  *
- * Coverage today: only the session/probe endpoints exist in this build. Every
- * write path fails closed with `backend_unavailable` until the reviewed server
- * is deployed and its database grants are approved. Nothing here is an
+ * Requests fail closed until the server is configured and authorized. Nothing here is an
  * authorization gate — the server re-checks identity, MFA freshness, membership
  * and permissions for every request.
  */
@@ -20,6 +18,8 @@ export interface AdminSession {
   permissions: readonly string[];
   expiresAt: string;
   assuranceLevel: 'aal2';
+  sharedWrites?: boolean;
+  editorialDirectory?: boolean;
 }
 export interface AdminError { code: string; message: string; requestId?: string }
 export interface AdminPage<T> { items: T[]; nextCursor: string | null; asOf: string }
@@ -76,7 +76,7 @@ async function probeBackendOnce(signal?: AbortSignal): Promise<BackendStatus> {
 
 export async function currentSession(signal?: AbortSignal): Promise<AdminSession | null> {
   const response = await fetch(`${ADMIN_BASE}/session`, { credentials: 'same-origin', headers: { accept: 'application/json' }, signal });
-  if (response.status === 401 || response.status === 403) return null;
+  if (response.status === 401 || response.status === 403) { csrfToken = null; return null; }
   if (!response.ok) throw new AdminRequestError('UNAVAILABLE', response.status);
   const body = await response.json().catch(() => null);
   const userId = body?.user?.id;
@@ -87,6 +87,8 @@ export async function currentSession(signal?: AbortSignal): Promise<AdminSession
     permissions: Array.isArray(body.user.permissions) ? body.user.permissions : [],
     expiresAt: String(body.expires_at ?? ''),
     assuranceLevel: 'aal2',
+    sharedWrites: body.shared_writes !== false,
+    editorialDirectory: body.editorial_directory === true,
   };
 }
 
@@ -111,6 +113,7 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   const response = await fetch(`${ADMIN_BASE}${path}`, { ...init, method, headers, credentials: 'same-origin' });
   if (response.status === 401 || response.status === 403 && method !== 'GET') csrfToken = null;
   const body = await response.json().catch(() => null);
+  if (response.status === 401 || body?.error?.code === 'SESSION_EXPIRED') window.dispatchEvent(new Event('biocraft:admin-session-rejected'));
   if (!response.ok) throw new AdminRequestError(body?.error?.code ?? 'UNAVAILABLE', response.status, body?.error?.request_id);
   return body as T;
 }

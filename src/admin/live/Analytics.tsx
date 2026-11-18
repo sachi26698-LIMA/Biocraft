@@ -53,7 +53,7 @@ const GROUPS: {
   },
 ];
 
-export default function LiveAnalytics() {
+export default function LiveAnalytics({intelligence = false}: {intelligence?: boolean}) {
   const toast = useToast();
   const live = useLive<{ metrics: Metric[] }>('/analytics');
 
@@ -90,7 +90,7 @@ export default function LiveAnalytics() {
     <>
       <PageHead
         eyebrow="INSIGHTS & MEASUREMENT"
-        title="Analytics"
+        title={intelligence ? 'Global Content Intelligence' : 'Analytics'}
         description="Real database counts and editorial workflow volume. No fabricated traffic or visitor telemetry."
         actions={
           rows.length > 0 && (

@@ -65,7 +65,11 @@
     "test:admin-bundle-secrets": "node tests/admin-bundle-secrets.mjs",
     "test:regression": "esbuild review-harness.tsx --bundle --platform=node --format=cjs --outfile=review-harness.bundle.cjs && node review-check.cjs",
     "test:responsive": "node responsive-audit.cjs",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "test:public-content-status": "node tests/public-content-status.mjs",
+    "test:published-catalog-browser": "node tests/published-catalog-browser.mjs",
+    "test:admin-password-reset-browser": "node tests/admin-password-reset-browser.cjs",
+    "test:admin-extra-modules": "node tests/admin-extra-modules-browser.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
@@ -75,6 +79,8 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.16",
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^26.6.6",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
@@ -83,8 +89,6 @@
     "jsdom": "^31.0.1",
     "playwright-core": "^1.65.0",
     "typescript": "^5.5.4",
-    "vite": "^6.4.6",
-    "@playwright/test": "^1.65.1",
-    "@types/node": "^26.6.6"
+    "vite": "^6.4.6"
   }
 }

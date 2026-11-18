@@ -1,3 +1,4 @@
+import PublishedCatalog from '../../components/PublishedCatalog';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { UNICODE_STYLES, hasDevanagari } from '../../lib/unicodeStyles';
 import { CAPTION_LIMIT, bioLength } from '../../lib/text';
@@ -73,6 +74,7 @@ export default function FancyFontTool() {
           <StyleGallery items={visibleItems} copyLabel={copyLabel} copyAllText={copyAllText} copyAllAriaLabel="Copy all styles to clipboard" />
         </div>
       </div>
+      <PublishedCatalog kind="fonts" />
     </div>
   );
 }
