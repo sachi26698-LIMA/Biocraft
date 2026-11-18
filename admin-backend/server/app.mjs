@@ -55,7 +55,12 @@ export function clientKey(request,{trustedHeader,ingressSecret}={}) {
  *   ADMIN_ALLOWED_EMAILS=comma-separated (bootstrap allow-list, optional)
  */
 export function createAdminApp({env=process.env,poolFactory=createPostgresPool,now=()=>Date.now()}={}) {
- const fail=reason=>{const app=()=>new Response(JSON.stringify({error:{code:'UNAVAILABLE'}}),{status:503,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}});app.configuration={enabled:false,reason};app.shutdown=async()=>{};return app;};
+ // `stage` names the configuration check that failed. It is a fixed identifier
+ // from this file's own vocabulary — never an environment value, never a secret —
+ // so an operator can tell WHICH gate closed without reading the deployment logs.
+ // The published body keeps `{error:{code:'UNAVAILABLE'}}` as its leading shape so
+ // the Admin client and the existing regression tests remain correct.
+ const fail=reason=>{const app=()=>new Response(JSON.stringify({error:{code:'UNAVAILABLE',stage:reason}}),{status:503,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff','X-Admin-Stage':reason}});app.configuration={enabled:false,reason};app.shutdown=async()=>{};return app;};
  if (env.ADMIN_BACKEND_ENABLED!=='true') return fail('disabled');
  const origin=env.ADMIN_ORIGIN;
  if (typeof origin!=='string'||!/^https:\/\/[a-z0-9.-]{1,200}$/i.test(origin)) return fail('invalid origin');
@@ -143,13 +148,59 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
   let url;try{url=new URL(request.url)}catch{return bad(400)}
   if(url.origin!==origin) return bad(403);
   if(url.pathname.startsWith('/api/admin/v1/auth/')) return auth(request,key);
-  if(url.pathname==='/api/admin/v1/health') return health();
+  if(url.pathname==='/api/admin/v1/health') {
+   // `?diagnose=1` additionally reports which dependency is answering. It is
+   // gated on the same proxy HMAC signature the rate limiter uses, so only the
+   // signed ingress can ask and a direct caller learns nothing about the
+   // deployment. Without the signature the response is the plain health body
+   // the client and tests already expect.
+   if(url.searchParams.get('diagnose')==='1'&&clientKey(request,{trustedHeader,ingressSecret})!==null){
+    return app.diagnose().then(r=>new Response(JSON.stringify({ok:true,diagnostics:r}),{status:200,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}})).catch(()=>health());
+   }
+   return health();
+  }
   if(url.pathname.startsWith('/api/admin/v1/')) return gateway(request);
   return bad(404);
  };
  app.configuration={enabled:true,origin,trustedHeader,limits:{maxBodyBytes:32768}};
  app.shutdown=async()=>{await pool.end()};
  app.execute=execute;
+ // Runtime diagnosis. Configuration can be complete and the service still fail on
+ // the first real database round-trip. `diagnose()` reports WHICH dependency is
+ // not answering, using fixed labels and a coarse SQLSTATE — never a driver
+ // message, host, user or secret. It runs no content query and changes nothing:
+ // a transaction is opened, the same limited-role assertion the startup path uses
+ // is executed, and it is rolled back.
+ app.diagnose=async()=>{
+  const report={database:'unknown',provider:'unknown'};
+  let client;
+  try {
+   client=await pool.connect();
+   report.database='reachable';
+   try {
+    await client.query('begin');
+    await assertLimitedRole(client);
+    report.limited_role='ok';
+   } catch (e) {
+    // A role that is not limited is a security stop, not a transient fault.
+    report.limited_role='failed';
+    report.sqlstate=typeof e?.code==='string'?e.code:'unknown';
+   } finally {try{await client.query('rollback')}catch{} }
+  } catch (e) {
+   report.database='unreachable';
+   report.sqlstate=typeof e?.code==='string'?e.code:'unknown';
+  } finally {try{client?.release()}catch{} }
+  try {
+   const probe=await provider.auth.getUser('');
+   // Any well-formed refusal means the provider answered; provider.auth.getUser
+   // resolves with {data:{user:null},error:{...}} rather than throwing.
+   report.provider=probe&&typeof probe==='object'?'reachable':'unexpected';
+  } catch (e) {
+   // A network/DNS failure reaching Supabase is distinguishable from a 401.
+   report.provider=e?.name==='AuthRetryableFetchError'?'unreachable':'reachable';
+  }
+  return report;
+ };
  return app;
  function bad(status){return new Response(JSON.stringify({error:{code:status===404?'NOT_FOUND':'FORBIDDEN'}}),{status,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}})}
  function health(){return new Response(JSON.stringify({ok:true}),{status:200,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}})}
