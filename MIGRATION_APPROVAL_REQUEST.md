@@ -1,8 +1,59 @@
 # Shared-database change — approval required
 
-**Status: PREPARED, NOT APPLIED.** Nothing in this file has been run against the
-shared Supabase project `jvpadtzfsuekixrquzjv`. It is waiting for your explicit
-approval, as you required for any shared-database change.
+**Status: APPROVED AND APPLIED** on 2026-11-09, after explicit approval.
+
+`0006`, `0007` and `0008` are now live on `jvpadtzfsuekixrquzjv`. They were applied
+in ordered, individually re-runnable sections through the Supabase migration tool
+(each section rolls back on failure).
+
+Post-apply verification, read directly from the project:
+
+| Table | Before | After |
+|---|---|---|
+| bios | 506 | **506** |
+| captions | 3888 | **3888** |
+| hashtags | 1155 | **1155** |
+| symbols | 629 | **629** |
+| fonts | 33 | **33** |
+| emoji_collections | 438 | **438** |
+| categories | 33 | **33** |
+| seo_pages | 48 | **48** |
+| generators | 12 | **12** |
+| platforms | 8 | **8** |
+| app_limits | 2 | **2** |
+
+**Zero rows lost.** `global_content` was backfilled with exactly 6,649 rows
+(506+3888+1155+629+33+438), matching the source tables exactly.
+
+Security re-checked on the live project: RLS enabled on every new table,
+`anon` holds **no** INSERT/UPDATE/DELETE on any of them, and the operational
+tables (`data_sync_jobs`, `data_sync_logs`, `content_analytics`,
+`admin_content_reviews`, `content_versions`, `content_translations`) have **zero**
+public policies — service role only.
+
+Read API live: `library_facets()` → 6 domains, `library_page(...)` clamps
+`limit=100000` to 500, `font_page()` → 33, `language_coverage()` → 22 languages,
+`search_library()` clamps to 500 and filters correctly.
+
+---
+
+## Remaining step: loading the 572,907 records
+
+The tables and importers are ready, but the bulk write has **not** been executed
+yet. It needs a direct database connection (`DATABASE_URL`), which requires the
+database password — a credential that must not be handled here. The exact command,
+run once, from the repository root:
+
+```bash
+DATABASE_URL='postgresql://postgres.jvpadtzfsuekixrquzjv:<DB-PASSWORD>@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres'   node scripts/import-library.mjs --source=all
+```
+
+It is idempotent, batched, and prints real inserted/updated/duplicate counts per
+collection. Re-running it never duplicates a row (the fingerprint unique index
+enforces this). Use `--source=icons --limit=20000` first if you want a short trial.
+
+Locally, `--dry-run` already reports the real totals: **537,448 icons** across 262
+permissive collections, **3,455** brand marks, **32,004** named colours.
 
 ---
 
@@ -166,15 +217,13 @@ backup first if you want to be able to restore an import.
 
 ---
 
-## 6. What happens after approval
+## 6. What happened after approval
 
-1. Apply `0006` → `0007` → `0008` through the Supabase connector's migration tool,
-   which rolls back automatically on failure.
-2. Re-count every table and diff against the "before" numbers in section 1 to prove
-   nothing was lost.
-3. Run `scripts/import-library.mjs` against the project to load the licensed
-   records, in batches, with real insert/duplicate counts.
-4. Re-verify the public read API through the anon key.
+1. ✅ Applied `0006` → `0007` → `0008` through the Supabase migration tool.
+2. ✅ Re-counted every table and diffed against the "before" numbers — nothing lost.
+3. ⏳ `scripts/import-library.mjs` still needs `DATABASE_URL` (database password)
+   before it can write the licensed records. See the section above.
+4. ✅ Re-verified the public read API, grants and RLS on the live project.
 
 ---
 
