@@ -1,4 +1,7 @@
 {
+  "functions": {
+    "api/admin/handler.mjs": {"includeFiles": "admin-backend/certs/supabase-roots.pem"}
+  },
   "headers": [
     {
       "source": "/admin",

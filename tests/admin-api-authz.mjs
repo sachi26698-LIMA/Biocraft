@@ -44,6 +44,7 @@ const ROUTES = [
   ['GET', '/api/admin/v1/analytics'],
   ['GET', '/api/admin/v1/audit-logs'],
   ['GET', '/api/admin/v1/backups'],
+  ...['data-sources','sync-jobs','content-library/stats','languages','emoji','symbols','translations'].map(path=>['GET',`/api/admin/v1/${path}`]),
   ['GET', '/api/admin/v1/settings'],
   ['GET', '/api/admin/v1/system/status'],
   ['PUT', '/api/admin/v1/settings'],

@@ -3,6 +3,8 @@
 // Never expose database credentials or call this with an unverified identity.
 // DB EXECUTE/schema grants and owner design need separate security review.
 import pg from 'pg';
+import {readFileSync} from 'node:fs';
+import {rootCertificates} from 'node:tls';
 const {Pool}=pg;
 // Preserve exact bigint keys outside the safe JS integer range.
 pg.types.setTypeParser(20,value=>Number.isSafeInteger(Number(value))?Number(value):value);
@@ -28,7 +30,10 @@ export function createPostgresPool({host,user,password,ca,port}={}) {
  // session-scoped assumptions this adapter relies on, so it is refused outright.
  const resolvedPort=port===undefined?5432:port;
  if(resolvedPort!==5432) throw new Error('Invalid database configuration');
- return new Pool({host,port:resolvedPort,user,password,database:'postgres',ssl:{rejectUnauthorized:true,...(ca?{ca}:{})},max:3,connectionTimeoutMillis:5000,idleTimeoutMillis:10000});
+ // Supavisor can present a chain rooted in Supabase's private (publicly
+ // distributed) CA. Add those roots for this pool ONLY; keep hostname checks.
+ const trust=ca ?? [...rootCertificates,readFileSync(new URL('../certs/supabase-roots.pem',import.meta.url),'utf8')];
+ return new Pool({host,port:resolvedPort,user,password,database:'postgres',ssl:{rejectUnauthorized:true,ca:trust},max:3,connectionTimeoutMillis:5000,idleTimeoutMillis:10000});
 }
 export async function assertLimitedRole(client) {
  const roleCheck=await client.query(`select session_user=current_user
