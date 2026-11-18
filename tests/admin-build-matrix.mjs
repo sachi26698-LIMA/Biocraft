@@ -21,8 +21,8 @@ function build(env) {
   const assets = existsSync(`${DIST}/assets`) ? readdirSync(`${DIST}/assets`) : [];
   const chunks = assets.filter(f => /^admin-.*\.js$/.test(f));
   const shells = existsSync(`${DIST}/admin`)
-    ? readdirSync(`${DIST}/admin`, {withFileTypes: true}).filter(d => d.isDirectory()).length + 1
-    : 0;
+    ? ['admin', ...readdirSync(`${DIST}/admin`, {withFileTypes: true}).filter(d => d.isDirectory()).map(d => `admin/${d.name}`)]
+    : [];
   return {chunks, shells};
 }
 
@@ -61,19 +61,21 @@ for (const testCase of cases) {
 
   // 2. Shells and chunks must agree. This is the blank-page guard.
   if (chunks.length === 0) {
-    assert.equal(shells, 0, `${testCase.name}: ${shells} admin shells were written with no admin chunk — those routes would render blank`);
+    assert.equal(shells.length, 0, `${testCase.name}: ${shells.length} admin shells were written with no admin chunk — those routes would render blank`);
   } else {
-    assert.equal(shells, 14, `${testCase.name}: expected 14 admin route shells, got ${shells}`);
-    // 3. Every shell must reference the chunk that actually exists.
-    const shellHtml = readFileSync(`${DIST}/admin/index.html`, 'utf8');
-    for (const chunk of chunks.filter(f => f.endsWith('.js'))) {
-      assert.ok(
-        shellHtml.includes(chunk),
-        `${testCase.name}: /admin/index.html does not reference ${chunk} — the shell would load nothing`,
-      );
+    assert.deepEqual(shells.sort(), [
+      'admin', 'admin/analytics', 'admin/audit-logs', 'admin/backup', 'admin/bios', 'admin/categories',
+      'admin/collections', 'admin/content', 'admin/generators', 'admin/login', 'admin/platforms',
+      'admin/recovery', 'admin/security', 'admin/settings', 'admin/users',
+    ]);
+    for (const shell of shells) {
+      const shellHtml = readFileSync(`${DIST}/${shell}/index.html`, 'utf8');
+      for (const chunk of chunks) {
+        assert.ok(shellHtml.includes(chunk), `${testCase.name}: /${shell} does not reference ${chunk}`);
+      }
     }
   }
-  console.log(`ok  ${testCase.name}: chunks=${chunks.length} shells=${shells}`);
+  console.log(`ok  ${testCase.name}: chunks=${chunks.length} shells=${shells.length}`);
 }
 
 rmSync(DIST, {recursive: true, force: true});
