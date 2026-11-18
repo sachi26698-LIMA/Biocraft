@@ -113,6 +113,44 @@ emoji. Backed by `search_global()` over the trigger-maintained index.
 - ✅ header overlay gains one additive "Search all content libraries" entry; no
   existing overlay behaviour changed
 
+## Batch 3 — Phases 3, 4, 5, 6, 7 (partially complete, verified parts listed)
+
+| Phase | Delivered | Verified by | Status |
+|---|---|---|---|
+| 5 Sync | `scripts/sync.mjs` scheduler, retries, recovery, logs | `test:sync` 6/6 | ✅ |
+| 4 Read API | migration 0007: 4 read-only functions, SQL-clamped paging | manual + `test:font-library` | ✅ |
+| 4 Font UI | `/font-library`, 1,908 families, keyset paging | `test:font-library` 7/7 | ✅ |
+| 7 AI | 3 provider adapters, honest fallback, local heuristics | `test:ai` 18/18 | ✅ |
+| 3 Admin reads | migration 015: 8 admin read functions + 8 routes | `test:admin-content-library` 16/16, `test:admin-api-integration` | ✅ |
+| 6 Languages | detection + translation-status contract | `test:language` 17/17 | ✅ |
+
+### Migration status
+
+| File | Applied to disposable DB | Applied to shared Supabase |
+|---|---|---|
+| `supabase/migrations/0006` | ✅ tested, idempotent | ❌ **needs approval** |
+| `supabase/migrations/0007` | ✅ tested, idempotent | ❌ **needs approval** |
+| `admin-backend/migrations/015` | ✅ tested, idempotent | ❌ **needs approval** |
+
+Nothing has been applied to the shared project. The public site therefore still
+runs on the bundled registry, and `/library-search` and `/font-library` honestly
+report "not deployed" until 0006/0007 are applied.
+
+### What is genuinely blocked, and why
+
+1. **Live synchronisation.** The scheduler is proven end-to-end, but against a
+   disposable database. Against the shared project it needs 0006 applied — a
+   shared-DB change requiring approval. Until then no source anywhere is
+   `ready`, and I will not describe sync as live.
+2. **Admin Panel modules rendering data.** The 8 new routes are implemented and
+   tested, but the console needs the deployed Admin server (a separate service
+   with its own credentials). Production `/api/admin/v1/health` still returns
+   503. The API layer and SQL are done; the deployment is the blocker.
+3. **AI generation for real users.** The engine is complete and tested. It
+   returns `available:false` until a provider key is set server-side, because
+   inventing a key is not an option and asking you to paste one into chat is not
+   allowed.
+
 ## Not yet done
 
 - [ ] Design assets: generators for gradients/palettes/icons beyond the tables
