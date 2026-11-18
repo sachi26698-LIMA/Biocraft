@@ -15,6 +15,7 @@ import {
   FeaturesSkeleton,
   HomeSkeleton,
   InfoSkeleton,
+  LibrarySkeleton,
 } from './skeleton/toolSkeletons';
 
 const HomePage = lazy(() => import('../pages/HomePage'));
@@ -24,11 +25,15 @@ const CategoriesPage = lazy(() => import('../pages/CategoriesPage'));
 const BioCollectionsPage = lazy(() => import('../pages/BioCollectionsPage'));
 const BioCollectionPage = lazy(() => import('../pages/BioCollectionPage'));
 const BioEditorPage = lazy(() => import('../pages/BioEditorPage'));
+const GlobalSearchPage = lazy(() => import('../pages/GlobalSearchPage'));
+const FontLibraryPage = lazy(() => import('../pages/FontLibraryPage'));
 const BioLibraryPage = lazy(() => import('../pages/BioLibraryPage'));
 
 const TOOL_PATHS = new Set(TOOLS.map((tool) => tool.path));
 const COLLECTIONS_INDEX = '/bio-collections';
 const BIO_EDITOR = '/bio-editor';
+const LIBRARY_SEARCH = '/library-search';
+const FONT_LIBRARY = '/font-library';
 const BIO_LIBRARY = '/bio-library';
 const HOME = '/';
 // This import is removed from production builds; the route is not linked publicly.
@@ -86,6 +91,8 @@ export default function ToolShell() {
   const isBioLibrary = path === BIO_LIBRARY;
   const isFeatures = path === '/features';
   const isDiagnostics = diagnosticsEnabled && path === '/preview-diagnostics';
+  const isLibrarySearch = path === LIBRARY_SEARCH;
+  const isFontLibrary = path === FONT_LIBRARY;
   const collection = collectionForPath(path);
   const tool = toolForPath(path);
   const isToolRoute = TOOL_PATHS.has(path);
@@ -93,10 +100,10 @@ export default function ToolShell() {
   const { record } = useRecentlyUsed();
 
   useEffect(() => {
-    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isBioLibrary && !isFeatures && !isDiagnostics && !collection) {
+    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isBioLibrary && !isFeatures && !isDiagnostics && !isLibrarySearch && !isFontLibrary && !collection) {
       navigate(HOME, { replace: true });
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isDiagnostics, collection]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isDiagnostics, isLibrarySearch, isFontLibrary, collection]);
 
   // Load only the small common-math font on routes whose content needs it.
   useEffect(() => {
@@ -142,10 +149,14 @@ export default function ToolShell() {
       document.title = 'Features — BioCraft Social Media Toolkit';
     } else if (isBioEditor) {
       document.title = 'Bio Editor — Style & Copy Your Instagram Bio | BioCraft';
+    } else if (isLibrarySearch) {
+      document.title = 'Search Every Library — BioCraft';
+    } else if (isFontLibrary) {
+      document.title = 'Font Library — BioCraft';
     } else if (collection) {
       document.title = collection.seoTitle;
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isDiagnostics, collection, tool]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isDiagnostics, isLibrarySearch, isFontLibrary, collection, tool]);
 
   if (isDiagnostics && DiagnosticsPage) return <Suspense fallback={<div role="status">Loading diagnostics…</div>}><DiagnosticsPage /></Suspense>;
   if (isHome) return <DeferredPage path={path} skeleton={<HomeSkeleton />}><HomePage /></DeferredPage>;
@@ -179,6 +190,8 @@ export default function ToolShell() {
       </section>
     );
   }
+  if (isLibrarySearch) return <DeferredPage path={path} skeleton={<LibrarySkeleton />}><GlobalSearchPage /></DeferredPage>;
+  if (isFontLibrary) return <DeferredPage path={path} skeleton={<LibrarySkeleton />}><FontLibraryPage /></DeferredPage>;
   if (isFeatures) return <DeferredPage path={path} skeleton={<FeaturesSkeleton />}><FeaturesPage /></DeferredPage>;
   if (infoPage) return <DeferredPage path={path} skeleton={<InfoSkeleton />}><InfoPage path={path} /></DeferredPage>;
   return <DeferredPage path={path} skeleton={<HomeSkeleton />}><HomePage /></DeferredPage>;

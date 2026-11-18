@@ -220,6 +220,11 @@ p, li { text-wrap: pretty; }
 .skel-two-col { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
 @media (min-width: 1024px) { .skel-two-col { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 1.75rem; } }
 .skel-username-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.55rem; }
+/* Library skeleton: a responsive card grid matching the library result list. */
+.skel-card-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.9rem; }
+.skel-card { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-md); }
+@media (min-width: 640px) { .skel-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .skel-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (min-width: 560px) { .skel-username-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 .skel-mix-grid { display: grid; gap: 0.7rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
 .skel-hero { display: flex; flex-direction: column; gap: 0.6rem; align-items: center; text-align: center; padding: 1.5rem 0; }

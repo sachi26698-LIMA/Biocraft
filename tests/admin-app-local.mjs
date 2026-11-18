@@ -35,7 +35,14 @@ try {
   assert.equal(app.configuration.enabled,false);
   const response=await app(new Request('https://preview.example/api/admin/v1/health'));
   assert.equal(response.status,503);
-  assert.equal((await response.json()).error.code,'UNAVAILABLE');
+  const body=await response.json();
+  assert.equal(body.error.code,'UNAVAILABLE');
+  // The stage names the exact gate that closed, so an operator can diagnose a
+  // deployed 503 from the response alone. It must match the injected fault.
+  assert.equal(body.error.stage,patch.reason,`stage for ${JSON.stringify(patch)}`);
+  assert.equal(response.headers.get('x-admin-stage'),patch.reason);
+  // A stage must never echo an environment value (that could leak a secret).
+  assert.ok(!JSON.stringify(body).includes('sb_publishable'),'stage body must not echo env');
   assert.equal(opened,0);void spy;
  }
  const app=createAdminApp({env:base,poolFactory:()=>({connect:async()=>{throw Error('no')},end:async()=>{}})});

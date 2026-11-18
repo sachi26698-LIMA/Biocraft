@@ -522,6 +522,29 @@ export function FeaturesSkeleton() {
   );
 }
 
+/**
+ * Library routes (search + font browser) load their first page from the database.
+ * A card grid matches the shape of the content that replaces it, so the route does
+ * not shift when the page arrives.
+ */
+export function LibrarySkeleton() {
+  return (
+    <SkeletonRegion label="Loading library">
+      <SkeletonLine width="42%" height={30} />
+      <SkeletonLine width="72%" height={16} />
+      <div className="skel-card-grid">
+        {Array.from({ length: 8 }, (_, i) => (
+          <div key={i} className="skel-card">
+            <SkeletonLine width="70%" height={18} />
+            <SkeletonLine width="100%" height={14} />
+            <SkeletonLine width="88%" height={14} />
+          </div>
+        ))}
+      </div>
+    </SkeletonRegion>
+  );
+}
+
 export function InfoSkeleton() {
   return (
     <SkeletonRegion label="Loading page">

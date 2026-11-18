@@ -23,8 +23,17 @@ try {
  create unique index bios_source_content_uidx on public.bios(source_slug,md5(content));
  create table public.generators(id uuid primary key default gen_random_uuid(),name text not null,slug text not null unique,generator_type text not null,character_limit integer,is_active boolean not null default true,platform_id uuid);
  create table public.seo_pages(id uuid primary key default gen_random_uuid(),page_slug text not null unique,title text not null,meta_description text,robots text not null default 'index,follow',is_active boolean not null default true,updated_at timestamptz not null default now());
+ -- Minimal synthetic tables for the 0006/015 content libraries.
+ create table public.data_sources(id uuid primary key default gen_random_uuid(),slug text not null unique,name text not null,provider text not null,kind text not null default 'package',endpoint text,license_code text not null default 'MIT',license_url text,attribution text,status text not null default 'never_synced',last_sync_at timestamptz,last_sync_count integer,last_error text,config jsonb not null default '{}'::jsonb,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+ create table public.data_sync_jobs(id uuid primary key default gen_random_uuid(),source_id uuid not null references public.data_sources(id),status text not null default 'queued',mode text not null default 'full',started_at timestamptz,finished_at timestamptz,items_seen integer not null default 0,items_inserted integer not null default 0,items_updated integer not null default 0,items_skipped integer not null default 0,attempts integer not null default 0,error text,created_at timestamptz not null default now());
+ create table public.fonts(id uuid primary key default gen_random_uuid(),slug text not null unique,name text not null,family text,category text,subsets text[],weights text[],styles text[],variable boolean not null default false,license_code text,source_id uuid,is_active boolean not null default true,preview_text text);
+ create table public.emoji_library(id uuid primary key default gen_random_uuid(),emoji text not null unique,name text not null,slug text not null,group_name text not null,unicode_version text,skin_tone_support boolean not null default false,license_code text,source_id uuid,is_active boolean not null default true);
+ create table public.symbols(id uuid primary key default gen_random_uuid(),symbol text not null,title text,category text,codepoints text,license_code text,source_id uuid,is_active boolean not null default true,sort_order integer not null default 0);
+ create table public.languages(code text primary key,name_en text not null,name_native text not null,direction text not null default 'ltr',script text,is_active boolean not null default true,sort_order integer not null default 100);
+ create table public.content_translations(id uuid primary key default gen_random_uuid(),source_table text not null,source_id uuid not null,source_language text,target_language text not null,status text not null default 'machine',provider text,created_at timestamptz not null default now());
+ create table public.global_content(id uuid primary key default gen_random_uuid(),source_table text not null,source_id uuid not null,domain text not null,title text,body text not null default '',language text,category text,license_code text,source_id_ref uuid,is_active boolean not null default true,created_at timestamptz not null default now());
  -- gen_random_uuid() is built into PostgreSQL 13+; PGlite provides it too.`);
- for(const f of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql','012_recovery_and_cleanup.sql','013_publication_bridge.sql','014_module_read_surface.sql']) await db.exec(fs.readFileSync(`admin-backend/migrations/${f}`,'utf8'));
+ for(const f of ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql','012_recovery_and_cleanup.sql','013_publication_bridge.sql','014_module_read_surface.sql','015_content_library_read_surface.sql']) await db.exec(fs.readFileSync(`admin-backend/migrations/${f}`,'utf8'));
  await db.exec(`insert into auth.users values('${a}'),('${b}'),('${outsider}');insert into bc_admin_v1.admin_users(id,enabled) values('${a}',true),('${b}',true);
  insert into auth.sessions(id,user_id) values('${sa}','${a}'),('${sb}','${b}');
  insert into bc_admin_v1.admin_user_roles(user_id,role_id) values('${a}','editor'),('${b}','admin');`);
@@ -39,7 +48,10 @@ try {
  bc_admin_v1.session_identity(),bc_admin_v1.list_my_notifications(integer,timestamptz),bc_admin_v1.mark_notifications_read(timestamptz),
  bc_admin_v1.list_publication_jobs(integer,uuid),bc_admin_v1.list_backup_records(integer,timestamptz),
  bc_admin_v1.list_public_bios(integer,uuid,text,text,boolean),
- bc_admin_v1.revoke_my_sessions(uuid) to fixture_executor;`);
+ bc_admin_v1.revoke_my_sessions(uuid),
+ bc_admin_v1.content_library_stats(),bc_admin_v1.list_data_sources(integer,text),bc_admin_v1.list_sync_jobs(integer,timestamp with time zone),
+ bc_admin_v1.list_fonts(integer,text,text,text),bc_admin_v1.list_emoji(integer,text),bc_admin_v1.list_symbols(integer,text,text),
+ bc_admin_v1.list_languages(),bc_admin_v1.list_translations(integer,text) to fixture_executor;`);
  // PGlite has one login: session_user comparison is simulated here; real
  // session-user and role privilege checks run in admin-postgres-integration.
  const pool={connect:async()=>{await db.exec('set role fixture_executor');return {query:(text,params)=>db.query(text.replace('session_user=current_user','true'),params),release:async()=>{await db.exec('reset role')}}}};
@@ -274,6 +286,40 @@ try {
  assert((await revoked.json()).revoked>=1);
  // The account is now signed out everywhere, including the calling session.
  assert.equal((await tmpCall('/api/admin/v1/sessions')).status,403);
+ // ---- 015: content-library read routes. A fresh session, because the
+ // sign-out-everywhere section above deliberately revoked this account's
+ // sessions; reusing the revoked one would assert the wrong thing.
+ const s3='dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+ await db.exec("insert into auth.sessions(id,user_id) values('"+s3+"','"+a+"') on conflict do nothing;");
+ await db.exec("insert into bc_admin_v1.admin_sessions(id,user_id,expires_at) values('"+s3+"','"+a+"',now()+interval '1 hour') on conflict do nothing;");
+ const call3=(path,method='GET',body)=>handler(new Request('https://admin.example'+path,{method,headers:{Authorization:'Bearer '+token(a,s3),...(body!==undefined?{'Content-Type':'application/json'}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{})}));
+ // ---- 015: content-library read routes (fonts, emoji, symbols, sources, jobs,
+ // languages, translations, stats). Real SQL against fixture rows.
+ await db.exec(`insert into public.data_sources(slug,name,provider,license_code,status,last_sync_count) values('t-src','T','npm','MIT','ready',7);
+  insert into public.fonts(slug,name,family,category,license_code,is_active,preview_text) values('abeezee','ABeeZee','ABeeZee','sans-serif','MIT',true,'x');
+  insert into public.emoji_library(emoji,name,slug,group_name,license_code) values('😀','grinning','grinning','Smileys','MIT');
+  insert into public.symbols(symbol,title,category,codepoints,license_code,is_active) values('★','U+2605','other-symbol','U+2605','MIT',true);
+  insert into public.languages(code,name_en,name_native) values('en','English','English');
+  insert into public.global_content(source_table,source_id,domain,body,language) select 'fonts',id,'font',name,'en' from public.fonts;
+  insert into public.data_sync_jobs(source_id,status,mode,started_at,finished_at,items_seen,items_inserted,attempts) select id,'succeeded','full',now(),now(),7,7,1 from public.data_sources where slug='t-src';`);
+ const statsR=await call3('/api/admin/v1/content-library/stats');
+ assert.equal(statsR.status,200);
+ assert.ok((await statsR.json()).items.some(r=>r.domain==='font'));
+ const srcR=await call3('/api/admin/v1/data-sources');assert.equal(srcR.status,200);assert.ok((await srcR.json()).items.length>=1);
+ const jobR=await call3('/api/admin/v1/sync-jobs');assert.equal(jobR.status,200);assert.ok((await jobR.json()).items.length>=1);
+ const fontR=await call3('/api/admin/v1/fonts?search=ABee');assert.equal(fontR.status,200);assert.equal((await fontR.json()).items.length,1);
+ assert.equal((await call3('/api/admin/v1/emoji')).status,200);
+ assert.equal((await call3('/api/admin/v1/symbols')).status,200);
+ const langR=await call3('/api/admin/v1/languages');assert.equal(langR.status,200);assert.equal((await langR.json()).items.length,1);
+ assert.equal((await call3('/api/admin/v1/translations')).status,200);
+ // Unknown query parameters are rejected, not ignored.
+ assert.equal((await call3('/api/admin/v1/fonts?bogus=1')).status,400);
+ // Clamping is enforced by the function, not the route.
+ assert.equal((await call3('/api/admin/v1/fonts?limit=100000')).status,422);
+ // A non-member cannot read the new modules either. call3 does not forward a
+ // token argument, so the request is built explicitly here.
+ const outsiderReq=()=>handler(new Request('https://admin.example/api/admin/v1/content-library/stats',{headers:{Authorization:'Bearer '+token(outsider,sa)}}));
+ assert.equal((await outsiderReq()).status,403);
  // The audit trail records it against the actor, never a client-supplied id.
  const revokedRow=await db.query("select actor_id from bc_admin_v1.admin_audit_logs where action='session.revoke_all'");
  assert(revokedRow.rows.some(r=>r.actor_id==='44444444-4444-4444-8444-444444444444'));

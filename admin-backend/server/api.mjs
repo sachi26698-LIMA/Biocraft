@@ -109,7 +109,12 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     operation='bioList';
     args=[pageLimit(url),url.searchParams.get('after'),url.searchParams.get('search'),url.searchParams.get('language'),
       url.searchParams.get('active')===null?null:url.searchParams.get('active')==='true'];
-   } else if(PUBLIC_CATALOGS.has(url.pathname) && request.method==='GET') {
+   } else if(PUBLIC_CATALOGS.has(url.pathname) && request.method==='GET'
+     // `/fonts` has a richer library route further down (category + text search +
+      // slug cursor). When any of those parameters is present, fall through to it
+      // instead of rejecting the request here — otherwise ?search= is a 400 even
+      // though the route exists. Plain catalog reads are unchanged.
+      && !(url.pathname==='/api/admin/v1/fonts' && ['search','category'].some(k=>url.searchParams.has(k)))) {
     paging(url,['limit','after'],{after:'uuid'});
     const limit=pageLimit(url,1,100,25);
     if(typeof readPublicCatalog!=='function') fail(503,'UNAVAILABLE');
@@ -230,6 +235,30 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     integer(body.expectedVersion,1,Number.MAX_SAFE_INTEGER);
     if(body.bioId!==null&&body.bioId!==undefined&&(typeof body.bioId!=='string'||!uid.test(body.bioId)))fail(422,'INVALID');
     operation='publish';args=[draftId,body.expectedVersion,body.bioId??null,id];
+   } else if(url.pathname==='/api/admin/v1/content-library/stats' && request.method==='GET' && !url.search) {
+    operation='contentLibraryStats';args=[];
+   } else if(url.pathname==='/api/admin/v1/data-sources' && request.method==='GET') {
+    paging(url,['limit','after'],{after:'text'});
+    operation='dataSourceList';args=[pageLimit(url),url.searchParams.get('after')];
+   } else if(url.pathname==='/api/admin/v1/sync-jobs' && request.method==='GET') {
+    paging(url,['limit','before'],{before:'time'});
+    operation='syncJobList';args=[pageLimit(url),url.searchParams.get('before')];
+   } else if(url.pathname==='/api/admin/v1/fonts' && request.method==='GET') {
+    paging(url,['limit','after','category','search'],{after:'text',category:'text',search:'text'});
+    operation='fontList';
+    args=[pageLimit(url),url.searchParams.get('after'),url.searchParams.get('category'),url.searchParams.get('search')];
+   } else if(url.pathname==='/api/admin/v1/emoji' && request.method==='GET') {
+    paging(url,['limit','after'],{after:'text'});
+    operation='emojiList';args=[pageLimit(url),url.searchParams.get('after')];
+   } else if(url.pathname==='/api/admin/v1/symbols' && request.method==='GET') {
+    paging(url,['limit','after','category'],{after:'text',category:'text'});
+    operation='symbolList';
+    args=[pageLimit(url),url.searchParams.get('after'),url.searchParams.get('category')];
+   } else if(url.pathname==='/api/admin/v1/languages' && request.method==='GET' && !url.search) {
+    operation='languageList';args=[];
+   } else if(url.pathname==='/api/admin/v1/translations' && request.method==='GET') {
+    paging(url,['limit','status'],{limit:'text',status:'text'});
+    operation='translationList';args=[pageLimit(url),url.searchParams.get('status')];
    } else {
     const path=url.pathname.match(/^\/api\/admin\/v1\/bio-drafts\/([0-9a-f-]{36})\/(submit|review)$/i);
     if(!path || request.method!=='POST' || url.search)fail(404,'NOT_FOUND');
@@ -262,7 +291,9 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     if(rows.length!==1 || !expiry || !Number.isFinite(Date.parse(expiry)))fail(503,'UNAVAILABLE');
     return json(200,{expires_at:new Date(expiry).toISOString(),request_id:id});
    }
-   if(['list','staffList','reviewQueue','platformList','categoryList','collectionList','generatorList','seoList','settingList','mySessions','auditLogs','roleCatalog','publications','notificationList','publicationJobList','backupList','bioList','reviewerDirectory','publisherQueue'].includes(operation))return json(200,{items:rows,request_id:id});
+   // Read operations added on either side are all valid list responses; the merge
+   // must keep both sets or a route that exists would answer 503.
+   if(['list','staffList','reviewQueue','platformList','categoryList','collectionList','generatorList','seoList','settingList','mySessions','auditLogs','roleCatalog','publications','notificationList','publicationJobList','backupList','bioList','reviewerDirectory','publisherQueue','dataSourceList','syncJobList','fontList','emojiList','symbolList','languageList','translationList','contentLibraryStats'].includes(operation))return json(200,{items:rows,request_id:id});
    if(operation==='notificationRead'){
     // An UPDATE with no matching rows still returns exactly one row, so the count
     // is read from a single value column rather than inferred from row count.
