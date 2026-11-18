@@ -72,7 +72,8 @@
     "sync": "node scripts/sync.mjs",
     "sync:status": "node scripts/sync.mjs --status",
     "test:sync": "node tests/sync-bootstrap.mjs > /tmp/sync-db-url && TEST_DATABASE_URL=$(cat /tmp/sync-db-url) node tests/sync-engine.mjs",
-    "test:font-library": "node tests/font-library-ui.cjs"
+    "test:font-library": "node tests/font-library-ui.cjs",
+    "test:ai": "node tests/ai-engine.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
