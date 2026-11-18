@@ -1,6 +1,10 @@
-# BioCraft integration checkpoint — 2026-11-18
+# BioCraft integration checkpoints
 
-Current branch: `arena/5bba7164-biocraft`. Supabase target: `jvpadtzfsuekixrquzjv`. Existing GitHub-linked Vercel project: `biocraft`. This is the current tracker; older documents describe earlier project states.
+**Current Production:** [connection, verified migrations, sync counts and remaining Admin pooler check](PRODUCTION_SYNC.md).
+
+## Historical Preview checkpoint — 2026-11-18
+
+Preview branch at that checkpoint: `arena/5bba7164-biocraft`. Supabase target: `jvpadtzfsuekixrquzjv`. Existing GitHub-linked Vercel project: `biocraft`. The inventory below predates the Production reconciliation.
 
 ## Done
 

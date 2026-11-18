@@ -1,7 +1,8 @@
 # BioCraft — Global Infinite Data Ecosystem
 
-Persistent implementation tracker. This file is the checkpoint: it records what is
-actually verified, what is not, and where work resumes. A tick means a command was
+**Current Production checkpoint:** [live migrations, counts and Admin status](docs/PRODUCTION_SYNC.md).
+
+This historical implementation tracker records what was verified on the branch below. A tick means a command was
 run and passed. No tick is given for anything merely written.
 
 Branch: `arena/d5b1fd2c-biocraft` (branched from `main` @ `382d4db`)

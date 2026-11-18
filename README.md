@@ -52,6 +52,8 @@ live preview, and exactly the styled text copied to your clipboard.
 Everything runs client-side; the text you type never leaves your browser.
 Rule-based generation only — no AI services, no paid APIs.
 
+**Production operations:** [Supabase sync, migration ledger and Admin connection status](docs/PRODUCTION_SYNC.md).
+
 ## Routes
 
 `/` plus one discovery hub, 12 tool routes, the hand-rolled

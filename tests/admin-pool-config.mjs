@@ -52,3 +52,14 @@ for (const [safe,ready] of [[false,true],[true,false],[true,true]]) {
  assert.equal(report.limited_role,safe?'ok':'failed');
 }
 console.log('PASS single-connection readiness, fail-closed role/commands, redacted connection categories');
+// The private control-plane cross-check reports ONLY the primary hostname.
+const {primaryPoolerHost} = await import('../scripts/admin-pooler-host.mjs');
+const host='aws-0-ap-southeast-2.pooler.supabase.com';
+const meta = url => [{database_type:'REPLICA',connection_string:'ignored'},{database_type:'PRIMARY',connection_string:url}];
+const req = data => async (url, opts) => {
+ assert.equal(url,`https://api.supabase.com/v1/projects/${ref}/config/database/pooler`);
+ assert.equal(opts.redirect,'error'); return Response.json(data);
+};
+assert.equal(await primaryPoolerHost('local-fixture',req(meta(`postgres://postgres.${ref}:fixture@${host}:6543/postgres`))),host);
+await assert.rejects(primaryPoolerHost('local-fixture',req(meta(`postgres://postgres.other:fixture@${host}/postgres`))),/No recognized primary/);
+await assert.rejects(primaryPoolerHost('local-fixture',req(meta('not-a-url'))),/No recognized primary/);

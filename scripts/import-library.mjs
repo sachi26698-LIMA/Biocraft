@@ -3,9 +3,9 @@
  * BioCraft — library importer for the 2026 licensed content expansion.
  *
  * Reads three real, licensed npm packages and writes their records into the
- * library tables created by migration 0006 and extended by 0008:
+ * library tables created by migration 0006 and extended by 0008/0010:
  *
- *   @iconify/json@2.2.558   → icon_library   (per-collection SPI licence)
+ *   @iconify/json@2.2.558   → icon_library   (per-collection SPDX licence)
  *   simple-icons@16.38.0    → icon_library   (CC0-1.0 brand marks)
  *   color-name-list@14.86.0 → color_palettes (MIT named colours)
  *
@@ -23,8 +23,7 @@
  *  3. DUPLICATES ARE IMPOSSIBLE. Every row carries a `fingerprint`
  *     (sha256 of the normalised content). Migration 0008 puts a UNIQUE index on
  *     it, so a duplicate is rejected by the database even if this script has a
- *     bug. Geometry duplicated across icon sets is detected here first so the
- *     rejection is reported rather than thrown.
+ *     bug. Identical paths with distinct upstream names/sets remain distinct.
  *
  *  4. IT IS RESTARTABLE AND SAFE TO RE-RUN. Rows are upserted on
  *     (slug) / (fingerprint); re-running updates provenance and never duplicates.
@@ -35,13 +34,16 @@
  * Usage:
  *   node scripts/import-library.mjs --source=all --dry-run
  *   node scripts/import-library.mjs --source=icons --limit=20000 --dry-run
- *   DATABASE_URL=postgres://... node scripts/import-library.mjs --source=all
+ *   For writes, inject DATABASE_URL and a confirmed BIOCRAFT_DB_BUDGET_MIB
+ *   privately; plan a limited slice before attempting a full source.
  *
  * `--dry-run` (the default without DATABASE_URL) builds and validates every row
  * and prints real counts, but writes nothing.
  */
 
-import pg from 'pg';
+import {operatorClient} from './operator-database.mjs';
+import {batchCtes} from './standard-sync-sql.mjs';
+import {pathToFileURL} from 'node:url';
 import { createHash } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -57,7 +59,7 @@ const has = (name) => args.includes(`--${name}`);
 
 const SOURCE = opt('source', 'all');
 const DRY = has('dry-run') || !process.env.DATABASE_URL;
-const LIMIT = opt('limit', null) ? Number(opt('limit')) : null;
+const LIMIT = opt('limit')===null ? null : Number(opt('limit'));
 const BATCH = Number(opt('batch', '500'));
 
 const ICONIFY_DIR = 'node_modules/@iconify/json';
@@ -79,8 +81,8 @@ const PERMISSIVE = new Map([
   ['CC-BY-4.0', 'CC-BY-4.0'],
   ['CC-BY-3.0', 'CC-BY-3.0'],
   ['BSD-3-Clause', 'BSD-3-Clause'],
-  ['ISC', 'MIT'],            // ISC is functionally MIT-equivalent for attribution
-  ['Unlicense', 'CC0-1.0'],  // public-domain dedication
+  ['ISC', 'ISC'],
+  ['Unlicense', 'Unlicense'],
   ['OFL-1.1', 'OFL-1.1'],
 ]);
 
@@ -91,32 +93,16 @@ function fingerprint(parts) {
   return createHash('sha256').update(parts.join('\u0000')).digest('hex');
 }
 
-/** Turn a human label into the url-safe slug the tables expect. */
-function slugify(input) {
-  return String(input)
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 120);
-}
-
-/** Cheap deterministic 8-char suffix so two label collisions stay distinct. */
-function shortHash(input) {
-  return createHash('sha1').update(input).digest('hex').slice(0, 8);
-}
-
 /* -------------------------------------------------------------- source reads */
 
 /** Iconify: one JSON file per collection. */
 function* iconifyCollections() {
   const indexFile = `${ICONIFY_DIR}/collections.json`;
-  if (!existsSync(indexFile)) return { available: false, reason: 'iconify index absent' };
+  if (!existsSync(indexFile)) throw new Error('Iconify package not available');
   const index = JSON.parse(readFileSync(indexFile, 'utf8'));
   for (const prefix of Object.keys(index)) {
     const file = `${ICONIFY_DIR}/json/${prefix}.json`;
-    if (!existsSync(file)) continue;
+    if (!existsSync(file)) throw new Error(`Missing Iconify collection: ${prefix}`);
     yield { prefix, meta: index[prefix], file, collection: JSON.parse(readFileSync(file, 'utf8')) };
   }
   return { available: true };
@@ -169,7 +155,7 @@ async function* adaptIconify({ limit = null } = {}) {
         // Store the icon as a self-contained SVG. Delivery to the browser is via
         // the documented Iconify API in the app layer; the row is the source of
         // truth and is valid standalone.
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">${body}</svg>`,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${icon.left ?? collection.left ?? 0} ${icon.top ?? collection.top ?? 0} ${icon.width ?? width} ${icon.height ?? height}">${body}</svg>`,
         language: null,
       });
     }
@@ -245,187 +231,94 @@ function adaptColours() {
 
 /* -------------------------------------------------------------------- writes */
 
-async function ensureSource(db, slug) {
-  const r = await db.query('select id from public.data_sources where slug=$1', [slug]);
-  if (!r.rows.length) throw new Error(`data source ${slug} is not registered (apply migration 0008 first)`);
-  return r.rows[0].id;
-}
-
-/** Upsert one batch of icons. Returns real insert/update/duplicate counts. */
-async function writeIcons(db, sourceId, rows) {
-  let inserted = 0, updated = 0, duplicate = 0;
-  for (let i = 0; i < rows.length; i += BATCH) {
-    const chunk = rows.slice(i, i + BATCH);
-    const slugs = chunk.map((r) => r.slug);
-    const existing = new Map(
-      (await db.query(
-        'select slug, fingerprint from public.icon_library where slug = any($1)',
-        [slugs],
-      )).rows.map((r) => [r.slug, r]),
-    );
-    const seen = new Set(existing.values().filter ? [] : []);
-    void seen;
-
-    for (const r of chunk) {
-      const prev = existing.get(r.slug);
-      if (!prev) {
-        const res = await db.query(
-          `insert into public.icon_library
-             (slug,label,category,svg,keywords,license_code,source_id,attribution,fingerprint,language,verification_status,is_active)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'imported',true)
-           on conflict (slug) do nothing`,
-          [r.slug, r.label, r.category, r.svg, r.keywords, r.license_code, sourceId,
-           r.attribution, r.fingerprint, r.language],
-        );
-        if (res.rowCount === 0) duplicate++;
-        else inserted++;
-      } else if (prev.fingerprint !== r.fingerprint) {
-        await db.query(
-          `update public.icon_library
-              set label=$2, category=$3, svg=$4, keywords=$5, license_code=$6,
-                  source_id=$7, attribution=$8, fingerprint=$9
-            where slug=$1`,
-          [r.slug, r.label, r.category, r.svg, r.keywords, r.license_code, sourceId,
-           r.attribution, r.fingerprint],
-        );
-        updated++;
-      } else {
-        duplicate++;
-      }
+const sources={icons:['iconify-json','icon'], brands:['simple-icons','icon'], colors:['color-name-list','palette']};
+async function* batches(name,limit,batch) {
+  if(name==='icons') {
+    for await(const result of adaptIconify({limit})) {
+      if(result.done) {yield {skipped_licences:Object.fromEntries(result.licenceSkips)};break;}
+      for(let i=0;i<result.rows.length;i+=batch) yield {rows:result.rows.slice(i,i+batch)};
     }
-  }
-  return { inserted, updated, duplicate };
-}
-
-async function writePalettes(db, sourceId, rows) {
-  let inserted = 0, updated = 0, duplicate = 0;
-  for (let i = 0; i < rows.length; i += BATCH) {
-    const chunk = rows.slice(i, i + BATCH);
-    const slugs = chunk.map((r) => r.slug);
-    const existing = new Map(
-      (await db.query('select slug, title from public.color_palettes where slug = any($1)', [slugs]))
-        .rows.map((r) => [r.slug, r]),
-    );
-    for (const r of chunk) {
-      const prev = existing.get(r.slug);
-      if (!prev) {
-        const res = await db.query(
-          `insert into public.color_palettes
-             (slug,title,colors,mood,language,license_code,attribution,fingerprint,verification_status,is_active)
-           values ($1,$2,$3,$4,$5,$6,$7,$8,'imported',true)
-           on conflict (slug) do nothing`,
-          [r.slug, r.title, r.colors, r.mood, r.language, r.license_code, r.attribution, r.fingerprint],
-        );
-        if (res.rowCount === 0) duplicate++; else inserted++;
-      } else if (prev.title !== r.title) {
-        await db.query('update public.color_palettes set title=$2, mood=$3, fingerprint=$4 where slug=$1',
-          [r.slug, r.title, r.mood, r.fingerprint]);
-        updated++;
-      } else duplicate++;
-    }
-  }
-  return { inserted, updated, duplicate };
-}
-
-/**
- * Record the real outcome of an import. A source only becomes 'ready' when rows
- * were actually written; failures are stored as 'error' with the real message
- * (Part 6: never label a job active before it has actually run successfully).
- */
-async function finishSource(db, slug, outcome) {
-  if (DRY) return;
-  if (outcome.error) {
-    await db.query(
-      `update public.data_sources set status='error', last_error=$2, updated_at=now() where slug=$1`,
-      [slug, String(outcome.error).slice(0, 500)],
-    );
   } else {
-    await db.query(
-      `update public.data_sources
-          set status='ready', last_sync_at=now(), last_error=null,
-              last_sync_count=$2, updated_at=now()
-        where slug=$1`,
-      [slug, outcome.inserted + outcome.updated],
-    );
+    const built=name==='brands'?adaptSimpleIcons():adaptColours();
+    if(!built.available) throw new Error(built.reason);
+    const n=limit===null?built.rows.length:Math.min(built.rows.length,limit);
+    for(let i=0;i<n;i+=batch) yield {rows:built.rows.slice(i,Math.min(i+batch,n))};
   }
 }
 
-/* ---------------------------------------------------------------------- main */
+export async function planLibrary(name,limit=LIMIT,batch=BATCH) {
+  let rows=0,payload_bytes=0,skipped_licences={};
+  for await(const part of batches(name,limit,batch)) {
+    if(part.skipped_licences) skipped_licences=part.skipped_licences;
+    if(part.rows) {rows+=part.rows.length;payload_bytes+=Buffer.byteLength(JSON.stringify(part.rows));}
+  }
+  if(!rows) throw new Error(`No importable rows: ${name}`);
+  // Conservative planning allowance, NOT a statement about the provider's plan.
+  return {source:sources[name][0],rows,payload_bytes,estimated_growth_bytes:2*payload_bytes+2048*rows,skipped_licences};
+}
+const dbSize=async db=>Number((await db.query('select pg_database_size(current_database()) bytes')).rows[0].bytes);
+export async function importLibrary(db,name,plan,{limit=LIMIT,batch=BATCH,budgetBytes}={}) {
+  const [slug,kind]=sources[name];
+  const src=(await db.query("select id from public.data_sources where slug=$1 and status<>'disabled'",[slug])).rows[0];
+  if(!src) throw new Error(`Missing or disabled source: ${slug}`);
+  const mode=limit===null?'full':'incremental';
+  // Serialize budgeted library writers; two concurrent sources must not both
+  // spend the same free space. Other DB users are outside this planning guard.
+  const lockName='biocraft:library-import';
+  const {rows:[lock]}=await db.query('select pg_try_advisory_lock(hashtext($1)) acquired',[lockName]);
+  if(!lock.acquired) throw new Error(`Source already busy: ${slug}`);
+  let job;
+  try {
+    if(!Number.isSafeInteger(budgetBytes) || budgetBytes < (await dbSize(db))+plan.estimated_growth_bytes) throw new Error('Confirmed database budget is insufficient');
+    job=(await db.query("insert into public.data_sync_jobs(source_id,status,mode,started_at,attempts) values($1,'running',$2,now(),1) returning id",[src.id,mode])).rows[0].id;
+    const sql=`${batchCtes(kind)} select a,c,n-a-c as skipped from counts`;
+    let seen=0,inserted=0,updated=0,skipped=0;
+    for await(const {rows} of batches(name,limit,batch)) {
+      if(!rows) continue;
+      const json=JSON.stringify(rows);
+      if((await dbSize(db))+2*Buffer.byteLength(json)+2048*rows.length>budgetBytes) throw new Error('Confirmed database budget reached');
+      // Checkpoint real counts with the batch. A failed import is resumable by
+      // natural key and never reports a partially written source as fresh.
+      await db.query('begin');
+      if (!(await db.query("select id from public.data_sources where id=$1 and status<>'disabled' for update",[src.id])).rows.length) throw new Error('Source no longer enabled');
+      const {rows:[r]}=await db.query(sql,[src.id,json]);
+      seen+=rows.length; inserted+=r.a; updated+=r.c; skipped+=r.skipped;
+      await db.query('update public.data_sync_jobs set items_seen=$2,items_inserted=$3,items_updated=$4,items_skipped=$5 where id=$1',[job,seen,inserted,updated,skipped]);
+      await db.query('commit');
+    }
+    if(seen!==plan.rows) throw new Error('Source changed after preflight');
+    await db.query('begin');
+    await db.query("update public.data_sync_jobs set status='succeeded',finished_at=now() where id=$1",[job]);
+    await db.query("insert into public.data_sync_logs(job_id,level,message) values($1,'info',$2)",[job,limit===null?'Full library sync completed':'Limited library batch completed']);
+    if(limit===null) await db.query("update public.data_sources set status='ready',last_sync_at=now(),last_sync_count=$2,last_error=null where id=$1 and status<>'disabled'",[src.id,seen]);
+    await db.query('commit');
+    return {source:slug,rows:seen,inserted,updated,skipped,mode};
+  } catch(error) {
+    await db.query('rollback');
+    if(job) {
+      // No driver messages or connection details in public source metadata.
+      const msg='Library sync did not complete';
+      await db.query("update public.data_sync_jobs set status='failed',finished_at=now(),error=$2 where id=$1",[job,msg]);
+      if(limit===null) await db.query("update public.data_sources set status='error',last_error=$2 where id=$1 and status<>'disabled'",[src.id,msg]);
+    }
+    throw error;
+  } finally {await db.query('select pg_advisory_unlock(hashtext($1))',[lockName]);}
+}
 
 async function main() {
-  const wanted = SOURCE === 'all' ? ['icons', 'brands', 'colors'] : [SOURCE];
-  log(`BioCraft library import — source=${SOURCE} dry-run=${DRY} limit=${LIMIT ?? 'none'}`);
-
-  let db = null;
-  if (!DRY) {
-    db = new pg.Client({ connectionString: process.env.DATABASE_URL });
-    await db.connect();
-  }
-
-  const report = [];
+  const names=SOURCE==='all'?Object.keys(sources):[SOURCE];
+  if(names.some(n=>!Object.hasOwn(sources,n)) || !Number.isSafeInteger(BATCH) || BATCH<1 || BATCH>5000 ||
+    (LIMIT!==null && (!Number.isSafeInteger(LIMIT)||LIMIT<1))) throw new Error('Invalid source, limit or batch size');
+  const plans=[];
+  for(const name of names) { const plan=await planLibrary(name); plans.push(plan); log(JSON.stringify(plan)); }
+  if(DRY) return;
+  const budgetBytes=Number(process.env.BIOCRAFT_DB_BUDGET_MIB)*1024**2;
+  if(!Number.isSafeInteger(budgetBytes)||budgetBytes<=0) throw new Error('Confirm your Supabase quota, then set BIOCRAFT_DB_BUDGET_MIB below the limit');
+  const db=operatorClient();await db.connect();
   try {
-    if (wanted.includes('icons')) {
-      const sourceId = DRY ? null : await ensureSource(db, 'iconify-json');
-      let total = { inserted: 0, updated: 0, duplicate: 0 };
-      let collections = 0, skippedLicences = new Map(), dryRows = 0;
-      for await (const chunk of adaptIconify({ limit: LIMIT })) {
-        if (chunk.done) {
-          for (const [k, v] of chunk.licenceSkips) skippedLicences.set(k, v);
-          break;
-        }
-        collections++;
-        if (DRY) {
-          dryRows += chunk.rows.length;
-          log(`  [dry] ${chunk.prefix}: ${chunk.rows.length} rows (${chunk.spdx})`);
-        } else {
-          const w = await writeIcons(db, sourceId, chunk.rows);
-          for (const k of Object.keys(total)) total[k] += w[k];
-          log(`  ${chunk.prefix}: +${w.inserted} ~${w.updated} =${w.duplicate} (${chunk.spdx})`);
-        }
-      }
-      const outcome = DRY ? { inserted: 0, updated: 0 } : total;
-      await finishSource(db, 'iconify-json', outcome);
-      report.push({
-        source: 'iconify-json', collections, rows: DRY ? dryRows : undefined, ...outcome,
-        skipped_licences: Object.fromEntries(skippedLicences),
-      });
-    }
-
-    if (wanted.includes('brands')) {
-      const adapted = adaptSimpleIcons();
-      if (!adapted.available) {
-        report.push({ source: 'simple-icons', unavailable: adapted.reason });
-      } else {
-        const sourceId = DRY ? null : await ensureSource(db, 'simple-icons');
-        const w = DRY ? { inserted: 0, updated: 0, duplicate: 0 } : await writeIcons(db, sourceId, adapted.rows);
-        await finishSource(db, 'simple-icons', w);
-        log(`  simple-icons: ${adapted.rows.length} rows +${w.inserted} ~${w.updated} =${w.duplicate}`);
-        report.push({ source: 'simple-icons', rows: adapted.rows.length, ...w });
-      }
-    }
-
-    if (wanted.includes('colors')) {
-      const adapted = adaptColours();
-      if (!adapted.available) {
-        report.push({ source: 'color-name-list', unavailable: adapted.reason });
-      } else {
-        const sourceId = DRY ? null : await ensureSource(db, 'color-name-list');
-        const w = DRY ? { inserted: 0, updated: 0, duplicate: 0 } : await writePalettes(db, sourceId, adapted.rows);
-        await finishSource(db, 'color-name-list', w);
-        log(`  color-name-list: ${adapted.rows.length} rows +${w.inserted} ~${w.updated} =${w.duplicate}`);
-        report.push({ source: 'color-name-list', rows: adapted.rows.length, ...w });
-      }
-    }
-  } catch (e) {
-    log(`IMPORT FAILED: ${e.message}`);
-    if (db) { try { await db.end(); } catch { /* already closed */ } }
-    process.exitCode = 1;
-    return;
-  }
-
-  log('\n--- report ---');
-  for (const r of report) log(JSON.stringify(r));
-  if (db) await db.end();
+    const used=await dbSize(db), projected=used+plans.reduce((n,p)=>n+p.estimated_growth_bytes,0);
+    if(projected>budgetBytes) throw new Error(`Preflight stopped before any writes: estimated total ${Math.ceil(projected/1024**2)} MiB exceeds the confirmed budget`);
+    for(let i=0;i<names.length;i++) log(JSON.stringify(await importLibrary(db,names[i],plans[i],{budgetBytes})));
+  } finally {await db.end();}
 }
-
-await main();
+if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href) main().catch(e=>{console.error('Library import failed:',e.message);process.exitCode=1;});
