@@ -12,7 +12,26 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const dir = 'admin-backend/migrations';
-const files = fs.readdirSync(dir).filter(name => name.endsWith('.sql')).sort();
+// The approved 001–014 package and its checksummed report are frozen. 015 is
+// an independent library-read surface, not part of that credential generator.
+const allFiles = fs.readdirSync(dir).filter(name => name.endsWith('.sql')).sort();
+const files = allFiles.filter(name => name.slice(0,3)<='014');
+const additional = allFiles.filter(name => !files.includes(name));
+assert.deepEqual(additional,['015_content_library_read_surface.sql']);
+const readers=fs.readFileSync(`${dir}/${additional[0]}`,'utf8').replace(/--[^\n]*/g,'');
+const expectedReaders=['content_library_stats','list_data_sources','list_sync_jobs','list_fonts','list_emoji','list_symbols','list_languages','list_translations'];
+const readBodies=[...readers.matchAll(/create or replace function bc_admin_v1\.(\w+)\(([\s\S]*?)\)\s*returns table[\s\S]*?end \$\$;/g)];
+assert.deepEqual(readBodies.map(m=>m[1]),expectedReaders);
+for (const [body,name,args] of readBodies) {
+  assert.match(body,/security definer set search_path=public,pg_catalog/);
+  assert.match(body,/bc_admin_v1\.require_actor\('content\.read'\)/);
+  assert.doesNotMatch(body,/\b(insert|update|delete|truncate|grant|execute)\b/i);
+  const types=args.trim()?args.trim().split(',').map(a=>a.trim().split(/\s+/)[1].replace('timestamptz','timestamp with time zone')).join(','):'';
+  assert.ok(readers.includes(`'${name}(${types})'`), `reader omitted from revocation: ${name}`);
+}
+for (const role of ['public','anon','authenticated']) assert.ok(readers.includes(`revoke all on function bc_admin_v1.%s from ${role}'`));
+assert.doesNotMatch(readers,/\bgrant\b/i);
+console.log('PASS independent 015 inventory: eight fixed-signature content.read functions, no writers or client grants');
 assert.deepEqual(files.map(f => f.slice(0, 3)), ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '011', '012', '013', '014'], 'migration set changed');
 
 const sql = files.map(name => ({ name, body: fs.readFileSync(`${dir}/${name}`, 'utf8') }));
@@ -181,4 +200,4 @@ for (const file of sqlFiles) {
   assert.ok(review.includes(digest), `${file} SHA-256 missing from the security review checklist`);
 }
 
-console.log(`PASS grant inventory: ${tables.length} tables, ${created.length} functions = ${functions.length} callable SECURITY DEFINER (all ${granted.length} granted) + ${triggerBodies.length} trigger bodies (none granted), every search_path fixed, no public/auth writes, no CASCADE; all ${sqlFiles.length} SQL files and their SHA-256 reproduced in both documents`);
+console.log(`PASS 001–014 grant inventory: ${tables.length} tables, ${created.length} functions = ${functions.length} callable SECURITY DEFINER (all ${granted.length} granted) + ${triggerBodies.length} trigger bodies (none granted), every search_path fixed, only 013 may publish a public bio, no CASCADE; all ${sqlFiles.length} SQL files and their SHA-256 reproduced in both documents`);

@@ -1,5 +1,7 @@
 # Shared-database change — approval required
 
+> **Historical checkpoint.** Do not replay this SQL or import the bulk library. For the current ledger, quota hold and revised per-mark licence preflight see [Production sync status](docs/PRODUCTION_SYNC.md). Package CC0 is not a grant for every brand mark.
+
 **Status: APPROVED AND APPLIED** on 2026-11-09, after explicit approval.
 
 `0006`, `0007` and `0008` are now live on `jvpadtzfsuekixrquzjv`. They were applied
@@ -37,29 +39,15 @@ Read API live: `library_facets()` → 6 domains, `library_page(...)` clamps
 
 ---
 
-## Remaining step: loading the 572,907 records
+## Bulk import (not approved)
 
-The tables and importers are ready, but the bulk write has **not** been executed
-yet. It needs a direct database connection (`DATABASE_URL`), which requires the
-database password — a credential that must not be handled here. The exact command,
-run once, from the repository root:
-
-```bash
-DATABASE_URL='postgresql://postgres.jvpadtzfsuekixrquzjv:<DB-PASSWORD>@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres'   node scripts/import-library.mjs --source=all
-```
-
-It is idempotent, batched, and prints real inserted/updated/duplicate counts per
-collection. Re-running it never duplicates a row (the fingerprint unique index
-enforces this). Use `--source=icons --limit=20000` first if you want a short trial.
-
-Locally, `--dry-run` already reports the real totals: **537,448 icons** across 262
-permissive collections, **3,455** brand marks, **32,004** named colours.
+The former one-line bulk command is withdrawn. See [the current source/rights and quota hold](docs/PRODUCTION_SYNC.md). The three large-source jobs have not run in Production. Use `npm run import:library -- --source=all --dry-run` to plan without a database; do not use a database owner in the Admin app or put a DSN in shell history.
 
 ---
 
-## 1. Why this is needed — what is actually true right now
+## 1. Historical pre-migration observations (superseded)
 
-Read directly from the live database this session:
+The following values were measured **before** the migrations above:
 
 | Fact | Value |
 |---|---|
@@ -68,12 +56,9 @@ Read directly from the live database this session:
 | Library content in production | **6,752 rows** in 11 base tables |
 | Database size | 19 MB |
 
-So migrations `0006`, `0007` and `0008` — the entire content-intelligence layer,
-the keyset read API and the provenance/dedupe layer built in this batch — are
-**not live**. The 572,907 licensed records the importers can produce cannot be
-stored until `0006` + `0008` exist.
+At that earlier point the content-intelligence tables were absent. The count of 572,907 was an initial candidate estimate, not a verified rights inventory or the number of imported rows.
 
-Current live row counts (unchanged, will be preserved):
+Historical row counts:
 
 ```
 bios 506 · captions 3888 · hashtags 1155 · symbols 629 · emoji_collections 438
@@ -221,8 +206,7 @@ backup first if you want to be able to restore an import.
 
 1. ✅ Applied `0006` → `0007` → `0008` through the Supabase migration tool.
 2. ✅ Re-counted every table and diffed against the "before" numbers — nothing lost.
-3. ⏳ `scripts/import-library.mjs` still needs `DATABASE_URL` (database password)
-   before it can write the licensed records. See the section above.
+3. Bulk imports remain on hold for quota and rights review. Credentials alone do not authorize the write. See the current [Production checkpoint](docs/PRODUCTION_SYNC.md).
 4. ✅ Re-verified the public read API, grants and RLS on the live project.
 
 ---

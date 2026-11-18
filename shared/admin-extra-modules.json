@@ -1,7 +1,11 @@
 [
   {"key":"captions","label":"Captions","section":"CONTENT","icon":"content","description":"Browse active captions served by the public generator."},
   {"key":"hashtags","label":"Hashtags","section":"CONTENT","icon":"content","description":"Browse active hashtags served by the public generator."},
-  {"key":"templates","label":"Templates","section":"CONTENT","icon":"content","description":"Manage reusable editorial templates when a reviewed template store is available."},
+  {"key":"templates","label":"Templates","section":"CONTENT","icon":"content","description":"Browse active design templates and recorded licence metadata. This list does not publish templates."},
+  {"key":"designs","label":"Designs","section":"CONTENT","icon":"content","description":"Browse active design presets by name and kind. Preset code is never executed here."},
+  {"key":"symbols","label":"Symbols","section":"CONTENT","icon":"content","description":"Browse active symbols, code points and recorded licences."},
+  {"key":"emoji","label":"Emoji","section":"CONTENT","icon":"content","description":"Browse active package emoji and their recorded groups and licences."},
+  {"key":"languages","label":"Languages","section":"CONTENT","icon":"content","description":"Browse enabled languages, native names and writing directions. Registration does not imply translation coverage."},
   {"key":"fonts","label":"Fonts","section":"CONTENT","icon":"content","description":"Browse active font records served by the public generator."},
   {"key":"seo","label":"SEO","section":"CONTENT","icon":"content","description":"Inspect recorded SEO metadata without changing the public site."},
   {"key":"content-intelligence","label":"Global Content Intelligence","section":"INSIGHTS","icon":"analytics","description":"Inspect existing inventory and editorial throughput. These are database aggregates, not audience telemetry or AI predictions."},

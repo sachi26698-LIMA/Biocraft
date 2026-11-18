@@ -5,8 +5,9 @@
 import {randomUUID} from 'node:crypto';
 import {verifyProviderIdentity,AccessError} from './identity.mjs';
 import {validateBio,ValidationError} from '../domain/bio.mjs';
+import {draftDomain,validDraftFields} from './catalog-drafts.mjs';
+import {publishedCatalogPath} from './published-catalog.mjs';
 const uid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const PUBLIC_CATALOGS=new Set(['/api/admin/v1/captions','/api/admin/v1/hashtags','/api/admin/v1/fonts']);
 const head={'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'};
 class ApiError extends Error { constructor(status,code){super(code);this.status=status;this.code=code;} }
 const fail=(status,code)=>{throw new ApiError(status,code)};
@@ -43,12 +44,13 @@ function paging(url,allowed,expect={}) {
   if(type==='bigint'&&!int8Id(value))fail(422,'INVALID');
   if(type==='slug'&&!/^[a-z0-9][a-z0-9-]{0,199}$/.test(value))fail(422,'INVALID');
   if(type==='setting'&&!/^[a-z][a-z0-9_.-]{0,99}$/.test(value))fail(422,'INVALID');
+  if(type==='language'&&!/^[a-z0-9-]{1,35}$/i.test(value))fail(422,'INVALID');
   if(type==='uuid'&&!uid.test(value))fail(422,'INVALID');
   if(type==='text'&&value.length>120)fail(422,'INVALID');
   if(type==='boolean'&&value!=='true'&&value!=='false')fail(422,'INVALID');
  }
 }
-export function createAdminHandler({provider,execute,rateLimit,platformRules,recovery=null,readPublicCatalog=null,readSystemStatus=null,emailAllowed,sharedWrites=true,editorialDirectory=false,enabled=false}={}) {
+export function createAdminHandler({provider,execute,rateLimit,platformRules,recovery=null,readPublicCatalog=null,readSystemStatus=null,emailAllowed,sharedWrites=true,catalogDrafts=false,editorialDirectory=false,enabled=false}={}) {
  return async function handle(request) {
   const id=requestId();
   try {
@@ -66,6 +68,7 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
    let permitted;try{permitted=await rateLimit({userId:identity.userId,operation:'admin-api'});}catch{fail(503,'UNAVAILABLE')}
    if(permitted!==true)fail(429,'RATE_LIMITED');
    let operation,args;
+   const published=publishedCatalogPath(url.pathname);
    if(url.pathname==='/api/admin/v1/session' && request.method==='POST' && !url.search) {
     operation='sessionOpen';args=[id];
    } else if(url.pathname==='/api/admin/v1/session' && request.method==='DELETE' && !url.search) {
@@ -109,18 +112,18 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     operation='bioList';
     args=[pageLimit(url),url.searchParams.get('after'),url.searchParams.get('search'),url.searchParams.get('language'),
       url.searchParams.get('active')===null?null:url.searchParams.get('active')==='true'];
-   } else if(PUBLIC_CATALOGS.has(url.pathname) && request.method==='GET'
+   } else if(published && request.method==='GET'
      // `/fonts` has a richer library route further down (category + text search +
       // slug cursor). When any of those parameters is present, fall through to it
       // instead of rejecting the request here — otherwise ?search= is a 400 even
       // though the route exists. Plain catalog reads are unchanged.
       && !(url.pathname==='/api/admin/v1/fonts' && ['search','category'].some(k=>url.searchParams.has(k)))) {
-    paging(url,['limit','after'],{after:'uuid'});
+    paging(url,['limit','after'],{after:published==='published/languages'?'language':'uuid'});
     const limit=pageLimit(url,1,100,25);
     if(typeof readPublicCatalog!=='function') fail(503,'UNAVAILABLE');
     const access=await execute({identity,operation:'publicCatalogAccess',args:[]});
     if(access?.length!==1||access[0]?.active!==true) fail(403,'FORBIDDEN');
-    const items=await readPublicCatalog({kind:url.pathname.split('/').at(-1),after:url.searchParams.get('after'),limit});
+    const items=await readPublicCatalog({kind:published,after:url.searchParams.get('after'),limit});
     if(!Array.isArray(items))fail(503,'UNAVAILABLE');
     return json(200,{items,request_id:id});
    } else if(['/api/admin/v1/bio-reviewers','/api/admin/v1/bio-publish-queue'].includes(url.pathname) && request.method==='GET') {
@@ -128,6 +131,22 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     paging(url,['limit','after'],{after:'uuid'});
     operation=url.pathname.endsWith('bio-reviewers')?'reviewerDirectory':'publisherQueue';
     args=[pageLimit(url,1,100,50),url.searchParams.get('after')];
+   } else if(url.pathname==='/api/admin/v1/catalog-drafts' || url.pathname.startsWith('/api/admin/v1/catalog-drafts/')) {
+    if(!catalogDrafts) fail(503,'UNAVAILABLE');
+    const item=url.pathname.slice('/api/admin/v1/catalog-drafts'.length);
+    if(request.method==='GET' && !item) {
+     paging(url,['domain','limit','after'],{after:'uuid'});
+     const domain=url.searchParams.get('domain');if(!draftDomain(domain))fail(422,'INVALID');
+     operation='catalogDraftList';args=[domain,pageLimit(url,1,100,25),url.searchParams.get('after')];
+    } else {
+     const create=request.method==='POST' && !item, edit=request.method==='PUT', archive=request.method==='DELETE';
+     if(url.search || !(create || ((edit||archive) && item.startsWith('/') && uid.test(item.slice(1)))))fail(404,'NOT_FOUND');
+     const body=await bodyJson(request);
+     keys(body,['domain',...(create?[]:['expectedVersion']),...(archive?[]:['fields'])]);
+     if(!draftDomain(body.domain) || (!archive&&!validDraftFields(body.fields)))fail(422,'INVALID');
+     const expected=create?null:integer(body.expectedVersion,1,Number.MAX_SAFE_INTEGER);
+     operation='catalogDraftChange';args=[body.domain,create?'create':edit?'edit':'archive',create?null:item.slice(1),expected,archive?null:JSON.stringify(body.fields),id];
+    }
    } else if(url.pathname==='/api/admin/v1/system/status' && request.method==='GET' && !url.search) {
     if(typeof readSystemStatus!=='function') fail(503,'UNAVAILABLE');
     operation='systemStatusAccess';args=[];
@@ -293,7 +312,7 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
    }
    // Read operations added on either side are all valid list responses; the merge
    // must keep both sets or a route that exists would answer 503.
-   if(['list','staffList','reviewQueue','platformList','categoryList','collectionList','generatorList','seoList','settingList','mySessions','auditLogs','roleCatalog','publications','notificationList','publicationJobList','backupList','bioList','reviewerDirectory','publisherQueue','dataSourceList','syncJobList','fontList','emojiList','symbolList','languageList','translationList','contentLibraryStats'].includes(operation))return json(200,{items:rows,request_id:id});
+   if(['catalogDraftList','list','staffList','reviewQueue','platformList','categoryList','collectionList','generatorList','seoList','settingList','mySessions','auditLogs','roleCatalog','publications','notificationList','publicationJobList','backupList','bioList','reviewerDirectory','publisherQueue','dataSourceList','syncJobList','fontList','emojiList','symbolList','languageList','translationList','contentLibraryStats'].includes(operation))return json(200,{items:rows,request_id:id});
    if(operation==='notificationRead'){
     // An UPDATE with no matching rows still returns exactly one row, so the count
     // is read from a single value column rather than inferred from row count.
@@ -301,6 +320,10 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     const marked=Number(rows[0]?.marked);
     if(!Number.isSafeInteger(marked)||marked<0)fail(503,'UNAVAILABLE');
     return json(200,{marked,request_id:id});
+   }
+   if(operation==='catalogDraftChange') {
+    if(rows.length!==1 || !uid.test(rows[0]?.draft_id) || !Number.isSafeInteger(rows[0]?.row_version))fail(503,'UNAVAILABLE');
+    return json(request.method==='POST'?201:200,{draft_id:rows[0].draft_id,row_version:rows[0].row_version,request_id:id});
    }
    if(operation==='staffUpdate'){if(rows.length!==1||!Number.isSafeInteger(Number(rows[0]?.row_version)))fail(503,'UNAVAILABLE');return json(200,{row_version:Number(rows[0].row_version),request_id:id});}
    if(operation==='publish'){
@@ -314,7 +337,7 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     if(typeof row?.user_id!=='string'||!Array.isArray(row.roles)||!Array.isArray(row.permissions))fail(503,'UNAVAILABLE');
     const expires=typeof row.session_expires_at==='string'?row.session_expires_at:new Date(row.session_expires_at).toISOString();
     return json(200,{user:{id:row.user_id,roles:row.roles,permissions:row.permissions},
-      expires_at:expires,shared_writes:sharedWrites,editorial_directory:editorialDirectory,created_at:row.session_created_at,request_id:id});
+      expires_at:expires,shared_writes:sharedWrites,editorial_directory:editorialDirectory,catalog_drafts:catalogDrafts,created_at:row.session_created_at,request_id:id});
    }
    if(operation==='analytics')return json(200,{metrics:rows,request_id:id});
 

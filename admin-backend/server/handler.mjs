@@ -1,7 +1,7 @@
 // Serverless entry point for the Admin API (Vercel Node runtime).
 //
-// This file is NOT wired into the deployed Preview: it is only reachable if
-// Vercel routes /api/admin/* to it, and it returns 503 for every request unless
+// The deployed rewrite routes /api/admin/v1/* to api/admin/handler.mjs, which
+// calls this adapter. It returns 503 unless
 // ADMIN_BACKEND_ENABLED=true and all reviewed server-only settings are present.
 // It never serves static files and never exposes a provider or database secret.
 import {createAdminApp} from './app.mjs';

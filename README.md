@@ -49,8 +49,10 @@ character counters, 33 Unicode fonts, decorative dividers, emoji quick-insert
 (including your symbol favourites and recents), 18 designer card styles with a
 live preview, and exactly the styled text copied to your clipboard.
 
-Everything runs client-side; the text you type never leaves your browser.
+Public rule-based generators run client-side; their inputs stay in the browser.
 Rule-based generation only — no AI services, no paid APIs.
+
+**Run the website and Admin API locally:** `npm run dev:admin-init` (one-time private settings), then `npm run dev:api` and `npm run dev:web` in separate terminals. Open the **web** origin at `/admin/login`. `/api/status/live` is process liveness, not a successful sign-in. See [private setup and the exact Vercel scope matrix](docs/MASTER_ADMIN_DEPLOYMENT.md).
 
 **Production operations:** [Supabase sync, migration ledger and Admin connection status](docs/PRODUCTION_SYNC.md).
 

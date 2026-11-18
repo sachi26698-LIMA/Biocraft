@@ -129,7 +129,7 @@ export default function ExtraModule({module, authorized}: {module: {key: string;
   let content: ReactNode;
   if (!authorized) content = <Panel title="Live Admin access required"><p>Sign in to an enabled Admin backend to use this module. No live data or controls are available in this view.</p><Link to="/login">Go to Admin sign-in</Link></Panel>;
   else switch (key) {
-    case 'captions': case 'hashtags': case 'fonts': content = <Panel title={`Published ${label.toLowerCase()}`}><Entries kind={key as Kind} /></Panel>; break;
+    case 'captions': case 'hashtags': case 'fonts': case 'templates': case 'designs': case 'symbols': case 'emoji': case 'languages': content = <Panel title={`Published ${label.toLowerCase()}`}><Entries kind={key as Kind} /></Panel>; break;
     case 'seo': content = <SeoPages />; break;
     case 'content-intelligence': return <Analytics intelligence />;
     case 'data-sources': content = <SourceDirectory />; break;
@@ -138,7 +138,6 @@ export default function ExtraModule({module, authorized}: {module: {key: string;
     case 'db-management': content = <><StatusPanel mode={key} /><RecordedBackups /></>; break;
     case 'api-management': case 'vercel-status': case 'supabase-health': content = <StatusPanel mode={key} />; break;
     case 'imports': content = <ImportPreflight />; break;
-    case 'templates': content = <Panel title="Template store not connected"><p>A reviewed template store and publication workflow are not available yet. This module does not display placeholder records.</p></Panel>; break;
     case 'ai-configuration': content = <Panel title="AI integration not connected"><p>No provider is configured through this console. No prompts, credentials or content are sent to an AI service.</p></Panel>; break;
   }
   return <><PageHead eyebrow="ADMIN WORKSPACE" title={label} description={description} />{content}</>;

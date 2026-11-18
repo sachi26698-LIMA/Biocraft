@@ -9,7 +9,7 @@ const text = {
   'content-intelligence':'Content Mix', 'data-sources':'Unicode fixture', notifications:'Review completed',
   roles:'Review administrator', permissions:'content.review', 'db-management':'snapshot-fixture',
   'api-management':'API version: v1', 'vercel-status':'Build revision: abcdef012345', 'supabase-health':'Guest catalogue REST: Connected',
-  'ai-configuration':'AI integration not connected', templates:'Template store not connected', imports:'Local validation only',
+  'ai-configuration':'AI integration not connected', templates:'Template fixture', designs:'Design fixture', symbols:'Symbol fixture', emoji:'Emoji fixture', languages:'Language fixture', imports:'Local validation only',
 };
 (async()=>{
   const browser=await chromium.launch({executablePath:process.env.BROWSER_EXECUTABLE_PATH,args:['--no-sandbox','--disable-dev-shm-usage']});
@@ -23,6 +23,8 @@ const text = {
         if(path==='session')return signedIn?route.fulfill({json:{user:{id:uid,roles:['editor'],permissions:['content.read']},expires_at:expiresAt}}):route.fulfill({status:401,json:{error:{code:'UNAUTHENTICATED'}}});
         if(path==='roles'&&denied)return route.fulfill({status:403,json:{error:{code:'FORBIDDEN'}}});
         const items={
+          templates:[{id:uid,text:'Template fixture'}], designs:[{id:uid,text:'Design fixture'}],
+          'published/symbols':[{id:uid,text:'Symbol fixture'}], 'published/emoji':[{id:uid,text:'Emoji fixture'}], 'published/languages':[{id:'en',text:'Language fixture'}],
           captions:[{id:uid,text:'Synthetic caption'}], hashtags:[{id:uid,text:'#synthetic'}], fonts:[{id:uid,text:'Synthetic font sample'}],
           'seo-pages':[{id:uid,title:'Synthetic SEO title',page_slug:'fixture-seo',is_active:true}],
           'data-sources':[{id:uid,name:'Unicode fixture',license_code:'MIT',status:'never_synced',last_sync_at:null,last_sync_count:null,next_cursor:'fixture'}],

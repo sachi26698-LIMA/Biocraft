@@ -2,7 +2,7 @@
   "name": "biocraft",
   "private": true,
   "version": "1.0.0",
-  "description": "BioCraft \u2014 All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
+  "description": "BioCraft — All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -84,7 +84,16 @@
     "test:public-content-status": "node tests/public-content-status.mjs",
     "test:published-catalog-browser": "node tests/published-catalog-browser.mjs",
     "test:admin-password-reset-browser": "node tests/admin-password-reset-browser.cjs",
-    "test:admin-extra-modules": "node tests/admin-extra-modules-browser.cjs"
+    "test:admin-extra-modules": "node tests/admin-extra-modules-browser.cjs",
+    "dev:api": "node --env-file-if-exists=\"$HOME/.config/biocraft/admin-local.env\" scripts/dev-admin-api.mjs",
+    "dev:web": "BIOCRAFT_LOCAL_API=true BIOCRAFT_ADMIN_PREVIEW=true vite --host 0.0.0.0 --port 5173 --strictPort",
+    "dev:admin-init": "node scripts/init-local-admin.mjs",
+    "test:admin-local-http": "node tests/admin-local-http.mjs",
+    "test:library-postgres-scale": "node tests/run-admin-postgres.mjs --library-scale",
+    "test:admin-stack-browser": "node tests/run-admin-postgres.mjs --browser",
+    "test:admin-running-stack": "node tests/admin-running-stack.mjs",
+    "admin:check:local": "node --env-file-if-exists=\"$HOME/.config/biocraft/admin-local.env\" scripts/admin-config-check.mjs --local",
+    "pretest:admin-stack-browser": "VERCEL_ENV=production BIOCRAFT_ADMIN_PRODUCTION=true npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

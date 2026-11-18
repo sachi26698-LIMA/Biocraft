@@ -55,13 +55,32 @@ try {
   await db.exec(transfer.slice(transfer.indexOf('-- Data phase.')));
   assert.deepEqual((await db.query('select items_inserted,items_updated from public.data_sync_jobs order by finished_at desc limit 2')).rows,[{items_inserted:0,items_updated:0},{items_inserted:0,items_updated:0}]);
   await db.exec(sql('supabase/migrations/0010_library_import_provenance.sql'));
+  // Stop between batches: counters and rows from batch one survive together.
+  // The explicitly named job can resume with a different batch size, never a
+  // different dataset/limit, and must not replay the already-committed prefix.
+  {
+    const plan=await planLibrary('colors',40,10), opts={limit:40,batch:10,budgetBytes:2**32};
+    await db.query("update public.data_sources set endpoint='npm:fixture@0' where slug=$1",[plan.source]);
+    await assert.rejects(importLibrary(db,'colors',plan,opts),/Missing or disabled source/);
+    await db.query('update public.data_sources set endpoint=$2 where slug=$1',[plan.source,plan.endpoint]);
+    let batches=0;
+    const cut={query:(sql,p)=>{if(sql.startsWith('with incoming') && ++batches===2) throw Error('fixture interruption'); return db.query(sql,p);}};
+    await assert.rejects(importLibrary(cut,'colors',plan,opts),/fixture interruption/);
+    const {id,items_seen,status}=(await db.query("select id,items_seen,status from public.data_sync_jobs where status='failed' and items_seen=10")).rows[0];
+    assert.equal(items_seen,10);assert.equal(status,'failed');
+    await assert.rejects(importLibrary(db,'colors',{...plan,sha256:'0'.repeat(64)},{...opts,resumeJob:id}),/not resumable/);
+    const result=await importLibrary(db,'colors',plan,{...opts,batch:7,resumeJob:id});
+    assert.equal(result.inserted,40);assert.equal(result.skipped,0);assert.equal(result.job_id,id);
+    assert.equal((await db.query('select attempts from public.data_sync_jobs where id=$1',[id])).rows[0].attempts,2);
+    await assert.rejects(importLibrary(db,'colors',plan,{...opts,resumeJob:id}),/not resumable/);
+  }
   for (const name of ['colors','icons','brands']) {
     const plan=await planLibrary(name,32,10);
     assert.equal(plan.rows,32);
     const opts={limit:32,batch:10,budgetBytes:2**32};
     await assert.rejects(importLibrary(db,name,plan,{...opts,budgetBytes:1024}),/budget/);
     const first=await importLibrary(db,name,plan,opts), again=await importLibrary(db,name,plan,opts);
-    assert.equal(first.inserted,32);assert.equal(again.inserted,0);assert.equal(again.skipped,32);
+    assert.equal(first.inserted,name==='colors'?0:32);assert.equal(again.inserted,0);assert.equal(again.skipped,32);
     assert.equal((await db.query('select status from public.data_sources where slug=$1',[plan.source])).rows[0].status,'never_synced');
   }
   assert.throws(()=>operatorConfig('postgres://user:example@db.invalid:5432/postgres'));

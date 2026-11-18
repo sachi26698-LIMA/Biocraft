@@ -1,8 +1,6 @@
-// Server-side Admin HTTP application. NOT mounted in this repository by default:
-// there is no reviewed, isolated deployment target and no approved database
-// credentials. Nothing here listens on a port or opens a database connection on
-// import. Enabling it requires: server-only secrets, a reviewed limited DB login,
-// independently reviewed SQL grants, and an approved Preview origin + proxy.
+// Shared Admin composition used by the Vercel function and the local listener.
+// Importing this module never opens a socket or a database connection.
+// Activation requires explicit, server-only configuration and a limited role.
 //
 // Request chain:
 //   /api/admin/v1/auth/*  -> auth controller (password + TOTP, encrypted flows)
@@ -18,6 +16,7 @@ import {issueRecoveryGrant,revokeRecoveryGrant,runCleanup,redeemRecoveryCode,fac
 import {verifyProviderIdentity} from './identity.mjs';
 import {createCookieGateway} from './session-cookie.mjs';
 import {createAdminHandler} from './api.mjs';
+import {createPublishedCatalog} from './published-catalog.mjs';
 import {createDatabaseExecutor,createPostgresPool} from './database.mjs';
 import {inspectAdminDatabase,databaseReady} from './db-readiness.mjs';
 export {verifyAdminDatabase} from './db-readiness.mjs';
@@ -58,7 +57,7 @@ export function clientKey(request,{trustedHeader,ingressSecret}={}) {
  *   ADMIN_INGRESS_SECRET_HEX=<64 hex chars shared with that proxy>
  *   ADMIN_ALLOWED_EMAILS=comma-separated (bootstrap allow-list, optional)
  */
-export function createAdminApp({env=process.env,poolFactory=createPostgresPool,now=()=>Date.now()}={}) {
+export function createAdminApp({env=process.env,poolFactory=createPostgresPool,now=()=>Date.now(),localDevelopment=false}={}) {
  // `stage` names the configuration check that failed. It is a fixed identifier
  // from this file's own vocabulary — never an environment value, never a secret —
  // so an operator can tell WHICH gate closed without reading the deployment logs.
@@ -66,8 +65,13 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  // the Admin client and the existing regression tests remain correct.
  const fail=reason=>{const app=()=>new Response(JSON.stringify({error:{code:'UNAVAILABLE',stage:reason}}),{status:503,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff','X-Admin-Stage':reason}});app.configuration={enabled:false,reason};app.shutdown=async()=>{};return app;};
  if (env.ADMIN_BACKEND_ENABLED!=='true') return fail('disabled');
+ if (env.NODE_TLS_REJECT_UNAUTHORIZED==='0') return fail('unverified TLS');
  const origin=env.ADMIN_ORIGIN;
- if (typeof origin!=='string'||!/^https:\/\/[a-z0-9.-]{1,200}$/i.test(origin)) return fail('invalid origin');
+ // A TLS-terminating proxy on a nonstandard port is supported for local
+ // loopback development only. Never infer an origin from forwarding headers.
+ if (typeof origin!=='string' || !(/^https:\/\/[a-z0-9.-]{1,200}$/i.test(origin) ||
+   (localDevelopment && /^https:\/\/(localhost|127\.0\.0\.1):[1-9]\d{0,4}$/.test(origin)))) return fail('invalid origin');
+ try { if(new URL(origin).origin!==origin) return fail('invalid origin'); } catch {return fail('invalid origin');}
  const cookieKey=key32(env.ADMIN_COOKIE_KEY_HEX),flowKey=key32(env.ADMIN_FLOW_KEY_HEX),hashKey=key32(env.ADMIN_HASH_KEY_HEX);
  if (!cookieKey||!flowKey||!hashKey||cookieKey.equals(flowKey)||cookieKey.equals(hashKey)||flowKey.equals(hashKey)) return fail('invalid keys');
  const publishableKey=env.ADMIN_SUPABASE_PUBLISHABLE_KEY ?? env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -110,20 +114,9 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
   revoke:options=>revokeRecoveryGrant({execute,...options}),
   reset:options=>resetFactorEnrolment({execute,...options}),
   cleanup:options=>runCleanup({execute,...options})};
- const columns={captions:'id,title,text:content,language,tone',hashtags:'id,text:tag,language,popularity',fonts:'id,title:name,text:preview_text,font_type'};
- const readPublicCatalog=async({kind,after,limit})=>{
-   if(!Object.hasOwn(columns,kind)) throw new Error('Unknown catalogue');
-   // Use a fresh guest client (no admin JWT or database credentials). This read
-   // can never expose inactive entries, even on the privileged route.
-   let query=client().from(kind).select(columns[kind]).eq('is_active',true).order('id').limit(limit)
-    .retry(false).abortSignal(AbortSignal.timeout(5000));
-   if(after) query=query.gt('id',after);
-   const {data,error}=await query;
-   if(error) throw new Error('Catalogue unavailable');
-   return data;
- };
+ const readPublicCatalog=createPublishedCatalog(client); // fresh guest client, never an Admin JWT
  const isPreviewOrUnknownHosted=env.VERCEL_ENV==='preview'||(env.VERCEL==='1'&&env.VERCEL_ENV!=='production');
- const sharedWrites=!isPreviewOrUnknownHosted||env.ADMIN_SHARED_WRITES_ENABLED==='true';
+ const sharedWrites=env.ADMIN_SHARED_WRITES_ENABLED==='true' || (env.ADMIN_SHARED_WRITES_ENABLED===undefined && !localDevelopment && !isPreviewOrUnknownHosted);
  const passwordReset=sharedWrites&&env.ADMIN_PASSWORD_RESET_ENABLED==='true';
  const readSystemStatus=async()=>({
   database:'ready', // settings.read and the live session were just checked in Postgres.
@@ -133,7 +126,7 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
   shared_writes:sharedWrites, password_reset:passwordReset,
   revision: /^[0-9a-f]{40}$/.test(env.VERCEL_GIT_COMMIT_SHA??'')?env.VERCEL_GIT_COMMIT_SHA.slice(0,12):null,
  });
- const api=createAdminHandler({sharedWrites,editorialDirectory:env.ADMIN_EDITORIAL_DIRECTORY_ENABLED==='true',readSystemStatus,enabled:true,provider,execute,rateLimit,platformRules:PLATFORM_RULES,recovery:recoveryService,readPublicCatalog,emailAllowed});
+ const api=createAdminHandler({sharedWrites,catalogDrafts:env.ADMIN_CATALOG_DRAFTS_ENABLED==='true',editorialDirectory:env.ADMIN_EDITORIAL_DIRECTORY_ENABLED==='true',readSystemStatus,enabled:true,provider,execute,rateLimit,platformRules:PLATFORM_RULES,recovery:recoveryService,readPublicCatalog,emailAllowed});
  // Enrolment gate: live Admin membership + provider session, checked in the DB
  // before any TOTP factor is created. It is the only pre-AAL2 database call.
  const enrolment=async identity=>{
@@ -169,11 +162,11 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    return false;
   } catch { return false; }
  };
- const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:storage,limiter:rateLimit,sessionHandler:api,enrolment,recovery:factorDecision,factorGate:factorDecision,allowList});
+ const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:storage,limiter:rateLimit,sessionHandler:api,enrolment:sharedWrites?enrolment:null,recovery:sharedWrites?factorDecision:null,factorGate:sharedWrites?factorDecision:null,allowList});
  const recoverPassword=createRecoveryController({enabled:passwordReset,origin,createClient:client,flowStore:storage,limiter:rateLimit,execute,emailAllowed,
   checkMembership:async identity=>['enrol','recover'].includes(await factorGate({execute,identity}))});
  const gateway=createCookieGateway({key:cookieKey,origin,delegate:api,providerLogout:createProviderLogout({url:PROJECT_URL,publishableKey})});
- let readiness;
+ let readiness,authReadiness;
  const app=async function handle(request){
   const key=clientKey(request,{trustedHeader,ingressSecret});
   if(!key) return new Response(JSON.stringify({error:{code:'UNAVAILABLE'}}),{status:503,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8'}});
@@ -193,8 +186,7 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    // failure self-diagnosing:
    //   {error:{code:'UNAVAILABLE',stage:'...'}}  -> a configuration gate closed
    //   {error:{code:'UNAVAILABLE'}}              -> configuration was fine, but
-   //      verifyAdminDatabase() could not reach the database or the login is not
-   //      a genuinely limited role.
+   //      dependency readiness (limited DB commands or Auth probe) failed.
    // `?diagnose=1` additionally reports which dependency answers. It is gated on
    // the same proxy HMAC signature the rate limiter uses, so a direct caller
    // learns nothing about the deployment.
@@ -219,8 +211,12 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    return probe.ok?'reachable':'unavailable';
   } catch {return 'unreachable';}
  }
+ function authReport() {
+  if(!authReadiness||authReadiness.expires<=now()) authReadiness={expires:now()+10_000,result:providerHealth()};
+  return authReadiness.result;
+ }
  app.diagnose=async()=>{
-  const [database,provider]=await Promise.all([dbReport(),providerHealth()]);
+  const [database,provider]=await Promise.all([dbReport(),authReport()]);
   return {...database,provider};
  };
  return app;
@@ -233,7 +229,7 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    const ok=databaseReady(diagnostics)&&diagnostics.provider==='reachable';
    return new Response(JSON.stringify({ok,diagnostics}),{status:ok?200:503,headers});
   }
-  const ok=databaseReady(await dbReport());
+  const ok=databaseReady(await dbReport()) && await authReport()==='reachable';
   return new Response(JSON.stringify(ok?{ok:true}:{error:{code:'UNAVAILABLE'}}),{status:ok?200:503,headers});
  }
 }

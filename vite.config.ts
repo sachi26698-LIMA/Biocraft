@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from 'vite';
+import { localApiProxy } from './shared/local-proxy.mjs';
 import { publicSupabaseConfig } from './shared/supabase-config.mjs';
 import react from '@vitejs/plugin-react';
 
@@ -25,7 +26,16 @@ const adminInProduction =
 const adminPreview =
   (process.env.VERCEL_ENV === 'production' ? adminInProduction : adminInPreview);
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
+  // Only the local dev/preview process knows the API's loopback address. A
+  // deployed bundle always uses /api on its own origin (see vercel.json).
+  const localProxy = command === 'serve' && envFlag('BIOCRAFT_LOCAL_API') ? localApiProxy() : undefined;
+  // Match only the exact private preview host for a connected dev stack; IP
+  // literals and localhost remain accepted by Vite. A separate HTTPS reverse
+  // proxy can supply its public hostname here without loading any API secrets.
+  const sandboxId=process.env.E2B_SANDBOX_ID;
+  const allowedHosts=localProxy ? [process.env.BIOCRAFT_DEV_WEB_HOST,
+    /^[a-z0-9-]+$/.test(sandboxId || '') ? `5173-${sandboxId}.e2b.app` : undefined].filter(Boolean) : true;
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   const key = env.VITE_SUPABASE_PUBLISHABLE_KEY;
   // The project URL is a public constant in shared/supabase-config.mjs, not a
@@ -80,16 +90,18 @@ export default defineConfig(({ mode }) => {
   // public entry never imports the admin workspace.
   build: adminPreview ? { rollupOptions: { input: { main: 'index.html', admin: 'admin-preview.html' } } } : undefined,
   server: {
+    proxy: localProxy,
+    cors: localProxy ? false : undefined,
     host: true,
     port: 5173,
-    // The sandboxed preview proxy serves the dev server through a host-specific
-    // subdomain; allowing any host keeps the live preview working.
-    allowedHosts: true,
+    allowedHosts,
   },
   preview: {
+    proxy: localProxy,
+    cors: localProxy ? false : undefined,
     host: true,
     port: 4173,
-    allowedHosts: true,
+    allowedHosts,
   },
   };
 });

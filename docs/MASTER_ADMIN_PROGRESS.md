@@ -1,38 +1,22 @@
 # Master Admin — persistent execution tracker
 
-## Current checkpoint — backend complete in code, blocked on shared-project approval
+## Active branch · 2026-11-18 UTC
 
-Latest pushed commit is `e130515` on `arena/5e351ec3-biocraft`. All ten console
-modules render live data against the real endpoints; the database package is
-still unapplied, which is the one open decision. The Admin backend is
-**implemented end to end in code**: SQL candidates `001`–`012`, identity and
-session boundary, password+TOTP login, **first-factor TOTP enrolment**, recovery,
-encrypted session cookie, CSRF gateway, rate limiting, step-up MFA freshness,
-server-side RBAC, the module APIs (bios, categories/collections, platforms,
-generators, SEO, analytics, audit, settings, staff, sessions), a fail-closed
-server composition, a Vercel Node entry and a sign-in/enrolment UI.
+`arena/21fb7968-biocraft`. Production release `dff59e3` was promoted; [actual hosted status and completed syncs](PRODUCTION_SYNC.md). The private Admin schema and existing executor are present. **Do not replay the historical bootstrap below.** The live session pooler still rejects the confirmed tenant/user (`XX000`); Auth health is not a successful Admin login.
 
-It is **not deployed as functional Admin**: `jvpadtzfsuekixrquzjv` needs the Admin
-schema + grants, the limited DB login and a first administrator. All of that is
-one consolidated decision paper now — `docs/CONSOLIDATED_APPROVAL_REPORT.md`
-(supersedes `docs/MASTER_ADMIN_APPROVAL_REQUEST.md`) — with every statement, the
-exact SQL, the exact `GRANT` block, rollback SQL and the Super Admin procedure.
-Until approval, every hosted `/api/admin/*` request returns 503 by design and
-`/admin/login` states that sign-in is unavailable. Hosted verification remains
-impossible from this sandbox: TLS to the Vercel Preview URL fails before any HTTP
-request, so no hosted interaction has ever been claimed.
+**Local runtime batch:** `dev:api` runs the same `createAdminApp` and Node adapter as Vercel on 4190. `dev:web` runs the website on 5173 with a same-origin API proxy. Verified `/api/status/live` 200, `/admin/login` HTML 200 and `/api/admin/v1/health` JSON 503 through that proxy without credentials. `tests/admin-local-http.mjs`, adapter and pool configuration checks passed. Private local keys are separate from deployment keys; local shared writes default off. This is not a shared-project session. The current setup and release scopes are recorded in [deployment instructions](MASTER_ADMIN_DEPLOYMENT.md).
 
-| Phase | Status | Actual scope and remaining work |
-|---|---|---|
-| Shared boundary | Owner decision recorded | Existing shared project only; public site and Admin share Production-connected data and risk. No new project. |
-| Database | Partial, synthetic only | Candidate migrations 001–012 and rollbacks are local only and unapproved. Private draft/session, encrypted login handoff, rate-limit and staff routines have no live client or server grants. A local disposable PostgreSQL 17.11 cluster passed selected concurrency, ownership, grants and RLS tests; its synthetic auth fixtures cannot validate actual provider-owned `auth.sessions` semantics or live effective grants. |
-| Auth/RBAC | Implemented in code, disabled | Password→TOTP→encrypted cookie→session→private draft flow composed against mocked Auth/PGlite, plus first-factor enrolment (single-use pending flow, AAL1 accepted only after the database membership gate, one audit row per attempt). CSRF retrieval now rechecks provider identity and live Admin session. SQL role-checks and RLS are defense in depth, not a privilege audit; SQL-capable callers can spoof JWT GUCs. Bootstrap, real provider integration, verified trusted proxy client-key extraction, distributed ingress protection, key rotation, MFA freshness, recovery, session refresh and security review remain. |
-| Modules | Implemented in code, blocked on grants | Private draft creation/list/detail/edit/submit/review, assigned review queue and staff listing/update candidates exist; staff update is not exposed via API, super-admin promotion disabled. No durable Admin UI or usable hosted APIs. Other requested modules are not implemented. |
-| Workflow | Partial, publishing disabled | Mock-only draft reviews and atomic success audit; no idempotency, actual content publishing, version rollback, outbox/receiver or public-content writes. |
-| Security | Not release assessed | Candidate storage has encrypted one-time handoffs and per-network/account/factor rate buckets, but no cleanup job, operational limits, real concurrency or security review. Login flow revokes local SDK state only on some failure paths; provider revocation semantics need testing. No production secrets or unreviewed grants used. |
-| Testing | Local only | Mocked-provider/PGlite tests and local disposable PostgreSQL 17.11 tests pass. Real Supabase Auth, actual hosted grants/RLS, full concurrency, hosted browser, physical-device and independent security testing remain. |
-| Performance | Local UI emulation only | Prior single scripted Android-emulated LCP 488 ms, CLS 0.00014 and long tasks up to 245 ms; not field data or backend measurement. No zero-lag claim. |
-| Deployment | Preview UI only | No backend deployment; READY alone is not hosted interaction verification. Approval, reviewed owner/grants, real-stack verification and safe configuration are required. |
+**Catalogue/API batch:** Templates reads `design_templates`, Designs reads `design_presets`; Symbols, Emoji and Languages use active-only guest projections gated by a live Admin `content.read` check. No new SQL grant. Chromium: 20 dedicated screens at 390/820/1440px (intercepted API). PGlite API integration and 48 signed-out route denials passed. The first disposable 200,000-icon run exposed four distinct source IDs colliding with hyphenated slugs; the importer now preserves Iconify’s canonical `prefix:name`. Job resume uses a pinned input digest and committed counters; wrong-input resume is refused. No live bulk job started.
+
+**Private draft and browser batch (local only):** proposal `016-catalog-drafts` adds an owner-scoped, versioned metadata workspace in 11 domains. The native PostgreSQL 18.6 suite exercised the two limited-role commands, SEO/content separation, concurrent stale-version rejection, fresh MFA, atomic audit and refusal to roll back a nonempty store. Chromium used HTTPS Vite → actual Node listener → limited PostgreSQL; only upstream GoTrue/PostgREST were simulated. Password + TOTP yielded a Secure/Strict/HttpOnly cookie; editor module reads returned 200, staff/analytics/settings/audit 403. Template create/edit/archive reached v3 with three audit entries; missing CSRF was denied; logout returned the browser to 401. **Not hosted Auth, shared CRUD or catalogue publishing.** No 016 grant, flag or shared migration applied.
+
+**Import scale and licence batch (disposable DB only):** `scripts/library-import-policy.json` admits explicit SPDX values; Simple Icons uses **per-mark** licences, not package CC0. Known brand sets in Iconify and incomplete attribution are held. Full local preflight: **470,679** icons + **119** brand marks + **32,004** colours = **502,802 candidates**, estimated **2,621,075,850 additional bytes** (~2.44 GiB). These supersede the earlier 572,907-candidate preflight, not the quota hold. PostgreSQL 18.6: 200,000 insertions in 64.925 s, repeat 0 inserts/updates + 200,000 skips in 9.589 s; 200,000 unique fingerprints and zero missing source/licence/attribution. As `anon`, 200 pages × 1,000 returned the whole slice once. Database size 387,236,367 bytes locally, then removed. Interrupted colour job: 10/40 committed, wrong manifest rejected; resumed at batch size 7, finished at 40 inserts, zero skips, two attempts. No shared bulk job, quota change or claim of brand-use permission.
+
+**Final runtime and release checks:** Normal readiness now requires a limited database session, the core login commands **and** healthy Auth. Health failures and disabled reset probes release their response bodies; this fixed Chromium hanging on navigation/reload while already displaying the unavailable screen. The real two-process stack served `/admin/login` and `/api/status/live` (200); Admin readiness and guest REST readiness were 503 with the private local settings incomplete. The fail-closed sign-in/retry path passed at 390/820/1440 px. All **35 Admin routes** mounted on direct navigation and reload; intercepted module checks covered 20 dedicated + 13 original screens. **57 signed-out API routes** returned 401 before any DB/provider call in the authorization suite. TypeScript and guarded production build passed (87 HTML shells); Preview/Production off/on matrix 0/35 Admin shells in each scope. A 163-file client scan found no injected server-secret canaries or local API addresses. **52 public routes** matched the `3340e94` public build's titles, descriptions, main headings and header/footer with no page/failed-request errors. The 12 public tools passed real-browser output/copy/regeneration and phone layout checks; each route fit at 320 px. Local 001–014 security inventory (44 callable + five ungranted triggers) and all eight independent 015 library readers passed; 016 off/read-only requests never dispatched a draft mutation.
+
+**Hosted boundary:** the [23:17 UTC readback and Support ticket](PRODUCTION_SYNC.md) distinguish healthy managed services and working guest reads from the unresolved Production pooler lookup. No real Admin password/MFA, authenticated shared CRUD or deployment of this batch. Vercel branch Preview `3340e94` was READY/STAGED; canonical Production remains `dff59e3`. Keep existing accounts/grants unchanged. This workspace has neither the private executor password/allow-list nor unrestricted Supabase egress; fill local settings only in an authorized private environment. The [two-process setup, separate Vercel scope matrix and test commands](MASTER_ADMIN_DEPLOYMENT.md) apply to this checkpoint.
+
+### Historical implementation notes (not current deployment instructions)
 
 ### Security review blockers specific to latest candidates
 

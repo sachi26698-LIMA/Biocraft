@@ -15,6 +15,8 @@ assert.deepEqual(roots.map(pem=>new X509Certificate(pem).fingerprint256),[
 const okPooler=createPostgresPool({host:'aws-0-ap-southeast-2.pooler.supabase.com',user:`admin_executor.${ref}`,password:'x'});
 assert.equal(okPooler.options.port,5432);
 for(const bad of [
+ {host:'aws-0-ap-southeast-2.pooler.supabase.com',user:`postgres.${ref}`,password:'x'},
+ {host:`db.${ref}.supabase.co`,user:'service_role',password:'x'},
  {host:`db.${ref}.supabase.co`,user:`admin_executor.${ref}`,password:'x'},
  {host:'aws-0-ap-southeast-2.pooler.supabase.com',user:'admin_executor',password:'x'},
  {host:'aws-0-ap-southeast-2.pooler.supabase.com',user:`admin_executor.otherref`,password:'x'},

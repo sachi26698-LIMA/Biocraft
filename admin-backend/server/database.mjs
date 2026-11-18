@@ -22,10 +22,10 @@ const DIRECT=`db.${PROJECT_REF}.supabase.co`;
 const POOLER=/^aws-[0-9]{1,3}-[a-z]{2}-[a-z]{3,20}(?:-[a-z]{3,20})?-[0-9]{1,2}\.pooler\.supabase\.com$/;
 export function createPostgresPool({host,user,password,ca,port}={}) {
  if(typeof host!=='string'||(host!==DIRECT && !POOLER.test(host)) || typeof user!=='string' || !user || typeof password!=='string' || !password || (ca!==undefined && typeof ca!=='string')) throw new Error('Invalid database configuration');
- // A pooler login must be scoped to the project (postgres.<ref>) or explicit
- // project role (role.<ref>); a direct login must not carry a project suffix.
+ // Use an explicit limited login (role.<ref> in pooler mode); a direct
+ // login must not carry a project suffix. Never use a built-in API/owner role.
  const expected=host===DIRECT?/^[a-z_][a-z0-9_]{0,62}$/:new RegExp(`^[a-z_][a-z0-9_]{0,62}\\.${PROJECT_REF}$`);
- if(!expected.test(user)) throw new Error('Invalid database configuration');
+ if(!expected.test(user)||['postgres','supabase_admin','service_role','authenticator','anon','authenticated'].includes(user.split('.')[0])) throw new Error('Invalid database configuration');
  // Only the session-mode port is accepted. Transaction mode (6543) breaks the
  // session-scoped assumptions this adapter relies on, so it is refused outright.
  const resolvedPort=port===undefined?5432:port;
@@ -33,7 +33,11 @@ export function createPostgresPool({host,user,password,ca,port}={}) {
  // Supavisor can present a chain rooted in Supabase's private (publicly
  // distributed) CA. Add those roots for this pool ONLY; keep hostname checks.
  const trust=ca ?? [...rootCertificates,readFileSync(new URL('../certs/supabase-roots.pem',import.meta.url),'utf8')];
- return new Pool({host,port:resolvedPort,user,password,database:'postgres',ssl:{rejectUnauthorized:true,ca:trust},max:3,connectionTimeoutMillis:5000,idleTimeoutMillis:10000});
+ const pool=new Pool({host,port:resolvedPort,user,password,database:'postgres',ssl:{rejectUnauthorized:true,ca:trust},max:3,connectionTimeoutMillis:5000,idleTimeoutMillis:10000});
+ // pg removes a broken idle client itself. Keep a long-lived listener up and
+ // never log a raw driver error or retry an in-flight write.
+ pool.on('error',()=>console.warn('Admin database idle connection closed.'));
+ return pool;
 }
 export async function assertLimitedRole(client) {
  const roleCheck=await client.query(`select session_user=current_user
@@ -50,6 +54,10 @@ export async function assertLimitedRole(client) {
  if(roleCheck.rows.length!==1 || roleCheck.rows[0].safe!==true) throw new Error('Unsafe database executor role');
 }
 const OPERATIONS = Object.freeze({
+  // Optional private catalog proposal. Each command also checks the domain's
+  // draft permission and the author inside SQL; no public-table privilege.
+  catalogDraftList:{permission:'content.read',sql:'select * from bc_admin_v1.list_catalog_drafts($1,$2,$3::uuid)'},
+  catalogDraftChange:{permission:'content.read',sql:'select * from bc_admin_v1.change_catalog_draft($1,$2,$3::uuid,$4::bigint,$5::jsonb,$6::uuid)'},
   sessionOpen: {permission:null,sql:'select bc_admin_v1.open_admin_session($1::uuid) as expires_at'},
   // Pre-MFA gate: requires an enabled membership and live provider session but
   // not aal2, because the account has no verified factor yet.
@@ -129,7 +137,7 @@ const OPERATIONS = Object.freeze({
 // event. Missing amr data fails closed. This is independent of, and does not
 // replace, per-row permission checks and locks inside the transaction.
 const PRE_AAL2 = new Set(['enrolmentEligible','factorGate','recoveryState','recoveryRedeem']);
-const STEP_UP = new Set(['create','draftUpdate','submit','reviewApprove','reviewReject','staffUpdate','sessionRevokeAll','settingUpdate','recoveryIssue','recoveryRevoke','factorReset','cleanupExpired','publish','revert']);
+const STEP_UP = new Set(['catalogDraftChange','create','draftUpdate','submit','reviewApprove','reviewReject','staffUpdate','sessionRevokeAll','settingUpdate','recoveryIssue','recoveryRevoke','factorReset','cleanupExpired','publish','revert']);
 export function createDatabaseExecutor(pool,{maxMfaAgeMs=10*60*1000,now=Date.now}={}) {
  if (!pool || typeof pool.connect !== 'function' || !Number.isSafeInteger(maxMfaAgeMs) || maxMfaAgeMs<60000 || typeof now!=='function') throw new Error('Database pool required');
  return async function execute({identity,operation,args}) {
