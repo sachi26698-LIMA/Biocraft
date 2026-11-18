@@ -14,6 +14,8 @@ import {
 } from './moodBoard';
 import type { MoodBoardPools } from './moodBoard';
 import { useToolMode } from '../../lib/toolMode';
+import AdvancedOptions from '../../components/ui/AdvancedOptions';
+import { EmptyState, ErrorState } from '../../components/ui/States';
 
 const LANGUAGE_OPTIONS = [
   { value: 'en', label: 'English' },
@@ -59,6 +61,8 @@ export default function MoodBoardTool<C extends string>({
   const [lines, setLines] = useState<string[]>([]);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [announcement, setAnnouncement] = useState('');
+  /** Visible, honest empty-pool error (only reachable with emojis off). */
+  const [poolEmpty, setPoolEmpty] = useState(false);
   const { copy } = useCopyToClipboard(2000);
   const generationLanguage: Language = toolMode === 'basic' ? 'en' : language;
   const generationNoEmoji = toolMode === 'basic' ? false : noEmoji;
@@ -76,8 +80,10 @@ export default function MoodBoardTool<C extends string>({
       const { lines: picked } = composeMoodBoard(pools, categoryId, generationLanguage, nextCount, generationNoEmoji);
       if (picked.length === 0) {
         setAnnouncement('Nothing usable in this pool with emojis off — turn emojis back on.');
+        setPoolEmpty(true);
         return;
       }
+      setPoolEmpty(false);
       setLines(picked);
       setHasGenerated(true);
       setAnnouncement(`${picked.length} ${noun} options generated.`);
@@ -135,7 +141,8 @@ export default function MoodBoardTool<C extends string>({
           </div>
         </fieldset>
 
-        <div className="generator-options tool-advanced">
+        <AdvancedOptions title="Language & style" description="Language, emojis and how many options">
+        <div className="generator-options">
           <SegmentedControl
             label="Language"
             visibleLabel="Language"
@@ -161,15 +168,17 @@ export default function MoodBoardTool<C extends string>({
           </div>
         </div>
 
-        <form className="generator-form" onSubmit={handleSubmit} noValidate>
-          <div className="tool-advanced">
-          <CountControl
-            label="How many options"
-            noun="options"
-            value={count}
-            onChange={setCount}
-          />
+          <div className="generator-options">
+            <CountControl
+              label="How many options"
+              noun="options"
+              value={count}
+              onChange={setCount}
+            />
           </div>
+        </AdvancedOptions>
+
+        <form className="generator-form" onSubmit={handleSubmit} noValidate>
 
           <button type="submit" className="btn btn-primary btn-large generate-button">
             {generateLabel.replace('{n}', String(generationCount))}
@@ -196,12 +205,21 @@ export default function MoodBoardTool<C extends string>({
                 <RefreshIcon size={16} />
                 Regenerate
               </button>
-              <button type="button" className="btn btn-secondary btn-small" onClick={() => { setLines([]); setHasGenerated(false); setAnnouncement('Results cleared.'); }}>
+              <button type="button" className="btn btn-secondary btn-small" onClick={() => { setLines([]); setHasGenerated(false); setPoolEmpty(false); setAnnouncement('Results cleared.'); }}>
                 Reset results
               </button>
             </div>
           )}
         </div>
+
+        {poolEmpty && (
+          <ErrorState
+            title="No options with emojis off"
+            text={`Every ${noun} in this vibe relies on emoji. Turn emojis back on (Language & style) or pick another vibe.`}
+            onRetry={() => runGeneration()}
+            retryLabel="Try again"
+          />
+        )}
 
         {hasGenerated && lines.length > 0 ? (
           <ol className="results-list">
@@ -236,12 +254,10 @@ export default function MoodBoardTool<C extends string>({
             ))}
           </ol>
         ) : (
-          <div className="empty-state">
-            <p className="empty-state-title">Your {noun} options will appear here.</p>
-            <p className="empty-state-text">
-              Pick a vibe — or ask the studio for all three languages — press “Generate” and grab the one that fits.
-            </p>
-          </div>
+          <EmptyState
+            title={`Your ${noun} options will appear here.`}
+            text="Pick a vibe, press Generate, and grab the one that fits."
+          />
         )}
 
         <p className="sr-only" role="status" aria-live="polite">

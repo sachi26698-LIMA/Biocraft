@@ -2,7 +2,7 @@
   "name": "biocraft",
   "private": true,
   "version": "1.0.0",
-  "description": "BioCraft — All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
+  "description": "BioCraft \u2014 All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -64,6 +64,8 @@
     "test:admin-api-authz": "node tests/admin-api-authz.mjs",
     "test:admin-bundle-secrets": "node tests/admin-bundle-secrets.mjs",
     "test:regression": "esbuild review-harness.tsx --bundle --platform=node --format=cjs --outfile=review-harness.bundle.cjs && node review-check.cjs",
+    "test:revamp": "node tests/revamp-ui.cjs",
+    "test:ready-made": "node tests/ready-made-ui.cjs",
     "test:responsive": "node responsive-audit.cjs",
     "test:browser": "playwright test",
     "test:global-content": "node tests/global-content-intelligence.mjs",
@@ -77,7 +79,11 @@
     "test:admin-content-library": "node tests/admin-content-library.mjs",
     "test:language": "node tests/language-engine.mjs",
     "test:library": "node tests/library-provenance.mjs && node tests/library-import-scale.mjs",
-    "import:library": "node scripts/import-library.mjs"
+    "import:library": "node scripts/import-library.mjs",
+    "test:public-content-status": "node tests/public-content-status.mjs",
+    "test:published-catalog-browser": "node tests/published-catalog-browser.mjs",
+    "test:admin-password-reset-browser": "node tests/admin-password-reset-browser.cjs",
+    "test:admin-extra-modules": "node tests/admin-extra-modules-browser.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

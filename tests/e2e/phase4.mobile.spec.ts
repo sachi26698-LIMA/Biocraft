@@ -154,9 +154,9 @@ test.afterEach(async ({ page }) => {
   expect(browserConsoleErrors.get(page) ?? [], 'browser console errors').toEqual([]);
 });
 
-test('all 48 direct routes hydrate with their own page content and route metadata', async ({ page }) => {
+test('all 49 direct routes hydrate with their own page content and route metadata', async ({ page }) => {
   const routes = builtRoutes();
-  expect(routes).toHaveLength(48);
+  expect(routes).toHaveLength(49);
   for (const route of routes) {
     // Vite preview serves static directory indexes at the slash form while its
     // clean extensionless URL falls through to the SPA shell. Check the actual

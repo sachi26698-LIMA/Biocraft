@@ -1,4 +1,5 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
+import { SUPABASE_URL, publicSupabaseConfig } from './shared/supabase-config.mjs';
 import react from '@vitejs/plugin-react';
 
 // The Admin console is emitted into whichever scope has been explicitly enabled.
@@ -24,7 +25,26 @@ const adminInProduction =
 const adminPreview =
   (process.env.VERCEL_ENV === 'production' ? adminInProduction : adminInPreview);
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  const key = env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  // The project URL is a public constant in shared/supabase-config.mjs, not a
+  // secret. The Preview scope only defines the publishable key, so a build that
+  // demanded both variables failed at config load while the client itself would
+  // have fallen back to the bundled registry. Validate against the constant
+  // when the URL is unset; a *wrong* URL still fails, because
+  // publicSupabaseConfig rejects anything that is not this project.
+  const url = env.VITE_SUPABASE_URL ?? (key ? SUPABASE_URL : undefined);
+  if ((url || key) && !publicSupabaseConfig(url, key)) {
+    throw new Error('Set both public Supabase variables with the BioCraft project URL and a publishable or matching anon key. Never use a service key.');
+  }
+  // Vite exposes every VITE_ variable; reject unexpected Supabase variables
+  // before producing any client asset, including a mistakenly prefixed secret.
+  if (Object.keys(env).some(name => name.startsWith('VITE_SUPABASE_') && !['VITE_SUPABASE_URL', 'VITE_SUPABASE_PUBLISHABLE_KEY'].includes(name))) {
+    throw new Error('Unexpected VITE_SUPABASE_* variable. Only the URL and publishable key belong in public configuration.');
+  }
+  return {
+  envPrefix: ['VITE_SUPABASE_URL', 'VITE_SUPABASE_PUBLISHABLE_KEY', 'VITE_GENERATION_MAX_PER_REQUEST', 'VITE_CONTENT_PAGE_SIZE', 'VITE_SEARCH_PAGE_SIZE', 'VITE_SEARCH_MAX_PAGE_SIZE'],
   plugins: [react(), {
     name: 'admin-preview-shell',
     configureServer(server) {
@@ -71,4 +91,5 @@ export default defineConfig({
     port: 4173,
     allowedHosts: true,
   },
+  };
 });

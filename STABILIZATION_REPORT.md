@@ -210,16 +210,16 @@ redesigned UI, worth a dedicated pass but not a blocker (still well under 0.1).
 Something makes the loader take its fail-closed path, and the function
 deliberately does not say what. I added `scripts/admin-config-check.mjs`, which
 runs the real loader against a real env file and prints **the first failing gate**
-— presence, length and an 8-character fingerprint only, never a value:
+— no configuration values or fingerprints:
 
 ```
 vercel env pull .env.admin-check --environment=production
-node scripts/admin-config-check.mjs .env.admin-check
+node --env-file=.env.admin-check scripts/admin-config-check.mjs
 rm .env.admin-check
 ```
 
 The output names the culprit, e.g.
-`Deployment answers 503 because: ADMIN_SUPABASE_PUBLISHABLE_KEY is a usable publishable key`.
+`Admin is disabled: invalid provider configuration.`
 
 **Why I stopped rather than fixing it blind.** Vercel returns **encrypted
 envelopes** for this project's variables — not values — so I cannot read what is

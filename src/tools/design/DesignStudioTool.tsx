@@ -8,6 +8,7 @@ import CopyButton from '../../components/CopyButton';
 import DownloadButton from '../../components/DownloadButton';
 import { RefreshIcon } from '../../components/icons';
 import { useToolMode } from '../../lib/toolMode';
+import AdvancedOptions from '../../components/ui/AdvancedOptions';
 
 /**
  * Design Studio — type any sentence, get it back as ready-made designs:
@@ -105,7 +106,8 @@ export default function DesignStudioTool() {
             </p>
           )}
 
-          <div className="field tool-advanced">
+          <AdvancedOptions title="Customise the styling" description="Font style, emoji frame and card design" defaultOpen>
+          <div className="field">
             <label htmlFor="design-studio-font">Font style</label>
             <select id="design-studio-font" value={styleId} onChange={(event) => setStyleId(event.target.value)}>
               <option value="none">Original (no style)</option>
@@ -115,7 +117,7 @@ export default function DesignStudioTool() {
             </select>
           </div>
 
-          <div className="field tool-advanced">
+          <div className="field">
             <label htmlFor="design-studio-frame">Emoji frame</label>
             <select id="design-studio-frame" value={frameId} onChange={(event) => setFrameId(event.target.value)}>
               {EMOJI_FRAMES.map((item) => (
@@ -126,7 +128,7 @@ export default function DesignStudioTool() {
             </select>
           </div>
 
-          <div className="field tool-advanced">
+          <div className="field">
             <label htmlFor="design-studio-card">Card design</label>
             <select id="design-studio-card" value={design} onChange={(event) => setDesign(event.target.value as BioDesignKey)}>
               {BIO_DESIGNS.map((item) => (
@@ -134,6 +136,7 @@ export default function DesignStudioTool() {
               ))}
             </select>
           </div>
+          </AdvancedOptions>
 
           <p className="tool-note">
             Every design copies as plain text — styled Unicode characters and emoji, not images.
@@ -169,7 +172,7 @@ export default function DesignStudioTool() {
             </div>
           </div>
 
-          <div className="tool-advanced">
+          <div>
           <div className="mix-gallery-head">
             <p className="option-label" id="design-studio-mixes-label">Ready-made mixes</p>
             <div className="mix-gallery-actions">

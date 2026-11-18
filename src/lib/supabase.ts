@@ -10,16 +10,15 @@
  * key must never reach the browser.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { publicSupabaseConfig } from '../../shared/supabase-config.mjs';
 
 const metaEnv: ImportMetaEnv | undefined =
   typeof import.meta !== 'undefined' ? import.meta.env : undefined;
-const url = metaEnv?.VITE_SUPABASE_URL?.trim();
-const publishableKey = metaEnv?.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
+const config = publicSupabaseConfig(metaEnv?.VITE_SUPABASE_URL, metaEnv?.VITE_SUPABASE_PUBLISHABLE_KEY);
+export const isSupabaseConfigured = config !== null;
 
-export const isSupabaseConfigured: boolean = Boolean(url && publishableKey);
-
-export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(url as string, publishableKey as string, {
+export const supabase: SupabaseClient | null = config
+  ? createClient(config.url, config.key, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,

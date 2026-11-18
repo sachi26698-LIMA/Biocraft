@@ -4,6 +4,7 @@ import CopyButton from '../../components/CopyButton';
 import DownloadButton from '../../components/DownloadButton';
 import { RefreshIcon } from '../../components/icons';
 import { useToolMode } from '../../lib/toolMode';
+import AdvancedOptions from '../../components/ui/AdvancedOptions';
 import { generateHeadlines, HEADLINE_LIMIT, isSafeLinkedinInput } from './lib/linkedin';
 
 /**
@@ -93,7 +94,7 @@ export default function HeadlineGenerator() {
           )}
         </div>
 
-        <div className="field-grid tool-advanced">
+        <AdvancedOptions title="Add more context" description="Focus area and years of experience"><div className="field-grid">
           <div className="field">
             <label htmlFor="linkedin-headline-focus">Focus or domain <span className="optional">(optional)</span></label>
             <input
@@ -133,6 +134,7 @@ export default function HeadlineGenerator() {
             )}
           </div>
         </div>
+        </AdvancedOptions>
 
         <p className="tool-note" role="note">
           Drafts use only your role, focus and experience — no invented employers or metrics.

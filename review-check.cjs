@@ -122,6 +122,15 @@ const setInputValue = async (element, value, prototype) => {
   });
 };
 
+// Progressive disclosure: advanced settings live in collapsed accordions.
+// Tests must open them the way a user would before touching their controls.
+const expandAccordion = async (label) => {
+  const toggle = $$('.accordion-toggle').find((button) =>
+    (button.textContent || '').includes(label) && button.getAttribute('aria-expanded') === 'false');
+  if (toggle) await click(toggle);
+  return Boolean(toggle);
+};
+
 const clickTab = async (href) => {
   const el = $$('.tool-tab').find((a) => a.getAttribute('href') === href);
   if (!el) throw new Error(`no tool tab for ${href}`);
@@ -168,6 +177,8 @@ const EXPECTED_TITLES = {
   '/cookie': 'Cookie Policy — BioCraft Social Media Toolkit',
   '/login': 'Login — BioCraft Social Media Toolkit',
   '/bio-editor': 'Bio Editor — Style & Copy Your Instagram Bio | BioCraft',
+  '/bio-collections': 'Ready-Made Bio Collections — BioCraft Social Media Toolkit',
+  '/bio-library': 'Bio Library — Search 506 Ready-Made Bios | BioCraft',
   '/design-studio': 'Design Studio — BioCraft Social Media Toolkit',
 };
 
@@ -189,9 +200,15 @@ const runAxe = async (routeName) => {
   await bundle.mount();
   const { act } = bundle;
 
-  console.log('\n--- Homepage (light tool-first: hero + discovery sections removed by request) ---');
+  console.log('\n--- Homepage (tool-first: the laptop stage leads, no hero copy) ---');
   check('page renders exactly one h1', $$('h1').length === 1);
-  check('h1 is the sr-only toolkit description', ($$('h1')[0]?.textContent ?? '').includes('All-in-One Social Media Toolkit'));
+  check('h1 keeps the toolkit description for assistive tech, visually hidden',
+    ($$('h1')[0]?.textContent ?? '').includes('All-in-One Social Media Toolkit') && ($$('h1')[0]?.classList.contains('sr-only') ?? false));
+  check('no hero copy sits above the laptop stage',
+    !$('.home-hero') && !$('.home-hero-eyebrow') && !$('.home-hero-title')
+    && !$('.home-hero-sub') && !$('.home-hero-actions') && !$('.home-hero-facts'));
+  check('the stage is the first section in the homepage shell',
+    document.querySelector('.home-shell > section')?.classList.contains('platform-stage') === true);
   check('hero is removed', !$('.hero'));
   check('explore-by-category section is removed', !$('#explore-category-title') && $$('.pastel-grid').length === 0);
   check('choose-your-platform section is removed', !$('#platform-cards-title') && $$('.platform-grid').length === 0);
@@ -217,7 +234,13 @@ const runAxe = async (routeName) => {
   check('#workspace anchor exists for the final CTA', Boolean(window.document.getElementById('workspace')));
   check('explore-powerful-tools section is removed from the homepage', !$('#powerful-tools-title') && $$('.tile-grid').length === 0);
   check('why-choose (Built Different) section is removed from the homepage', !$('#why-title') && $$('.why-card').length === 0);
-  check('twelve popular-category chips render', $$('.chip-cloud .chip').length === 12);
+  check('the niche chip wall is gone (categories live in the Ready-Made block)',
+    !$('.chip-cloud') || $$('.chip-cloud .chip').length === 0);
+  check('Ready-Made Bios block carries its category chips + hub link',
+    $$('.rmb-home-categories .rmb-home-chip').length === 11 &&
+    Boolean($('.rmb-home-categories a[href="/bio-collections"]')));
+  check('Ready-Made Bios block shows just collections + categories (no duplicate rails)',
+    $$('.rmb-home .accordion').length === 0 && $$('.rmb-home-card').length === 6);
   check('how it works section was removed in the hero rework', !$('#how-title') && $$('.how-step').length === 0);
   check('FAQ renders 7 items', $$('.faq-item').length === 7);
   const faqFirst = $('.faq-question');
@@ -228,16 +251,17 @@ const runAxe = async (routeName) => {
   check('second FAQ question toggles closed', $$('.faq-question')[1].getAttribute('aria-expanded') === 'false');
   check('final CTA section was removed in the hero rework', !$('#final-cta-title'));
 
-  console.log('\n--- Section order (Header→Toolkit→Chips→FAQ→Footer) ---');
+  console.log('\n--- Section order (Header→Stage→Toolkit→Ready-Made→FAQ→Footer) ---');
   const markers = [
     ['site-header', '.site-header'],
+    ['platform stage', '.platform-stage'],
     ['live toolkit workspace', '.toolkit-workspace'],
-    ['popular categories', '#popular-categories-title'],
+    ['ready-made bios', '#rmb-home-title'],
     ['faq', '#faq-title'],
     ['site footer', '.site-footer'],
   ];
   const markerEls = markers.map(([name, sel]) => [name, $(sel)]);
-  check('all five landmark regions are present', markerEls.every(([, el]) => Boolean(el)));
+  check('all six landmark regions are present', markerEls.length === 6 && markerEls.every(([, el]) => Boolean(el)));
   check('sections render in the designed order', markerEls.every(([, el], i) => i === 0 || Boolean(markerEls[i - 1][1] && el && (markerEls[i - 1][1].compareDocumentPosition(el) & 4))), );
 
   console.log('\n--- Toolkit shell (route /) ---');
@@ -304,7 +328,12 @@ const runAxe = async (routeName) => {
   check('mobile nav panel renders when opened', Boolean($('#mobile-nav')));
   check('mobile menu lists the six section destinations', ['/', '/resources', '/categories', '/features', '/about', '/help'].every((href) => Boolean($(`#mobile-nav a[href="${href}"]`))));
   check('mobile menu exposes Favourite Tools + Explore Tools CTA', Boolean($('#mobile-nav a[href="/categories#favourites"]')) && Boolean($('#mobile-nav a.btn[href="/resources"]')));
-  check('mobile menu lists seven destinations (six + favourites)', $$('#mobile-nav .mobile-nav-link').length === 7);
+  check('mobile menu lists eight destinations (Home + Ready-Made Bios + six sections + favourites)',
+    $$('#mobile-nav .mobile-nav-link').length === 8);
+  check('Ready-Made Bios is a regular menu row, not a special band',
+    Boolean($('#mobile-nav a.mobile-nav-link[href="/bio-collections"]')) &&
+    !$('#mobile-nav .mobile-nav-feature') &&
+    !$('#mobile-nav .mobile-nav-eyebrow'));
   await click(toggle);
   check('menu toggle closes the panel again', toggle?.getAttribute('aria-expanded') === 'false' && !$('#mobile-nav'));
 
@@ -372,6 +401,7 @@ const runAxe = async (routeName) => {
   await click($('.bio-card .copy-button'));
   check('edited bio draft copies exactly', clipboardText === 'My edited bio draft');
   await click($$('.tool-mode-toggle button').find((button) => button.textContent === 'Advanced'));
+  await expandAccordion('Language & style');
   await click($$('.segmented-option').find((button) => button.textContent.includes('हिन्दी')));
   await click($$('.tool-mode-toggle button').find((button) => button.textContent === 'Basic'));
   await click($('.generate-button'));
@@ -398,6 +428,7 @@ const runAxe = async (routeName) => {
 
   console.log('\n--- Bio: Hindi ---');
   await click($$('.tabs [role="tab"]')[0]);
+  await expandAccordion('Language & style');
   const hiButton = $$('.segmented-option').find((el) => el.textContent.trim() === 'हिन्दी');
   await click(hiButton);
   check('हिन्दी segmented button aria-pressed=true', hiButton.getAttribute('aria-pressed') === 'true');
@@ -636,6 +667,8 @@ const runAxe = async (routeName) => {
   check('regenerate yields 20 unique tags again', tags2.length === 20 && new Set(tags2.map((t) => t.toLowerCase())).size === 20);
   check('regenerate produces a fresh set (not identical)', tags2.join(',') !== tagsAfter);
 
+  await expandAccordion('Refine your hashtags');
+  check('hashtag refinement controls live in a discoverable accordion', $('#hashtag-keywords') !== null);
   await setInputValue($('#hashtag-keywords'), '!!!', 'input');
   await click($('.generate-button'));
   check('unusable keywords show an inline error', Boolean($('.field-error[role="alert"]')));
@@ -689,6 +722,7 @@ const runAxe = async (routeName) => {
   check('second caption copies byte-exact too', clipboardText === captionTexts[1]);
 
   // Hindi + different tone
+  await expandAccordion('More options');
   const hiCaptionButton = $$('.segmented-option').find((el) => el.textContent.trim() === 'हिन्दी');
   await click(hiCaptionButton);
   const boldChip = $$('.chip').find((el) => el.textContent.trim() === 'Bold');
@@ -901,6 +935,7 @@ const runAxe = async (routeName) => {
   await click($('.generate-button'));
   check('headline form validates required role', Boolean($('#linkedin-headline-role-error')));
   await setInputValue($('#linkedin-headline-role'), 'Product Designer', 'input');
+  await expandAccordion('Add more context');
   await setInputValue($('#linkedin-headline-focus'), 'accessible products', 'input');
   await click($('.generate-button'));
   check('headline form generates five editable options', $$('.results-block .bio-card').length === 5 && $$('.results-block .result-editable').length === 5);
@@ -908,6 +943,7 @@ const runAxe = async (routeName) => {
 
   await goto('/linkedin-summary-generator');
   await setInputValue($('#linkedin-summary-role'), 'Product Designer', 'input');
+  await expandAccordion('Add more context');
   await setInputValue($('#linkedin-summary-focus'), 'accessible products', 'input');
   await click($('.generate-button'));
   check('summary form generates five editable drafts', $$('.results-block .bio-card').length === 5 && $$('.results-block .result-editable').length === 5);
@@ -933,6 +969,54 @@ const runAxe = async (routeName) => {
     await goto(route);
     check(`title for ${route}`, window.document.title === EXPECTED_TITLES[route]);
   }
+  await goto('/');
+
+  // ================= Ready-Made Bios: route + link regression =================
+  console.log('\n--- Ready-Made Bios hub + library routes ---');
+  const settle = async (path) => {
+    await goto(path);
+    for (let tick = 0; tick < 4; tick += 1) await act(async () => {});
+  };
+  await settle('/bio-collections');
+  const hubCards = $$('.rmb-collection');
+  check('hub renders its featured + recent + all collection cards', hubCards.length >= 20 + 6 + 4);
+  check('hub headline carries the real totals', ($('.rmb-stats')?.textContent ?? '').includes('506'));
+  check('hub search + View All are present',
+    Boolean($('.rmb-search input')) && $('.rmb-viewall')?.getAttribute('href') === '/bio-library');
+  const hubHrefs = $$('.rmb-collection, .rmb-cat, .rmb-design-actions a, .rmb-platform, .rmb-lang-card')
+    .map((el) => el.getAttribute('href') ?? '');
+  const knownHubTargets = new Set([
+    '/', '/categories', '/resources', '/bio-collections', '/bio-library', '/bio-editor', '/design-studio',
+    '/bio-generator', '/stylish-name-generator', '/fancy-font-generator', '/username-generator',
+    '/emoji-symbol-generator', '/hashtag-generator', '/caption-generator', '/linkedin-headline-generator',
+    '/linkedin-summary-generator', '/whatsapp-status-generator', '/snapchat-caption-generator',
+  ]);
+  check('every hub destination is a real route',
+    hubHrefs.length > 0 && hubHrefs.every((href) => href.startsWith('/') && (
+      knownHubTargets.has(href.split('?')[0].split('#')[0]) ||
+      Boolean($$(`.rmb-collection[href="${href}"]`).length)
+    )));
+  check('no hub collection card links outside the site', hubCards.every((el) => (el.getAttribute('href') ?? '').startsWith('/')));
+  check('hub categories are compact selectors, not bio dumps', $$('.rmb-cat').length === 15 && $$('.lib-card').length === 0);
+
+  await settle('/bio-library');
+  check('library route renders real bio cards', $$('.lib-card').length === 36);
+  check('library reports the honest total', ($('.lib-count')?.textContent ?? '').includes('506'));
+  check('library facets cover category, platform, language, design, collection, sort',
+    ['lib-category', 'lib-platform', 'lib-language', 'lib-design', 'lib-collection', 'lib-sort']
+      .every((id) => Boolean(document.getElementById(id))));
+  const libCollectionLinks = $$('.lib-card-collection').map((el) => el.getAttribute('href') ?? '');
+  check('every bio card links to a real collection route',
+    libCollectionLinks.length === 36 && libCollectionLinks.every((href) => /^\/[a-z0-9-]+$/.test(href)));
+
+  check('/bio-collections has 0 axe violations', (await runAxe('/bio-collections')) === 0);
+  check('/bio-library has 0 axe violations', (await runAxe('/bio-library')) === 0);
+
+  await settle('/bio-library?lang=hi');
+  check('library honours a language deep link', $$('.lib-card-text').length > 0 &&
+    $$('.lib-card-text').every((el) => /[\u0900-\u097F]/.test(el.textContent ?? '')));
+  await settle('/bio-library?q=zzzz-no-match');
+  check('library shows an empty state with a working reset', Boolean($('.empty-state .btn')));
   await goto('/');
 
   console.log('\n--- Console errors ---');

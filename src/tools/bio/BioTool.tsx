@@ -13,6 +13,9 @@ import { useToolMode } from '../../lib/toolMode';
 import CategoryPicker from './CategoryPicker';
 import PersonalizedForm, { FIELD_ORDER, fieldId } from './PersonalizedForm';
 import SegmentedControl from '../../components/SegmentedControl';
+import AdvancedOptions from '../../components/ui/AdvancedOptions';
+import { BioGeneratingSkeleton } from '../../components/skeleton/toolSkeletons';
+import { ErrorState } from '../../components/ui/States';
 import CountControl from '../../components/CountControl';
 import { ClipboardIcon, RefreshIcon } from '../../components/icons';
 import { copyText } from '../../lib/clipboard';
@@ -57,6 +60,8 @@ export default function BioTool() {
   const [hasGenerated, setHasGenerated] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const [generating, setGenerating] = useState(false);
+  /** Set only when a real generation attempt rejects. */
+  const [generationFailed, setGenerationFailed] = useState(false);
   const runnerRef = useRef<GenerationRunner | null>(null);
   if (!runnerRef.current) runnerRef.current = new GenerationRunner();
   useEffect(() => () => runnerRef.current?.dispose(), []);
@@ -90,6 +95,7 @@ export default function BioTool() {
 
   const submitJob = useCallback((job: GenerationJob, apply: (result: string[]) => void) => {
     setGenerating(true);
+    setGenerationFailed(false);
     setAnnouncement('Generating bios…');
     void runnerRef.current!.run(job).then((result) => {
       if (result === null) return; // superseded or unmounted
@@ -97,6 +103,7 @@ export default function BioTool() {
       apply(result);
     }).catch(() => {
       setGenerating(false);
+      setGenerationFailed(true);
       setAnnouncement('Could not generate bios. Please try again.');
     });
   }, []);
@@ -205,7 +212,7 @@ export default function BioTool() {
     <div className="generator-card">
       {/* ------- Left: controls ------- */}
       <div className="generator-panel">
-        <div className="tabs tool-advanced" role="tablist" aria-label="Bio generation mode" onKeyDown={handleTabKeyDown}>
+        <div className="tabs" role="tablist" aria-label="Bio generation mode" onKeyDown={handleTabKeyDown}>
           <button
             ref={personalTabRef}
             type="button"
@@ -227,14 +234,15 @@ export default function BioTool() {
             aria-selected={activeMode === 'category'}
             aria-controls="panel-category"
             tabIndex={activeMode === 'category' ? 0 : -1}
-            className={`tab tool-advanced${activeMode === 'category' ? ' is-active' : ''}`}
+            className={`tab${activeMode === 'category' ? ' is-active' : ''}`}
             onClick={() => switchMode('category')}
           >
             By category
           </button>
         </div>
 
-        <div className="generator-options tool-advanced">
+        <AdvancedOptions title="Language & style" description="Bio language, emojis and how many results">
+        <div className="generator-options">
           {isLinkedIn ? (
             <p className="tool-note tool-note-inline" role="note">
               LinkedIn professional bios are generated in English.
@@ -265,6 +273,16 @@ export default function BioTool() {
             </button>
           </div>
         </div>
+
+          <div className="generator-options">
+            <CountControl
+              label="How many bios"
+              noun="bios"
+              value={count}
+              onChange={setCount}
+            />
+          </div>
+        </AdvancedOptions>
 
         <form className="generator-form" onSubmit={handleSubmit} noValidate>
           {activeMode === 'personal' && showSummary && errorMessages.length > 0 && (
@@ -301,15 +319,6 @@ export default function BioTool() {
             </p>
           </div>
 
-          <div className="tool-advanced">
-          <CountControl
-            label="How many bios"
-            noun="bios"
-            value={count}
-            onChange={setCount}
-          />
-
-          </div>
           <button type="submit" className="btn btn-primary btn-large generate-button" disabled={generating}>
             {generating ? 'Generating…' : `Generate ${generationCount} bios`}
           </button>
@@ -347,7 +356,17 @@ export default function BioTool() {
           )}
         </div>
 
-        {hasGenerated ? (
+        {generationFailed && !generating ? (
+          <ErrorState
+            title="We couldn’t generate your bios"
+            text="Nothing was lost — your details are still here. Try again, or regenerate a single card if results are showing."
+            onRetry={() => runGeneration()}
+          />
+        ) : generating && !hasGenerated ? (
+          <div className="results-live">
+            <BioGeneratingSkeleton />
+          </div>
+        ) : hasGenerated ? (
           <>
             <p className="results-note">
               Each bio stays within the {platformConfig.name} limit of {bioLimit} characters.

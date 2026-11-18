@@ -109,8 +109,8 @@ export default function LiveSecurity() {
 
       <div className="ad-stats-grid ad-stats-grid--4">
         <StatCard icon="shieldCheck" label="Assurance Level" value="AAL2" caption="TOTP verified" tint="mint" />
-        <StatCard icon="key" label="Active Sessions" value={activeSessions} caption="Bound to HttpOnly cookie" tint="sky" />
-        <StatCard icon="users" label="Roles Defined" value={roles.data?.items?.length ?? 8} caption="Server-enforced RBAC" tint="lavender" />
+        <StatCard icon="key" label="Active Sessions" value={sessions.state === 'ready' ? activeSessions : '—'} caption="Bound to HttpOnly cookie" tint="sky" />
+        <StatCard icon="users" label="Roles Defined" value={roles.state === 'ready' ? (roles.data?.items.length ?? 0) : '—'} caption="Server-enforced RBAC" tint="lavender" />
         <StatCard icon="lock" label="Your Permissions" value={session?.permissions.length ?? '—'} caption="Verified per request" tint="violet" />
       </div>
 

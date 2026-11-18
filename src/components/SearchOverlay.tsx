@@ -3,6 +3,7 @@ import { navigate } from '../lib/router';
 import { TOOLS } from '../tools/registry';
 import { PLATFORMS } from '../tools/platforms';
 import { SearchIcon, ChevronRightIcon } from './icons';
+import { CATEGORY_SUMMARIES, COLLECTION_SUMMARIES, READY_MADE_STATS } from '../lib/readyMadeBios';
 
 interface Entry {
   label: string;
@@ -25,7 +26,34 @@ const PLATFORM_ENTRIES: Entry[] = PLATFORMS.map((platform) => ({
   keywords: `${platform.name} ${platform.shortName} bio limit ${platform.bioLimit}`.toLowerCase(),
 }));
 
-const ALL_ENTRIES = [...TOOL_ENTRIES, ...PLATFORM_ENTRIES];
+const COLLECTION_ENTRIES: Entry[] = COLLECTION_SUMMARIES.map((collection) => ({
+  label: collection.name,
+  hint: `Ready-made · ${collection.count} bios`,
+  href: collection.href,
+  keywords: `${collection.name} ${collection.description} ${collection.categoryLabel} ready-made bio collection`
+    .toLowerCase(),
+}));
+
+const CATEGORY_ENTRIES: Entry[] = CATEGORY_SUMMARIES.map((category) => ({
+  label: `${category.label} bios`,
+  hint: `Category · ${category.bios} bios`,
+  href: category.href,
+  keywords: `${category.label} ${category.description} category bios`.toLowerCase(),
+}));
+
+const LIBRARY_ENTRY: Entry = {
+  label: 'Bio Library — search every bio',
+  hint: 'Library',
+  href: '/bio-library',
+  keywords: `bio library all ${READY_MADE_STATS.bios} bios search filter copy ready-made`.toLowerCase(),
+};
+
+// Tools and platforms rank first, then collections/categories, so a query like
+// "username" still lands on the tool before a similarly-named collection.
+const ALL_ENTRIES = [...TOOL_ENTRIES, ...PLATFORM_ENTRIES, LIBRARY_ENTRY, ...COLLECTION_ENTRIES, ...CATEGORY_ENTRIES];
+
+/** Keep the listbox short enough to scan on a phone. */
+const MAX_RESULTS = 12;
 
 /**
  * Global tool search. Opens from the navbar search button, filters the real
@@ -39,9 +67,13 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return ALL_ENTRIES;
+    if (!q) return ALL_ENTRIES.slice(0, MAX_RESULTS);
     return ALL_ENTRIES.filter((entry) => entry.keywords.includes(q));
   }, [query]);
+  const visibleResults = results.slice(0, MAX_RESULTS);
+  const librarySearchHref = query.trim()
+    ? `/bio-library?q=${encodeURIComponent(query.trim())}`
+    : '/bio-library';
 
   useEffect(() => {
     if (open) {
@@ -81,7 +113,7 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
           className="search-form"
           onSubmit={(event) => {
             event.preventDefault();
-            if (results[0]) go(results[0].href);
+            if (visibleResults[0]) go(visibleResults[0].href);
           }}
         >
           <SearchIcon size={20} aria-hidden="true" />
@@ -91,15 +123,15 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
             className="search-input"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search tools, platforms, limits…"
-            aria-label="Search tools and platforms"
+            placeholder="Search tools, collections, bios…"
+            aria-label="Search tools, collections and bios"
             autoComplete="off"
             spellCheck={false}
           />
           <kbd className="search-kbd">Esc</kbd>
         </form>
         <ul className="search-results" role="listbox" aria-label="Matching tools">
-          {results.map((entry) => (
+          {visibleResults.map((entry) => (
             <li key={entry.href}>
               <button type="button" className="search-result" role="option" aria-selected="false" onClick={() => go(entry.href)}>
                 <span className="search-result-label">{entry.label}</span>
@@ -110,24 +142,17 @@ export default function SearchOverlay({ open, onClose }: { open: boolean; onClos
           ))}
           {results.length === 0 && (
             <li className="search-empty" role="status">
-              No tools match “{query}”. Try “bio”, “username”, “hashtag” or a platform.
+              No tools, collections or categories match “{query}”. Try “bio”, “username”, “hindi” or a platform —
+              or search every bio in the library.
             </li>
           )}
         </ul>
-        {/* Additive: the overlay only ever knew the static tool registry. This
-            hands the query to the database-backed library search instead of
-            pretending stored content was searched here. */}
-        <button
-          type="button"
-          className="search-result search-all-libraries"
-          onClick={() => go(`/library-search${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ''}`)}
-        >
-          <span className="search-result-label">
-            Search all content libraries{query.trim() ? ` for “${query.trim()}”` : ''}
-          </span>
-          <span className="search-result-hint">Bios, captions, hashtags, fonts…</span>
-          <ChevronRightIcon size={16} aria-hidden="true" />
-        </button>
+        <div className="search-foot">
+          <button type="button" className="search-foot-link" onClick={() => go(librarySearchHref)}>
+            {query.trim() ? `Search all ${READY_MADE_STATS.bios} bios for “${query.trim()}”` : `Browse all ${READY_MADE_STATS.bios} bios`}
+            <ChevronRightIcon size={15} aria-hidden="true" />
+          </button>
+        </div>
       </div>
     </div>
   );

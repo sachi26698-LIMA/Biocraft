@@ -6,6 +6,7 @@ import {randomUUID} from 'node:crypto';
 import {verifyProviderIdentity,AccessError} from './identity.mjs';
 import {validateBio,ValidationError} from '../domain/bio.mjs';
 const uid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const PUBLIC_CATALOGS=new Set(['/api/admin/v1/captions','/api/admin/v1/hashtags','/api/admin/v1/fonts']);
 const head={'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'};
 class ApiError extends Error { constructor(status,code){super(code);this.status=status;this.code=code;} }
 const fail=(status,code)=>{throw new ApiError(status,code)};
@@ -23,6 +24,7 @@ async function bodyJson(request) {
 function keys(value,allowed) {if(Object.keys(value).some(k=>!allowed.includes(k))) fail(422,'INVALID')}
 function integer(value,min,max){if(!Number.isSafeInteger(value)||value<min||value>max)fail(422,'INVALID');return value}
 function requestId(){return randomUUID()}
+const int8Id=value=>typeof value==='string' && /^[1-9]\d{0,18}$/.test(value) && BigInt(value)<=9223372036854775807n;
 // Bounded paging shared by read-only module endpoints. Unknown, repeated or
 // malformed parameters are rejected rather than silently ignored.
 //
@@ -38,14 +40,15 @@ function paging(url,allowed,expect={}) {
  for(const [key,type] of Object.entries(expect)) {
   const value=url.searchParams.get(key); if(value===null) continue;
   if(type==='time'&&(!/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?Z$/.test(value)||!Number.isFinite(Date.parse(value))))fail(422,'INVALID');
-  if(type==='bigint'&&! /^\d{1,18}$/.test(value))fail(422,'INVALID');
+  if(type==='bigint'&&!int8Id(value))fail(422,'INVALID');
   if(type==='slug'&&!/^[a-z0-9][a-z0-9-]{0,199}$/.test(value))fail(422,'INVALID');
+  if(type==='setting'&&!/^[a-z][a-z0-9_.-]{0,99}$/.test(value))fail(422,'INVALID');
   if(type==='uuid'&&!uid.test(value))fail(422,'INVALID');
   if(type==='text'&&value.length>120)fail(422,'INVALID');
   if(type==='boolean'&&value!=='true'&&value!=='false')fail(422,'INVALID');
  }
 }
-export function createAdminHandler({provider,execute,rateLimit,platformRules,recovery=null,enabled=false}={}) {
+export function createAdminHandler({provider,execute,rateLimit,platformRules,recovery=null,readPublicCatalog=null,readSystemStatus=null,emailAllowed,sharedWrites=true,editorialDirectory=false,enabled=false}={}) {
  return async function handle(request) {
   const id=requestId();
   try {
@@ -54,7 +57,12 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
    if(url.search.length>2000)fail(400,'INVALID');
    const match=request.headers.get('authorization')?.match(/^Bearer ([A-Za-z0-9_.-]{1,8192})$/);
    if(!match)fail(401,'UNAUTHENTICATED');
-   const identity=await verifyProviderIdentity({token:match[1],provider});
+   const identity=await verifyProviderIdentity({token:match[1],provider,emailAllowed});
+   // Preview authentication/session operations can be tested without enabling
+   // shared editorial, maintenance or staff mutations. Unknown writes fail closed.
+   if(!sharedWrites && request.method!=='GET' && ![
+    'POST /api/admin/v1/session','DELETE /api/admin/v1/session','POST /api/admin/v1/sessions/revoke-all',
+   ].includes(`${request.method} ${url.pathname}`)) fail(403,'PREVIEW_READ_ONLY');
    let permitted;try{permitted=await rateLimit({userId:identity.userId,operation:'admin-api'});}catch{fail(503,'UNAVAILABLE')}
    if(permitted!==true)fail(429,'RATE_LIMITED');
    let operation,args;
@@ -81,7 +89,7 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     operation='roleCatalog';args=[];
    } else if(url.pathname==='/api/admin/v1/audit-logs' && request.method==='GET') {
     paging(url,['limit','before'],{before:'bigint'});
-    operation='auditLogs';args=[pageLimit(url),url.searchParams.get('before')===null?null:Number(url.searchParams.get('before'))];
+    operation='auditLogs';args=[pageLimit(url),url.searchParams.get('before')];
    } else if(url.pathname==='/api/admin/v1/notifications' && request.method==='GET') {
     // The caller's own inbox. The recipient is the session, never a parameter.
     paging(url,['limit','before'],{before:'time'});
@@ -101,6 +109,28 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     operation='bioList';
     args=[pageLimit(url),url.searchParams.get('after'),url.searchParams.get('search'),url.searchParams.get('language'),
       url.searchParams.get('active')===null?null:url.searchParams.get('active')==='true'];
+   } else if(PUBLIC_CATALOGS.has(url.pathname) && request.method==='GET'
+     // `/fonts` has a richer library route further down (category + text search +
+      // slug cursor). When any of those parameters is present, fall through to it
+      // instead of rejecting the request here — otherwise ?search= is a 400 even
+      // though the route exists. Plain catalog reads are unchanged.
+      && !(url.pathname==='/api/admin/v1/fonts' && ['search','category'].some(k=>url.searchParams.has(k)))) {
+    paging(url,['limit','after'],{after:'uuid'});
+    const limit=pageLimit(url,1,100,25);
+    if(typeof readPublicCatalog!=='function') fail(503,'UNAVAILABLE');
+    const access=await execute({identity,operation:'publicCatalogAccess',args:[]});
+    if(access?.length!==1||access[0]?.active!==true) fail(403,'FORBIDDEN');
+    const items=await readPublicCatalog({kind:url.pathname.split('/').at(-1),after:url.searchParams.get('after'),limit});
+    if(!Array.isArray(items))fail(503,'UNAVAILABLE');
+    return json(200,{items,request_id:id});
+   } else if(['/api/admin/v1/bio-reviewers','/api/admin/v1/bio-publish-queue'].includes(url.pathname) && request.method==='GET') {
+    if(!editorialDirectory) fail(503,'UNAVAILABLE');
+    paging(url,['limit','after'],{after:'uuid'});
+    operation=url.pathname.endsWith('bio-reviewers')?'reviewerDirectory':'publisherQueue';
+    args=[pageLimit(url,1,100,50),url.searchParams.get('after')];
+   } else if(url.pathname==='/api/admin/v1/system/status' && request.method==='GET' && !url.search) {
+    if(typeof readSystemStatus!=='function') fail(503,'UNAVAILABLE');
+    operation='systemStatusAccess';args=[];
    } else if(url.pathname==='/api/admin/v1/analytics' && request.method==='GET' && !url.search) {
     operation='analytics';args=[];
    } else if(['/api/admin/v1/platforms','/api/admin/v1/categories','/api/admin/v1/generators','/api/admin/v1/seo-pages'].includes(url.pathname) && request.method==='GET') {
@@ -108,8 +138,9 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     operation={platforms:'platformList',categories:'categoryList',generators:'generatorList','seo-pages':'seoList'}[url.pathname.split('/').at(-1)];
     args=[pageLimit(url),url.searchParams.get('after')];
    } else if(['/api/admin/v1/collections','/api/admin/v1/settings'].includes(url.pathname) && request.method==='GET') {
-    paging(url,['limit','after'],{after:'slug'});
-    operation=url.pathname.endsWith('collections')?'collectionList':'settingList';
+    const collection=url.pathname.endsWith('collections');
+    paging(url,['limit','after'],{after:collection?'slug':'setting'});
+    operation=collection?'collectionList':'settingList';
     args=[pageLimit(url),url.searchParams.get('after')];
    } else if(url.pathname==='/api/admin/v1/settings' && request.method==='PUT') {
     const body=await bodyJson(request);keys(body,['key','value','expectedVersion']);integer(body.expectedVersion,1,Number.MAX_SAFE_INTEGER);
@@ -177,8 +208,8 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     if(bioId===null||!uid.test(bioId))fail(422,'INVALID');
     const raw=url.searchParams.get('limit')??'50';if(!/^\d{1,3}$/.test(raw))fail(422,'INVALID');
     const before=url.searchParams.get('before');
-    if(before!==null&&!/^\d{1,18}$/.test(before))fail(422,'INVALID');
-    operation='publications';args=[bioId,integer(Number(raw),1,MAX_PAGE_SIZE),before===null?null:Number(before)];
+    if(before!==null&&!int8Id(before))fail(422,'INVALID');
+    operation='publications';args=[bioId,integer(Number(raw),1,MAX_PAGE_SIZE),before];
    } else if(url.pathname==='/api/admin/v1/bio-drafts' && request.method==='POST') {
     const body=await bodyJson(request);keys(body,['key','bio']);
     if(typeof body.key!=='string'||!/^[a-z0-9][a-z0-9_-]{0,99}$/.test(body.key))fail(422,'INVALID');
@@ -191,24 +222,19 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     else {const body=await bodyJson(request);keys(body,['expectedVersion','bio']);integer(body.expectedVersion,1,Number.MAX_SAFE_INTEGER);
      const {count,...payload}=validateBio(body.bio,platformRules);void count;
      operation='draftUpdate';args=[draftId,body.expectedVersion,JSON.stringify(payload),id];}
-   } else if((url.pathname.match(/^\/api\/admin\/v1\/bio-drafts\/[0-9a-f-]{36}\/(publish|revert)$/i)) && request.method==='POST' && !url.search) {
-    // Two reviewed operations with different bodies, so they are checked apart.
-    const action=url.pathname.split('/').at(-1);
+   } else if(/^\/api\/admin\/v1\/publications\/[^/]+\/revert$/.test(url.pathname) && request.method==='POST' && !url.search) {
+    const publicationId=url.pathname.split('/').at(-2);
+    if(!int8Id(publicationId))fail(422,'INVALID');
+    keys(await bodyJson(request),[]);
+    // Publication IDs name immutable records. This only opens a new private draft.
+    operation='revert';args=[publicationId,id];
+   } else if(/^\/api\/admin\/v1\/bio-drafts\/[0-9a-f-]{36}\/publish$/i.test(url.pathname) && request.method==='POST' && !url.search) {
     const draftId=url.pathname.split('/').at(-2);
     if(!uid.test(draftId))fail(422,'INVALID');
-    const body=await bodyJson(request);
+    const body=await bodyJson(request);keys(body,['expectedVersion','bioId']);
     integer(body.expectedVersion,1,Number.MAX_SAFE_INTEGER);
-    if(action==='publish') {
-     keys(body,['expectedVersion','bioId']);
-     if(body.bioId!==null&&body.bioId!==undefined&&(typeof body.bioId!=='string'||!uid.test(body.bioId)))fail(422,'INVALID');
-     operation='publish';args=[draftId,body.expectedVersion,body.bioId??null,id];
-    } else {
-     // A revert is anchored on the draft being reverted, so the body also names
-     // the publication whose payload is being restored.
-     keys(body,['expectedVersion','publicationId']);
-     if(!Number.isSafeInteger(body.publicationId)||body.publicationId<1)fail(422,'INVALID');
-     operation='revert';args=[body.publicationId,id];
-    }
+    if(body.bioId!==null&&body.bioId!==undefined&&(typeof body.bioId!=='string'||!uid.test(body.bioId)))fail(422,'INVALID');
+    operation='publish';args=[draftId,body.expectedVersion,body.bioId??null,id];
    } else if(url.pathname==='/api/admin/v1/content-library/stats' && request.method==='GET' && !url.search) {
     operation='contentLibraryStats';args=[];
    } else if(url.pathname==='/api/admin/v1/data-sources' && request.method==='GET') {
@@ -251,6 +277,10 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
    const rows=await execute({identity,operation,args});
    if(!Array.isArray(rows))fail(503,'UNAVAILABLE');
    // "Revoke all my sessions" must name the caller's own action, not another one.
+   if(operation==='systemStatusAccess') {
+    if(rows.length!==1||rows[0]?.active!==true) fail(403,'FORBIDDEN');
+    return json(200,{...await readSystemStatus(),request_id:id});
+   }
    if(operation==='sessionRevokeAll') {
     const revoked=Number(rows[0]?.revoked);
     if(rows.length!==1||!Number.isSafeInteger(revoked)||revoked<0)fail(503,'UNAVAILABLE');
@@ -261,7 +291,9 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     if(rows.length!==1 || !expiry || !Number.isFinite(Date.parse(expiry)))fail(503,'UNAVAILABLE');
     return json(200,{expires_at:new Date(expiry).toISOString(),request_id:id});
    }
-   if(['list','staffList','reviewQueue','platformList','categoryList','collectionList','generatorList','seoList','settingList','mySessions','auditLogs','roleCatalog','publications','notificationList','publicationJobList','backupList','bioList','dataSourceList','syncJobList','fontList','emojiList','symbolList','languageList','translationList','contentLibraryStats'].includes(operation))return json(200,{items:rows,request_id:id});
+   // Read operations added on either side are all valid list responses; the merge
+   // must keep both sets or a route that exists would answer 503.
+   if(['list','staffList','reviewQueue','platformList','categoryList','collectionList','generatorList','seoList','settingList','mySessions','auditLogs','roleCatalog','publications','notificationList','publicationJobList','backupList','bioList','reviewerDirectory','publisherQueue','dataSourceList','syncJobList','fontList','emojiList','symbolList','languageList','translationList','contentLibraryStats'].includes(operation))return json(200,{items:rows,request_id:id});
    if(operation==='notificationRead'){
     // An UPDATE with no matching rows still returns exactly one row, so the count
     // is read from a single value column rather than inferred from row count.
@@ -282,7 +314,7 @@ export function createAdminHandler({provider,execute,rateLimit,platformRules,rec
     if(typeof row?.user_id!=='string'||!Array.isArray(row.roles)||!Array.isArray(row.permissions))fail(503,'UNAVAILABLE');
     const expires=typeof row.session_expires_at==='string'?row.session_expires_at:new Date(row.session_expires_at).toISOString();
     return json(200,{user:{id:row.user_id,roles:row.roles,permissions:row.permissions},
-      expires_at:expires,created_at:row.session_created_at,request_id:id});
+      expires_at:expires,shared_writes:sharedWrites,editorial_directory:editorialDirectory,created_at:row.session_created_at,request_id:id});
    }
    if(operation==='analytics')return json(200,{metrics:rows,request_id:id});
 

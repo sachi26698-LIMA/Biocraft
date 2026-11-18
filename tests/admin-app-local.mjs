@@ -58,7 +58,8 @@ try {
  assert.match(key,/^[0-9a-f]{64}$/);
  assert.equal(clientKey(new Request('https://preview.example/',{headers:{'x-forwarded-for':'1.2.3.4'}}),{trustedHeader:'x-forwarded-for',ingressSecret:secret}),null);
  let request=new Request('https://preview.example/api/admin/v1/health',{headers:await signed('1.2.3.4')});
- assert.equal((await app(request)).status,200);
+ assert.equal((await app(request)).status,503); // configured but database is unreachable
+ assert.equal((await app(new Request(request,{method:'POST'}))).status,405);
  // Only the configured origin and Admin API prefix are served.
  assert.equal((await app(new Request('https://attacker.example/api/admin/v1/health',{headers:await signed('1.2.3.4')}))).status,403);
  assert.equal((await app(new Request('https://preview.example/other',{headers:await signed('1.2.3.4')}))).status,404);
