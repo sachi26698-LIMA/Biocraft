@@ -304,7 +304,24 @@ laptop should open with the laptop. The block was deleted rather than restyled.
 
 Size: CSS 29.0 → 28.1 kB gzip, total JS 285.2 → 278.4 kB, `HomePage` chunk 5.4 → 5.1 kB.
 
-## P3.1 Blockers (unchanged, environment-level)
+## P3.4 Merge, review and deployment
+
+- Branch rebased onto `main` (`3f66eb7` → merge commit `6089028`) so the PR is mergeable. Main had
+  replaced the fixed 5/10/20 presets with the configurable `CountControl`; the three conflicting files
+  keep both sides — the revamp's `AdvancedOptions`, skeletons and `EmptyState`, with main's
+  `CountControl` mounted inside the advanced panel.
+- Build fix `7f944f1`: main's `vite.config.ts` guard demanded both public Supabase variables, but the
+  Vercel **Preview** scope defines only the publishable key, so every Preview build died at
+  “failed to load config”. The guard now validates the key against the public `SUPABASE_URL` constant
+  when the URL is unset — the same rule the runtime client already applied. A wrong URL, a foreign
+  anon key, a service key and a `postgres://` string still abort the build.
+- Pull request: **#14** → https://github.com/sachi26698-LIMA/Biocraft/pull/14 (mergeable)
+- Latest Preview (READY, sha `7f944f1`): `dpl_47z1fMELXV1dV83ryJRzKa3eXz6r` →
+  https://biocraft-git-arena-decd8f08-biocraft-sachi26698-6758s-projects.vercel.app
+- `Workers Builds: biocraft` (Cloudflare) fails on this PR exactly as it does on merged PRs #12/#13 —
+  pre-existing, unrelated to this branch. Production was never redeployed by this work.
+
+## P3.3 Blockers (environment-level)
 
 - **No browser binary in this sandbox** — Playwright/Chromium cannot be installed (download blocked)
   and the alternative `@sparticuz/chromium` needs `libnss3`, which cannot be installed without root.
