@@ -140,6 +140,15 @@ export default function Header() {
       {open && (
         <nav ref={mobileNavRef} className="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
           <p className="mobile-nav-eyebrow">Menu — quick jump</p>
+          <div className="mobile-nav-feature">
+            <a className="mobile-nav-feature-main" href="/bio-collections" onClick={handleAnchorClick}>
+              <span className="mobile-nav-feature-eyebrow">Ready-Made Bios</span>
+              <span className="mobile-nav-feature-title">Copy-ready bios, organised</span>
+            </a>
+            <a className="mobile-nav-feature-link" href="/bio-library" onClick={handleAnchorClick}>
+              Library <ChevronRightIcon size={15} />
+            </a>
+          </div>
           <ul>
             {MENU_ICONS.map((item, index) => {
               const active = item.href === path;

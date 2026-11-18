@@ -29,6 +29,13 @@ const CATEGORY_LINKS: Array<{ label: string; href: string }> = [
   { label: 'Social Media Tools', href: '/categories#cat-linkedin' },
 ];
 
+const READY_MADE_LINKS: Array<{ label: string; href: string }> = [
+  { label: 'Ready-Made Bios', href: '/bio-collections' },
+  { label: 'Bio Library', href: '/bio-library' },
+  { label: 'Bio Editor', href: '/bio-editor' },
+  { label: 'Design Studio', href: '/design-studio' },
+];
+
 const POPULAR_TOOLS: Array<{ label: string; href: string }> = [
   { label: 'Instagram Bio Generator', href: '/bio-generator?platform=instagram' },
   { label: 'Stylish Name Generator', href: '/stylish-name-generator' },
@@ -75,7 +82,7 @@ function FooterColumn({
 }
 
 /**
- * Light-glass footer: brand block on the left, five link columns on the right.
+ * Light-glass footer: brand block on the left, six link columns on the right.
  * Every link points at a real route — no placeholders, no external profiles.
  */
 export default function Footer() {
@@ -109,6 +116,7 @@ export default function Footer() {
 
           <FooterColumn heading="All Tools" links={ALL_TOOLS} />
           <FooterColumn heading="Categories" links={CATEGORY_LINKS} />
+          <FooterColumn heading="Ready-Made Bios" links={READY_MADE_LINKS} />
           <FooterColumn heading="Popular Tools" links={POPULAR_TOOLS} />
           <FooterColumn heading="Company" links={COMPANY_LINKS} />
           <FooterColumn heading="Legal" links={LEGAL_LINKS} />

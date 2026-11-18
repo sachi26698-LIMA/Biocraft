@@ -177,6 +177,8 @@ const EXPECTED_TITLES = {
   '/cookie': 'Cookie Policy — BioCraft Social Media Toolkit',
   '/login': 'Login — BioCraft Social Media Toolkit',
   '/bio-editor': 'Bio Editor — Style & Copy Your Instagram Bio | BioCraft',
+  '/bio-collections': 'Ready-Made Bio Collections — BioCraft Social Media Toolkit',
+  '/bio-library': 'Bio Library — Search 506 Ready-Made Bios | BioCraft',
   '/design-studio': 'Design Studio — BioCraft Social Media Toolkit',
 };
 
@@ -949,6 +951,54 @@ const runAxe = async (routeName) => {
     await goto(route);
     check(`title for ${route}`, window.document.title === EXPECTED_TITLES[route]);
   }
+  await goto('/');
+
+  // ================= Ready-Made Bios: route + link regression =================
+  console.log('\n--- Ready-Made Bios hub + library routes ---');
+  const settle = async (path) => {
+    await goto(path);
+    for (let tick = 0; tick < 4; tick += 1) await act(async () => {});
+  };
+  await settle('/bio-collections');
+  const hubCards = $$('.rmb-collection');
+  check('hub renders its featured + recent + all collection cards', hubCards.length >= 20 + 6 + 4);
+  check('hub headline carries the real totals', ($('.rmb-stats')?.textContent ?? '').includes('506'));
+  check('hub search + View All are present',
+    Boolean($('.rmb-search input')) && $('.rmb-viewall')?.getAttribute('href') === '/bio-library');
+  const hubHrefs = $$('.rmb-collection, .rmb-cat, .rmb-design-actions a, .rmb-platform, .rmb-lang-card')
+    .map((el) => el.getAttribute('href') ?? '');
+  const knownHubTargets = new Set([
+    '/', '/categories', '/resources', '/bio-collections', '/bio-library', '/bio-editor', '/design-studio',
+    '/bio-generator', '/stylish-name-generator', '/fancy-font-generator', '/username-generator',
+    '/emoji-symbol-generator', '/hashtag-generator', '/caption-generator', '/linkedin-headline-generator',
+    '/linkedin-summary-generator', '/whatsapp-status-generator', '/snapchat-caption-generator',
+  ]);
+  check('every hub destination is a real route',
+    hubHrefs.length > 0 && hubHrefs.every((href) => href.startsWith('/') && (
+      knownHubTargets.has(href.split('?')[0].split('#')[0]) ||
+      Boolean($$(`.rmb-collection[href="${href}"]`).length)
+    )));
+  check('no hub collection card links outside the site', hubCards.every((el) => (el.getAttribute('href') ?? '').startsWith('/')));
+  check('hub categories are compact selectors, not bio dumps', $$('.rmb-cat').length === 15 && $$('.lib-card').length === 0);
+
+  await settle('/bio-library');
+  check('library route renders real bio cards', $$('.lib-card').length === 36);
+  check('library reports the honest total', ($('.lib-count')?.textContent ?? '').includes('506'));
+  check('library facets cover category, platform, language, design, collection, sort',
+    ['lib-category', 'lib-platform', 'lib-language', 'lib-design', 'lib-collection', 'lib-sort']
+      .every((id) => Boolean(document.getElementById(id))));
+  const libCollectionLinks = $$('.lib-card-collection').map((el) => el.getAttribute('href') ?? '');
+  check('every bio card links to a real collection route',
+    libCollectionLinks.length === 36 && libCollectionLinks.every((href) => /^\/[a-z0-9-]+$/.test(href)));
+
+  check('/bio-collections has 0 axe violations', (await runAxe('/bio-collections')) === 0);
+  check('/bio-library has 0 axe violations', (await runAxe('/bio-library')) === 0);
+
+  await settle('/bio-library?lang=hi');
+  check('library honours a language deep link', $$('.lib-card-text').length > 0 &&
+    $$('.lib-card-text').every((el) => /[\u0900-\u097F]/.test(el.textContent ?? '')));
+  await settle('/bio-library?q=zzzz-no-match');
+  check('library shows an empty state with a working reset', Boolean($('.empty-state .btn')));
   await goto('/');
 
   console.log('\n--- Console errors ---');

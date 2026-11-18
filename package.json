@@ -64,6 +64,7 @@
     "test:admin-bundle-secrets": "node tests/admin-bundle-secrets.mjs",
     "test:regression": "esbuild review-harness.tsx --bundle --platform=node --format=cjs --outfile=review-harness.bundle.cjs && node review-check.cjs",
     "test:revamp": "node tests/revamp-ui.cjs",
+    "test:ready-made": "node tests/ready-made-ui.cjs",
     "test:responsive": "node responsive-audit.cjs",
     "test:browser": "playwright test"
   },

@@ -391,19 +391,69 @@ export function CategoriesSkeleton() {
 export function CollectionsIndexSkeleton() {
   return (
     <SkeletonRegion label="Loading bio collections">
-      <div className="skel-hub-head">
-        <SkeletonAvatar size={64} />
+      {/* Hub header: eyebrow + h1 + lede + stat block */}
+      <div className="skel-hub-head skel-hub-head--hero">
         <div className="skel-hub-body">
-          <SkeletonLine width="55%" height={26} />
-          <SkeletonLine width="85%" height={14} />
+          <SkeletonLine width="22%" height={12} />
+          <SkeletonLine width="72%" height={30} />
+          <SkeletonLine width="88%" height={14} />
+          <SkeletonLine width="64%" height={14} />
         </div>
-        <SkeletonChip width={150} />
+        <div className="skel-stat-row">
+          {Array.from({ length: 4 }, (_, i) => (
+            <SkeletonBlock key={i} className="skel-stat" height={62} />
+          ))}
+        </div>
       </div>
-      <SkeletonInput />
-      <SkeletonChipRow count={8} />
+      {/* Search + View all */}
+      <div className="skel-search-row">
+        <SkeletonInput />
+        <SkeletonButton width={180} />
+      </div>
+      {/* Featured collection cards (two-up) */}
+      <SkeletonLine width="34%" height={20} />
+      <div className="skel-featured-grid">
+        {Array.from({ length: 2 }, (_, i) => (
+          <SkeletonCard key={i} lines={3} />
+        ))}
+      </div>
+      {/* Category chips */}
+      <SkeletonChipRow count={10} />
+      {/* Collection cards */}
       <div className="skel-tile-grid">
         {Array.from({ length: 8 }, (_, i) => (
           <SkeletonCard key={i} lines={2} />
+        ))}
+      </div>
+    </SkeletonRegion>
+  );
+}
+
+export function BioLibrarySkeleton() {
+  return (
+    <SkeletonRegion label="Loading the bio library">
+      <div className="skel-hub-head skel-hub-head--hero">
+        <div className="skel-hub-body">
+          <SkeletonLine width="26%" height={12} />
+          <SkeletonLine width="38%" height={30} />
+          <SkeletonLine width="86%" height={14} />
+        </div>
+        <div className="skel-stat-row">
+          {Array.from({ length: 3 }, (_, i) => (
+            <SkeletonBlock key={i} className="skel-stat" height={54} />
+          ))}
+        </div>
+      </div>
+      <SkeletonInput />
+      <div className="skel-facet-row">
+        {Array.from({ length: 6 }, (_, i) => (
+          <SkeletonBlock key={i} className="skel-facet" height={62} />
+        ))}
+      </div>
+      <SkeletonLine width="30%" height={14} />
+      <div className="skel-lib-grid">
+        {Array.from({ length: 6 }, (_, i) => (
+          <SkeletonCard key={i} lines={3} />
         ))}
       </div>
     </SkeletonRegion>

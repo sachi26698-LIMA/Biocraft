@@ -165,6 +165,14 @@ const ROUTES = [
     ogDescription: '506 original bios across 20 collections — EN, हिंदी and Hinglish. Copy in one tap, free and private.',
   },
   {
+    path: '/bio-library',
+    title: 'Bio Library — Search 506 Ready-Made Bios | BioCraft',
+    description:
+      'Search all 506 original BioCraft bios at once — filter by category, platform, language, design or collection, sort them, and copy any line in one tap. Free and private.',
+    ogTitle: 'Bio Library — BioCraft',
+    ogDescription: 'Search 506 original bios across 20 collections — filter by platform, language and design.',
+  },
+  {
     path: '/instagram-bio-for-boys',
     title: 'Instagram Bio for Boys — Ready-Made Mens Bios | BioCraft',
     description:

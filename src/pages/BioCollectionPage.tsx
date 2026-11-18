@@ -18,6 +18,7 @@ import CollectionIcon from '../components/CollectionIcon';
 import { fetchCollectionBios } from '../lib/biosRemote';
 import {
   COLLECTION_NAV,
+  TOTAL_BIOS,
   collectionBySlug,
   type BioEntry,
 } from '../lib/bioCollections';
@@ -330,6 +331,28 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
                 </a>
               </li>
             ))}
+          </ul>
+        </section>
+
+        {/* Cross-links into the wider ready-made library */}
+        <section className="bc-related" aria-labelledby="bc-library-title">
+          <h2 id="bc-library-title">More from the Bio Library</h2>
+          <ul className="bc-chip-row">
+            <li>
+              <a className="chip bc-chip" href={`/bio-library?collection=${collection.slug}`} onClick={handleAnchorClick}>
+                Filter the library to this collection
+              </a>
+            </li>
+            <li>
+              <a className="chip bc-chip" href="/bio-library" onClick={handleAnchorClick}>
+                All {TOTAL_BIOS} ready-made bios
+              </a>
+            </li>
+            <li>
+              <a className="chip bc-chip" href="/bio-collections" onClick={handleAnchorClick}>
+                Every collection
+              </a>
+            </li>
           </ul>
         </section>
 
