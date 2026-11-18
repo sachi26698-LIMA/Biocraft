@@ -2,6 +2,8 @@
 
 **2026-11-18 UTC · [Production site](https://biocraft-bice.vercel.app) · Supabase project `jvpadtzfsuekixrquzjv` · release branch `arena/21fb7968-biocraft`.** This is a dated observation, not a continuously updated status page. The guest catalogue is live. **The Admin database connection is not ready.** No new Supabase project, Admin account, MFA change, recurring hosted worker or paid upgrade was created.
 
+Application release: `dff59e3` (`dpl_7goSuCiVnxPzTUsXWjENt8YL2aNa`), **READY / PROMOTED** on the canonical domain. The release branch has not been merged into `main`.
+
 ## What ran on Production
 
 Independent readback of the migration ledger (49 entries, including historical split migrations):
@@ -29,8 +31,12 @@ The [guest readiness check](https://biocraft-bice.vercel.app/api/status/content)
 
 The [Admin diagnostic](https://biocraft-bice.vercel.app/api/admin/v1/health?diagnose=1) reached the Auth provider. The verified-TLS **session pooler rejected tenant/user lookup before the app obtained a Postgres connection** (`XX000`, `tenant_or_user_lookup`). Vercel Production's `ADMIN_DB_HOST` matches the Dashboard-confirmed `aws-0-ap-southeast-2.pooler.supabase.com`, port `5432`; `ADMIN_DB_USER` was set to the project-scoped limited login. In Postgres that role can log in, is not expired, has CONNECT, and has the Admin reporting command grants. This does **not** prove the pooler can resolve it or that its password is correct. The direct DB hostname has no IPv4 A record. Do not guess another cluster, switch to port 6543, use `postgres` in the app, disable TLS, or reset an Auth password to address this error.
 
-- For an independent, read-only control-plane comparison, on an **already authorized private workstation** with the Management API token supplied by its secret manager, run `node scripts/admin-pooler-host.mjs`. This checks the primary pooler using the same metadata endpoint as the Supabase CLI. It prints **only the hostname**. It does not query the DB or change either provider. Never put a token, DSN, database password or MFA code in a message or in the repo.
-- If the primary hostname differs, correct **only** Vercel Production `ADMIN_DB_HOST` to the provider-reported host and redeploy the reviewed branch. If it is the same, ask Supabase Support to verify **pooler tenant routing and custom-role resolution for `bc_admin_executor` on this project**; share the project ref, hostname, port, UTC time and the sanitized diagnostic, not credentials. The connection is deliberately left fail-closed until it works.
+**The operator also confirmed that the independent Supabase Management API check returns the same `aws-0` host.** There is no evidence for switching hosts or rotating a password. `scripts/admin-pooler-host.mjs` is the private, read-only comparison helper for future assignment changes; never share a token, DSN, password or MFA code.
+
+**Next action: Supabase Support.** Suggested ticket (no secrets):
+
+> Project `jvpadtzfsuekixrquzjv` (ap-southeast-2), 2026-11-18 around 22:32 UTC: the shared session pooler at `aws-0-ap-southeast-2.pooler.supabase.com:5432` returns SQLSTATE `XX000` (tenant/user lookup) for `bc_admin_executor.jvpadtzfsuekixrquzjv` before our verified-TLS Vercel client obtains a DB session. Dashboard Connect, the primary pooler metadata and Production configuration agree on the hostname. DB, pooler and Auth service health are green. The custom Postgres role exists, has LOGIN and CONNECT, and is not expired. Please verify the project's Supavisor tenant registration and custom-role routing on the assigned cluster.
+
 - Acceptance after repair: `/api/admin/v1/health` must return `200 {"ok":true}`; the diagnostic must report a reachable database and provider, limited role `ok` and commands `ok`. A signed-out `/session`, `/data-sources` or `/sync-jobs` request must remain unauthenticated. The owner must then [sign in](https://biocraft-bice.vercel.app/admin/login) with the existing account and MFA and open [Data Sources](https://biocraft-bice.vercel.app/admin/data-sources). Check both the source registry and the recent jobs table. **The hosted signed-in check remains unverified.**
 
 ## Safe operator paths
