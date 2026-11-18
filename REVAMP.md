@@ -238,7 +238,18 @@ Homepage order is now: hero / platform stage → generator → **Featured Ready-
 Favourites (only when pinned) → niche chips → FAQ → footer. Their dead CSS and the matching
 `responsive-audit` expectations were deleted too (no orphan rules, no stale tests).
 
-## P2.9 Blockers (unchanged, environment-level)
+## P2.9 Mobile menu polish (follow-up, commit `d06b616`)
+
+- Removed the “Menu — quick jump” eyebrow (and its dot marker CSS).
+- Replaced the bespoke **Ready-Made Bios feature band** with a normal menu row: same 44 px 3D tile,
+  label, chevron, hover and active treatment as every other destination. It sits right after Home and
+  shows active on `/bio-collections` and `/bio-library`. One row, one link — the library is one tap
+  from the hub.
+- The sheet is now eight uniform rows (`Home · Ready-Made Bios · All Tools · Categories · Features ·
+  About · Help · Favourite Tools`) plus the Explore Tools CTA; the cap was raised to `76vh` so it
+  still fits without clipping, and the band/eyebrow CSS was deleted rather than left orphaned.
+
+## P2.10 Blockers (unchanged, environment-level)
 
 - **No browser binary in this sandbox** — Playwright/Chromium cannot be installed (download blocked)
   and the alternative `@sparticuz/chromium` needs `libnss3`, which cannot be installed without root.
