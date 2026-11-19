@@ -90,9 +90,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 060 | `batch-060.mjs` | 44 | 33 | 33 | 110 | 2 language + 2 exact → all fixed | 6213 | 4 |
 
-**Verified so far: 6,213 / 50,000 (12.4%)**
-Remaining: 43,787 (EN 17,515 · HI 13,136 · HG 13,136)
-Split check: EN 12.43% · HI 12.43% · HG 12.43% of their targets — spread 0.00.
+| 061 | `batch-061.mjs` | 44 | 34 | 33 | 111 | 0 | 6324 | 0 |
+
+**Verified so far: 6,324 / 50,000 (12.6%)**
+Remaining: 43,676 (EN 17,471 · HI 13,102 · HG 13,103)
+Split check: EN 12.64% · HI 12.65% · HG 12.65% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -122,7 +124,12 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 061 — split 12.43 / 12.43 / 12.43, spread 0.00. 060 drew on brass utensils
+Batch 062 — split 12.64 / 12.65 / 12.65, spread 0.01. 061 drew on the barber
+who remembers your father, the four a.m. water tanker, a lost wedding
+invitation, the night train corridor and a stopped watch still worn. Zero
+rejections on the first build.
+
+(previous) 060 drew on brass utensils
 and the hands that polish them, the ration-card queue, a pension office, a
 wedding tent blocking the lane and a bicycle learned at forty. Four rejections:
 two Hinglish lines with no markers ('Peetal chamka, haath kaala reh gaya.' and a
