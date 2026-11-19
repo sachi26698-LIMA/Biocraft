@@ -17,17 +17,27 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 004 | `batch-004.mjs` | 70 | 48 | 24 | 142 | 1 → fixed | 454 | **All 46 categories now populated** |
 | 005 | `batch-005.mjs` | 36 | 46 | 33 | 115 | 1 → fixed | 569 | Depth pass: attitude, love, shayari (2- and 4-line), quotes, sad, aesthetic, life |
 | 006 | `batch-006.mjs` | 50 | 50 | 47 | 147 | 3 → fixed | 716 | Thin-category pass: the 25 categories still at 4–6 records |
+| 007 | `batch-007.mjs` | 44 | 35 | 38 | 117 | 3 → fixed | 833 | Next band: royal, motivational, alone, friendship, professional, creator, student + middle sweep |
 
-**Verified so far: 716 / 50,000 (1.4%)**
-Remaining: 49,284 (EN 19,720 · HI 14,756 · HG 14,805)
+**Verified so far: 833 / 50,000 (1.7%)**
+Remaining: 49,167 (EN 19,676 · HI 14,721 · HG 14,770)
 Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 007 — after 006 every category holds at least 8 records, so the 4s, 5s and
-6s are gone. Work the next band: Royal and VIP (22), Motivational (19), Alone and
-loneliness (20), Friendship (19), Professional and business (12), Creator and
-influencer (10), Student life (10). Keep the shayari two-line/four-line split going: it
+Batch 008 — 007 lifted the 10–22 band. Keep going down the list: Fashion and
+beauty, Yoga and wellness, Pets and animals, Startup and hustle, Science and
+curiosity, Cinema and OTT, Cricket and sports, Cars and bikes, Home and
+interiors, Parenting, Instagram profiles, Nature, Poetry are all still around
+6–8 records and are the thinnest remaining.
+
+**Marker-list discipline (new, from batch 007).** The Hinglish marker list was
+extended twice in batches 005 and 007, each time because a genuinely Hinglish
+line was falsely refused. Every extension risks letting plain English through as
+Hinglish, which would silently inflate the HG count. `tests/bio-language-gate.mjs`
+now pins the list from both sides: 8 plain-English sentences must still fail as
+Hinglish, 7 real Hinglish sentences must still pass, and all stored records are
+re-validated against the gate. Run it before any marker edit. Keep the shayari two-line/four-line split going: it
 is the only place where the Hindi library can outrun a literal reading of the
 target without inventing content.
 
@@ -74,7 +84,14 @@ left in the report as a documented exclusion.
   the sentence was rewritten to lead with `Bike` so the Roman-Hindi is
   unmistakable, rather than the marker list being patched for one word.
 
-**Pattern worth noting:** the engine has now caught 7 rejections across 6 batches
+- Batch 007: three more vocabulary-gap refusals (`padhai`, `neend adhoori`,
+  `samjhaya`, `shukraguzaar`, `maangna`). All three sentences were correct
+  Hinglish, so the marker list was extended and the records were accepted
+  **verbatim** — nothing was rewritten to dodge the gate. This is now the
+  dominant rejection class, which is the right outcome: the gate is finding
+  vocabulary it cannot see rather than content that is wrong.
+
+**Pattern worth noting:** the engine has now caught 10 rejections across 7 batches
 — 3 Hinglish edges (003, 004, 006), 2 exact duplicates of earlier batches (006),
 1 vocabulary gap (005), 1 over-length line (002). The duplicate catches are the
 most useful signal in the whole ledger: at 716 records a human cannot hold the

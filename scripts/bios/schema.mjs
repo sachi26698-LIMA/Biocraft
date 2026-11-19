@@ -110,6 +110,11 @@ const HINGLISH_MARKERS = [
   'aadatein', 'aadat', 'mahine', 'mahina', 'pehle', 'pehla', 'bewakoofi',
   'bewakoof', 'lagti', 'lagta', 'lagte', 'raha', 'rahi', 'gayi', 'gaya',
   'gaye', 'nikla', 'nikli', 'sasti', 'sasta', 'wapas', 'wahi', 'wajah',
+  // second vocabulary sweep (batch 007): everyday student / family Hindi
+  'padhai', 'padhta', 'padhti', 'neend', 'poori', 'pura', 'adhoori', 'adhoora',
+  'samjhaya', 'samajh', 'chauthi', 'doosri', 'pehli', 'mat', 'chhodo', 'chhoda',
+  'shukraguzaar', 'shukriya', 'maangna', 'maanga', 'dena', 'diya', 'liya',
+  'hoga', 'hogi', 'hota', 'hoti', 'hote', 'rahega', 'rahegi', 'chalega',
 ];
 
 export function detectScript(text) {
