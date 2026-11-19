@@ -49,10 +49,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 036 | `batch-036.mjs` | 40 | 28 | 29 | 97 | 1 → fixed | 3514 | 1 exact repeat |
 | 037 | `batch-037.mjs` | 39 | 28 | 29 | 96 | 2 → fixed | 3610 | 2 exact repeats |
 | 038 | `batch-038.mjs` | 41 | 29 | 29 | 99 | 0 | 3709 | Strict proportional; zero rejections |
+| 039 | `batch-039.mjs` | 40 | 28 | 29 | 97 | 1 → fixed | 3806 | 1 language rejection |
 
-**Verified so far: 3,709 / 50,000 (7.4%)**
-Remaining: 46,291 (EN 18,516 · HI 13,882 · HG 13,893)
-Split check: EN 7.42% · HI 7.45% · HG 7.38% of their targets.
+**Verified so far: 3,806 / 50,000 (7.6%)**
+Remaining: 46,194 (EN 18,476 · HI 13,854 · HG 13,864)
+Split check: EN 7.62% · HI 7.64% · HG 7.57% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -82,7 +83,7 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 039 — split 7.42 / 7.45 / 7.38, within 0.07 points. Continue strict
+Batch 040 — split 7.62 / 7.64 / 7.57, within 0.07 points. Continue strict
 proportional 40/30/30.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
