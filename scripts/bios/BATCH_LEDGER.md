@@ -120,10 +120,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 075 | `batch-075.mjs` | 44 | 33 | 33 | 110 | 0 | 7871 | 0 — 1 gate hole found and closed |
 | 076 | `batch-076.mjs` | 44 | 33 | 33 | 110 | 0 | 7981 | 0 — 1 couplet gate fix, counts trimmed |
 | 077 | `batch-077.mjs` | 44 | 33 | 33 | 110 | 0 | 8091 | 0 — 1 couplet gate fix |
+| 078 | `batch-078.mjs` | 44 | 33 | 33 | 110 | 0 | 8201 | 0 — counts only, no gate or dedup failure |
 
-**Verified so far: 8,091 / 50,000 (16.2%)**
-Remaining: 41,909 (EN 16,763 · HI 12,573 · HG 12,573)
-Split check: EN 16.18% · HI 16.18% · HG 16.18% of their targets — spread 0.00.
+**Verified so far: 8,201 / 50,000 (16.4%)**
+Remaining: 41,799 (EN 16,719 · HI 12,540 · HG 12,540)
+Split check: EN 16.41% · HI 16.40% · HG 16.40% of their targets — spread 0.00.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -153,7 +154,15 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 077 — split 16.18 / 16.18 / 16.18, spread 0.00. Same couplet problem in
+Batch 078 — split 16.41 / 16.40 / 16.40, spread 0.00. Cleanest first draft
+since 074: the only finding was the usual two-line English surplus, and the file
+passed internal repeats, gate and full cross-file dedup on the first try. Subjects:
+the milkman's cycle bell before dawn, a father teaching left-hand driving in an
+empty lot, a ration card lost in a flood, a notebook holding a wedding guest
+list, a shopkeeper's calculator with one dead key, and two porters shouting the
+same number across a platform.
+
+(previous) Batch 077 — split 16.18 / 16.18 / 16.18, spread 0.00. Same couplet problem in
 a different place: 'Ek chhatri, ek thaila, ek bus pass. Poora barsaati saaman
 itna hi.' read as a list of nouns with no verb, so the vocabulary test found
 nothing Roman-Hindi in it. Rewritten to end '... Bas itna hi saaman chahiye.'
