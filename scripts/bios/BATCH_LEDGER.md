@@ -66,9 +66,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 048 | `batch-048.mjs` | 47 | 33 | 32 | 112 | 2 → fixed | 4878 | 1 exact, 1 language |
 
-**Verified so far: 4,878 / 50,000 (9.8%)**
-Remaining: 45,122 (EN 18,037 · HI 13,542 · HG 13,543)
-Split check: EN 9.81% · HI 9.72% · HG 9.71% of their targets.
+| 049 | `batch-049.mjs` | 35 | 37 | 37 | 109 | 7 → fixed | 4987 | 5 near-dups + 2 language; 15 surplus EN lines removed |
+
+**Verified so far: 4,987 / 50,000 (10.0%)**
+Remaining: 45,013 (EN 18,002 · HI 13,505 · HG 13,506)
+Split check: EN 9.99% · HI 9.97% · HG 9.96% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -98,8 +100,15 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 049 — split 9.81 / 9.72 / 9.71, spread 0.10 points. Continue taking the
-allocation from balance.mjs each batch.
+Batch 050 — split 9.99 / 9.97 / 9.96, spread 0.03 points. 049 was the weakest
+batch of this stretch: 7 rejections, five of them near-duplicates recycling
+035/036 subject matter. Lesson logged: vary the *topic*, not the wording.
+
+**Topic-fatigue rule (from batch 049).** My failures cluster when I keep mining
+the same few themes — rest vs burnout, full calendar vs full life, waiting
+without waiting. Those ideas are now used up in all three languages. Before
+writing a batch, pick subject matter not already covered; rewording a used idea
+only produces near-duplicates.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
