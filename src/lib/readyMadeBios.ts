@@ -361,13 +361,17 @@ export const READY_MADE_STATS = {
   designs: DESIGN_FACETS.length,
 } as const;
 
-export type LibrarySort = 'curated' | 'az' | 'longest' | 'newest';
+export type LibrarySort = 'curated' | 'az' | 'longest' | 'newest' | 'copied';
 
 export const LIBRARY_SORTS: Array<{ value: LibrarySort; label: string }> = [
   { value: 'curated', label: 'Curated order' },
   { value: 'az', label: 'Collection A–Z' },
   { value: 'longest', label: 'Longest first' },
   { value: 'newest', label: 'Recently reviewed' },
+  // 'copied' has no server-side index — it is resolved client-side from the
+  // per-device copy log, so the database function never sees it. The value is
+  // kept URL-valid so a Most Copied view survives refreshes.
+  { value: 'copied', label: 'Most Copied' },
 ];
 
 export interface LibraryQuery {
