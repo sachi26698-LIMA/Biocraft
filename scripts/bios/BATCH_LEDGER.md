@@ -76,9 +76,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 053 | `batch-053.mjs` | 46 | 30 | 35 | 111 | 2 → fixed | 5440 | 2 language |
 
-**Verified so far: 5,440 / 50,000 (10.9%)**
-Remaining: 44,560 (EN 17,825 · HI 13,368 · HG 13,367)
-Split check: EN 10.88% · HI 10.88% · HG 10.89% of their targets — spread 0.01.
+| 054 | `batch-054.mjs` | 45 | 31 | 33 | 109 | 1 → fixed | 5549 | 1 language |
+
+**Verified so far: 5,549 / 50,000 (11.1%)**
+Remaining: 44,451 (EN 17,780 · HI 13,337 · HG 13,334)
+Split check: EN 11.10% · HI 11.09% · HG 11.11% of their targets — spread 0.02.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -108,7 +110,11 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 054 — split 10.88 / 10.88 / 10.89, spread 0.01 points. 053 used another
+Batch 055 — split 11.10 / 11.09 / 11.11, spread 0.02 points. 054 drew on the
+electrician, second-hand books, learning to cook after leaving home, a friend
+moving abroad and the office tea round; 1 rejection.
+
+(previous note) 054 split 10.88 / 10.88 / 10.89, spread 0.01. 053 used another
 fresh set (night shifts, the tailor, hospital bills, house hunting,
 apologising to a child, the January gym). Both its rejections were Hinglish
 lines whose English halves carried the sentence — 'dhang' fixed both.
