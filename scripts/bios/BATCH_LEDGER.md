@@ -13,14 +13,18 @@ reports the batch accepted. Counts are cumulative verified totals, never
 |---|---|---|---|---|---|---|---|---|
 | 001 | `batch-001.mjs` | 39 | 26 | 25 | 90 | 0 | 90 | Foundation: 12 categories, engine probe |
 | 002 | `batch-002.mjs` | 38 | 40 | 31 | 109 | 1 → fixed | 199 | Priority cats: attitude, royal, love, sad, alone, shayari, quotes |
+| 003 | `batch-003.mjs` | 47 | 34 | 32 | 113 | 1 → fixed | 312 | Life, friendship, motivation, aesthetic, professional, creator, student, fitness, travel, gaming, photography, music |
 
-**Verified so far: 199 / 50,000 (0.4%)**
-Remaining: 49,801 (EN 19,923 · HI 14,934 · HG 14,944)
+**Verified so far: 312 / 50,000 (0.6%)**
+Remaining: 49,688 (EN 19,876 · HI 14,900 · HG 14,912)
+Categories populated: 22 / 46
 
 ## Next batch
 
-Batch 003 — continue priority categories with life, friendship, motivational,
-aesthetic, professional and creator, then push into unstarted categories.
+Batch 004 — finish the remaining 24 categories (spirituality, self-respect,
+personality, books, food, technology, fashion, yoga, pets, startup, science,
+cinema, cricket, cars, home, parenting, wedding, monsoon, deep/emotional,
+savage, instagram profiles, nature, poetry, funny), then deepen priority cats.
 
 ## Rejection log
 
@@ -32,3 +36,8 @@ left in the report as a documented exclusion.
 - Batch 002: one Hinglish four-line shayari at 162 chars exceeded the 160-char
   ceiling. Rejected by the `too-long` layer; the line was tightened editorially
   to 140 chars and re-accepted rather than the limit being raised.
+- Batch 003: `"Aim average, bakwaas top class."` was refused as "reads as
+  English" — correctly, since 5 tokens with 1 Hindi word is mostly English. The
+  line was rewritten to `"Aim average hai, par bakwaas top class."` rather than
+  weakening the validator. This is the intended behaviour: the gate catches
+  under-Hinglish text that a human might let slide.

@@ -101,6 +101,11 @@ const HINGLISH_MARKERS = [
   'izzat', 'tameez', 'safaai', 'galti', 'seekh', 'sabak', 'dost', 'dosti',
   'maa', 'papa', 'bhai', 'behen', 'khana', 'paisa', 'kaam', 'sar', 'aankh',
   'aankhon', 'hans', 'hansi', 'rona', 'rota', 'muskurana', 'jeena', 'marna',
+  // everyday slang that is unambiguously Roman Hindi
+  'bakwaas', 'bakwas', 'faltu', 'bekaar', 'mast', 'mazaa', 'maja', 'yaar',
+  'bhai', 'bindaas', 'jhakaas', 'zabardast', 'shandar', 'badhiya', 'achha',
+  'acha', 'theek', 'thik', 'matlab', 'zaroori', 'zarurat', 'zaroorat', 'himmat',
+  'kirdaar', 'rivaz', 'riwaz', 'hisaab', 'hisaab', 'sach', 'jhooth', 'jhoot',
 ];
 
 export function detectScript(text) {
