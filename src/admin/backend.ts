@@ -20,6 +20,7 @@ export interface AdminSession {
   assuranceLevel: 'aal2';
   sharedWrites?: boolean;
   editorialDirectory?: boolean;
+  catalogDrafts?: boolean;
 }
 export interface AdminError { code: string; message: string; requestId?: string }
 export interface AdminPage<T> { items: T[]; nextCursor: string | null; asOf: string }
@@ -62,13 +63,17 @@ export function probeBackend(signal?: AbortSignal): Promise<BackendStatus> {
   return pending;
 }
 
+// Read or release every probe body, including a disabled feature's 503. An
+// unread body can keep Chromium waiting for network idle until garbage collection.
+export async function probeReady(response: Response): Promise<boolean> {
+  if (!response.ok) { await response.body?.cancel(); return false; }
+  return (await response.json().catch(() => null))?.ok === true;
+}
+
 async function probeBackendOnce(signal?: AbortSignal): Promise<BackendStatus> {
   try {
     const response = await fetch(`${ADMIN_BASE}/health`, { credentials: 'same-origin', headers: { accept: 'application/json' }, signal });
-    if (response.status === 503) return 'unavailable';
-    if (!response.ok) return 'unavailable';
-    const body = await response.json().catch(() => null);
-    if (body?.ok !== true) return 'unavailable';
+    if (!await probeReady(response)) return 'unavailable';
     const session = await currentSession(signal);
     return session ? 'ready' : 'unauthenticated';
   } catch { return 'unavailable'; }
@@ -76,8 +81,8 @@ async function probeBackendOnce(signal?: AbortSignal): Promise<BackendStatus> {
 
 export async function currentSession(signal?: AbortSignal): Promise<AdminSession | null> {
   const response = await fetch(`${ADMIN_BASE}/session`, { credentials: 'same-origin', headers: { accept: 'application/json' }, signal });
-  if (response.status === 401 || response.status === 403) { csrfToken = null; return null; }
-  if (!response.ok) throw new AdminRequestError('UNAVAILABLE', response.status);
+  if (response.status === 401 || response.status === 403) { await response.body?.cancel(); csrfToken = null; return null; }
+  if (!response.ok) { await response.body?.cancel(); throw new AdminRequestError('UNAVAILABLE', response.status); }
   const body = await response.json().catch(() => null);
   const userId = body?.user?.id;
   if (typeof userId !== 'string') throw new AdminRequestError('INVALID_RESPONSE', response.status);
@@ -89,13 +94,14 @@ export async function currentSession(signal?: AbortSignal): Promise<AdminSession
     assuranceLevel: 'aal2',
     sharedWrites: body.shared_writes !== false,
     editorialDirectory: body.editorial_directory === true,
+    catalogDrafts: body.catalog_drafts === true,
   };
 }
 
 async function csrf(): Promise<string> {
   if (csrfToken) return csrfToken;
   const response = await fetch(`${ADMIN_BASE}/csrf`, { credentials: 'same-origin', headers: { accept: 'application/json' } });
-  if (!response.ok) throw new AdminRequestError('UNAUTHENTICATED', response.status);
+  if (!response.ok) { await response.body?.cancel(); throw new AdminRequestError('UNAUTHENTICATED', response.status); }
   const body = await response.json().catch(() => null);
   if (typeof body?.csrf !== 'string') throw new AdminRequestError('INVALID_RESPONSE', response.status);
   csrfToken = body.csrf as string;

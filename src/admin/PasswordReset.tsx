@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { handleAnchorClick } from '../lib/router';
-import { ADMIN_BASE } from './backend';
+import { ADMIN_BASE, probeReady } from './backend';
 
 const RESET = `${ADMIN_BASE}/auth/password-reset`;
 type Stage = 'checking' | 'disabled' | 'request' | 'exchange' | 'verify' | 'done';
@@ -26,7 +26,7 @@ export default function PasswordReset() {
       history.replaceState(history.state, '', '/admin/recovery');
     }
     fetch(`${RESET}/status`, { cache: 'no-store', signal: controller.signal })
-      .then(async response => response.ok && (await response.json())?.ok === true)
+      .then(probeReady)
       .then(ok => { if (!controller.signal.aborted) setStage(ok ? token.current ? 'exchange' : 'request' : 'disabled'); })
       .catch(() => { if (!controller.signal.aborted) setStage('disabled'); });
     return () => controller.abort();

@@ -167,15 +167,14 @@ assert.ok(clamped.length <= 200, `limit must be clamped, got ${clamped.length}`)
 ok(`asked for 100000 rows, received ${clamped.length}`);
 
 console.log('\n6. no new client grant was created');
-const grants = await q(`
-  select grantee, count(*)::int n
-  from information_schema.routine_privileges
-  where routine_schema='bc_admin_v1'
-    and routine_name in ('content_library_stats','list_fonts','list_data_sources','list_languages')
-    and grantee in ('anon','authenticated','PUBLIC')
-  group by grantee`);
-assert.equal(grants.length, 0, `no client may execute these: ${JSON.stringify(grants)}`);
-ok('no anon/authenticated/PUBLIC EXECUTE on the new admin functions');
+const readers=['content_library_stats','list_data_sources','list_sync_jobs','list_fonts','list_emoji','list_symbols','list_languages','list_translations'];
+const privileges=await q(`select p.proname as name,
+  has_function_privilege('anon',p.oid,'execute') or has_function_privilege('authenticated',p.oid,'execute') as callable
+  from pg_catalog.pg_proc p join pg_catalog.pg_namespace n on n.oid=p.pronamespace
+  where n.nspname='bc_admin_v1' and p.proname=any($1::text[])`,[readers]);
+assert.deepEqual(privileges.map(p=>p.name).sort(),[...readers].sort());
+assert.ok(privileges.every(p=>p.callable===false)); // includes inherited and PUBLIC grants
+ok('neither browser role has effective EXECUTE on any of the eight readers');
 
 await db.close();
 console.log(`\nALL PASS — ${pass} checks passed`);

@@ -12,6 +12,8 @@ import http from 'node:http';
 import {once} from 'node:events';
 import entry, {restoreAdminUrl} from '../api/admin/handler.mjs';
 
+// This test must never load an operator's enabled application.
+process.env.ADMIN_BACKEND_ENABLED='false';
 const seen = [];
 const server = http.createServer((req, res) => {
   // Hop 1: what vercel.json does for /api/admin/v1/:path*
@@ -70,11 +72,11 @@ try {
   // No paged route may receive a parameter the API has not allow-listed.
   for (const route of ['analytics','audit-logs','backups','bio-drafts','bios','notifications',
     'publication-jobs','publications','roles','settings','staff','sessions','session',
-    'platforms','categories','collections','generators','seo-pages']) {
+    'platforms','categories','collections','generators','seo-pages','templates','designs','published/emoji','published/symbols','published/languages','catalog-drafts']) {
     const restored = restoreAdminUrl(`/api/admin/handler?__admin_path=${route}&path=${route}`);
     assert.equal(restored, `/api/admin/v1/${route}`, `${route} must carry no stray parameter`);
     assert.deepEqual([...new URL('https://x' + restored).searchParams.keys()], [], `${route} must have an empty query`);
   }
   console.log('PASS rewrite simulation: 7 Admin API paths reach the function as JSON 503 (disabled), not a static page;'
-    + ' the Vercel rewrite duplicate is dropped and 18 paged routes carry no stray parameter');
+    + ' the Vercel rewrite duplicate is dropped and 24 routes carry no stray parameter');
 } finally { server.close(); await once(server, 'close'); }

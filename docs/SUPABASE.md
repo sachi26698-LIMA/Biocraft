@@ -1,6 +1,8 @@
 # BioCraft ↔ Supabase — Setup & Operations
 
-Guest-first, database-only phase. No authentication is introduced; every tool
+**Existing Production:** see [the live integration checkpoint and operator runbook](PRODUCTION_SYNC.md). Do not replay the initial schema or seed on that database.
+
+The remainder documents the original guest-first, database-only phase. No authentication is introduced; every tool
 works for anonymous visitors exactly as before. The site keeps the bundled
 registry as a fallback — Supabase enhances, never replaces, the shipped app.
 
@@ -26,7 +28,7 @@ hashtags 1,155, captions 3,888, seo_pages 48.
 
 ## One-time setup (owner)
 
-1. **Restore the project if paused** (Supabase dashboard → Quick_kit project →
+1. **Restore the project if paused** (Supabase dashboard → BioCraft project `jvpadtzfsuekixrquzjv` →
    "Restore project"). The site uses the bundled registry while unavailable.
 2. **Use a publishable key**: Project Settings → API Keys → Publishable keys.
 3. **Apply the schema for a new database**: dashboard → SQL Editor → run, in order:
@@ -46,7 +48,7 @@ hashtags 1,155, captions 3,888, seo_pages 48.
    union all select 'hashtags', count(*) from public.hashtags
    union all select 'captions', count(*) from public.captions;
    ```
-   Expected: 8 / 33 / 506 / 629 / 1155 / 3888.
+   Original seed baseline (not current Production counts): 8 / 33 / 506 / 629 / 1155 / 3888.
 5. **Local dev**: `cp .env.example .env`, fill both values, `npm run dev`.
 6. **Production (Vercel)**: Project → Settings → Environment Variables → add
    `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` for Production and

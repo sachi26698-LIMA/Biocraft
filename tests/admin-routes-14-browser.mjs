@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 import {chromium} from 'playwright-core';
 import {readFileSync} from 'node:fs';
 
-const BASE = process.env.ADMIN_BASE_URL || 'http://127.0.0.1:4190';
+const BASE = process.env.ADMIN_BASE_URL || 'http://127.0.0.1:5173';
 const ROUTES = [
   '/admin', '/admin/login', '/admin/users', '/admin/bios', '/admin/categories',
   '/admin/collections', '/admin/platforms', '/admin/generators', '/admin/content',

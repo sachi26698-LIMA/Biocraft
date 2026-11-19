@@ -16,9 +16,10 @@ const token='eyJhbGciOiJub25lIn0.'+Buffer.from(JSON.stringify({
  iss:SUPABASE_URL+'/auth/v1',aud:'authenticated',role:'authenticated',aal:'aal2',is_anonymous:false,sub:uid,session_id:sid,exp:Math.ceil(expiresAt/1000)
 })).toString('base64url')+'.synthetic';
 const originalFetch=globalThis.fetch;
-let confirmed=false, providerLogout=false;
+let confirmed=false, providerLogout=false, authHealthy=false, clock=Date.now(), healthCalls=0;
 globalThis.fetch=async (url,opts)=>{
  if(!String(url).startsWith(SUPABASE_URL+'/')) return originalFetch(url,opts);
+ if(String(url)===SUPABASE_URL+'/auth/v1/health') {healthCalls++;return Response.json({}, {status:authHealthy?200:503});}
  assert.equal(new Headers(opts.headers).get('authorization'),`Bearer ${token}`);
  if(String(url)===SUPABASE_URL+'/auth/v1/user') return Response.json({id:uid,email:'fixture.admin@example.test',email_confirmed_at:confirmed?new Date().toISOString():null,is_anonymous:false});
  if(String(url)===SUPABASE_URL+'/auth/v1/logout?scope=local') {providerLogout=true;return new Response(null,{status:204});}
@@ -28,7 +29,7 @@ const app=createAdminApp({env:{VERCEL_ENV:'preview',ADMIN_PASSWORD_RESET_ENABLED
  ADMIN_DB_USER:'bc_fixture_executor',ADMIN_DB_PASSWORD:'fixture',ADMIN_COOKIE_KEY_HEX:cookieKey.toString('hex'),
  ADMIN_FLOW_KEY_HEX:randomBytes(32).toString('hex'),ADMIN_HASH_KEY_HEX:randomBytes(32).toString('hex'),
  ADMIN_TRUSTED_CLIENT_HEADER:'x-forwarded-for',ADMIN_INGRESS_SECRET_HEX:secret.toString('hex'),
- ADMIN_ALLOWED_EMAILS:'fixture.admin@example.test'},poolFactory:()=>pool});
+ ADMIN_ALLOWED_EMAILS:'fixture.admin@example.test'},poolFactory:()=>pool,now:()=>clock});
 assert.equal(app.configuration.enabled,true);
 // Minimal proxy stand-in: it alone knows the ingress secret.
 const server=http.createServer(async (req,res)=>{
@@ -43,8 +44,13 @@ const server=http.createServer(async (req,res)=>{
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const base=`http://127.0.0.1:${server.address().port}`;
 try {
+ const unavailable=await fetch(base+'/api/admin/v1/health'); // DB reachable, Auth not healthy
+ assert.equal(unavailable.status,503);assert.equal(unavailable.headers.get('x-admin-stage'),'auth provider unavailable');
+ assert.deepEqual(await unavailable.json(),{error:{code:'UNAVAILABLE',stage:'auth provider unavailable'}});
+ authHealthy=true;clock+=10_001;
  const health=await fetch(base+'/api/admin/v1/health');assert.equal(health.status,200);assert.deepEqual(await health.json(),{ok:true});
  assert.equal(health.headers.get('cache-control'),'no-store');
+ assert.equal((await fetch(base+'/api/admin/v1/health?diagnose=1')).status,200);assert.equal(healthCalls,2);
  const unauth=await fetch(base+'/api/admin/v1/bio-drafts');assert.equal(unauth.status,401);
  const badCookie=await fetch(base+'/api/admin/v1/bio-drafts',{headers:{cookie:'__Host-biocraft-admin=not-a-cookie'}});assert.equal(badCookie.status,401);
  assert.equal((await fetch(base+'/nope')).status,404);
@@ -66,7 +72,7 @@ try {
  assert.equal((await getSession()).status,403);
  confirmed=true;
  const response=await getSession();assert.equal(response.status,200);
- const userSession=await response.json();assert.equal(userSession.user.id,uid);assert.equal(userSession.shared_writes,false);
+ const userSession=await response.json();assert.equal(userSession.user.id,uid);assert.equal(userSession.shared_writes,false);assert.equal(userSession.catalog_drafts,false);
  const noWrites=await fetch(base+'/api/admin/v1/bio-drafts',{method:'POST',headers:{cookie,origin,'x-csrf-token':session.csrf,'content-type':'application/json'},body:'{}'});
  assert.equal(noWrites.status,403);assert.equal((await noWrites.json()).error.code,'PREVIEW_READ_ONLY');
  assert.equal((await fetch(base+'/api/admin/v1/auth/password-reset/status')).status,503);

@@ -3,6 +3,7 @@
 // Never expose database credentials or call this with an unverified identity.
 // DB EXECUTE/schema grants and owner design need separate security review.
 import pg from 'pg';
+import {readFileSync} from 'node:fs';
 const {Pool}=pg;
 // Preserve exact bigint keys outside the safe JS integer range.
 pg.types.setTypeParser(20,value=>Number.isSafeInteger(Number(value))?Number(value):value);
@@ -18,54 +19,32 @@ const DIRECT=`db.${PROJECT_REF}.supabase.co`;
 // Supavisor hostname shape: aws-<index>-<region>.pooler.supabase.com, where the
 // region is a real multi-label region code (ap-southeast-2, us-east-1, ...).
 const POOLER=/^aws-[0-9]{1,3}-[a-z]{2}-[a-z]{3,20}(?:-[a-z]{3,20})?-[0-9]{1,2}\.pooler\.supabase\.com$/;
-/** Supabase's published Root 2021 CA, bundled so a pooler handshake can be
- * verified at all: the chain ends at a private root that Node's system store
- * does not contain, so strict verification fails with
- * SELF_SIGNED_CERT_IN_CHAIN before authentication is ever attempted.
- *
- * Public certificate, not a secret. SHA-256 (DER):
- * 80:70:25:AD:50:D4:ED:21:9D:2C:9C:7D:29:9C:00:4F:82:4E:B0:0C:F7:F6:5A:FE:F6:07:D0:7B:72:E6:CA:FA
- * Source: https://supabase-downloads.s3-ap-southeast-1.amazonaws.com/prod/ssl/prod-ca-2021.crt
- * Valid to 2031-04-26; tests/admin-db-tls.mjs fails if the file drifts from
- * this fingerprint. */
-export const SUPABASE_ROOT_CA=`
------BEGIN CERTIFICATE-----
-MIIDxDCCAqygAwIBAgIUbLxMod62P2ktCiAkxnKJwtE9VPYwDQYJKoZIhvcNAQEL
-BQAwazELMAkGA1UEBhMCVVMxEDAOBgNVBAgMB0RlbHdhcmUxEzARBgNVBAcMCk5l
-dyBDYXN0bGUxFTATBgNVBAoMDFN1cGFiYXNlIEluYzEeMBwGA1UEAwwVU3VwYWJh
-c2UgUm9vdCAyMDIxIENBMB4XDTIxMDQyODEwNTY1M1oXDTMxMDQyNjEwNTY1M1ow
-azELMAkGA1UEBhMCVVMxEDAOBgNVBAgMB0RlbHdhcmUxEzARBgNVBAcMCk5ldyBD
-YXN0bGUxFTATBgNVBAoMDFN1cGFiYXNlIEluYzEeMBwGA1UEAwwVU3VwYWJhc2Ug
-Um9vdCAyMDIxIENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqQXW
-QyHOB+qR2GJobCq/CBmQ40G0oDmCC3mzVnn8sv4XNeWtE5XcEL0uVih7Jo4Dkx1Q
-DmGHBH1zDfgs2qXiLb6xpw/CKQPypZW1JssOTMIfQppNQ87K75Ya0p25Y3ePS2t2
-GtvHxNjUV6kjOZjEn2yWEcBdpOVCUYBVFBNMB4YBHkNRDa/+S4uywAoaTWnCJLUi
-cvTlHmMw6xSQQn1UfRQHk50DMCEJ7Cy1RxrZJrkXXRP3LqQL2ijJ6F4yMfh+Gyb4
-O4XajoVj/+R4GwywKYrrS8PrSNtwxr5StlQO8zIQUSMiq26wM8mgELFlS/32Uclt
-NaQ1xBRizkzpZct9DwIDAQABo2AwXjALBgNVHQ8EBAMCAQYwHQYDVR0OBBYEFKjX
-uXY32CztkhImng4yJNUtaUYsMB8GA1UdIwQYMBaAFKjXuXY32CztkhImng4yJNUt
-aUYsMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQELBQADggEBAB8spzNn+4VU
-tVxbdMaX+39Z50sc7uATmus16jmmHjhIHz+l/9GlJ5KqAMOx26mPZgfzG7oneL2b
-VW+WgYUkTT3XEPFWnTp2RJwQao8/tYPXWEJDc0WVQHrpmnWOFKU/d3MqBgBm5y+6
-jB81TU/RG2rVerPDWP+1MMcNNy0491CTL5XQZ7JfDJJ9CCmXSdtTl4uUQnSuv/Qx
-Cea13BX2ZgJc7Au30vihLhub52De4P/4gonKsNHYdbWjg7OWKwNv/zitGDVDB9Y2
-CMTyZKG3XEu5Ghl1LEnI3QmEKsqaCLv12BnVjbkSeZsMnevJPs1Ye6TjjJwdik5P
-o/bKiIz+Fq8=
------END CERTIFICATE-----
-`;
-export const DIRECT_HOST=`db.${PROJECT_REF}.supabase.co`;
+// Public 2021/2025 pooler roots; packaged with the function via vercel.json.
+// Fingerprints are pinned in tests/admin-pool-config.mjs. No global TLS change.
+export const SUPABASE_ROOT_CA=readFileSync(new URL('../certs/supabase-roots.pem',import.meta.url),'utf8');
+export const DIRECT_HOST=DIRECT;
+export function databaseCa(env,host) {
+ const override=typeof env?.ADMIN_DB_CA_PEM==='string'?env.ADMIN_DB_CA_PEM.trim():'';
+ if (override?.startsWith('-----BEGIN CERTIFICATE-----')) return override;
+ return host===DIRECT_HOST ? undefined : SUPABASE_ROOT_CA;
+}
 
 export function createPostgresPool({host,user,password,ca,port}={}) {
  if(typeof host!=='string'||(host!==DIRECT && !POOLER.test(host)) || typeof user!=='string' || !user || typeof password!=='string' || !password || (ca!==undefined && typeof ca!=='string')) throw new Error('Invalid database configuration');
- // A pooler login must be scoped to the project (postgres.<ref>) or explicit
- // project role (role.<ref>); a direct login must not carry a project suffix.
+ // Use an explicit limited login (role.<ref> in pooler mode); a direct
+ // login must not carry a project suffix. Never use a built-in API/owner role.
  const expected=host===DIRECT?/^[a-z_][a-z0-9_]{0,62}$/:new RegExp(`^[a-z_][a-z0-9_]{0,62}\\.${PROJECT_REF}$`);
- if(!expected.test(user)) throw new Error('Invalid database configuration');
+ if(!expected.test(user)||['postgres','supabase_admin','service_role','authenticator','anon','authenticated'].includes(user.split('.')[0])) throw new Error('Invalid database configuration');
  // Only the session-mode port is accepted. Transaction mode (6543) breaks the
  // session-scoped assumptions this adapter relies on, so it is refused outright.
  const resolvedPort=port===undefined?5432:port;
  if(resolvedPort!==5432) throw new Error('Invalid database configuration');
- return new Pool({host,port:resolvedPort,user,password,database:'postgres',ssl:{rejectUnauthorized:true,...(ca?{ca}:{})},max:3,connectionTimeoutMillis:5000,idleTimeoutMillis:10000});
+ const trust=ca ?? databaseCa({},host);
+ const pool=new Pool({host,port:resolvedPort,user,password,database:'postgres',ssl:{rejectUnauthorized:true,ca:trust},max:3,connectionTimeoutMillis:5000,idleTimeoutMillis:10000});
+ // pg removes a broken idle client itself. Keep a long-lived listener up and
+ // never log a raw driver error or retry an in-flight write.
+ pool.on('error',()=>console.warn('Admin database idle connection closed.'));
+ return pool;
 }
 export async function assertLimitedRole(client) {
  const roleCheck=await client.query(`select session_user=current_user
@@ -82,6 +61,10 @@ export async function assertLimitedRole(client) {
  if(roleCheck.rows.length!==1 || roleCheck.rows[0].safe!==true) throw new Error('Unsafe database executor role');
 }
 const OPERATIONS = Object.freeze({
+  // Optional private catalog proposal. Each command also checks the domain's
+  // draft permission and the author inside SQL; no public-table privilege.
+  catalogDraftList:{permission:'content.read',sql:'select * from bc_admin_v1.list_catalog_drafts($1,$2,$3::uuid)'},
+  catalogDraftChange:{permission:'content.read',sql:'select * from bc_admin_v1.change_catalog_draft($1,$2,$3::uuid,$4::bigint,$5::jsonb,$6::uuid)'},
   sessionOpen: {permission:null,sql:'select bc_admin_v1.open_admin_session($1::uuid) as expires_at'},
   // Pre-MFA gate: requires an enabled membership and live provider session but
   // not aal2, because the account has no verified factor yet.
@@ -161,7 +144,7 @@ const OPERATIONS = Object.freeze({
 // event. Missing amr data fails closed. This is independent of, and does not
 // replace, per-row permission checks and locks inside the transaction.
 const PRE_AAL2 = new Set(['enrolmentEligible','factorGate','recoveryState','recoveryRedeem']);
-const STEP_UP = new Set(['create','draftUpdate','submit','reviewApprove','reviewReject','staffUpdate','sessionRevokeAll','settingUpdate','recoveryIssue','recoveryRevoke','factorReset','cleanupExpired','publish','revert']);
+const STEP_UP = new Set(['catalogDraftChange','create','draftUpdate','submit','reviewApprove','reviewReject','staffUpdate','sessionRevokeAll','settingUpdate','recoveryIssue','recoveryRevoke','factorReset','cleanupExpired','publish','revert']);
 export function createDatabaseExecutor(pool,{maxMfaAgeMs=10*60*1000,now=Date.now}={}) {
  if (!pool || typeof pool.connect !== 'function' || !Number.isSafeInteger(maxMfaAgeMs) || maxMfaAgeMs<60000 || typeof now!=='function') throw new Error('Database pool required');
  return async function execute({identity,operation,args}) {

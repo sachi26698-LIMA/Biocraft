@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {existsSync, readFileSync, readdirSync, rmSync, statSync} from 'node:fs';
 import {join} from 'node:path';
+import {randomBytes} from 'node:crypto';
 
 const DIST = 'dist';
 
@@ -26,7 +27,9 @@ function walk(dir, out = []) {
 }
 
 rmSync(DIST, {recursive: true, force: true});
-const env = {...process.env, VERCEL_ENV: 'production', BIOCRAFT_ADMIN_PRODUCTION: 'true'};
+// Exercise value leaks even if no actual operator credentials are configured.
+const canaries=Object.fromEntries(['ADMIN_DB_PASSWORD','ADMIN_COOKIE_KEY_HEX','ADMIN_FLOW_KEY_HEX','ADMIN_HASH_KEY_HEX','ADMIN_INGRESS_SECRET_HEX'].map(name=>[name,randomBytes(32).toString('hex')]));
+const env = {...process.env,...canaries, VERCEL_ENV: 'production', BIOCRAFT_ADMIN_PRODUCTION: 'true'};
 execFileSync('npx', ['vite', 'build'], {env, stdio: 'pipe'});
 execFileSync('node', ['scripts/build-shells.mjs'], {env, stdio: 'pipe'});
 assert.ok(existsSync(DIST), 'build produced no dist');
@@ -41,12 +44,12 @@ const VALUE_PATTERNS = [
   [/postgres(?:ql)?:\/\/[^\s"']*:[^\s"']*@/, 'database URL with embedded password'],
   [/aws-0-[a-z0-9-]+\.pooler\.supabase\.com/, 'database pooler host'],
   [/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/, 'a signed JWT'],
-  [/[a-f0-9]{64}/, 'a 64-hex key (the format of every Admin key)'],
 ];
 
 // Server-only variable names. VITE_-prefixed names are public by definition and
 // are the only ones allowed to appear.
 const FORBIDDEN_NAMES = [
+  'BIOCRAFT_LOCAL_API','ADMIN_CATALOG_DRAFTS_ENABLED','127.0.0.1:4190','localhost:4190',
   'ADMIN_DB_PASSWORD', 'ADMIN_DB_USER', 'ADMIN_COOKIE_KEY_HEX', 'ADMIN_FLOW_KEY_HEX',
   'ADMIN_HASH_KEY_HEX', 'ADMIN_INGRESS_SECRET_HEX', 'ADMIN_TRUSTED_CLIENT_HEADER',
   'ADMIN_SUPABASE_PUBLISHABLE_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'SERVICE_ROLE_KEY',
@@ -57,24 +60,16 @@ for (const file of files) {
   const text = readFileSync(file, 'utf8');
   for (const [pattern, label] of VALUE_PATTERNS) {
     const match = text.match(pattern);
-    if (match) findings.push(`${file}: ${label} — "${match[0].slice(0, 24)}…"`);
+    if (match) findings.push(`${file}: ${label} (redacted)`);
   }
+  for (const [name,value] of Object.entries(canaries)) if(text.includes(value)) findings.push(`${file}: server-only ${name} value (redacted)`);
   for (const name of FORBIDDEN_NAMES) {
     if (text.includes(name)) findings.push(`${file}: server-only variable name "${name}"`);
   }
 }
 
-// A 64-hex scan will hit legitimate hashes (asset integrity, cache keys). Only
-// fail when the same 64-hex string also looks like a configured key, i.e. it is
-// not part of a known-safe construct.
-const suspiciousHex = findings.filter(f => f.includes('64-hex key'));
-if (suspiciousHex.length) {
-  console.log('note: 64-hex strings present (usually asset hashes), listed for review:');
-  for (const line of suspiciousHex.slice(0, 5)) console.log('  ' + line);
-}
-
-const real = findings.filter(f => !f.includes('64-hex key'));
-assert.equal(real.length, 0, `credential material in a browser bundle:\n${real.join('\n')}`);
+// Arbitrary asset digests are legitimate. Exact canary values are not.
+assert.equal(findings.length, 0, `credential material in a browser bundle:\n${findings.join('\n')}`);
 
 rmSync(DIST, {recursive: true, force: true});
-console.log(`PASS admin bundle secrets: scanned ${files.length} built files, no credential values and no server-only variable names`);
+console.log(`PASS admin bundle secrets: scanned ${files.length} built files, no secret canaries, credential signatures, local API addresses or server-only variable names`);

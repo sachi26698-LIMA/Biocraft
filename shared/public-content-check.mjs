@@ -1,9 +1,9 @@
 import {publicSupabaseConfig} from './supabase-config.mjs';
 
-// A bounded guest read, not a privileged probe. It checks the same REST and
-// project credentials as the website, without exposing any row or error detail.
+// Admin-only diagnostic of its guest-readable database catalogue. The public
+// site's bundled content and /api/status/content do not depend on this check.
 export async function checkPublicContent(env=process.env, fetcher=fetch) {
-  const config=publicSupabaseConfig(env.VITE_SUPABASE_URL,env.VITE_SUPABASE_PUBLISHABLE_KEY);
+  const config=publicSupabaseConfig(env.VITE_SUPABASE_URL,env.ADMIN_SUPABASE_PUBLISHABLE_KEY ?? env.VITE_SUPABASE_PUBLISHABLE_KEY);
   if (!config) return false;
   try {
     const response=await fetcher(`${config.url}/rest/v1/bios?select=id&is_active=eq.true&limit=1`,{

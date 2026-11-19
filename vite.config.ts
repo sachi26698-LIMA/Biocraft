@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite';
-import { SUPABASE_URL, publicSupabaseConfig } from './shared/supabase-config.mjs';
+import { localApiProxy } from './shared/local-proxy.mjs';
+import { publicSupabaseConfig } from './shared/supabase-config.mjs';
 import react from '@vitejs/plugin-react';
 
 // The Admin console is emitted into whichever scope has been explicitly enabled.
@@ -25,22 +26,23 @@ const adminInProduction =
 const adminPreview =
   (process.env.VERCEL_ENV === 'production' ? adminInProduction : adminInPreview);
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
+  // Only the local dev/preview process knows the API's loopback address. A
+  // deployed bundle always uses /api on its own origin (see vercel.json).
+  const localProxy = command === 'serve' && envFlag('BIOCRAFT_LOCAL_API') ? localApiProxy() : undefined;
+  // Match only the exact private preview host for a connected dev stack; IP
+  // literals and localhost remain accepted by Vite. A separate HTTPS reverse
+  // proxy can supply its public hostname here without loading any API secrets.
+  const sandboxId=process.env.E2B_SANDBOX_ID;
+  const allowedHosts=localProxy ? [process.env.BIOCRAFT_DEV_WEB_HOST,
+    /^[a-z0-9-]+$/.test(sandboxId || '') ? `5173-${sandboxId}.e2b.app` : undefined].filter(Boolean) : true;
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   const key = env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  // The public site no longer reads Supabase at all: every page renders from
-  // bundled content, and Supabase Auth is used only server-side by the Admin
-  // API. These variables are therefore OPTIONAL. They are still validated when
-  // present, so a misconfigured or secret-leaking variable fails the build
-  // rather than shipping a publishable-but-wrong value.
-  //
-  // The project URL is a public constant in shared/supabase-config.mjs, not a
-  // secret. Validate against that constant when the URL is unset; a *wrong* URL
-  // still fails, because publicSupabaseConfig rejects anything that is not this
-  // project.
-  const url = env.VITE_SUPABASE_URL ?? (key ? SUPABASE_URL : undefined);
-  if ((url || key) && !publicSupabaseConfig(url, key)) {
-    throw new Error('Set both public Supabase variables with the BioCraft project URL and a publishable or matching anon key. Never use a service key.');
+  // Public pages use only the bundled catalogue. Legacy optional settings and
+  // Admin's public provider key must still be scoped to the correct project.
+  const url = env.VITE_SUPABASE_URL;
+  if ((url !== undefined || key) && !publicSupabaseConfig(url, key)) {
+    throw new Error('Use a publishable or matching anon key for the BioCraft project. Omit both public Supabase variables for a bundled-only build.');
   }
   // Vite exposes every VITE_ variable; reject unexpected Supabase variables
   // before producing any client asset, including a mistakenly prefixed secret.
@@ -74,20 +76,21 @@ export default defineConfig(({ mode }) => {
       });
     },
   }],
-  // Emit an independent admin entry only for this branch's Preview; the
-  // public entry never imports the admin workspace.
+  // Emit the independent Admin entry only in explicitly enabled scopes.
   build: adminPreview ? { rollupOptions: { input: { main: 'index.html', admin: 'admin-preview.html' } } } : undefined,
   server: {
+    proxy: localProxy,
+    cors: localProxy ? false : undefined,
     host: true,
     port: 5173,
-    // The sandboxed preview proxy serves the dev server through a host-specific
-    // subdomain; allowing any host keeps the live preview working.
-    allowedHosts: true,
+    allowedHosts,
   },
   preview: {
+    proxy: localProxy,
+    cors: localProxy ? false : undefined,
     host: true,
     port: 4173,
-    allowedHosts: true,
+    allowedHosts,
   },
   };
 });

@@ -9,7 +9,7 @@
  *   3. a second run inserts nothing new (idempotent) — real duplicate counts, not a claim
  *   4. the fingerprint unique index means zero duplicate content rows exist
  *   5. re-running a *third* time after a deliberate change updates instead of duplicating
- *   6. named colours import with unique fingerprints
+ *   6. per-mark licences, source and brand guidelines survive the write
  *   7. keyset pagination over the imported set returns every row exactly once
  *
  * Nothing here touches the shared database.
@@ -18,7 +18,7 @@ import { readFileSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
 import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 
 let pass = 0, fail = 0;
 const ok = (name, cond, extra = '') => {
@@ -34,6 +34,7 @@ const FILES = [
   'supabase/migrations/0005_infinite_expansion_limits.sql',
   'supabase/migrations/0006_global_content_intelligence.sql',
   'supabase/migrations/0008_library_provenance_and_search.sql',
+  'supabase/migrations/0010_library_import_provenance.sql',
 ];
 
 const db = new PGlite({ extensions: { pg_trgm, pgcrypto } });
@@ -50,20 +51,8 @@ for (const f of FILES) {
   catch (e) { ok(f.split('/').pop(), false, e.message.slice(0, 200)); process.exit(1); }
 }
 
-// ---------------------------------------------------------------------------
-// Drive the REAL importer against PGlite.
-//
-// scripts/import-library.mjs expects a pg Client. PGlite is not a wire-protocol
-// server, so instead of mocking the importer we run it in dry-run mode for its
-// report, and reproduce its exact write path here against PGlite. The adapters
-// and fingerprints are imported from the real module so the code under test is
-// the shipped code.
-// ---------------------------------------------------------------------------
-const mod = await import('../scripts/import-library.mjs').catch(() => null);
-ok('importer module loads', mod !== null);
-
-// The importer does not export its adapters (it is a CLI). Extract real counts by
-// running it, which also proves the CLI path works end to end.
+// Check the real CLI report and exported writer, not a copy of its SQL.
+const {planLibrary,importLibrary} = await import('../scripts/import-library.mjs');
 const run = (source, limit) => {
   const out = execFileSync('node',
     ['scripts/import-library.mjs', `--source=${source}`, '--dry-run', ...(limit ? [`--limit=${limit}`] : [])],
@@ -74,101 +63,42 @@ const run = (source, limit) => {
 
 section('2. importer produces real rows (CLI, dry run)');
 const brandReport = run('brands');
-ok('simple-icons row count is real', brandReport.rows === 3455, `rows=${brandReport.rows}`);
-
+const {createRequire}=await import('node:module');
+const marks=Object.values(createRequire(import.meta.url)('simple-icons')).filter(s=>s?.path && s.slug && s.title);
+const codes=new Set(['MIT','Apache-2.0','CC0-1.0','CC-BY-4.0','CC-BY-3.0','BSD-3-Clause','ISC','Unlicense','OFL-1.1']);
+const eligible=marks.filter(s=>codes.has(s.license?.type) && s.source && s.license.url);
+ok('only marks with an individually declared permitted licence qualify',eligible.length>0 && brandReport.rows===eligible.length && marks.length===brandReport.rows+Object.values(brandReport.skipped_licences).reduce((a,b)=>a+b,0));
+ok('absent and noncommercial licences are not labelled CC0',brandReport.skipped_licences.UNDECLARED===marks.filter(s=>!s.license).length && brandReport.skipped_licences['CC-BY-NC-4.0']>0);
+// A DSN and budget by themselves are not write authorization. Never use the
+// operator's real environment for these CLI admission tests.
+const cliArgs=(extra)=>spawnSync(process.execPath,['scripts/import-library.mjs',...extra],{encoding:'utf8',env:{...process.env,DATABASE_URL:'not-a-real-dsn',BIOCRAFT_DB_BUDGET_MIB:'10'}});
+ok('writer credentials alone still produce only a dry-run',cliArgs(['--source=colors','--limit=1']).status===0);
+ok('mistyped dry-run and conflicting write options are rejected',cliArgs(['--source=colors','--dr-run']).status===1 && cliArgs(['--source=colors','--apply','--dry-run']).status===1);
 const colorReport = run('colors');
 ok('colour name count is real', colorReport.rows === 32004, `rows=${colorReport.rows}`);
 
-// ---------------------------------------------------------------------------
-// Write path, identical to scripts/import-library.mjs writeIcons/writePalettes.
-// ---------------------------------------------------------------------------
-const { createHash } = await import('node:crypto');
-const fingerprint = (parts) => createHash('sha256').update(parts.join('\u0000')).digest('hex');
-
-// Register the three sources, as 0008 does.
-await db.exec(`
-  insert into public.data_sources (slug,name,provider,kind,endpoint,license_code,status) values
-    ('iconify-json','Iconify','iconify','package','npm:@iconify/json@2.2.558','MIT','never_synced'),
-    ('simple-icons','Simple Icons','simple-icons','package','npm:simple-icons@16.38.0','CC0-1.0','never_synced'),
-    ('color-name-list','Colors','color-name-list','package','npm:color-name-list@14.86.0','MIT','never_synced')
-  on conflict (slug) do nothing;
-`);
-const srcId = Object.fromEntries(
-  (await db.query('select slug,id from public.data_sources')).rows.map((r) => [r.slug, r.id]),
-);
-
-async function writeIcons(rows) {
-  let inserted = 0, duplicate = 0;
-  for (let i = 0; i < rows.length; i += 500) {
-    const chunk = rows.slice(i, i + 500);
-    const values = [];
-    const params = [];
-    let p = 1;
-    for (const r of chunk) {
-      values.push(`($${p++},$${p++},$${p++},$${p++},$${p++},$${p++},$${p++},$${p++},'imported',true)`);
-      params.push(r.slug, r.label, r.category, r.license_code, srcId[r.source_slug],
-                  r.attribution, r.fingerprint, r.svg);
-    }
-    const res = await db.query(
-      `insert into public.icon_library (slug,label,category,license_code,source_id,attribution,fingerprint,svg,verification_status,is_active)
-       values ${values.join(',')} on conflict (slug) do nothing`, params);
-    inserted += res.affectedRows ?? res.rowCount ?? 0;
-  }
-  duplicate = rows.length - inserted;
-  return { inserted, duplicate };
-}
-
-function* iconRows(limit) {
-  const index = JSON.parse(readFileSync('node_modules/@iconify/json/collections.json', 'utf8'));
-  const PERMISSIVE = { 'MIT': 'MIT', 'Apache-2.0': 'Apache-2.0', 'CC0-1.0': 'CC0-1.0', 'CC-BY-4.0': 'CC-BY-4.0' };
-  let n = 0;
-  for (const prefix of Object.keys(index)) {
-    const spdx = index[prefix]?.license?.spdx;
-    if (!PERMISSIVE[spdx]) continue;
-    const file = `node_modules/@iconify/json/json/${prefix}.json`;
-    let j; try { j = JSON.parse(readFileSync(file, 'utf8')); } catch { continue; }
-    const w = j.width || 24, h = j.height || 24;
-    for (const [name, icon] of Object.entries(j.icons || {})) {
-      if (n >= limit) return;
-      const body = icon.body;
-      if (!body) continue;
-      n++;
-      yield {
-        slug: `${prefix}-${name}`.slice(0, 180),
-        label: name.replace(/-/g, ' '),
-        category: prefix,
-        license_code: PERMISSIVE[spdx],
-        source_slug: 'iconify-json',
-        attribution: `${j.info?.name || prefix} (${spdx}) via Iconify`,
-        fingerprint: fingerprint(['icon', prefix, name, body]),
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${body}</svg>`,
-      };
-    }
-  }
-}
-
 section('3. bulk icon write at scale');
-const TARGET = 20000;
-const rows = [...iconRows(TARGET)];
-ok('built the requested slice', rows.length === TARGET, `rows=${rows.length}`);
-
-const t0 = Date.now();
-const first = await writeIcons(rows);
-const ms = Date.now() - t0;
-ok('first run inserted rows', first.inserted > 0, `inserted=${first.inserted}`);
+const TARGET=20000,opts={limit:TARGET,batch:500,budgetBytes:2**32};
+const plan=await planLibrary('icons',TARGET,500);
+ok('built the requested slice',plan.rows===TARGET);
+const t0=Date.now(),first=await importLibrary(db,'icons',plan,opts),ms=Date.now()-t0;
+ok('first run inserts the entire slice',first.inserted===TARGET,`inserted=${first.inserted}`);
 const count1 = (await db.query('select count(*)::int n from public.icon_library')).rows[0].n;
 ok('row count matches inserts', count1 === first.inserted, `count=${count1}`);
-console.log(`  (${ms} ms for ${first.inserted} rows on PGlite — file-backed, 1 core)`);
+console.log(`  (${ms} ms for ${first.inserted} rows on disposable PGlite)`);
 
 section('4. re-running is idempotent');
-const second = await writeIcons(rows);
+const second = await importLibrary(db,'icons',plan,opts);
 ok('second run inserted nothing', second.inserted === 0, `inserted=${second.inserted}`);
-ok('second run reported every row as duplicate', second.duplicate === rows.length, `dup=${second.duplicate}`);
+ok('second run reported every row as duplicate', second.skipped === TARGET && second.updated===0, `skipped=${second.skipped}`);
 const count2 = (await db.query('select count(*)::int n from public.icon_library')).rows[0].n;
 ok('row count unchanged', count2 === count1, `${count1} -> ${count2}`);
 
 section('5. the database itself rejects duplicate fingerprints');
-const dup = rows[0];
+const [dup]=(await db.query('select slug,fingerprint from public.icon_library order by id limit 1')).rows;
+await db.query("update public.icon_library set label='fixture stale label' where slug=$1",[dup.slug]);
+const third=await importLibrary(db,'icons',plan,opts);
+ok('changed metadata updates once without duplicating',third.updated===1 && third.inserted===0 && third.skipped===TARGET-1);
 let rejected = false;
 try {
   await db.query(
@@ -222,6 +152,13 @@ ok('text search matches imported labels', s2.rows.length > 0, `rows=${s2.rows.le
 ok('search carries attribution and licence',
    s2.rows.every((r) => r.license_code && r.attribution));
 
+section('9. individual brand provenance and package pin');
+await importLibrary(db,'brands',brandReport,{batch:500,limit:null,budgetBytes:2**32});
+const marksInDb=(await db.query("select i.slug,i.license_code,i.attribution from public.icon_library i join public.data_sources s on i.source_id=s.id where s.slug='simple-icons'")).rows;
+const bySlug=new Map(eligible.map(s=>['si-'+s.slug,s]));
+ok('every imported brand points to its own licence and source, not the package grant',marksInDb.length===eligible.length && marksInDb.every(r=>{
+ const item=bySlug.get(r.slug);return item && item.license.type===r.license_code && r.attribution.includes(item.source) && r.attribution.includes(item.license.url) && (!item.guidelines || r.attribution.includes(item.guidelines));
+}));
 console.log(`\n${pass} checks passed, ${fail} failed`);
 await db.close();
 process.exit(fail === 0 ? 0 : 1);

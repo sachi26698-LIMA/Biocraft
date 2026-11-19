@@ -1,19 +1,13 @@
 // Serverless entry point for the Admin API (Vercel Node runtime).
 //
-// This file is NOT wired into the deployed Preview: it is only reachable if
-// Vercel routes /api/admin/* to it, and it returns 503 for every request unless
+// The deployed rewrite routes /api/admin/v1/* to api/admin/handler.mjs, which
+// calls this adapter. It returns 503 unless
 // ADMIN_BACKEND_ENABLED=true and all reviewed server-only settings are present.
 // It never serves static files and never exposes a provider or database secret.
 import {createAdminApp} from './app.mjs';
 import {toWebRequest,sendResponse} from './node-adapter.mjs';
 
 let cached;
-
-function app(env=process.env) {
-  if (cached) return cached;
-  cached=createAdminApp({env});
-  return cached;
-}
 /** Test seam: build a handler with an injected app (no process cache). */
 export function createHandler(instance,{secret}={}) {
   if (typeof instance!=='function') throw new Error('app required');
@@ -39,11 +33,14 @@ export function createHandler(instance,{secret}={}) {
  * database configuration, ...) and never contains an environment value or a
  * secret, so reporting it is safe. The leading `{error:{code:'UNAVAILABLE'}}`
  * shape is preserved for clients and for the existing regression tests. */
+const publicStages=new Set(['disabled','unverified TLS','invalid origin','invalid keys','missing publishable key',
+  'missing database credentials','missing admin allow-list','missing trusted client header',
+  'invalid provider configuration','invalid database configuration','invalid storage','invalid configuration','runtime']);
 function unavailable(res,stage) {
   res.statusCode=503;
   res.setHeader('cache-control','no-store');
   res.setHeader('content-type','application/json; charset=utf-8');
-  if (typeof stage==='string' && /^[a-z][a-z0-9 -]{0,63}$/.test(stage)) {
+  if (publicStages.has(stage)) {
     res.setHeader('x-admin-stage',stage);
     res.end(JSON.stringify({error:{code:'UNAVAILABLE',stage}}));
     return;
@@ -52,15 +49,13 @@ function unavailable(res,stage) {
 }
 
 export default async function handler(req,res) {
-  let instance;
-  try { instance=app(); }
-  catch { return unavailable(res,'invalid configuration'); }
-  if (instance.configuration?.enabled!==true) return unavailable(res,instance.configuration?.reason);
   try {
-    const secret=Buffer.from(process.env.ADMIN_INGRESS_SECRET_HEX,'hex');if(secret.length!==32)throw Error('invalid ingress secret');
-    const request=toWebRequest(req,{origin:instance.configuration.origin,secret});
-    await sendResponse(res,await instance(request));
+    if (!cached) {
+      const instance=createAdminApp();
+      cached=createHandler(instance,{secret:instance.configuration.enabled ? Buffer.from(process.env.ADMIN_INGRESS_SECRET_HEX,'hex') : null});
+    }
   } catch {
-    unavailable(res,'runtime');
+    return unavailable(res,'invalid configuration');
   }
+  return cached(req,res);
 }

@@ -7,14 +7,14 @@
  */
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { handleAnchorClick } from '../lib/router';
-import { ADMIN_BASE, probeBackend, type BackendStatus } from './backend';
+import { ADMIN_BASE, probeBackend } from './backend';
 import { Icon } from './icons';
 import { Badge } from './ui/Primitives';
 
 type Stage = 'checking' | 'signin' | 'enrol' | 'mfa' | 'recover' | 'recovered' | 'done' | 'blocked';
 
 export default function Login({ onAuthenticated }: { onAuthenticated?: () => void }) {
-  const [status, setStatus] = useState<BackendStatus>('unavailable');
+  const [probeAttempt, setProbeAttempt] = useState(0);
   const [stage, setStage] = useState<Stage>('checking');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,7 +32,6 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
     probeBackend()
       .then(result => {
         if (controller.signal.aborted) return;
-        setStatus(result);
         if (result === 'unavailable') {
           setStage('blocked');
           return;
@@ -46,7 +45,6 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setStatus('unavailable');
           setStage('blocked');
         }
       });
@@ -54,7 +52,7 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
       mounted.current = false;
       controller.abort();
     };
-  }, [onAuthenticated]);
+  }, [onAuthenticated, probeAttempt]);
 
   const post = useCallback(async (path: string, body: Record<string, string>) => {
     const response = await fetch(`${ADMIN_BASE}/auth/${path}`, {
@@ -193,7 +191,7 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
         <Icon name="shieldCheck" size={22} />
       </span>
       <Badge tone={stage === 'done' ? 'green' : stage === 'blocked' ? 'amber' : 'purple'}>
-        {stage === 'done' ? 'AAL2 Active' : stage === 'blocked' ? 'Not configured' : 'TOTP Protected'}
+        {stage === 'done' ? 'AAL2 Active' : stage === 'blocked' ? 'Service unavailable' : 'TOTP Protected'}
       </Badge>
     </div>
   );
@@ -203,11 +201,11 @@ export default function Login({ onAuthenticated }: { onAuthenticated?: () => voi
       <section className="ad-auth" aria-labelledby="admin-auth-title">
         {badge}
         <h2 id="admin-auth-title">Sign-in is not available</h2>
-        <p>
-          This deployment does not have an enabled Admin backend, so no credentials can be accepted. Nothing typed here
-          is transmitted or stored.
-        </p>
-        <p className="ad-auth-note">Backend status: {status === 'unavailable' ? 'not configured' : 'unexpected response'}.</p>
+        <p>The Admin service did not pass its connection check. Sign-in stays off until the service is ready.</p>
+        <button className="ad-btn ad-btn--secondary" type="button" onClick={() => {
+          setStage('checking');
+          setProbeAttempt(attempt => attempt + 1);
+        }}>Check connection again</button>
       </section>
     );
   }

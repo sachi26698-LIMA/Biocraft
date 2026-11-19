@@ -3286,3 +3286,6 @@ html, body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Source labels, notes and licence IDs are user text, not layout constraints. */
+.ad-catalog-draft { min-width: 0; overflow-wrap: anywhere; }

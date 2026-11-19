@@ -49,8 +49,12 @@ character counters, 33 Unicode fonts, decorative dividers, emoji quick-insert
 (including your symbol favourites and recents), 18 designer card styles with a
 live preview, and exactly the styled text copied to your clipboard.
 
-Everything runs client-side; the text you type never leaves your browser.
+Public rule-based generators run client-side; their inputs stay in the browser.
 Rule-based generation only — no AI services, no paid APIs.
+
+**Run the website and Admin API locally:** `npm run dev:admin-init` (one-time private settings), then `npm run dev:api` and `npm run dev:web` in separate terminals. Open the **web** origin at `/admin/login`. `/api/status/live` is process liveness, not a successful sign-in. See [private setup and the exact Vercel scope matrix](docs/MASTER_ADMIN_DEPLOYMENT.md).
+
+**Production operations:** [Supabase sync, migration ledger and Admin connection status](docs/PRODUCTION_SYNC.md).
 
 ## Routes
 
@@ -129,14 +133,9 @@ No runtime dependencies beyond React and React DOM. Self-hosted fonts
 (Baloo 2 + Noto Sans Math, SIL OFL, subset woff2 under `public/fonts/`), no external font or
 image requests, no trackers, no analytics, no cookies, no storage.
 
-## Supabase (database-only phase)
+## Public content and Admin data
 
-Optional, guest-first Supabase integration — no auth, public content is
-read-only via RLS, and the site runs fully from the bundled registry when the
-environment variables are absent. Schema, RLS policies, an idempotent seed
-(8 platforms · 33 categories · 506 bios · 33 fonts · 629 symbols · 1,155
-hashtags · 3,888 captions · 48 SEO routes) and a self-healing collection page
-live fetch all live in the repo. See [docs/SUPABASE.md](docs/SUPABASE.md).
+Public pages read the bundled catalogue and require no Supabase settings. Admin uses the same-origin API for sign-in, MFA and permission-checked database operations. Database drafts do not change the public bundle. See [Admin content after the public decoupling](docs/ADMIN_CONTENT_MIGRATION.md) and the [deployment guide](docs/MASTER_ADMIN_DEPLOYMENT.md).
 
 ## Getting started
 

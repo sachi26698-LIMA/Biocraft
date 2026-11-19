@@ -6,6 +6,21 @@ const SECRET='JBSWY3DPEHPK3PXP';
 (async()=>{
  const base=process.env.ADMIN_BASE_URL||'http://127.0.0.1:4178';
  const browser=await chromium.launch({executablePath:process.env.BROWSER_EXECUTABLE_PATH,args:['--no-sandbox','--disable-dev-shm-usage'],headless:true});
+ // An enabled deployment can have an unavailable DB. Do not misdiagnose it as
+ // missing configuration, or enable credentials before a subsequent good probe.
+ const blocked=await browser.newPage();let restored=false,writes=0;
+ await blocked.route('**/api/admin/v1/**',route=>{
+   if(route.request().method()!=='GET') writes++;
+   if(new URL(route.request().url()).pathname.endsWith('/health')) return route.fulfill({status:restored?200:503,json:restored?{ok:true}:{error:{code:'UNAVAILABLE'}}});
+   return route.fulfill({status:401,json:{error:{code:'UNAUTHENTICATED'}}});
+ });
+ await blocked.goto(`${base}/admin/login`);
+ await blocked.getByRole('heading',{name:'Sign-in is not available'}).waitFor();
+ assert.equal(await blocked.locator('input[type=password]').count(),0);
+ restored=true;
+ await blocked.getByRole('button',{name:'Check connection again'}).click();
+ await blocked.getByLabel('Password',{exact:true}).waitFor();
+ assert.equal(writes,0);await blocked.close();
  for(const [name,width,height] of [['desktop',1440,900],['mobile',390,844]]){
   const page=await browser.newPage({viewport:{width,height}});
   const errors=[],calls=[];
