@@ -1,0 +1,136 @@
+/**
+ * BioCraft original bios — batch 044.
+ * Allocation from scripts/bios/balance.mjs: 30 EN / 35 HI / 35 HG.
+ */
+const S = 'biocraft-original';
+const e = (text, category, subcategory, tone, tags) => ({ text, lang: 'en', category, subcategory, tone, tags, sourceId: S });
+const h = (text, category, subcategory, tone, tags) => ({ text, lang: 'hi', category, subcategory, tone, tags, sourceId: S });
+const g = (text, category, subcategory, tone, tags) => ({ text, lang: 'hg', category, subcategory, tone, tags, sourceId: S });
+
+export const BATCH_044 = [
+  /* ------------------------------------------------------------ Attitude */
+  e('I am not looking for a fight. I am just not walking away from one.', 'Attitude', 'Firmness', 'Firm', ['attitude', 'firmness']),
+  e('My word is my paperwork.', 'Attitude', 'Integrity', 'Composed', ['attitude', 'word']),
+  e('I do not keep people around to feel less alone.', 'Attitude', 'Standards', 'Sharp', ['attitude', 'company']),
+  e('You can have my respect or my distance. Both are free.', 'Attitude', 'Boundaries', 'Dry', ['attitude', 'distance']),
+  e('A quiet exit is the loudest thing a person can do.', 'Attitude', 'Dignity', 'Wise', ['attitude', 'exit']),
+  h('मैं झगड़ा नहीं ढूँढ रहा, बस झगड़े से भागता भी नहीं।', 'Attitude', 'दृढ़ता', 'दृढ़', ['झगड़ा', 'भागता']),
+  h('मेरी बात ही मेरा दस्तावेज़ है।', 'Attitude', 'ईमानदारी', 'शांत', ['बात', 'दस्तावेज़']),
+  h('मैं लोगों को अकेलापन भरने के लिए पास नहीं रखता।', 'Attitude', 'मानक', 'तीखा', ['लोगों', 'अकेलापन']),
+  h('तुम मेरी इज़्ज़त रख सकते हो, या दूरी। दोनों मुफ़्त हैं।', 'Attitude', 'सीमाएं', 'सहज', ['इज़्ज़त', 'दूरी']),
+  g('Main jhagda nahi dhoondh raha, bas jhagde se bhaagta bhi nahi.', 'Attitude', 'Firmness', 'Firm', ['jhagda', 'bhaagta']),
+  g('Meri baat hi mera dastavez hai.', 'Attitude', 'Integrity', 'Composed', ['baat', 'dastavez']),
+  g('Main logon ko akelapan bharne ke liye paas nahi rakhta.', 'Attitude', 'Standards', 'Sharp', ['logon', 'akelapan']),
+  g('Tum meri izzat rakh sakte ho, ya doori. Dono muft hain.', 'Attitude', 'Boundaries', 'Dry', ['izzat', 'doori']),
+
+  /* ------------------------------------------------------------- Love */
+  e('I want to be the one still holding your hand in the queue at sixty.', 'Love and romance', 'Long love', 'Sweet', ['love', 'queue']),
+  e('I like that we can sit in silence without it costing anything.', 'Love and romance', 'Comfort', 'Warm', ['love', 'silence']),
+  e('Your happiness is not my job. It is my hobby.', 'Love and romance', 'Care', 'Witty', ['love', 'care']),
+  h('तुम वो हो जिसके साथ मैं बूढ़ा और उबाऊ होना चाहता हूँ।', 'Love and romance', 'लंबा प्यार', 'कोमल', ['बूढ़ा', 'उबाऊ']),
+  h('अच्छा लगता है कि हम बिना कुछ कहे बैठ सकते हैं।', 'Love and romance', 'आराम', 'कोमल', ['बैठ', 'कहे']),
+  h('तुम्हारी खुशी मेरा काम नहीं, मेरा शौक़ है।', 'Love and romance', 'ख़याल', 'सहज', ['खुशी', 'शौक़']),
+  h('मुझे तुम्हारी आवाज़ में वो आराम मिलता है जो नींद में भी नहीं।', 'Love and romance', 'पनाह', 'भावुक', ['आवाज़', 'आराम']),
+  g('Tum woh ho jiske saath main boodha aur ubaau hona chahta hoon.', 'Love and romance', 'Long love', 'Sweet', ['boodha', 'ubaau']),
+  g('Achha lagta hai ki hum bina kuch kahe baith sakte hain.', 'Love and romance', 'Comfort', 'Warm', ['baith', 'kahe']),
+  g('Tumhari khushi mera kaam nahi, mera shauk hai.', 'Love and romance', 'Care', 'Witty', ['khushi', 'shauk']),
+
+  /* ------------------------------------------------------- Sad depth */
+  e('I have a version of you that only exists in my head now.', 'Sad and heartbreak', 'Memory', 'Aching', ['sad', 'memory']),
+  e('The goodbye was short. The aftermath has no end date.', 'Sad and heartbreak', 'Aftermath', 'Heavy', ['sad', 'aftermath']),
+  e('I am learning to be a person again, not half of one.', 'Sad and heartbreak', 'Recovery', 'Honest', ['sad', 'recovery']),
+  h('तुम्हारा एक रूप अब सिर्फ़ मेरे दिमाग़ में रहता है।', 'Sad and heartbreak', 'याद', 'भावुक', ['रूप', 'दिमाग़']),
+  h('अलविदा छोटा था, उसका असर बहुत लंबा है।', 'Sad and heartbreak', 'अंजाम', 'भारी', ['अलविदा', 'असर']),
+  h('मैं फिर से पूरा इंसान बनना सीख रहा हूँ, आधा नहीं।', 'Sad and heartbreak', 'उबरना', 'स्पष्ट', ['इंसान', 'आधा']),
+  h('किसी की कमी सबसे ज़्यादा रात के खाने में महसूस होती है।', 'Sad and heartbreak', 'अकेलापन', 'भावुक', ['कमी', 'खाने']),
+  g('Tumhara ek roop ab sirf mere dimaag mein rehta hai.', 'Sad and heartbreak', 'Memory', 'Aching', ['roop', 'dimaag']),
+  g('Alvida chhota tha, uska asar bahut lamba hai.', 'Sad and heartbreak', 'Aftermath', 'Heavy', ['alvida', 'asar']),
+  g('Main phir se poora insaan banna seekh raha hoon, aadha nahi.', 'Sad and heartbreak', 'Recovery', 'Honest', ['insaan', 'aadha']),
+
+  /* --------------------------------------------------------- Shayari */
+  h('तेरे नाम\nकी खुशबू\nअब भी कमरे में है।', 'Shayari', 'तीन पंक्ति', 'भावुक', ['नाम', 'खुशबू']),
+  h('मैंने तुझे\nखोया नहीं,\nबस छोड़ दिया।', 'Shayari', 'तीन पंक्ति', 'गंभीर', ['खोया', 'छोड़']),
+  h('तेरी बातें\nअब भी\nमेरी भाषा हैं।', 'Shayari', 'तीन पंक्ति', 'रोमांटिक', ['बातें', 'भाषा']),
+  g('Tere naam ki khushbu ab bhi kamre mein hai.', 'Shayari', 'Two line', 'Aching', ['naam', 'khushbu']),
+  g('Maine tujhe khoya nahi, bas chhod diya.', 'Shayari', 'Two line', 'Deep', ['khoya', 'chhod']),
+  g('Teri baatein ab bhi meri bhasha hain.', 'Shayari', 'Two line', 'Romantic', ['baatein', 'bhasha']),
+
+  /* -------------------------------------------------- Quotes and ideas */
+  e('Do not confuse a busy calendar with a full life.', 'Quotes and thoughts', 'Priorities', 'Sharp', ['quotes', 'calendar']),
+  e('The people who love you are not waiting for your success.', 'Quotes and thoughts', 'Love', 'Warm', ['quotes', 'success']),
+  e('You are not what you decide once. You are what you repeat.', 'Quotes and thoughts', 'Habits', 'Wise', ['quotes', 'repeat']),
+  h('व्यस्त कैलेंडर को भरी ज़िंदगी मत समझो।', 'Quotes and thoughts', 'प्राथमिकता', 'तीखा', ['कैलेंडर', 'ज़िंदगी']),
+  h('जो तुमसे प्यार करते हैं, वो तुम्हारी कामयाबी का इंतज़ार नहीं कर रहे।', 'Quotes and thoughts', 'प्यार', 'कोमल', ['प्यार', 'कामयाबी']),
+  h('हर आदत उस इंसान के लिए एक वोट है जो तुम बन रहे हो।', 'Quotes and thoughts', 'आदत', 'गंभीर', ['आदत', 'वोट']),
+  g('Vyast calendar ko bhari zindagi mat samjho.', 'Quotes and thoughts', 'Priorities', 'Sharp', ['calendar', 'zindagi']),
+  g('Jo tumse pyaar karte hain, woh tumhari kamyabi ka intezaar nahi kar rahe.', 'Quotes and thoughts', 'Love', 'Warm', ['pyaar', 'kamyabi']),
+  g('Har aadat us insaan ke liye ek vote hai jo tum ban rahe ho.', 'Quotes and thoughts', 'Habits', 'Wise', ['aadat', 'vote']),
+
+  /* ------------------------------------------------- Life and reality */
+  e('You will not remember the month you were busy. You will remember the one you were present.', 'Life and reality', 'Presence', 'Wise', ['life', 'presence']),
+  e('Money solves money problems and nothing else.', 'Life and reality', 'Money', 'Sharp', ['life', 'money']),
+  e('Ask for help before you are desperate, not after.', 'Life and reality', 'Support', 'Practical', ['life', 'help']),
+  h('जिस महीने तुम व्यस्त थे वो याद नहीं रहेगा, जिसमें मौजूद थे वो याद रहेगा।', 'Life and reality', 'मौजूदगी', 'गंभीर', ['महीने', 'मौजूद']),
+  h('पैसा पैसे की दिक्कतें हल करता है, बाकी कुछ नहीं।', 'Life and reality', 'पैसा', 'तीखा', ['पैसा', 'दिक्कतें']),
+  h('मदद माँगो मजबूरी से पहले, बाद में नहीं।', 'Life and reality', 'सहारा', 'व्यावहारिक', ['मदद', 'मजबूरी']),
+  g('Jis mahine tum vyast the woh yaad nahi rahega, jismein maujood the woh yaad rahega.', 'Life and reality', 'Presence', 'Wise', ['mahine', 'maujood']),
+  g('Paisa paise ki dikkatein hal karta hai, baaki kuch nahi.', 'Life and reality', 'Money', 'Sharp', ['paisa', 'dikkatein']),
+  g('Madad maango majboori se pehle, baad mein nahi.', 'Life and reality', 'Support', 'Practical', ['madad', 'majboori']),
+
+  /* ------------------------------------------------------ Motivational */
+  e('You do not need a bigger plan. You need a smaller first step.', 'Motivational', 'Action', 'Direct', ['motivation', 'step']),
+  e('Do the work when it is unglamorous or not at all.', 'Motivational', 'Discipline', 'Direct', ['motivation', 'work']),
+  e('Consistency is a decision you renew every morning.', 'Motivational', 'Consistency', 'Wise', ['motivation', 'morning']),
+  h('बड़ी योजना नहीं चाहिए, छोटा पहला कदम चाहिए।', 'Motivational', 'कर्म', 'स्पष्ट', ['योजना', 'कदम']),
+  h('जब काम बेरौनक़ हो तब करो, वरना कभी नहीं।', 'Motivational', 'अनुशासन', 'स्पष्ट', ['काम', 'बेरौनक़']),
+  h('निरंतरता हर सुबह दोबारा लिया गया फ़ैसला है।', 'Motivational', 'निरंतरता', 'गंभीर', ['सुबह', 'फ़ैसला']),
+  g('Badi yojana nahi chahiye, chhota pehla kadam chahiye.', 'Motivational', 'Action', 'Direct', ['yojana', 'kadam']),
+  g('Jab kaam beraunaq ho tab karo, warna kabhi nahi.', 'Motivational', 'Discipline', 'Direct', ['kaam', 'warna']),
+  g('Nirantarta har subah dobara liya gaya faisla hai.', 'Motivational', 'Consistency', 'Wise', ['subah', 'faisla']),
+
+  /* ---------------------------------------------- Wider category band */
+  e('A slow walk after eating is a conversation with your body.', 'Yoga and wellness', 'Habit', 'Warm', ['yoga', 'walk']),
+  e('Revision is where the marks actually live.', 'Student life', 'Exams', 'Direct', ['student', 'revision']),
+  e('Write the summary first and the meeting will be shorter.', 'Professional and business', 'Communication', 'Practical', ['professional', 'summary']),
+  e('Fielding badly loses more matches than batting badly.', 'Cricket and sports', 'Cricket', 'Wise', ['cricket', 'fielding']),
+  e('Wash the car and you will drive it better.', 'Cars and bikes', 'Ownership', 'Wry', ['cars', 'care']),
+  e('The best debugging tool is a walk away from the screen.', 'Technology and coding', 'Debugging', 'Wise', ['tech', 'debugging']),
+  e('Curiosity is a muscle and boredom is the warm-up.', 'Science and curiosity', 'Wonder', 'Wise', ['science', 'curiosity']),
+  e('Your first ten customers are your co-founders.', 'Startup and hustle', 'Customers', 'Direct', ['startup', 'customers']),
+  e('One lamp in the right corner changes an entire evening.', 'Home and interiors', 'Light', 'Warm', ['home', 'light']),
+  e('Keep the surfaces empty and the room forgives everything.', 'Minimal', 'Simplicity', 'Composed', ['minimal', 'surfaces']),
+  h('खाने के बाद धीरे टहलना शरीर से बातचीत है।', 'Yoga and wellness', 'आदत', 'कोमल', ['टहलना', 'शरीर']),
+  h('नंबर दोहराव में मिलते हैं, पढ़ने में नहीं।', 'Student life', 'परीक्षा', 'स्पष्ट', ['नंबर', 'दोहराव']),
+  h('पहले सारांश लिखो, मीटिंग छोटी हो जाएगी।', 'Professional and business', 'संचार', 'व्यावहारिक', ['सारांश', 'मीटिंग']),
+  h('फ़ील्डिंग खराब हो तो मैच हार जाते हैं, बल्लेबाज़ी से ज़्यादा।', 'Cricket and sports', 'क्रिकेट', 'गंभीर', ['फ़ील्डिंग', 'मैच']),
+  h('स्क्रीन से दूर एक चक्कर सबसे अच्छा डिबगिंग टूल है।', 'Technology and coding', 'डिबगिंग', 'गंभीर', ['स्क्रीन', 'चक्कर']),
+  h('पहले दस ग्राहक तुम्हारे साझेदार हैं।', 'Startup and hustle', 'ग्राहक', 'स्पष्ट', ['ग्राहक', 'साझेदार']),
+  h('सही कोने में एक लैंप पूरी शाम बदल देता है।', 'Home and interiors', 'रोशनी', 'कोमल', ['लैंप', 'शाम']),
+  h('सतहें खाली रखो, कमरा सब माफ़ कर देगा।', 'Minimal', 'सादगी', 'शांत', ['सतहें', 'कमरा']),
+  h('सीधी कमर और साफ़ जूते, बस इतना ही चाहिए।', 'Stylish', 'अंदाज़', 'व्यावहारिक', ['कमर', 'जूते']),
+  h('हँसी का सही समय सबसे बड़ी कला है।', 'Funny and comedy', 'समय', 'सहज', ['हँसी', 'समय']),
+  h('नरमी कमज़ोरी नहीं, चुनाव है।', 'Savage and bold', 'स्पष्टता', 'तीखा', ['नरमी', 'चुनाव']),
+  h('लिखकर रखो, दिमाग़ हल्का रहेगा।', 'Deep and emotional', 'गहराई', 'कोमल', ['लिखकर', 'दिमाग़']),
+  h('मेरी तस्वीरें मेरी डायरी की तरह हैं।', 'Instagram profiles', 'सोच', 'सहज', ['तस्वीरें', 'डायरी']),
+  h('मैं वही हूँ जो सुबह उठकर होता हूँ, शाम का नहीं।', 'Personality and identity', 'पहचान', 'गंभीर', ['सुबह', 'शाम']),
+  h('मैं अपनी इज़्ज़त किसी की मेहरबानी नहीं मानता।', 'Self-respect', 'स्वाभिमान', 'दृढ़', ['इज़्ज़त', 'मेहरबानी']),
+  h('घर वो जगह है जहाँ नंबर नहीं पूछे जाते।', 'Family', 'अपनापन', 'कोमल', ['घर', 'नंबर']),
+  h('दोस्ती में सबसे क़ीमती चीज़ है वक़्त।', 'Friendship', 'निष्ठा', 'कोमल', ['दोस्ती', 'वक़्त']),
+  g('Khaane ke baad dheere tehalna shareer se baatcheet hai.', 'Yoga and wellness', 'Habit', 'Warm', ['tehalna', 'shareer']),
+  g('Number dohraav mein milte hain, padhne mein nahi.', 'Student life', 'Exams', 'Direct', ['number', 'dohraav']),
+  g('Pehle saaraansh likho, meeting chhoti ho jayegi.', 'Professional and business', 'Communication', 'Practical', ['saaraansh', 'meeting']),
+  g('Fielding kharab ho toh match haar jaate hain, batting se zyada.', 'Cricket and sports', 'Cricket', 'Wise', ['fielding', 'match']),
+  g('Screen se door ek chakkar sabse accha debugging tool hai.', 'Technology and coding', 'Debugging', 'Wise', ['screen', 'chakkar']),
+  g('Pehle das grahak tumhare saajhedaar hain.', 'Startup and hustle', 'Customers', 'Direct', ['grahak', 'saajhedaar']),
+  g('Sahi kone mein ek lamp poori shaam badal deta hai.', 'Home and interiors', 'Light', 'Warm', ['lamp', 'shaam']),
+  g('Satahein khaali rakho, kamra sab maaf kar dega.', 'Minimal', 'Simplicity', 'Composed', ['satahein', 'kamra']),
+  g('Seedhi kamar aur saaf joote, bas itna hi chahiye.', 'Stylish', 'Details', 'Practical', ['kamar', 'joote']),
+  g('Hansi ka sahi samay sabse badi kala hai.', 'Funny and comedy', 'Timing', 'Wry', ['hansi', 'samay']),
+  g('Narmi kamzori nahi, chunav hai.', 'Savage and bold', 'Directness', 'Sharp', ['narmi', 'chunav']),
+  g('Jo dimaag mein hai, likh do, dimaag halka rahega.', 'Deep and emotional', 'Writing', 'Tender', ['dimaag', 'likh']),
+  g('Meri tasveerein meri diary ki tarah hain.', 'Instagram profiles', 'Approach', 'Wry', ['tasveerein', 'diary']),
+  g('Main wahi hoon jo subah uthkar hota hoon, shaam ka nahi.', 'Personality and identity', 'Identity', 'Composed', ['subah', 'shaam']),
+  g('Main apni izzat kisi ki meherbani nahi maanta.', 'Self-respect', 'Worth', 'Firm', ['izzat', 'meherbani']),
+  g('Ghar woh jagah hai jahan number nahi poochhe jaate.', 'Family', 'Belonging', 'Warm', ['ghar', 'number']),
+  g('Dosti mein sabse keemti cheez hai waqt.', 'Friendship', 'Loyalty', 'Warm', ['dosti', 'waqt']),
+];

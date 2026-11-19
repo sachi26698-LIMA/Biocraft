@@ -56,9 +56,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 043 | `batch-043.mjs` | 105 | 29 | 41 | 175 | 1 → fixed | 4311 | Big English batch, topped up with Hinglish |
 
-**Verified so far: 4,311 / 50,000 (8.6%)**
-Remaining: 45,689 (EN 18,265 · HI 13,712 · HG 13,712)
-Split check: EN 8.68% · HI 8.59% · HG 8.59% of their targets.
+| 044 | `batch-044.mjs` | 30 | 41 | 39 | 110 | 3 → fixed | 4421 | balance.mjs allocation; 1 exact, 1 near-dup, 1 language |
+
+**Verified so far: 4,421 / 50,000 (8.8%)**
+Remaining: 45,579 (EN 18,235 · HI 13,671 · HG 13,673)
+Split check: EN 8.82% · HI 8.86% · HG 8.85% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -88,9 +90,9 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 044 — split 8.68 / 8.59 / 8.59, spread 0.09 points. Allocation for 044 now
-comes from `scripts/bios/balance.mjs` (30 EN / 35 HI / 35 HG for a 100-batch)
-instead of my guesswork. Continue proportional 40/30/30.
+Batch 045 — split 8.82 / 8.86 / 8.85, spread 0.04 points, the tightest yet, and
+it came from balance.mjs rather than from guessing. Continue using it for the
+allocation each batch.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
