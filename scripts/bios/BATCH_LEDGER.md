@@ -30,10 +30,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 017 | `batch-017.mjs` | 44 | 35 | 30 | 109 | 0 | 1701 | Depth continued; zero rejections |
 | 018 | `batch-018.mjs` | 39 | 33 | 29 | 101 | 0 | 1802 | Leaders + mid-field top-ups (food, tech, photography) |
 | 019 | `batch-019.mjs` | 15 | 14 | 34 | 63 | 0 | 1865 | Hinglish-weighted rebalance; zero rejections |
+| 020 | `batch-020.mjs` | 39 | 30 | 26 | 95 | 1 → fixed | 1960 | Proportional mix, depth in the leaders |
 
-**Verified so far: 1,865 / 50,000 (3.7%)**
-Remaining: 48,135 (EN 19,259 · HI 14,430 · HG 14,446)
-Split check: EN 3.71% · HI 3.80% · HG 3.69% of their targets.
+**Verified so far: 1,960 / 50,000 (3.9%)**
+Remaining: 48,040 (EN 19,220 · HI 14,400 · HG 14,420)
+Split check: EN 3.90% · HI 4.00% · HG 3.87% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -63,8 +64,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 020 — the split is level again (3.71 / 3.80 / 3.69), so return to a
-proportional 40/30/30 mix and depth in the leaders.
+Batch 021 — split is level (3.90 / 4.00 / 3.87). Continue at 40/30/30 with depth
+in the leaders and a mid-field top-up pass.
 
 **Phase change recorded.** Batches 001–013 were a breadth phase: the job was to
 get all 46 categories populated and roughly even, which is now done. From 014
