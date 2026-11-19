@@ -114,9 +114,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 072 | `batch-072.mjs` | 44 | 33 | 33 | 110 | 0 at build time (12 caught by precheck) | 7541 | 3 gate, 9 dedup, all fixed pre-build |
 
-**Verified so far: 7,541 / 50,000 (15.1%)**
-Remaining: 42,459 (EN 16,983 · HI 12,738 · HG 12,738)
-Split check: EN 15.09% · HI 15.08% · HG 15.08% of their targets — spread 0.01.
+| 073 | `batch-073.mjs` | 44 | 33 | 33 | 110 | 0 at build time (13 caught by precheck) | 7651 | 1 gate, 4 exact, 8 dedup, all fixed pre-build |
+
+**Verified so far: 7,651 / 50,000 (15.3%)**
+Remaining: 42,349 (EN 16,939 · HI 12,705 · HG 12,705)
+Split check: EN 15.30% · HI 15.30% · HG 15.30% of their targets — spread 0.00.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -146,7 +148,18 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 073 — split 15.09 / 15.08 / 15.08, spread 0.01. 072 drew on a plumber's
+Batch 074 — split 15.30 / 15.30 / 15.30, spread 0.00. 073 drew on a book binder
+rebinding a school register, a father's cycle shop closing when the road was
+widened, a lost admit card found in a rickshaw, the last bus of the night, and a
+deposit returned eight months late.
+
+**New tool: `scripts/bios/dedupe-file.mjs`.** Three batches in a row (066, 072,
+073) burned rounds on lines I pasted twice into the same file. That is a
+mechanical problem deserving a mechanical fix: the tool keeps the first
+occurrence of each text, drops later copies, and prints the resulting per-
+language counts so the next top-up is arithmetic instead of guesswork.
+
+(previous) 072 drew on a plumber's
 apprentice who holds the torch for two years, a water connection that follows
 the file, a father's first smartphone hidden in a drawer, and a bank passbook
 with one entry.
