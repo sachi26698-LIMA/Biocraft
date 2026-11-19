@@ -106,9 +106,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 068 | `batch-068.mjs` | 44 | 33 | 33 | 110 | 0 | 7101 | 0 |
 
-**Verified so far: 7,101 / 50,000 (14.2%)**
-Remaining: 42,899 (EN 17,159 · HI 12,870 · HG 12,870)
-Split check: EN 14.21% · HI 14.20% · HG 14.20% of their targets — spread 0.01.
+| 069 | `batch-069.mjs` | 44 | 33 | 33 | 110 | 1 gate (caught pre-build) | 7211 | 0 |
+
+**Verified so far: 7,211 / 50,000 (14.4%)**
+Remaining: 42,789 (EN 17,115 · HI 12,837 · HG 12,837)
+Split check: EN 14.43% · HI 14.42% · HG 14.42% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -138,7 +140,17 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 069 — split 14.21 / 14.20 / 14.20, spread 0.01. 068 drew on a ration shop
+Batch 070 — split 14.43 / 14.42 / 14.42, spread 0.01. 069 drew on a carpenter who
+measures twice, a father's first flight at sixty-two where he gave the window
+seat away, a wedding under a tent that leaked, a duplicate key that did not fit,
+and a grandmother's trunk opened after she died.
+
+First time the precheck earned its place outright: it flagged a Hinglish shayari
+line as failing the gate ('Sandook khula, baarish band nahi hui.'), which the
+build would otherwise have rejected. Fixed with 'par' before building, so the
+build finished with 0 rejections.
+
+(previous) 068 drew on a ration shop
 shutter that opens at four, a father who stopped hearing the birds before he
 told anyone, the school gate at 7:40, a wedding band hired by the hour and a
 scooter older than the marriage. Zero rejections; the second batch where the
