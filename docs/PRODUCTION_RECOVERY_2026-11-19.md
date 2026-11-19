@@ -1,6 +1,8 @@
 # Production Recovery — 2026-11-19
 
-Branch: `arena/9180b15f-biocraft` (branched from `4e59c4b`; fast-forwarded to `origin/main` = `eb10c4b`)
+Branch: `arena/9180b15f-biocraft` @ `b6f3b8f`
+Merged to `main` as: **PR #30 → `baf3016`**, **PR #31 → `4efdb77`**
+Tree of `b6f3b8f` == tree of `4efdb77` == tree of `origin/main` (`d66a3fd`)
 Checkpoint tag: `recovery/pre-recovery-eb10c4b`
 No commits deleted, no force-push, no revert. Current production site untouched.
 
@@ -124,14 +126,62 @@ rendering on Hindi bios, zero horizontal overflow at 390px.
 `src/tools/icons/data/simpleIcons.ts`: an icon *named* "Supabase". No runtime Supabase
 import, client or query exists on any public page. Supabase remains admin-auth-only.
 
+## 6b. THE REAL LIVE BUG (found and root-caused)
+
+Production at `4e59c4b` renders **the Instagram bio form** at three routes, with the
+correct `<title>`:
+
+| Route | `<title>` | Body actually served |
+|---|---|---|
+| `/color-palette-generator` | Colour Palette Generator | Instagram bio form |
+| `/icon-finder` | Icon Finder | Instagram bio form |
+| `/text-toolkit` | Text Toolkit | Instagram bio form |
+
+**Root cause** — `ToolWorkspace.tsx`:
+
+```ts
+const isAvailable = config.tools.includes(activeTool.key);
+const effectiveKey = isAvailable ? activeTool.key : config.tools[0];
+```
+
+Those three keys were absent from every platform's `tools` array, so each route fell
+back to `config.tools[0]` (bio). No error, no 404, correct title — invisible to review.
+
+**Reproduced locally** by checking out `4e59c4b` and loading each route in Chromium:
+all three return `h1="Instagram Bio Generator"` + the bio form. `/username-generator`
+correctly returns Username Generator, so only these three were affected.
+
+**Fixed by PR #28** (added the three keys to all 8 platforms) — which was merged but
+never deployed. `main` at `4efdb77` is verified correct locally for all routes.
+
+**New regression test:** `tests/tool-route-shadowing.mjs` (10 assertions). Proven
+discriminating: it **fails 5/10 against `4e59c4b`**, naming exactly those three routes,
+and passes 10/10 against `4efdb77`.
+
 ## 7. Remaining blockers / unverified
 
-1. **`*.vercel.app` is unreachable from this sandbox over TLS** (`SSL_ERROR_SYSCALL`;
+1. **BLOCKER — Vercel plan quota. Production cannot be deployed today.**
+   The project is on the **Hobby plan** (`"plan": "hobby"`). Every deployment attempt is
+   rejected at the API level:
+   `402 Payment Required … more than 100, code: "api-deployments-free-per-day"`.
+   This affects `main` only; the git integration issues a Vercel commit status of
+   `Deployment rate limited — retry in 24 hours` on **every** merged commit
+   (`eb10c4b`, `baf3016`, `5be6eee`, `4efdb77`). PR branch *previews* still build
+   (PR #31's preview `dpl_3aDkFEU9E4DsFU8qVHiPKAfFWhRc` reached READY/STAGED), but a
+   Production-target deployment and a promote-from-preview both fail with the same 402.
+   No `VERCEL_TOKEN` is available in this sandbox and no `vercel` CLI is installed, so
+   the promote endpoint cannot be reached outside the connector.
+   **Resolution requires one of:** waiting for the daily quota reset (≤24h from
+   2026-11-19T19:19Z), upgrading the account, or promoting the existing preview by hand.
+   Nothing in the repository blocks this — `main` is ready to deploy.
+   **Production deploy + live acceptance is therefore UNVERIFIED, not passed.**
+2. **`*.vercel.app` is unreachable from this sandbox over TLS** (`SSL_ERROR_SYSCALL`;
    Chromium `ERR_CONNECTION_CLOSED`). Live verification must use `fetch_page`, which fetches
    SSR HTML only. **Browser-level live behaviour is UNVERIFIED — not passed.**
-2. The Vercel build rate limit must have expired before a new production deploy can succeed.
-   Merge alone proves nothing; deployment status must be re-read afterwards.
 3. The 9 baseline `review-check` failures are out of scope for recovery and remain.
+4. The PR #31 preview is auth-protected (`Protected Deployment – Vercel`), so even the
+   preview HTML could not be fetched for SSR-level confirmation. **Live browser
+   verification of the fixed build is unverified.**
 
 ## 8. Resume here
 
