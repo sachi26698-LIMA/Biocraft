@@ -16,14 +16,14 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 003 | `batch-003.mjs` | 47 | 34 | 32 | 113 | 1 → fixed | 312 | Life, friendship, motivation, aesthetic, professional, creator, student, fitness, travel, gaming, photography, music |
 | 004 | `batch-004.mjs` | 70 | 48 | 24 | 142 | 1 → fixed | 454 | **All 46 categories now populated** |
 | 005 | `batch-005.mjs` | 36 | 46 | 33 | 115 | 1 → fixed | 569 | Depth pass: attitude, love, shayari (2- and 4-line), quotes, sad, aesthetic, life |
-| 006 | `batch-006.mjs` | 50 | 50 | 47 | 147 | 3 → fixed | 716 | Thin-category pass: the 25 categories still at 4–6 records |
-| 007 | `batch-007.mjs` | 44 | 35 | 38 | 117 | 3 → fixed | 833 | Next band: royal, motivational, alone, friendship, professional, creator, student + middle sweep |
+| 006 | `batch-006.mjs` | 50 | 50 | 50 | 150 | 3 → fixed | 719 | Thin-category pass: the 25 categories still at 4–6 records |
+| 007 | `batch-007.mjs` | 44 | 35 | 35 | 114 | 3 → fixed | 833 | Next band: royal, motivational, alone, friendship, professional, creator, student + middle sweep |
 | 008 | `batch-008.mjs` | 38 | 29 | 29 | 96 | 1 → fixed | 929 | The seven 7-record categories: family, minimal, fitness, travel, gaming, photography, music |
 | 009 | `batch-009.mjs` | 49 | 28 | 30 | 107 | 0 | 1036 | Whole 9–14 band lifted; first zero-rejection batch since 004. Library passes 1,000 |
-| 010 | `batch-010.mjs` | 55 | 12 | 11 | 78 | 2 → fixed | 1111 | English-weighted to correct split drift; 2 self-duplicates caught |
+| 010 | `batch-010.mjs` | 52 | 12 | 11 | 75 | 2 → fixed | 1111 | English-weighted to correct split drift; 2 self-duplicates caught |
 | 011 | `batch-011.mjs` | 10 | 10 | 39 | 59 | 2 → fixed | 1170 | Hinglish-weighted to close the last split gap |
-| 012 | `batch-012.mjs` | 41 | 31 | 30 | 102 | 1 → fixed | 1272 | Thinnest categories at a proportional 40/30/30 mix |
-| 013 | `batch-013.mjs` | 42 | 28 | 28 | 98 | 2 → fixed | 1342 | The 16–18 band: cinema, savage, instagram, nature, photography, pets, startup, cricket, cars, wedding, monsoon, funny |
+| 012 | `batch-012.mjs` | 31 | 23 | 21 | 75 | 1 → fixed | 1245 | Thinnest categories at a proportional 40/30/30 mix |
+| 013 | `batch-013.mjs` | 42 | 28 | 27 | 97 | 2 → fixed | 1342 | The 16–18 band: cinema, savage, instagram, nature, photography, pets, startup, cricket, cars, wedding, monsoon, funny |
 | 014 | `batch-014.mjs` | 34 | 30 | 29 | 93 | 0 | 1435 | Depth phase begins: the seven highest-demand categories |
 | 015 | `batch-015.mjs` | 33 | 26 | 24 | 83 | 0 | 1518 | Depth continued + thin-category top-ups |
 | 016 | `batch-016.mjs` | 30 | 23 | 21 | 74 | 1 → fixed | 1592 | Depth on attitude, love, sad, shayari, life, quotes, motivational |
@@ -32,11 +32,30 @@ reports the batch accepted. Counts are cumulative verified totals, never
 Remaining: 48,408 (EN 19,357 · HI 14,512 · HG 14,539)
 Split check: EN 3.22% · HI 3.25% · HG 3.07% of their targets.
 
-*Correction:* row 016 was first written as 75 records (22 HG). The builder report
-says 74 (21 HG) — the discrepancy was an arithmetic error in my own ledger line,
-not a data problem. `records.json` holds exactly 1,592 records and the per-language
-totals match the builder. Corrected here rather than left to drift; every row in
-this file is checked against `src/data/bios/report.json`.
+*** Audited against the data, not against memory (important) ***
+
+Rows 006, 007, 010, 012, 013 and 016 were originally written from my own arithmetic
+rather than copied from the builder output, and five of them were wrong. The worst
+was row 012: recorded as 102 records (41/31/30) when the batch actually accepted
+75 (31/23/21) — an overstatement of 27.
+
+**The data was never affected.** Every batch was accepted only after the builder
+reported `rejected: 0`, and `records.json` holds exactly 1,592 unique verified
+records that pass all six dedup layers, the language gate and the stray-script
+scan. What was wrong was the *accounting*: the ledger's columns summed to 1,623
+against 1,592 real records, and two totals I reported in chat were therefore
+incorrect — batch 006 was reported as 716 (actual 719) and batch 012 as 1,272
+(actual 1,245).
+
+This is precisely the failure mode the brief forbids — claiming a count that was
+not verified — so it is recorded here rather than quietly fixed. Two changes
+prevent a repeat:
+
+1. `tests/bio-ledger.mjs` re-derives each batch's EN/HI/HG counts by replaying the
+   content files through `BioDeduplicator.consider()` and fails if any ledger row
+   disagrees with the data, or if the columns do not sum to `records.json`.
+2. Rows are now copied from `scripts/bios/verify-batches.mjs` output, never
+   computed by hand.
 Categories populated: **46 / 46**
 
 ## Next batch

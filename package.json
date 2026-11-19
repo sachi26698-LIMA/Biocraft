@@ -94,7 +94,9 @@
     "build:bios": "node scripts/build-bio-library.mjs",
     "test:bios": "node scripts/build-bio-library.mjs --check && node tests/bio-library.mjs",
     "test:bio-admin": "node tests/bio-admin-dashboard.mjs",
-    "test:bio-language-gate": "node tests/bio-language-gate.mjs"
+    "test:bio-language-gate": "node tests/bio-language-gate.mjs",
+    "test:bio-ledger": "node tests/bio-ledger.mjs",
+    "bios:verify": "node scripts/bios/verify-batches.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
