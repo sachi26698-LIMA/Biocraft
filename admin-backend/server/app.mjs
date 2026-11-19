@@ -264,10 +264,24 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
 
 /** Check that the committed SQL surface exists and can be called by a limited
  * executor. Readiness never creates a session, consumes attempts or mutates data. */
-export async function verifyAdminDatabase(pool) {
+export async function verifyAdminDatabase(pool,clock=()=>Date.now()) {
  let client;
+ const connectStarted=clock();
  try { client=await pool.connect(); }
- catch (e) { throw databaseStage(e,'database unreachable'); }
+ catch (e) {
+  // pg's pool rejects its own connection timeout with a plain Error that has NO
+  // `code`, so classification by transport code alone cannot see it. The wait is
+  // the reliable signal: the pool is built with connectionTimeoutMillis=5000, so
+  // a refusal arriving at or after that limit is the pool giving up on a socket
+  // that never completed — not a rejected login.
+  const waited=clock()-connectStarted;
+  if(!e?.code && waited>=4500) throw databaseStage({code:'ETIMEDOUT'},'database connection timed out');
+  const message=typeof e?.message==='string'?e.message:'';
+  // Match, never echo. Some Supavisor refusals also arrive codeless.
+  if(!e?.code && /timeout/i.test(message)) throw databaseStage({code:'ETIMEDOUT'},'database connection timed out');
+  if(!e?.code && /(terminat|closed|socket|econn)/i.test(message)) throw databaseStage({code:'ECONNRESET'},'database network blocked');
+  throw databaseStage(e,'database unreachable');
+ }
  try {
   await client.query('begin read only');
   await client.query("set local statement_timeout = '3000ms'");

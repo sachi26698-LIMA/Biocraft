@@ -90,3 +90,27 @@ for (const [error,expected] of cases) {
 assert.match(databaseStage({code:'28P01'}).stage,/^[a-z][a-z0-9 ]{0,40}$/);
 
 console.log('PASS admin database classification: each configuration gate names itself, the serverless handler propagates the stage instead of a bare 503, and database refusals classify by SQLSTATE only');
+
+// 4. pg's pool rejects its own connection timeout with a plain Error carrying no
+//    `code`, so transport-code mapping alone cannot see it. The connect wait is
+//    the reliable signal, and the refusal must not be reported as a login
+//    failure — that would send an operator hunting for a wrong password.
+{
+  const {verifyAdminDatabase}=await import('../admin-backend/server/app.mjs');
+  const attempt=async (error,clock)=>{
+    const pool={connect:async()=>{throw error;}};
+    try{await verifyAdminDatabase(pool,clock);return null}catch(e){return e.stage}
+  };
+  let t=0;
+  assert.equal(await attempt(new Error('timeout exceeded when trying to connect'),()=>{t+=6000;return t}),
+    'database connection timed out','a pool timeout past the limit must read as a timeout');
+  assert.equal(await attempt(new Error('Connection terminated unexpectedly'),()=>0),
+    'database network blocked','a dropped socket must read as a blocked network');
+  assert.equal(await attempt(new Error('unclassified'),()=>0),
+    'database unreachable','an unknown codeless failure keeps the default');
+  // A codeless error that arrives instantly is NOT a timeout: the pool never
+  // waited, so it must not be reported as one.
+  assert.notEqual(await attempt(new Error('immediate refusal'),()=>0),
+    'database connection timed out','an instant refusal must not be called a timeout');
+}
+console.log('PASS admin database classification: configuration gates name themselves, the handler propagates the stage, SQLSTATE and codeless pool refusals are classified, and no stage can leak an environment value');
