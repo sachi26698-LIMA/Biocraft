@@ -23,18 +23,19 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 010 | `batch-010.mjs` | 55 | 12 | 11 | 78 | 2 → fixed | 1111 | English-weighted to correct split drift; 2 self-duplicates caught |
 | 011 | `batch-011.mjs` | 10 | 10 | 39 | 59 | 2 → fixed | 1170 | Hinglish-weighted to close the last split gap |
 | 012 | `batch-012.mjs` | 41 | 31 | 30 | 102 | 1 → fixed | 1272 | Thinnest categories at a proportional 40/30/30 mix |
+| 013 | `batch-013.mjs` | 42 | 28 | 28 | 98 | 2 → fixed | 1342 | The 16–18 band: cinema, savage, instagram, nature, photography, pets, startup, cricket, cars, wedding, monsoon, funny |
 
-**Verified so far: 1,272 / 50,000 (2.5%)**
-Remaining: 48,755 (EN 19,496 · HI 14,619 · HG 14,640)
-Split check: EN 2.52% · HI 2.54% · HG 2.40% of their targets.
+**Verified so far: 1,342 / 50,000 (2.7%)**
+Remaining: 48,658 (EN 19,454 · HI 14,591 · HG 14,613)
+Split check: EN 2.73% · HI 2.73% · HG 2.58% of their targets.
 Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 013 — 012 closed most of the floor. Remaining thinnest sit at 14–18 (minimal,
-gaming, fitness, music, fashion and the small-profile categories); the 40/30/30
-proportion should hold, since that is what keeps the 20/15/15 target reachable
-without repeated correction passes.
+Batch 014 — the floor is now ~20 across all 46 categories, so the breadth-first
+pass has done its job and the library is evenly weighted. From here the work is
+depth in the highest-demand categories (attitude 60, love 58, shayari 55, sad 43,
+life 35, quotes 34, aesthetic 33) rather than rescue work on thin ones.
 
 **Throughput and honesty.** Twelve batches have produced 1,272 records. At this
 editorial standard — every line original, every line read back, every rejection
@@ -149,7 +150,10 @@ committing a batch — automated checks are necessary, not sufficient.
 - Batch 012: one vocabulary gap (`khaali`, `bhare`, `vichaar`, `kaafi`) —
   markers extended, sentence kept.
 
-**Pattern worth noting:** the engine has now caught 16 rejections across 12
+- Batch 013: two vocabulary gaps (`mizaaj`, `asli`, `haal`, `chhoti`, `lamba`,
+  `sacchi`). Markers extended, both sentences kept verbatim.
+
+**Pattern worth noting:** the engine has now caught 18 rejections across 13
 batches
 — 3 Hinglish edges (003, 004, 006), 2 exact duplicates of earlier batches (006),
 1 vocabulary gap (005), 1 over-length line (002). The duplicate catches are the

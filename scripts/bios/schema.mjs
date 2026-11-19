@@ -123,6 +123,8 @@ const HINGLISH_MARKERS = [
   'bolna', 'sunna', 'karna', 'hona', 'jaana', 'aana', 'dena', 'lena',
   // fifth sweep (batch 012)
   'khaali', 'bhare', 'vichaar', 'kaafi', 'saamaan', 'aadat', 'dhang', 'duniya',
+  // sixth sweep (batch 013)
+  'mizaaj', 'asli', 'haal', 'chhoti', 'lamba', 'lambi', 'sacchi', 'naraazgi',
 ];
 
 export function detectScript(text) {
