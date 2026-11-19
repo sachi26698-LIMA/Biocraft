@@ -54,9 +54,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 041 | `batch-041.mjs` | 52 | 30 | 30 | 112 | 2 → fixed | 4015 | Wide category band; token-set + language |
 | 042 | `batch-042.mjs` | 14 | 55 | 52 | 121 | 1 → fixed | 4136 | Hindi/Hinglish leaning to correct EN lead |
 
-**Verified so far: 4,136 / 50,000 (8.3%)**
-Remaining: 45,864 (EN 18,370 · HI 13,741 · HG 13,753)
-Split check: EN 8.15% · HI 8.39% · HG 8.31% of their targets.
+| 043 | `batch-043.mjs` | 105 | 29 | 41 | 175 | 1 → fixed | 4311 | Big English batch, topped up with Hinglish |
+
+**Verified so far: 4,311 / 50,000 (8.6%)**
+Remaining: 45,689 (EN 18,265 · HI 13,712 · HG 13,712)
+Split check: EN 8.68% · HI 8.59% · HG 8.59% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -86,8 +88,9 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 043 — the correction overshot: 8.15 / 8.39 / 8.31 now leaves English
-lowest by 0.24 points. 043 leans English. Continue strict proportional 40/30/30.
+Batch 044 — split 8.68 / 8.59 / 8.59, spread 0.09 points. Allocation for 044 now
+comes from `scripts/bios/balance.mjs` (30 EN / 35 HI / 35 HG for a 100-batch)
+instead of my guesswork. Continue proportional 40/30/30.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
