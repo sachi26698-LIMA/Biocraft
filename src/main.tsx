@@ -4,6 +4,7 @@ import App from './App';
 import './index.css';
 import './upgrade.css';
 import './revamp.css';
+import './hindi-fonts.css';
 
 const container = document.getElementById('root');
 if (!container) {
