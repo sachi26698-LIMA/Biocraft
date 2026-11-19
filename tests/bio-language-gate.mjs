@@ -134,6 +134,28 @@ section('5. no stray non-Devanagari Indic scripts');
 }
 
 /* ---------------------------------------------------------------- */
+section("5b. the gate itself rejects foreign Indic scripts");
+{
+  // The scan above is a backstop over stored records. validateLanguage must
+  // also refuse the line at the door, otherwise a stray glyph is only caught
+  // after the record has already been accepted and counted.
+  const gurmukhi = validateLanguage('क़र्ज़ चुका दिया, पर वो बात ਨਹੀਂ।', 'hi');
+  ok('rejects Gurmukhi inside a Hindi line', gurmukhi.ok === false, gurmukhi.reason);
+  ok('names the offending script', /Gurmukhi/.test(gurmukhi.reason ?? ''), gurmukhi.reason);
+
+  const bengali = validateLanguage('आरাম বলো না।', 'hi');
+  ok('rejects Bengali inside a Hindi line', bengali.ok === false, bengali.reason);
+
+  const tamil = validateLanguage('நன்றி is a word I like.', 'en');
+  ok('rejects Tamil inside an English line', tamil.ok === false, tamil.reason);
+
+  // And the check must not touch legitimate Devanagari, which sits far below
+  // these ranges but is easy to break with an off-by-one in the block bounds.
+  ok('accepts ordinary Hindi', validateLanguage('मैं अपना काम ढंग से करता हूँ।', 'hi').ok);
+  ok('accepts ordinary Hinglish', validateLanguage('Dhang se kaam karo, sab dekh rahe hain.', 'hg').ok);
+}
+
+/* ---------------------------------------------------------------- */
 section('6. length ceiling is enforced, not raised');
 {
   // Length lives in BioDeduplicator.consider(), not validateLanguage() — that

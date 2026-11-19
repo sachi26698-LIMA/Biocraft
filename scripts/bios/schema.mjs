@@ -143,10 +143,38 @@ export function detectScript(text) {
 }
 
 
+/**
+ * Indic scripts that are NOT Devanagari. A stray glyph from one of these can
+ * slip past a dominance test: one Gurmukhi word inside an otherwise Hindi line
+ * still leaves Devanagari dominant, so `validateLanguage` used to accept it.
+ * Batch 055 nearly shipped 'नहीं' written in Gurmukhi; batch 011 shipped a
+ * Bengali glyph the same way. The test suite caught both, but only after the
+ * record had been accepted, so the check belongs here.
+ */
+const FOREIGN_INDIC = {
+  Bengali: /[\u0980-\u09FF]/,
+  Gurmukhi: /[\u0A00-\u0A7F]/,
+  Gujarati: /[\u0A80-\u0AFF]/,
+  Oriya: /[\u0B00-\u0B7F]/,
+  Tamil: /[\u0B80-\u0BFF]/,
+  Telugu: /[\u0C00-\u0C7F]/,
+  Kannada: /[\u0C80-\u0CFF]/,
+  Malayalam: /[\u0D00-\u0D7F]/,
+  Sinhala: /[\u0D80-\u0DFF]/,
+  Thai: /[\u0E00-\u0E7F]/,
+  Tibetan: /[\u0F00-\u0FFF]/,
+};
+
 export function validateLanguage(text, lang) {
   const devanagari = (text.match(/[\u0900-\u097F]/g) ?? []).length;
   const letters = (text.match(/[\p{L}]/gu) ?? []).length;
   if (letters < 3) return { ok: false, reason: 'too few letters' };
+
+  for (const [name, pattern] of Object.entries(FOREIGN_INDIC)) {
+    if (pattern.test(text)) {
+      return { ok: false, reason: `contains ${name} script, which is not this record's language` };
+    }
+  }
 
   if (lang === 'hi') {
     if (!DEVANAGARI.test(text)) return { ok: false, reason: 'declared Hindi but no Devanagari' };

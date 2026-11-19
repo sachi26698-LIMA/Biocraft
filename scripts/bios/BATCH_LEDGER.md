@@ -78,9 +78,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 054 | `batch-054.mjs` | 45 | 31 | 33 | 109 | 1 → fixed | 5549 | 1 language |
 
-**Verified so far: 5,549 / 50,000 (11.1%)**
-Remaining: 44,451 (EN 17,780 · HI 13,337 · HG 13,334)
-Split check: EN 11.10% · HI 11.09% · HG 11.11% of their targets — spread 0.02.
+| 055 | `batch-055.mjs` | 43 | 33 | 34 | 110 | 1 → fixed | 5659 | 1 near-dup; gate hardened against foreign Indic scripts |
+
+**Verified so far: 5,659 / 50,000 (11.3%)**
+Remaining: 44,341 (EN 17,737 · HI 13,304 · HG 13,300)
+Split check: EN 11.31% · HI 11.31% · HG 11.33% of their targets — spread 0.02.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -110,9 +112,14 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 055 — split 11.10 / 11.09 / 11.11, spread 0.02 points. 054 drew on the
-electrician, second-hand books, learning to cook after leaving home, a friend
-moving abroad and the office tea round; 1 rejection.
+Batch 056 — split 11.31 / 11.31 / 11.33, spread 0.02 points. 055 tripped a real
+gap in the gate: a Hindi line had one Gurmukhi word (`ਨਹੀਂ` for `नहीं`), which
+`validateLanguage` accepted because Devanagari still dominated the line. Only
+the test suite caught it, and only after acceptance. `validateLanguage` now
+rejects any foreign Indic block outright, and the language-gate test grew from
+31 to 37 assertions, verified to fail when the guard is removed.
+
+(previous) 054 split 11.10 / 11.09 / 11.11, spread 0.02.
 
 (previous note) 054 split 10.88 / 10.88 / 10.89, spread 0.01. 053 used another
 fresh set (night shifts, the tailor, hospital bills, house hunting,
