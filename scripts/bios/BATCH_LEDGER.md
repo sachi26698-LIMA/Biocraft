@@ -122,10 +122,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 077 | `batch-077.mjs` | 44 | 33 | 33 | 110 | 0 | 8091 | 0 — 1 couplet gate fix |
 | 078 | `batch-078.mjs` | 44 | 33 | 33 | 110 | 0 | 8201 | 0 — counts only, no gate or dedup failure |
 | 079 | `batch-079.mjs` | 44 | 33 | 33 | 110 | 0 | 8311 | 0 — counts only, trimmed twice |
+| 080 | `batch-080.mjs` | 44 | 33 | 33 | 110 | 0 | 8421 | 0 — counts only, 2 self-typos caught pre-build |
 
-**Verified so far: 8,311 / 50,000 (16.6%)**
-Remaining: 41,689 (EN 16,675 · HI 12,507 · HG 12,507)
-Split check: EN 16.63% · HI 16.62% · HG 16.62% of their targets — spread 0.01.
+**Verified so far: 8,421 / 50,000 (16.8%)**
+Remaining: 41,579 (EN 16,631 · HI 12,474 · HG 12,474)
+Split check: EN 16.84% · HI 16.84% · HG 16.84% of their targets — spread 0.00.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -155,7 +156,40 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 079 — split 16.63 / 16.62 / 16.62, spread 0.01. Second batch running
+### Scope 071–080 closed
+
+Ten batches, 1,100 records, every one accepted on its first build. 071 through
+080 held the spread at 0.01 of a percentage point or better for the whole range,
+and both the en and hi targets moved from 14.87% to 16.84% of their goals.
+
+Zero records were rejected at build time in this range, and that is not luck —
+the precheck added in 071 (full cross-file deduper replay) caught 46 collisions
+across 071–073 before they ever reached the builder, which is exactly what it was
+written for. The gate failures that did occur were all in Hinglish couplets and
+phrase-fragments, never in prose; the two shapes to watch are a bare noun list
+with no finite verb and a line whose only Hindi words are outside the marker set.
+
+Two real defects were found and fixed inside this range rather than papered over:
+the language gate accepted one Devanagari word inside a Roman-script record
+(075, closed by rejecting any Devanagari at all in en/hg, checked against all
+existing records first), and the admin dashboard test waited a fixed 600 ms for
+an 8,000-digest async scan while its own guard could not match a comma-formatted
+count (079, replaced with polling plus a hard timeout).
+
+Subjects retired for future batches — do not re-mine: knife sharpener, school
+bag on credit, father reading with a finger under each line, rooftop water drum,
+hand-written wedding invitation, bangle seller on a train, father's first bank
+account, photocopy shop outside school, stolen shoes at a temple, shuttered
+cinema hall, tailor's trial date, last metre of a bus, unopened wedding album,
+night guard's register, grandmother naming pigeons, barber's queue, father's
+cycle repair shop, exam-hall seating, borrowed umbrella, conductor's punch,
+milkman's bell, father teaching driving, lost ration card, wedding guest list,
+calculator with a dead key, railway porters, kite string on a terrace, mother's
+stitching money, hospital token window, ceiling leak, scooter on the fourth kick,
+school gate at 7:45, father's pension file, cycle bell taken on day one, tiffin
+box swap, landlord's paint-then-rent.
+
+(previous) Batch 079 — split 16.63 / 16.62 / 16.62, spread 0.01. Second batch running
 with no gate or dedup finding at all: the draft was one English line over and a
 trifle short in both other languages, and it took two rounds of arithmetic to
 land on 44/33/33 exactly, but nothing was rejected. Subjects: kite string cut
