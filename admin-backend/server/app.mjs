@@ -300,14 +300,24 @@ export async function verifyAdminDatabase(pool) {
  * before authentication completes, for example). */
 export function databaseStage(error,fallback) {
  const code=typeof error?.code==='string'?error.code:'';
- const map=c=>
-  c.startsWith('28')?'database authentication rejected':
-  c==='3D000'?'database absent':
-  c==='42501'?'database permission denied':
-  c==='57014'?'database timeout':
-  c.startsWith('08')||c==='53300'||c==='57P03'?'database unreachable':
-  null;
- const stage=map(code)??fallback;
+ // Transport failures are named individually: 'unreachable' alone cannot tell a
+ // wrong hostname from a blocked network or an untrusted certificate, and those
+ // need completely different fixes. Every stage is a fixed phrase, never a
+ // driver message, host, user, password or SQL statement.
+ const stage=
+  code==='ENOTFOUND'||code==='EAI_AGAIN'?'database host not resolvable':
+  code==='ECONNREFUSED'?'database refused connection':
+  code==='ETIMEDOUT'?'database connection timed out':
+  code==='ECONNRESET'||code==='EHOSTUNREACH'||code==='ENETUNREACH'?'database network blocked':
+  code==='SELF_SIGNED_CERT_IN_CHAIN'||code==='DEPTH_ZERO_SELF_SIGNED_CERT'||
+   code==='UNABLE_TO_VERIFY_LEAF_SIGNATURE'||code==='CERT_HAS_EXPIRED'||
+   code==='ERR_TLS_CERT_ALTNAME_INVALID'?'database certificate untrusted':
+  code.startsWith('28')?'database authentication rejected':
+  code==='3D000'?'database absent':
+  code==='42501'?'database permission denied':
+  code==='57014'?'database timeout':
+  code.startsWith('08')||code==='53300'||code==='57P03'?'database unreachable':
+  fallback;
  const wrapped=new Error(stage);
  wrapped.stage=stage;
  wrapped.code=code||undefined;
