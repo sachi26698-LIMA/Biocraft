@@ -26,16 +26,17 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 013 | `batch-013.mjs` | 42 | 28 | 28 | 98 | 2 → fixed | 1342 | The 16–18 band: cinema, savage, instagram, nature, photography, pets, startup, cricket, cars, wedding, monsoon, funny |
 | 014 | `batch-014.mjs` | 34 | 30 | 29 | 93 | 0 | 1435 | Depth phase begins: the seven highest-demand categories |
 | 015 | `batch-015.mjs` | 33 | 26 | 24 | 83 | 0 | 1518 | Depth continued + thin-category top-ups |
+| 016 | `batch-016.mjs` | 30 | 23 | 22 | 75 | 1 → fixed | 1593 | Depth on attitude, love, sad, shayari, life, quotes, motivational |
 
-**Verified so far: 1,518 / 50,000 (3.0%)**
-Remaining: 48,482 (EN 19,387 · HI 14,535 · HG 14,560)
-Split check: EN 3.07% · HI 3.10% · HG 2.93% of their targets.
+**Verified so far: 1,593 / 50,000 (3.2%)**
+Remaining: 48,408 (EN 19,357 · HI 14,512 · HG 14,539)
+Split check: EN 3.22% · HI 3.25% · HG 3.07% of their targets.
 Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 016 — depth continues in the leaders at the 40/30/30 language proportion.
-Thin categories (~20 each) need only occasional top-ups now.
+Batch 017 — depth continues at 40/30/30. Attitude 78, love 70, shayari 80, sad
+57, life 43, quotes 47, motivational 29, aesthetic 42.
 
 **Phase change recorded.** Batches 001–013 were a breadth phase: the job was to
 get all 46 categories populated and roughly even, which is now done. From 014
@@ -168,7 +169,16 @@ committing a batch — automated checks are necessary, not sufficient.
   `test:bio-language-gate` now scans **text, category, subcategory, tone and
   tags** for 16 stray scripts instead of the bio text alone.
 
-**Pattern worth noting:** the engine has now caught 18 rejections across 15
+- Batch 016: one Hinglish line refused twice in a row while I tried to fix it.
+  The first attempt kept a marginal inflection (`rakhin`) that the marker list
+  does not cover; the second kept `sambhaali`, also uncovered. Rather than adding
+  two rare words to the list, the sentence was rewritten in core vocabulary
+  (`Tasveerein maine hi rakhi hain, aaj tak ghar mein.`). This is the right call:
+  the marker list should describe how Hinglish is normally written, not be grown
+  to accommodate one awkward sentence. Extending it for rare inflections would
+  erode the gate's precision over time.
+
+**Pattern worth noting:** the engine has now caught 19 rejections across 16
 batches
 — 3 Hinglish edges (003, 004, 006), 2 exact duplicates of earlier batches (006),
 1 vocabulary gap (005), 1 over-length line (002). The duplicate catches are the
