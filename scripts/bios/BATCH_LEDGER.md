@@ -34,10 +34,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 021 | `batch-021.mjs` | 35 | 30 | 26 | 91 | 1 → fixed | 2051 | Leaders + student/cricket/nature top-ups; library passes 2,000 |
 | 022 | `batch-022.mjs` | 33 | 29 | 26 | 88 | 1 → fixed | 2139 | Leaders + music/yoga/minimal/tech top-ups |
 | 023 | `batch-023.mjs` | 32 | 24 | 47 | 103 | 3 → fixed | 2242 | Hinglish-leaning rebalance; duplicates replaced |
+| 024 | `batch-024.mjs` | 38 | 29 | 25 | 92 | 1 → fixed | 2334 | Proportional depth + fitness/food/cinema top-ups |
 
-**Verified so far: 2,242 / 50,000 (4.5%)**
-Remaining: 47,758 (EN 19,120 · HI 14,317 · HG 14,321)
-Split check: EN 4.40% · HI 4.55% · HG 4.53% of their targets.
+**Verified so far: 2,334 / 50,000 (4.7%)**
+Remaining: 47,666 (EN 19,082 · HI 14,288 · HG 14,296)
+Split check: EN 4.59% · HI 4.75% · HG 4.69% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -67,8 +68,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 024 — split is now tight: 4.40 / 4.55 / 4.53. Return to a proportional
-40/30/30 mix and continue depth in the leaders with a mid-field pass.
+Batch 025 — library at 2,334; split 4.59 / 4.75 / 4.69, English marginally behind.
+A slightly EN-heavy batch will level it. Continue depth in the leaders.
 
 **Phase change recorded.** Batches 001–013 were a breadth phase: the job was to
 get all 46 categories populated and roughly even, which is now done. From 014

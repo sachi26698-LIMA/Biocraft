@@ -127,6 +127,8 @@ const HINGLISH_MARKERS = [
   'mizaaj', 'asli', 'haal', 'chhoti', 'lamba', 'lambi', 'sacchi', 'naraazgi',
   // seventh sweep (batch 021): poetry + commonplace nouns
   'pankti', 'panktiyon', 'kavita', 'adhyaay', 'sanskaran', 'soochi', 'chaahat',
+  // eighth sweep (batch 024)
+  'vyanjan', 'shikayat', 'dekhbhaal', 'shabd', 'aalsi', 'oobe', 'nivesh',
 ];
 
 export function detectScript(text) {
