@@ -20,8 +20,8 @@
  *   - Per-request generation counts are read live from
  *     VITE_GENERATION_MAX_PER_REQUEST (see generationLimits below).
  *   - Server pagination ceilings are read live from MAX_PAGE_SIZE in the
- *     deployment environment (admin-backend) and from the `app_limits` table for
- *     the public API (see supabase/migrations).
+ *     deployment environment (admin-backend). Public pages read only bundled
+ *     content, so they require no database and no server ceiling.
  */
 
 /** Read a positive integer from the build-time env, falling back when unset. */
@@ -69,10 +69,11 @@ export function clampGenerationCount(requested: number, fallback = 5): number {
 }
 
 /**
- * Public content paging. Growth is served by paging, not by raising a cap:
- * a collection with 500,000 rows is read in pages of this size, and the reader
- * keeps walking pages until it has them all (see lib/biosRemote.ts, which uses a
- * keyset cursor rather than an offset so deep pages stay fast).
+ * Rendering page size for bundled public content.
+ *
+ * Bios are no longer read over the network, so this is a render batch size
+ * rather than a network page. It bounds how many entries are painted at once for
+ * very large future collections; it is not a limit on what ships.
  */
 export const CONTENT_PAGE_SIZE = envInt(metaEnv?.VITE_CONTENT_PAGE_SIZE, 500);
 

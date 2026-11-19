@@ -28,12 +28,16 @@ const adminPreview =
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   const key = env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  // The public site no longer reads Supabase at all: every page renders from
+  // bundled content, and Supabase Auth is used only server-side by the Admin
+  // API. These variables are therefore OPTIONAL. They are still validated when
+  // present, so a misconfigured or secret-leaking variable fails the build
+  // rather than shipping a publishable-but-wrong value.
+  //
   // The project URL is a public constant in shared/supabase-config.mjs, not a
-  // secret. The Preview scope only defines the publishable key, so a build that
-  // demanded both variables failed at config load while the client itself would
-  // have fallen back to the bundled registry. Validate against the constant
-  // when the URL is unset; a *wrong* URL still fails, because
-  // publicSupabaseConfig rejects anything that is not this project.
+  // secret. Validate against that constant when the URL is unset; a *wrong* URL
+  // still fails, because publicSupabaseConfig rejects anything that is not this
+  // project.
   const url = env.VITE_SUPABASE_URL ?? (key ? SUPABASE_URL : undefined);
   if ((url || key) && !publicSupabaseConfig(url, key)) {
     throw new Error('Set both public Supabase variables with the BioCraft project URL and a publishable or matching anon key. Never use a service key.');
@@ -70,12 +74,6 @@ export default defineConfig(({ mode }) => {
       });
     },
   }],
-  // Temporary diagnostics are only compiled into this branch's Vercel Preview.
-  define: {
-    __BIOCRAFT_PREVIEW_DIAGNOSTICS__: JSON.stringify(
-      adminPreview,
-    ),
-  },
   // Emit an independent admin entry only for this branch's Preview; the
   // public entry never imports the admin workspace.
   build: adminPreview ? { rollupOptions: { input: { main: 'index.html', admin: 'admin-preview.html' } } } : undefined,

@@ -1,4 +1,3 @@
-import PublishedCatalog from '../../components/PublishedCatalog';
 import { useMemo, useState } from 'react';
 import DownloadButton from '../../components/DownloadButton';
 import { CheckIcon, ClipboardIcon, RefreshIcon } from '../../components/icons';
@@ -250,7 +249,6 @@ export default function HashtagGenerator() {
           {statusMessage}
         </p>
       </div>
-      <PublishedCatalog kind="hashtags" language={toolMode === 'basic' ? 'en' : language} />
     </div>
   );
 }

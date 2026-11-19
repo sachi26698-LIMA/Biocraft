@@ -13,7 +13,7 @@
     "test:collections": "node tests/collection-navigation.cjs && node tests/remote-dedup.cjs && node tests/collection-pagination.cjs && node tests/collection-card-renders.cjs",
     "test:infinite": "node tests/infinite-expansion.cjs",
     "test:review": "esbuild review-harness.tsx --bundle --platform=node --format=cjs --loader:.css=empty --outfile=review-harness.bundle.cjs && node review-check.cjs",
-    "test:diagnostics": "node tests/preview-diagnostics.cjs",
+    "test:diagnostics": "node tests/local-first/content-sources.mjs && node tests/local-first/pages-render.mjs",
     "test:generation": "node tests/generation-runner.cjs && node tests/generation-steps.cjs && node tests/generation-ui.cjs",
     "test:performance": "node tests/symbol-search.cjs && node tests/symbol-renders.cjs && node tests/font-preloads.cjs",
     "test:admin-draft": "node tests/admin-draft-rbac.cjs && node tests/admin-workflow-draft.cjs && node tests/admin-gateway-draft.cjs",
@@ -73,7 +73,7 @@
     "test:library-search": "node tests/library-search-ui.cjs",
     "sync": "node scripts/sync.mjs",
     "sync:status": "node scripts/sync.mjs --status",
-    "test:sync": "node tests/sync-bootstrap.mjs > /tmp/sync-db-url && TEST_DATABASE_URL=$(cat /tmp/sync-db-url) node tests/sync-engine.mjs",
+    "test:sync": "node tests/sync-bootstrap.mjs && node tests/sync-engine.mjs",
     "test:font-library": "node tests/font-library-ui.cjs",
     "test:ai": "node tests/ai-engine.mjs",
     "test:admin-content-library": "node tests/admin-content-library.mjs",
@@ -83,7 +83,10 @@
     "test:public-content-status": "node tests/public-content-status.mjs",
     "test:published-catalog-browser": "node tests/published-catalog-browser.mjs",
     "test:admin-password-reset-browser": "node tests/admin-password-reset-browser.cjs",
-    "test:admin-extra-modules": "node tests/admin-extra-modules-browser.cjs"
+    "test:admin-extra-modules": "node tests/admin-extra-modules-browser.cjs",
+    "test:hybrid": "node tests/local-db-proxy.mjs",
+    "test:hybrid:db": "node tests/hybrid-sync-replication.mjs",
+    "test:local-first": "node tests/local-first/content-sources.mjs && node tests/local-first/pages-render.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

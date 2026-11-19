@@ -1,4 +1,4 @@
-import { memo, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useDeferredValue, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Breadcrumbs from '../components/Breadcrumbs';
 import BioCollectionCard from '../components/BioCollectionCard';
 import { designForBio } from '../lib/bioCollections';
@@ -15,7 +15,6 @@ import {
   WandIcon,
 } from '../components/icons';
 import CollectionIcon from '../components/CollectionIcon';
-import { fetchCollectionBios } from '../lib/biosRemote';
 import {
   COLLECTION_NAV,
   TOTAL_BIOS,
@@ -85,44 +84,10 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
   const [filter, setFilter] = useState<Filter>('all');
   /** Per-slot variation swaps, keyed by slot id (query/filter changes reset). */
   const [swaps, setSwaps] = useState<Record<string, BioEntry>>({});
-  /** Associate remote rows with their collection so navigation never shows stale bios. */
-  const [remoteBios, setRemoteBios] = useState<{ slug: string; bios: BioEntry[] } | null>(null);
-  const [remoteError, setRemoteError] = useState(false);
-  /** True only while the live Supabase request is genuinely in flight. */
-  const [remotePending, setRemotePending] = useState(true);
-  const [retryTick, setRetryTick] = useState(0);
-
-  useEffect(() => {
-    setSwaps((current) => Object.keys(current).length ? {} : current);
-  }, [deferredQuery, filter, slug]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setRemoteError(false);
-    setRemotePending(true);
-    fetchCollectionBios(slug)
-      .then((result) => {
-        if (cancelled) return;
-        setRemotePending(false);
-        // An empty successful live result is authoritative too: resurrecting
-        // bundled rows would show stale content after all live rows are removed.
-        if (result.source === 'supabase') {
-          setRemoteBios({ slug, bios: result.bios });
-        }
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setRemotePending(false);
-        console.warn('Supabase unavailable — using the bundled collection.');
-        setRemoteBios(null);
-        setRemoteError(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [slug, retryTick]);
-
-  const sourceBios = (remoteBios?.slug === slug ? remoteBios.bios : null) ?? collection?.bios ?? [];
+  // Bios are bundled with the application: no request is made to render this
+  // page, so it works identically offline, with the database unreachable, and
+  // with no database environment variables configured at all.
+  const sourceBios = collection?.bios ?? [];
 
   const visible = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase();
@@ -277,30 +242,15 @@ export default function BioCollectionPage({ slug }: { slug: string }) {
           </div>
         </div>
 
-        {remotePending && (
-          <p className="bc-sync-note" role="status">
-            <span className="bc-sync-dot" aria-hidden="true" />
-            Checking the live library…
-          </p>
-        )}
-
-        {remoteError && (
-          <div className="bc-remote-notice" role="status">
-            <p>The live library couldn’t be reached — showing the built-in collection instead.</p>
-            <button type="button" className="btn btn-secondary btn-small" onClick={() => setRetryTick((tick) => tick + 1)}>
-              Retry live library
-            </button>
-          </div>
-        )}
-
-        {/* Bio grid — aria-busy while the live library syncs; real content stays visible. */}
-        <div aria-busy={remotePending}>
+        {/* Bio grid — rendered straight from the bundled registry, so it is
+            never empty while a network request is outstanding. */}
+        <div>
         {visible.length > 0 ? (
           <BioGrid visible={visible} displayed={displayed} swaps={swaps} slug={collection.slug} name={collection.name} onRegenerate={regenerateAt} />
         ) : (
           <div className="empty-state" role="status">
-            <p className="empty-state-title">{sourceBios.length === 0 ? 'No live bios are available in this collection.' : `No bios match “${deferredQuery.trim()}”`}</p>
-            <p className="empty-state-text">{sourceBios.length === 0 ? 'Please check back later.' : 'Try fewer words, or clear the filter — Hindi minds like Hindi searches.'}</p>
+            <p className="empty-state-title">{`No bios match “${deferredQuery.trim()}”`}</p>
+            <p className="empty-state-text">Try fewer words, or clear the filter — Hindi minds like Hindi searches.</p>
             <button type="button" className="btn btn-secondary btn-small" onClick={() => { setQuery(''); setFilter('all'); }}>
               Reset filters
             </button>
