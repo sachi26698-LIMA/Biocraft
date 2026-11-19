@@ -41,7 +41,7 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 **Verified so far: 2,631 / 50,000 (5.3%)**
 Remaining: 47,369 (EN 18,965 · HI 14,203 · HG 14,201)
-Split check: EN 5.18% · HI 5.31% · HG 5.19% of their targets.
+Split check: EN 5.17% · HI 5.31% · HG 5.33% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -71,7 +71,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 028 — split 5.18 / 5.31 / 5.19, tight again. Return to proportional 40/30/30.
+Batch 028 — split 5.17 / 5.31 / 5.33, tight. Return to proportional 40/30/30
+(English marginally behind, so a slightly EN-heavy mix helps).
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
