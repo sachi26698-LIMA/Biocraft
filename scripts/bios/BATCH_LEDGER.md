@@ -26,11 +26,17 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 013 | `batch-013.mjs` | 42 | 28 | 28 | 98 | 2 → fixed | 1342 | The 16–18 band: cinema, savage, instagram, nature, photography, pets, startup, cricket, cars, wedding, monsoon, funny |
 | 014 | `batch-014.mjs` | 34 | 30 | 29 | 93 | 0 | 1435 | Depth phase begins: the seven highest-demand categories |
 | 015 | `batch-015.mjs` | 33 | 26 | 24 | 83 | 0 | 1518 | Depth continued + thin-category top-ups |
-| 016 | `batch-016.mjs` | 30 | 23 | 22 | 75 | 1 → fixed | 1593 | Depth on attitude, love, sad, shayari, life, quotes, motivational |
+| 016 | `batch-016.mjs` | 30 | 23 | 21 | 74 | 1 → fixed | 1592 | Depth on attitude, love, sad, shayari, life, quotes, motivational |
 
-**Verified so far: 1,593 / 50,000 (3.2%)**
+**Verified so far: 1,592 / 50,000 (3.2%)**
 Remaining: 48,408 (EN 19,357 · HI 14,512 · HG 14,539)
 Split check: EN 3.22% · HI 3.25% · HG 3.07% of their targets.
+
+*Correction:* row 016 was first written as 75 records (22 HG). The builder report
+says 74 (21 HG) — the discrepancy was an arithmetic error in my own ledger line,
+not a data problem. `records.json` holds exactly 1,592 records and the per-language
+totals match the builder. Corrected here rather than left to drift; every row in
+this file is checked against `src/data/bios/report.json`.
 Categories populated: **46 / 46**
 
 ## Next batch
