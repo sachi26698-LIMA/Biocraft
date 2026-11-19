@@ -13,6 +13,9 @@ const HeadlineGenerator = lazy(() => import('./linkedin/HeadlineGenerator'));
 const SummaryGenerator = lazy(() => import('./linkedin/SummaryGenerator'));
 const WhatsappStatusTool = lazy(() => import('./whatsapp-status/WhatsappStatusTool'));
 const SnapchatCaptionTool = lazy(() => import('./snapchat-caption/SnapchatCaptionTool'));
+const PaletteGenerator = lazy(() => import('./palette/PaletteGenerator'));
+const IconFinder = lazy(() => import('./icons/IconFinder'));
+const TextToolkit = lazy(() => import('./text/TextToolkit'));
 
 export type ToolKey =
   | 'bio'
@@ -26,7 +29,10 @@ export type ToolKey =
   | 'hashtags'
   | 'captions'
   | 'linkedin-headline'
-  | 'linkedin-summary';
+  | 'linkedin-summary'
+  | 'palette'
+  | 'icons'
+  | 'text-toolkit';
 
 /** Homepage route — renders the Bio tool view inside the full homepage. */
 export const HOME_PATH = '/';
@@ -216,6 +222,48 @@ export const TOOLS: ToolMeta[] = [
     ogTitle: 'Snapchat Caption Generator — BioCraft',
     ogDescription: 'Streak, story & vibe captions — EN, Hindi & Hinglish, one-tap copy.',
     Component: SnapchatCaptionTool,
+  },
+  {
+    key: 'palette',
+    path: '/color-palette-generator',
+    tabLabel: 'Palettes',
+    heading: 'Colour Palette Generator',
+    subheading:
+      'Search 32,004 named colours, build harmonies, check WCAG contrast and export CSS or Tailwind — all in your browser.',
+    title: 'Colour Palette Generator — BioCraft Social Media Toolkit',
+    description:
+      'Colour palette generator with 32,004 MIT-licensed colour names, analogous/complementary/triadic/tetradic harmonies, HSL and OKLCH values, WCAG contrast ratios, tonal ramps and CSS or Tailwind export. Private, no sign-up.',
+    ogTitle: 'Colour Palette Generator — BioCraft',
+    ogDescription: '32,004 named colours, harmonies, WCAG contrast and CSS/Tailwind export.',
+    Component: PaletteGenerator,
+  },
+  {
+    key: 'icons',
+    path: '/icon-finder',
+    tabLabel: 'Icons',
+    heading: 'Icon Finder',
+    subheading:
+      'Search 3,472 CC0-licensed brand icons, copy the SVG markup or download a ready-to-use file.',
+    title: 'Icon Finder — 3,472 Brand Icons — BioCraft Social Media Toolkit',
+    description:
+      'Search 3,472 CC0-licensed brand icons from simple-icons. Copy SVG markup, download individual .svg files, filter to monochrome marks. Works offline, no sign-up.',
+    ogTitle: 'Icon Finder — BioCraft',
+    ogDescription: '3,472 CC0 brand icons — copy SVG or download, no sign-up.',
+    Component: IconFinder,
+  },
+  {
+    key: 'text-toolkit',
+    path: '/text-toolkit',
+    tabLabel: 'Text Toolkit',
+    heading: 'Text Toolkit',
+    subheading:
+      'Count words and characters, convert case, clean up lists and pull out emails, links, hashtags and numbers. Nothing leaves your browser.',
+    title: 'Text Toolkit — Word Count, Case Converter & Extractor — BioCraft',
+    description:
+      'Free text toolkit: live word and character count, reading time, UPPERCASE, Title Case, Sentence case, camel/Pascal/snake/kebab/CONSTANT case, URL slugs, line de-duplication and sorting, and extraction of emails, links, hashtags, @mentions and numbers. Runs entirely in your browser.',
+    ogTitle: 'Text Toolkit — BioCraft',
+    ogDescription: 'Word count, case conversion, list cleaning and text extraction — offline, private.',
+    Component: TextToolkit,
   },
 ];
 

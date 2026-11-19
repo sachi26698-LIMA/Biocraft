@@ -84,4 +84,19 @@ export const TOOL_THEMES: Record<ToolKey, ToolTheme> = {
     accent: '#12897C', accentHover: '#0C6A60', deep: '#0E5257',
     soft: 'rgba(18, 137, 124, 0.13)', line: 'rgba(18, 137, 124, 0.38)', glow: 'rgba(18, 137, 124, 0.4)',
   },
+  palette: {
+    tileFrom: '#FDE7F3', tileTo: '#E4CFFB',
+    accent: '#A03E8F', accentHover: '#85317A', deep: '#6B2A63',
+    soft: 'rgba(160, 62, 143, 0.12)', line: 'rgba(160, 62, 143, 0.38)', glow: 'rgba(160, 62, 143, 0.4)',
+  },
+  icons: {
+    tileFrom: '#E6EEF7', tileTo: '#C6D8EC',
+    accent: '#35719F', accentHover: '#2A5D85', deep: '#1E4A6B',
+    soft: 'rgba(53, 113, 159, 0.12)', line: 'rgba(53, 113, 159, 0.38)', glow: 'rgba(53, 113, 159, 0.4)',
+  },
+  'text-toolkit': {
+    tileFrom: '#E8F0E4', tileTo: '#CBE0C4',
+    accent: '#4A7C3F', accentHover: '#3C6733', deep: '#2F5228',
+    soft: 'rgba(74, 124, 63, 0.12)', line: 'rgba(74, 124, 63, 0.38)', glow: 'rgba(74, 124, 63, 0.4)',
+  },
 };

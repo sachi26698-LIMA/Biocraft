@@ -1,0 +1,630 @@
+# Bio Library — Batch Ledger
+
+Running, append-only record of every accepted batch. This file is the resumable
+state: if a session ends, the next one reads the last row and continues from the
+next batch number.
+
+**Target:** 50,000 — English 20,000 · Hindi 15,000 · Hinglish 15,000
+**Rule:** a row is written only after `node scripts/build-bio-library.mjs`
+reports the batch accepted. Counts are cumulative verified totals, never
+"planned" numbers.
+
+| Batch | File | EN | HI | HG | Total | Rejected | Cumulative | Notes |
+|---|---|---|---|---|---|---|---|---|
+| 001 | `batch-001.mjs` | 39 | 26 | 25 | 90 | 0 | 90 | Foundation: 12 categories, engine probe |
+| 002 | `batch-002.mjs` | 38 | 40 | 31 | 109 | 1 → fixed | 199 | Priority cats: attitude, royal, love, sad, alone, shayari, quotes |
+| 003 | `batch-003.mjs` | 47 | 34 | 32 | 113 | 1 → fixed | 312 | Life, friendship, motivation, aesthetic, professional, creator, student, fitness, travel, gaming, photography, music |
+| 004 | `batch-004.mjs` | 70 | 48 | 24 | 142 | 1 → fixed | 454 | **All 46 categories now populated** |
+| 005 | `batch-005.mjs` | 36 | 46 | 33 | 115 | 1 → fixed | 569 | Depth pass: attitude, love, shayari (2- and 4-line), quotes, sad, aesthetic, life |
+| 006 | `batch-006.mjs` | 50 | 50 | 50 | 150 | 3 → fixed | 719 | Thin-category pass: the 25 categories still at 4–6 records |
+| 007 | `batch-007.mjs` | 44 | 35 | 35 | 114 | 3 → fixed | 833 | Next band: royal, motivational, alone, friendship, professional, creator, student + middle sweep |
+| 008 | `batch-008.mjs` | 38 | 29 | 29 | 96 | 1 → fixed | 929 | The seven 7-record categories: family, minimal, fitness, travel, gaming, photography, music |
+| 009 | `batch-009.mjs` | 49 | 28 | 30 | 107 | 0 | 1036 | Whole 9–14 band lifted; first zero-rejection batch since 004. Library passes 1,000 |
+| 010 | `batch-010.mjs` | 52 | 12 | 11 | 75 | 2 → fixed | 1111 | English-weighted to correct split drift; 2 self-duplicates caught |
+| 011 | `batch-011.mjs` | 10 | 10 | 39 | 59 | 2 → fixed | 1170 | Hinglish-weighted to close the last split gap |
+| 012 | `batch-012.mjs` | 31 | 23 | 21 | 75 | 1 → fixed | 1245 | Thinnest categories at a proportional 40/30/30 mix |
+| 013 | `batch-013.mjs` | 42 | 28 | 27 | 97 | 2 → fixed | 1342 | The 16–18 band: cinema, savage, instagram, nature, photography, pets, startup, cricket, cars, wedding, monsoon, funny |
+| 014 | `batch-014.mjs` | 34 | 30 | 29 | 93 | 0 | 1435 | Depth phase begins: the seven highest-demand categories |
+| 015 | `batch-015.mjs` | 33 | 26 | 24 | 83 | 0 | 1518 | Depth continued + thin-category top-ups |
+| 016 | `batch-016.mjs` | 30 | 23 | 21 | 74 | 1 → fixed | 1592 | Depth on attitude, love, sad, shayari, life, quotes, motivational |
+| 017 | `batch-017.mjs` | 44 | 35 | 30 | 109 | 0 | 1701 | Depth continued; zero rejections |
+| 018 | `batch-018.mjs` | 39 | 33 | 29 | 101 | 0 | 1802 | Leaders + mid-field top-ups (food, tech, photography) |
+| 019 | `batch-019.mjs` | 15 | 14 | 34 | 63 | 0 | 1865 | Hinglish-weighted rebalance; zero rejections |
+| 020 | `batch-020.mjs` | 39 | 30 | 26 | 95 | 1 → fixed | 1960 | Proportional mix, depth in the leaders |
+| 021 | `batch-021.mjs` | 35 | 30 | 26 | 91 | 1 → fixed | 2051 | Leaders + student/cricket/nature top-ups; library passes 2,000 |
+| 022 | `batch-022.mjs` | 33 | 29 | 26 | 88 | 1 → fixed | 2139 | Leaders + music/yoga/minimal/tech top-ups |
+| 023 | `batch-023.mjs` | 32 | 24 | 47 | 103 | 3 → fixed | 2242 | Hinglish-leaning rebalance; duplicates replaced |
+| 024 | `batch-024.mjs` | 38 | 29 | 25 | 92 | 1 → fixed | 2334 | Proportional depth + fitness/food/cinema top-ups |
+| 025 | `batch-025.mjs` | 45 | 30 | 25 | 100 | 2 → fixed | 2434 | English-leaning rebalance; 100 seeds accepted exactly |
+| 026 | `batch-026.mjs` | 41 | 31 | 25 | 97 | 0 | 2531 | Proportional depth; zero rejections. English passes 1,000 |
+| 027 | `batch-027.mjs` | 31 | 24 | 45 | 100 | 3 → fixed | 2631 | Hinglish-leaning rebalance; 3 near-duplicates replaced |
+| 028 | `batch-028.mjs` | 49 | 33 | 27 | 109 | 2 → fixed | 2740 | English-leaning rebalance; one exact repeat caught |
+| 029 | `batch-029.mjs` | 40 | 31 | 25 | 96 | 2 → fixed | 2836 | Strict proportional mix; two vocabulary-gap fixes |
+| 030 | `batch-030.mjs` | 40 | 30 | 25 | 95 | 0 | 2931 | Strict proportional; zero rejections |
+| 031 | `batch-031.mjs` | 40 | 30 | 26 | 96 | 2 → fixed | 3027 | Strict proportional; library passes 3,000 |
+| 032 | `batch-032.mjs` | 42 | 31 | 26 | 99 | 0 | 3126 | Strict proportional; library passes 3,100 |
+| 033 | `batch-033.mjs` | 37 | 24 | 33 | 94 | 3 → fixed | 3220 | Hinglish-leaning; 2 exact repeats + 1 language |
+| 034 | `batch-034.mjs` | 41 | 29 | 29 | 99 | 1 → fixed | 3319 | 1 exact repeat + 1 unknown-category seed |
+| 035 | `batch-035.mjs` | 40 | 28 | 30 | 98 | 3 → fixed | 3417 | 1 exact, 1 near-duplicate, 1 language |
+| 036 | `batch-036.mjs` | 40 | 28 | 29 | 97 | 1 → fixed | 3514 | 1 exact repeat |
+| 037 | `batch-037.mjs` | 39 | 28 | 29 | 96 | 2 → fixed | 3610 | 2 exact repeats |
+| 038 | `batch-038.mjs` | 41 | 29 | 29 | 99 | 0 | 3709 | Strict proportional; zero rejections |
+| 039 | `batch-039.mjs` | 40 | 28 | 29 | 97 | 1 → fixed | 3806 | 1 language rejection |
+| 040 | `batch-040.mjs` | 40 | 28 | 29 | 97 | 1 → fixed | 3903 | 1 language rejection |
+| 041 | `batch-041.mjs` | 52 | 30 | 30 | 112 | 2 → fixed | 4015 | Wide category band; token-set + language |
+| 042 | `batch-042.mjs` | 14 | 55 | 52 | 121 | 1 → fixed | 4136 | Hindi/Hinglish leaning to correct EN lead |
+
+| 043 | `batch-043.mjs` | 105 | 29 | 41 | 175 | 1 → fixed | 4311 | Big English batch, topped up with Hinglish |
+
+| 044 | `batch-044.mjs` | 30 | 41 | 39 | 110 | 3 → fixed | 4421 | balance.mjs allocation; 1 exact, 1 near-dup, 1 language |
+
+| 045 | `batch-045.mjs` | 57 | 30 | 32 | 119 | 2 → fixed | 4540 | balance.mjs allocation; 1 near-dup, 1 language |
+
+| 046 | `batch-046.mjs` | 47 | 33 | 33 | 113 | 2 → fixed | 4653 | 1 exact, 1 language |
+
+| 047 | `batch-047.mjs` | 47 | 33 | 33 | 113 | 2 → fixed | 4766 | 1 exact, 1 token-set (nukta variant of a 029 line) |
+
+| 048 | `batch-048.mjs` | 47 | 33 | 32 | 112 | 2 → fixed | 4878 | 1 exact, 1 language |
+
+| 049 | `batch-049.mjs` | 35 | 37 | 37 | 109 | 7 → fixed | 4987 | 5 near-dups + 2 language; 15 surplus EN lines removed |
+
+| 050 | `batch-050.mjs` | 42 | 35 | 38 | 115 | 2 → fixed | 5102 | Library passes 5,000; new subject matter |
+
+| 051 | `batch-051.mjs` | 45 | 37 | 32 | 114 | 0 | 5216 | New subject matter; zero rejections |
+
+| 052 | `batch-052.mjs` | 44 | 35 | 34 | 113 | 1 → fixed | 5329 | New subject matter; 1 language |
+
+| 053 | `batch-053.mjs` | 46 | 30 | 35 | 111 | 2 → fixed | 5440 | 2 language |
+
+| 054 | `batch-054.mjs` | 45 | 31 | 33 | 109 | 1 → fixed | 5549 | 1 language |
+
+| 055 | `batch-055.mjs` | 43 | 33 | 34 | 110 | 1 → fixed | 5659 | 1 near-dup; gate hardened against foreign Indic scripts |
+
+| 056 | `batch-056.mjs` | 43 | 33 | 33 | 109 | 2 → fixed | 5768 | 2 near-dup |
+
+| 057 | `batch-057.mjs` | 45 | 34 | 34 | 113 | 2 → rewrote both | 5881 | 2 near-dup |
+
+| 058 | `batch-058.mjs` | 46 | 34 | 32 | 112 | 1 → fixed | 5993 | 1 near-dup |
+
+| 059 | `batch-059.mjs` | 44 | 34 | 32 | 110 | 2 language + 2 token-set → all fixed | 6103 | 4 |
+
+| 060 | `batch-060.mjs` | 44 | 33 | 33 | 110 | 2 language + 2 exact → all fixed | 6213 | 4 |
+
+| 061 | `batch-061.mjs` | 44 | 34 | 33 | 111 | 0 | 6324 | none — first build clean |
+
+| 062 | `batch-062.mjs` | 45 | 35 | 33 | 113 | 2 | 6437 | 1 language + 1 near-dup, both fixed |
+
+| 063 | `batch-063.mjs` | 45 | 33 | 33 | 111 | 0 | 6548 | none — landed exactly on allocation |
+
+| 064 | `batch-064.mjs` | 44 | 32 | 34 | 110 | 0 | 6658 | none — landed exactly on allocation |
+
+| 065 | `batch-065.mjs` | 44 | 34 | 34 | 112 | 2 | 6770 | 2 token-set, both rewritten |
+
+| 066 | `batch-066.mjs` | 45 | 33 | 33 | 111 | 9 | 6881 | 3 language + 6 exact; 6 were self-inflicted repeats |
+
+| 067 | `batch-067.mjs` | 45 | 32 | 33 | 110 | 0 | 6991 | none — precheck predicted clean |
+
+| 068 | `batch-068.mjs` | 44 | 33 | 33 | 110 | 0 | 7101 | none — precheck predicted clean |
+
+| 069 | `batch-069.mjs` | 44 | 33 | 33 | 110 | 1 | 7211 | 1 gate failure, caught by precheck before the build |
+
+| 070 | `batch-070.mjs` | 44 | 33 | 33 | 110 | 0 | 7321 | 0 at build time; 1 gate failure caught by precheck first |
+
+| 071 | `batch-071.mjs` | 44 | 33 | 33 | 110 | 0 at build time (3 near-dups caught by upgraded precheck) | 7431 | 3 near-dup, all rewritten pre-build |
+
+| 072 | `batch-072.mjs` | 44 | 33 | 33 | 110 | 0 at build time (12 caught by precheck) | 7541 | 3 gate, 9 dedup, all fixed pre-build |
+
+| 073 | `batch-073.mjs` | 44 | 33 | 33 | 110 | 0 at build time (13 caught by precheck) | 7651 | 1 gate, 4 exact, 8 dedup, all fixed pre-build |
+
+| 074 | `batch-074.mjs` | 44 | 33 | 33 | 110 | 0 | 7761 | 0 — clean on second precheck pass |
+| 075 | `batch-075.mjs` | 44 | 33 | 33 | 110 | 0 | 7871 | 0 — 1 gate hole found and closed |
+| 076 | `batch-076.mjs` | 44 | 33 | 33 | 110 | 0 | 7981 | 0 — 1 couplet gate fix, counts trimmed |
+| 077 | `batch-077.mjs` | 44 | 33 | 33 | 110 | 0 | 8091 | 0 — 1 couplet gate fix |
+| 078 | `batch-078.mjs` | 44 | 33 | 33 | 110 | 0 | 8201 | 0 — counts only, no gate or dedup failure |
+| 079 | `batch-079.mjs` | 44 | 33 | 33 | 110 | 0 | 8311 | 0 — counts only, trimmed twice |
+| 080 | `batch-080.mjs` | 44 | 33 | 33 | 110 | 0 | 8421 | 0 — counts only, 2 self-typos caught pre-build |
+
+**Verified so far: 8,421 / 50,000 (16.8%)**
+Remaining: 41,579 (EN 16,631 · HI 12,474 · HG 12,474)
+Split check: EN 16.84% · HI 16.84% · HG 16.84% of their targets — spread 0.00.
+
+*** Audited against the data, not against memory (important) ***
+
+Rows 006, 007, 010, 012, 013 and 016 were originally written from my own arithmetic
+rather than copied from the builder output, and five of them were wrong. The worst
+was row 012: recorded as 102 records (41/31/30) when the batch actually accepted
+75 (31/23/21) — an overstatement of 27.
+
+**The data was never affected.** Every batch was accepted only after the builder
+reported `rejected: 0`, and `records.json` holds exactly 1,592 unique verified
+records that pass all six dedup layers, the language gate and the stray-script
+scan. What was wrong was the *accounting*: the ledger's columns summed to 1,623
+against 1,592 real records, and two totals I reported in chat were therefore
+incorrect — batch 006 was reported as 716 (actual 719) and batch 012 as 1,272
+(actual 1,245).
+
+This is precisely the failure mode the brief forbids — claiming a count that was
+not verified — so it is recorded here rather than quietly fixed. Two changes
+prevent a repeat:
+
+1. `tests/bio-ledger.mjs` re-derives each batch's EN/HI/HG counts by replaying the
+   content files through `BioDeduplicator.consider()` and fails if any ledger row
+   disagrees with the data, or if the columns do not sum to `records.json`.
+2. Rows are now copied from `scripts/bios/verify-batches.mjs` output, never
+   computed by hand.
+Categories populated: **46 / 46**
+
+## Next batch
+
+### Scope 071–080 closed
+
+Ten batches, 1,100 records, every one accepted on its first build. 071 through
+080 held the spread at 0.01 of a percentage point or better for the whole range,
+and both the en and hi targets moved from 14.87% to 16.84% of their goals.
+
+Zero records were rejected at build time in this range, and that is not luck —
+the precheck added in 071 (full cross-file deduper replay) caught 46 collisions
+across 071–073 before they ever reached the builder, which is exactly what it was
+written for. The gate failures that did occur were all in Hinglish couplets and
+phrase-fragments, never in prose; the two shapes to watch are a bare noun list
+with no finite verb and a line whose only Hindi words are outside the marker set.
+
+Two real defects were found and fixed inside this range rather than papered over:
+the language gate accepted one Devanagari word inside a Roman-script record
+(075, closed by rejecting any Devanagari at all in en/hg, checked against all
+existing records first), and the admin dashboard test waited a fixed 600 ms for
+an 8,000-digest async scan while its own guard could not match a comma-formatted
+count (079, replaced with polling plus a hard timeout).
+
+Subjects retired for future batches — do not re-mine: knife sharpener, school
+bag on credit, father reading with a finger under each line, rooftop water drum,
+hand-written wedding invitation, bangle seller on a train, father's first bank
+account, photocopy shop outside school, stolen shoes at a temple, shuttered
+cinema hall, tailor's trial date, last metre of a bus, unopened wedding album,
+night guard's register, grandmother naming pigeons, barber's queue, father's
+cycle repair shop, exam-hall seating, borrowed umbrella, conductor's punch,
+milkman's bell, father teaching driving, lost ration card, wedding guest list,
+calculator with a dead key, railway porters, kite string on a terrace, mother's
+stitching money, hospital token window, ceiling leak, scooter on the fourth kick,
+school gate at 7:45, father's pension file, cycle bell taken on day one, tiffin
+box swap, landlord's paint-then-rent.
+
+(previous) Batch 079 — split 16.63 / 16.62 / 16.62, spread 0.01. Second batch running
+with no gate or dedup finding at all: the draft was one English line over and a
+trifle short in both other languages, and it took two rounds of arithmetic to
+land on 44/33/33 exactly, but nothing was rejected. Subjects: kite string cut
+over a terrace, a mother's stitching money kept in a tin, the hospital token
+window at six, a ceiling that leaks in one spot for four years, and a scooter
+that starts on the fourth kick.
+
+(previous) Batch 078 — split 16.41 / 16.40 / 16.40, spread 0.00. Cleanest first draft
+since 074: the only finding was the usual two-line English surplus, and the file
+passed internal repeats, gate and full cross-file dedup on the first try. Subjects:
+the milkman's cycle bell before dawn, a father teaching left-hand driving in an
+empty lot, a ration card lost in a flood, a notebook holding a wedding guest
+list, a shopkeeper's calculator with one dead key, and two porters shouting the
+same number across a platform.
+
+(previous) Batch 077 — split 16.18 / 16.18 / 16.18, spread 0.00. Same couplet problem in
+a different place: 'Ek chhatri, ek thaila, ek bus pass. Poora barsaati saaman
+itna hi.' read as a list of nouns with no verb, so the vocabulary test found
+nothing Roman-Hindi in it. Rewritten to end '... Bas itna hi saaman chahiye.'
+Two long English lines were traded for the pair. Pattern worth keeping in mind:
+bare noun lists in Hinglish fail the gate even when every word is correct Hindi
+vocabulary. Subjects: a barber's queue counted in heads, a father's cycle
+repair shop lost to a widened road, exam-hall seating lists, a borrowed umbrella,
+and a conductor's hole punch.
+
+(previous) Batch 076 — split 15.96 / 15.96 / 15.96, spread 0.00. One Hinglish couplet
+failed on the new stricter vocabulary test ('Bus ruki, darwaaza khula...' had no
+Roman-Hindi marker in the old spelling set) and was rewritten to 'Bus ruki thi,
+darwaaza khula tha...'. The file then landed two long and was trimmed. Subjects:
+the tailor's trial date, the last metre of a crowded bus where you stand, a
+wedding album nobody opens, a night guard's hourly register, a grandmother who
+names the pigeons, and a landlord's letter that never arrived.
+
+(previous) Batch 075 — split 15.75 / 15.74 / 15.74, spread 0.01. This batch found a
+real hole in the language gate, the same shape as the 055 Gurmukhi glyph but
+worse: a Hinglish line shipped with one Devanagari word in it ('... chal सीं.')
+and `validateLanguage` passed it, because the Devanagari test only fired when
+Devanagari was more than 20% of the letters. The hole is now closed — any
+Devanagari at all in an `en` or `hg` record is rejected. Checked against every
+stored record first: 0 of 3,149 en and 0 of 2,361 hg records contain Devanagari,
+so tightening the gate invalidated nothing. Three assertions were added to
+tests/bio-language-gate.mjs (now 40). Subjects: a bangle seller on a train, a
+father's first bank account at sixty, the photocopy shop outside school, a pair
+of shoes taken from outside a temple, and a shuttered cinema hall.
+
+(previous) Batch 074 — split 15.53 / 15.52 / 15.52, spread 0.01. 074 drew on the knife
+sharpener who cycles through the lane, a school bag bought on credit, a father
+who reads slowly with his finger under each line, the rooftop water drum, and a
+hand-written wedding invitation. No rejections and no dedup collisions; the only
+thing the precheck had to say was that the draft was six English lines heavy,
+which is the normal shape of a first draft.
+
+(previous) 073 drew on a book binder
+rebinding a school register, a father's cycle shop closing when the road was
+widened, a lost admit card found in a rickshaw, the last bus of the night, and a
+deposit returned eight months late.
+
+**New tool: `scripts/bios/dedupe-file.mjs`.** Three batches in a row (066, 072,
+073) burned rounds on lines I pasted twice into the same file. That is a
+mechanical problem deserving a mechanical fix: the tool keeps the first
+occurrence of each text, drops later copies, and prints the resulting per-
+language counts so the next top-up is arithmetic instead of guesswork.
+
+(previous) 072 drew on a plumber's
+apprentice who holds the torch for two years, a water connection that follows
+the file, a father's first smartphone hidden in a drawer, and a bank passbook
+with one entry.
+
+**The precheck earned its cost twelve times over.** This batch needed three
+rounds, and every problem was caught before a build: 3 Hinglish gate failures
+(short lines where `pakdi`/`pankti` are not markers — fixed with `thi` and `hi`),
+4 exact repeats I had re-added to the file, and 6 cross-file dedup collisions on
+the wobbling-desk subject, which I resolved by dropping the subject rather than
+rewording it. Final build: 0 rejections.
+
+(previous) 071 drew on the umbrella
+repair man before the rain, a father's pension file in four folders with one
+missing signature, a phone stolen on a crowded bus, the tailor's daughter
+sitting her board exam at the shop counter, and an office water cooler.
+
+**Precheck upgraded.** 071 exposed a real blind spot: the precheck checked
+language, length, categories and repeats *within* a file, but never ran the
+deduper *across* files. A batch could be perfectly balanced and still repeat an
+idea from batch 012. The precheck now replays every batch from 001 in order
+through `BioDeduplicator` and fails on any seed in the current batch that does
+not survive. It reproduced all three of 071's near-duplicates before the build,
+which is why 071's build reported 0.
+
+(previous) 070 drew on the grain shop
+scale, a mother's first day at a job at forty-four, a stolen bicycle bell, the
+bank queue at ten, a landline that only rings, and the last day of a rented
+house. The precheck caught another gate failure before the build
+('Taraazu ek baar dekho, dukaandaar har baar dekhega.' — one marker, needed two;
+fixed with 'khud'), so the build rejected nothing.
+
+**END OF THE 061–070 SCOPE.** Ten consecutive batches, all verified, ledgered,
+tested and pushed. 6,324 → 7,321 verified, 997 records added, 46/46 categories
+held throughout. Build-time rejections in the range: 14 — 066 alone accounted for 9, six of which
+were lines I had re-added to the file. From 067 onward the precheck tool ran
+first and only 1 rejection reached a build (069); 067, 068 and 070 built clean
+on the first attempt.
+
+Column note: rows 061–070 were first written with totals in the Rejected column
+and counts in Notes. They have been rewritten to match the header
+(Batch | File | EN | HI | HG | Total | Rejected | Cumulative | Notes).
+
+(previous) 069 drew on a carpenter who
+measures twice, a father's first flight at sixty-two where he gave the window
+seat away, a wedding under a tent that leaked, a duplicate key that did not fit,
+and a grandmother's trunk opened after she died.
+
+First time the precheck earned its place outright: it flagged a Hinglish shayari
+line as failing the gate ('Sandook khula, baarish band nahi hui.'), which the
+build would otherwise have rejected. Fixed with 'par' before building, so the
+build finished with 0 rejections.
+
+(previous) 068 drew on a ration shop
+shutter that opens at four, a father who stopped hearing the birds before he
+told anyone, the school gate at 7:40, a wedding band hired by the hour and a
+scooter older than the marriage. Zero rejections; the second batch where the
+precheck predicted clean and the build agreed.
+
+(previous) 067 drew on the cobbler
+under a tree, a brother who left for the Gulf at nine and returned a stranger,
+examination answer sheets stolen from a centre, a ceiling that leaks every July,
+and a bus stop with no roof. Zero rejections.
+
+**New tool: `scripts/bios/precheck-batch.mjs`.** Added because 060 and 066 both
+burned a build on lines re-added to a file they were already in. The precheck
+checks, before the expensive build: exact repeats inside the file, per-language
+counts against the allocation, unknown categories, length limits, and the
+language gate applied to every seed as written. It predicted 067 clean and the
+build agreed — 0 rejections on the first try.
+
+(previous) 066 drew on the fruit cart
+at closing time, a father who signs with a thumb after thirty years of running a
+shop, a fan that grinds all night, a lost school certificate, a cousin's
+engagement and the electricity meter reader. Nine rejections, all fixed — the
+highest count in the run so far, and all nine were self-inflicted: three Hinglish
+lines built out of non-markers, and six lines I re-added that were already in the
+same file.
+
+Rule added: after writing a Hindi/Hinglish top-up block, check the new lines
+against the rest of the file for exact repeats BEFORE building. The exact layer
+catches them, but each build with repeats spends a cycle and inflates the
+rejection log.
+
+(previous) 065 drew on the key maker
+under the stairs, a father who could not swim and stood at the edge of every
+pool, a scooter that will not start in winter, a school farewell nobody kept up,
+and credit at the chemist running eleven months. Both rejections were Hindi and
+Hinglish halves of one line that mirrored the English one; rewritten with a
+different image rather than reworded.
+
+Tally: 6,658 + 112 = 6,770, which matches the row. The batch landed one over
+allocation in each of HI and HG (34/34 against 33/33); the split is what matters
+and it is 0.01 apart.
+
+(previous) 064 drew on the man who
+irons shirts on a pavement, a cycle stolen the week its last instalment was
+paid, a chit fund that ended an eleven-year friendship over four thousand
+rupees, an exam clock four minutes fast, and a balcony that faces a wall. Zero
+rejections on the first build, and the draft landed on the allocation exactly.
+
+(previous) 063 drew on the licence
+office queue, a tailor's measure book with a dead man's numbers still in it, the
+school bus driver, a photograph of a demolished house and the first night in a
+hostel. Zero rejections on the first build.
+
+(previous) 062 drew on the cycle
+puncture shop, a father's transfer order, the neighbourhood loudspeaker, a first
+day at a new school and a grandmother's recipe nobody wrote down. Two fixed: a
+Hinglish line with no markers (`samasya` is not one; `dikkat ... ho jaati hai`
+is), and a Hindi line that mirrored its English sibling word for word.
+
+(previous) 061 drew on the barber
+who remembers your father, the four a.m. water tanker, a lost wedding
+invitation, the night train corridor and a stopped watch still worn. Zero
+rejections on the first build.
+
+(previous) 060 drew on brass utensils
+and the hands that polish them, the ration-card queue, a pension office, a
+wedding tent blocking the lane and a bicycle learned at forty. Four rejections:
+two Hinglish lines with no markers ('Peetal chamka, haath kaala reh gaya.' and a
+telegraphic 'Form ghar le jao...' — fixed with 'par' and 'phir'), and two lines
+I re-added that were already in the same file, caught by the exact-repeat layer.
+
+**END OF THE 040–060 SCOPE.** 21 consecutive batches, 040–060, all verified,
+ledgered, tested and pushed. 040 opened at 3,806 verified; the range added 2,407
+records to reach 6,213. Rejections logged across the range: 39, and every one
+was fixed before acceptance, so no accepted record was weakened.
+
+Rejections were NOT zero in every batch — 041, 042, 049, 052, 053, 054, 055,
+056, 057, 058, 059 and 060 each logged one or more. What is true, and checked
+after every build in the range, is that the final build of each batch finished
+with 0 remaining rejections and all four test suites passing.
+
+(previous) 059 drew on gold
+pledged at a bank, the night watchman who knew my hours better than my family
+did, a wedding gift that came back at another wedding, and learning to drive at
+forty. Four rejections, all fixed: two Hinglish lines whose only Hindi was
+`Tumne` and `pitaji`, which are not markers, and two Hindi lines that re-used
+their own English sibling's words in a different order (token-set layer).
+
+(previous) 058 drew on a
+plumber who quotes before he cuts, the school reunion, a borrowed scooter,
+farm debt against a late harvest, and learning a language from the alphabet at
+thirty. One English near-duplicate fixed.
+
+(previous) 057 drew on
+splitting a wedding hall bill, saying no to relatives, the milkman, the night
+bus home and a friend's divorce. The two rejections were the Hindi and Hinglish
+halves of one line, read as duplicates of each other — the same trap as 056.
+Both were rewritten, and the Hinglish count came out two over allocation.
+
+(previous) 056 drew on a
+tailor's bill, the bus conductor, a rented shop, the neighbour's loud TV and
+negotiating a first salary. Both rejections were the same line in Hindi and
+Hinglish form, which the trigram layer read as its own duplicate.
+
+Reminder from 055, still the sharpest lesson so far: batch 055 tripped a real
+gap in the gate: a Hindi line had one Gurmukhi word (`ਨਹੀਂ` for `नहीं`), which
+`validateLanguage` accepted because Devanagari still dominated the line. Only
+the test suite caught it, and only after acceptance. `validateLanguage` now
+rejects any foreign Indic block outright, and the language-gate test grew from
+31 to 37 assertions, verified to fail when the guard is removed.
+
+(previous) 054 split 11.10 / 11.09 / 11.11, spread 0.02.
+
+(previous note) 054 split 10.88 / 10.88 / 10.89, spread 0.01. 053 used another
+fresh set (night shifts, the tailor, hospital bills, house hunting,
+apologising to a child, the January gym). Both its rejections were Hinglish
+lines whose English halves carried the sentence — 'dhang' fixed both.
+Rule of thumb now confirmed across 050-053: two Hinglish markers per line,
+placed in the clauses that carry the meaning.
+
+(previous note) 050 reached 5,102 verified, spread 0.01.
+The topic-variety rule from 049 worked: 050 drew on new material (asking
+directions, hospital waiting rooms, ageing parents, moving house, learning to
+drive late) and produced 1 rejection instead of 7, even at 116 seeds.
+The library is at 10.2% of its 50,000 target, evenly spread across the three
+languages.
+
+049 was the weakest batch of this stretch: 7 rejections, five of them
+near-duplicates recycling 035/036 subject matter. Lesson logged: vary the
+*topic*, not the wording.
+
+**Topic-fatigue rule (from batch 049).** My failures cluster when I keep mining
+the same few themes — rest vs burnout, full calendar vs full life, waiting
+without waiting. Those ideas are now used up in all three languages. Before
+writing a batch, pick subject matter not already covered; rewording a used idea
+only produces near-duplicates.
+
+**Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
+near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
+is the brief's "lightly modified bios" failure mode, and it is happening at about
+3-in-100 seeds. Two lessons: at 2,600 records the corpus is dense enough that
+paraphrase is detectable, and the fix is to write a genuinely different thought
+rather than swap adjectives.
+
+**Phase change recorded.** Batches 001–013 were a breadth phase: the job was to
+get all 46 categories populated and roughly even, which is now done. From 014
+onward every batch is depth in the categories people actually browse. This
+matters for the remaining-work estimate: depth batches are the same size but
+they improve the product, whereas breadth batches mostly improved coverage.
+
+**Throughput and honesty.** Seventeen batches have produced 1,701 records, an
+average of exactly 100 per batch. At this editorial standard — every line
+original, every line read back, every rejection reviewed — a batch is worth
+60–150 records. Reaching 50,000 therefore needs on the order of 350 further
+batches at the same size. That number is stated plainly rather than softened: the
+pipeline, UI, dashboard and validation are finished, the remaining work is
+writing, and writing does not accelerate by loosening checks. The batch size was
+reviewed with the project owner at batch 017 and deliberately kept at ~100.
+
+**Balance note.** The target is not simply 50,000 records, it is 20/15/15. A
+library that reaches 50,000 with the wrong language split has failed the brief
+even though the total looks right, so every batch from here reports the split as
+a percentage of each target rather than just a raw count. Batch 010 moved English
+from 2.05% to 2.31% of its target and the three are now close enough that a few
+Hinglish-heavy batches will level them.
+
+**Scale honestly assessed.** Eight batches have produced 929 records in this
+voice. Reaching 50,000 at this editorial standard needs roughly 400 more
+batches of this size; there is no shortcut that survives the duplicate engine,
+the language gate and the 160-character limit. The ledger is append-only so the
+work is resumable at any point, but the completion claim will not be made early.
+
+**Marker-list discipline (new, from batch 007).** The Hinglish marker list was
+extended twice in batches 005 and 007, each time because a genuinely Hinglish
+line was falsely refused. Every extension risks letting plain English through as
+Hinglish, which would silently inflate the HG count. `tests/bio-language-gate.mjs`
+now pins the list from both sides: 8 plain-English sentences must still fail as
+Hinglish, 7 real Hinglish sentences must still pass, and all stored records are
+re-validated against the gate. Run it before any marker edit. Keep the shayari two-line/four-line split going: it
+is the only place where the Hindi library can outrun a literal reading of the
+target without inventing content.
+
+Note on the shayari four-line rows: they contain literal `\n` line breaks, which
+the fingerprint strips before comparison. This is intentional — line breaks are
+typography, not content, so a four-line verse cannot be smuggled in as "new"
+content by re-wrapping it.
+
+## Rejection log
+
+Rejections are preserved per run in `src/data/bios/report.json` under
+`rejected`, keyed by layer. A batch is only committed when its rejection count
+is zero or every rejection has been reviewed and either fixed or consciously
+left in the report as a documented exclusion.
+
+- Batch 002: one Hinglish four-line shayari at 162 chars exceeded the 160-char
+  ceiling. Rejected by the `too-long` layer; the line was tightened editorially
+  to 140 chars and re-accepted rather than the limit being raised.
+- Batch 003: `"Aim average, bakwaas top class."` was refused as "reads as
+  English" — correctly, since 5 tokens with 1 Hindi word is mostly English. The
+  line was rewritten to `"Aim average hai, par bakwaas top class."` rather than
+  weakening the validator. This is the intended behaviour: the gate catches
+  under-Hinglish text that a human might let slide.
+- Batch 004: `"Gully cricket ka Sachin, ground pe aam insaan."` refused the same
+  way; rewritten to `"...Sachin tha, ground pe aam insaan hoon."` so the
+  sentence carries real Roman-Hindi grammar.
+
+- Batch 005: `"Achhi aadatein pehle mahine bewakoofi lagti hain."` was refused
+  as "reads as English". This one was a genuine **validator gap**, not a bad
+  sentence: the line is real Hinglish, but the marker list only held
+  high-salience slang, so ordinary grammar words (`aadatein`, `mahine`, `pehle`,
+  `bewakoofi`, `rahti`) did not count. The marker list was extended with those
+  everyday words and the line was then accepted unchanged — the *sentence* was
+  not edited to satisfy the gate. Worth being precise about the difference:
+  batches 003 and 004 were wrong content, batch 005 was incomplete vocabulary.
+
+- Batch 006: three rejections, and two of them were **my own sloppiness, caught
+  by the engine**. `"I do not audition for people who already decided."` and
+  `"Professional overthinker. Amateur everything else."` were word-for-word
+  repeats of batch 004 lines. Both were deleted and replaced with genuinely new
+  sentences — not reworded, since rewording a repeat is exactly the
+  "lightly modified bio" the brief forbids. The third was `"Puraani bike, naye
+  raaste..."`, refused as English because `puraani` is not in the marker list;
+  the sentence was rewritten to lead with `Bike` so the Roman-Hindi is
+  unmistakable, rather than the marker list being patched for one word.
+
+- Batch 007: three more vocabulary-gap refusals (`padhai`, `neend adhoori`,
+  `samjhaya`, `shukraguzaar`, `maangna`). All three sentences were correct
+  Hinglish, so the marker list was extended and the records were accepted
+  **verbatim** — nothing was rewritten to dodge the gate. This is now the
+  dominant rejection class, which is the right outcome: the gate is finding
+  vocabulary it cannot see rather than content that is wrong.
+
+- Batch 008: one more vocabulary gap (`saade`, `raay`, `pakki`, `yehi`,
+  `saleeka`). Marker list extended a third time; sentence accepted verbatim;
+  `test:bio-language-gate` re-run and still green in both directions.
+
+- Batch 009: zero rejections — the first clean batch since 004. This is expected
+  rather than lucky: the marker list now covers the vocabulary this voice
+  actually uses, so fewer correct lines are refused. The gate was re-run against
+  its plain-English probes after the third extension and still rejects them, so
+  the zero is not the result of a loosened gate.
+
+- Batch 010: two **exact duplicates of earlier batches** again
+  (`"I would rather be underestimated than explained."` and `"Manners cost
+  nothing and separate everything."`). Both replaced with genuinely new lines.
+  This is the second time the engine has caught my own repeats, and it confirms
+  the earlier finding: past a few hundred records, exact-match detection is doing
+  real editorial work that memory cannot.
+
+- Batch 011: one vocabulary gap (`aasaan`, `mushkil`, `likhna`, `samajhna`) —
+  markers extended, sentence kept — and one exact duplicate of an earlier line
+  (`"Rest is part of the work, not a break from it."`), replaced with new content.
+
+**Author-error class worth recording.** Batch 011 also contained three errors the
+validators did *not* catch, which I found by reading the file back: a Bengali
+glyph (`আরাম`) inside a Hindi subcategory, an autocorrect slip that turned a line
+into `"...purani galtiyan blouse nahi."`, and a broken verb (`ghar nahi chuntiyan`).
+All three were fixed before the batch was accepted. The lesson is that the
+language gate checks *script and vocabulary*, not *sense*: a Devanagari string
+with one Bengali word still passes a script test. Read every line back before
+committing a batch — automated checks are necessary, not sufficient.
+
+- Batch 012: one vocabulary gap (`khaali`, `bhare`, `vichaar`, `kaafi`) —
+  markers extended, sentence kept.
+
+- Batch 013: two vocabulary gaps (`mizaaj`, `asli`, `haal`, `chhoti`, `lamba`,
+  `sacchi`). Markers extended, both sentences kept verbatim.
+
+- Batch 014: zero rejections.
+
+- Batch 015: zero validator rejections, but one **corrupted tag** the validators
+  do not cover: an Arabic character had slipped into a Devanagari tag
+  (`मुस्कुरاना` instead of `मुस्कुराना`). The bio text was clean, so the language
+  gate passed it, but the tag renders in the UI's filter chips. Fixed, and
+  `test:bio-language-gate` now scans **text, category, subcategory, tone and
+  tags** for 16 stray scripts instead of the bio text alone.
+
+- Batch 016: one Hinglish line refused twice in a row while I tried to fix it.
+  The first attempt kept a marginal inflection (`rakhin`) that the marker list
+  does not cover; the second kept `sambhaali`, also uncovered. Rather than adding
+  two rare words to the list, the sentence was rewritten in core vocabulary
+  (`Tasveerein maine hi rakhi hain, aaj tak ghar mein.`). This is the right call:
+  the marker list should describe how Hinglish is normally written, not be grown
+  to accommodate one awkward sentence. Extending it for rare inflections would
+  erode the gate's precision over time.
+
+**Pattern worth noting:** the engine has now caught 19 rejections across 16
+batches
+— 3 Hinglish edges (003, 004, 006), 2 exact duplicates of earlier batches (006),
+1 vocabulary gap (005), 1 over-length line (002). The duplicate catches are the
+most useful signal in the whole ledger: at 716 records a human cannot hold the
+corpus in their head, so the exact-match layer is doing real editorial work. Every one was a sentence that *felt* Hinglish but was structurally
+English with one borrowed word. Fixing the sentence rather than the gate is
+what keeps the language claim honest — and it is the reason the counts can be
+trusted.
+
+**Commit-message discipline (from batch 029).** Commit 5b1683e claimed I had
+"removed a line that would have been a near-repeat before it reached the build".
+I had not — batch 029 was 96 seeds and 96 accepted, which makes the removal
+impossible. That sentence was invented while writing the message, not describing
+work I did. The data and the ledger row were correct; the prose was false.
+
+Retracted in commit dce3d7d rather than amended away, so the record shows both the
+error and the correction. Rule going forward: every commit message claim must trace
+to a command I actually ran in that turn. If I cannot point at the tool output, I do
+not write the claim.
+
+**Deduper fact worth remembering (found in batch 041).** The token-set layer
+strips Devanagari dependent vowel signs before comparing, so a line saying
+"padhna mushkil nahi" and one saying "padhne mein mushkil nahi" reduce to the
+same key: `ए क न नह पढ बस म ल श सबक ह`. Two Hindi lines differing only in
+inflection or in a postposition therefore collide as "same words in a different
+order". That is correct for catching reordered copies, but it means a Hindi
+rewrite must change its content words, not its grammar. I first described this
+rejection as a collision with an English line; that was wrong and unchecked. The
+actual collision was with a Hindi line in batch 017.
+
+**Explanations count as claims (added after batch 041).** A commit message that
+explains *why* something was rejected makes a factual claim just as much as a
+count does. Guessing which line a rejection collided with is the same error as
+inventing a number. Check the collision with `tokenKey` before writing about it.
+

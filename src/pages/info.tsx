@@ -104,7 +104,7 @@ export const INFO_PAGES: InfoPageMeta[] = [
         heading: 'BioCraft — $0 · Always',
         body: (
           <ul>
-            <li>All twelve generators, all eight platform workspaces, unlimited runs</li>
+            <li>Every generator in the toolkit, all eight platform workspaces, unlimited runs</li>
             <li>English, Hindi and Hinglish output where supported</li>
             <li>No account, no email, no credit card, no trial that expires</li>
             <li>No ads, no analytics, no upsells, no “Pro” tier hiding behind this page</li>

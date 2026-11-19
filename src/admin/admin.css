@@ -3287,5 +3287,59 @@ html, body {
   }
 }
 
+/* ------------------------------------------- premium bio library dashboard */
+
+.ad-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 0.6rem;
+  margin: 0 0 0.75rem;
+}
+
+.ad-stat-grid div {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--ad-line, rgba(255, 255, 255, 0.12));
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ad-stat-grid dt {
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.ad-stat-grid dd {
+  margin: 0.2rem 0 0;
+  font-size: 1.12rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ad-note {
+  margin: 0.6rem 0 0;
+  padding: 0.55rem 0.7rem;
+  border-left: 3px solid var(--ad-accent, #8B4BC0);
+  background: rgba(139, 75, 192, 0.1);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.ad-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.ad-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
 /* Source labels, notes and licence IDs are user text, not layout constraints. */
 .ad-catalog-draft { min-width: 0; overflow-wrap: anywhere; }

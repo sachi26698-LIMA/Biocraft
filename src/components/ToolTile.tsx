@@ -15,6 +15,9 @@ import {
   WhatsAppIcon,
   SnapchatIcon,
   GemIcon,
+  PaletteIcon,
+  ShapesIcon,
+  ListIcon,
 } from './icons';
 import { TOOLS, type ToolKey } from '../tools/registry';
 import { TOOL_THEMES } from '../lib/toolThemes';
@@ -34,6 +37,9 @@ const TOOL_ICONS: Record<ToolKey, (props: { size?: number }) => JSX.Element> = {
   'linkedin-summary': GridIcon,
   'whatsapp-status': WhatsAppIcon,
   'snapchat-caption': SnapchatIcon,
+  palette: PaletteIcon,
+  icons: ShapesIcon,
+  'text-toolkit': ListIcon,
 };
 
 /**

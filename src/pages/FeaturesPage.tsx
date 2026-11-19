@@ -1,4 +1,6 @@
 import { handleAnchorClick } from '../lib/router';
+import { TOOLS } from '../tools/registry';
+import { LIBRARY_COUNTS } from '../data/licenses';
 import {
   ArrowRightIcon,
   AtIcon,
@@ -10,6 +12,8 @@ import {
   PhoneIcon,
   QuoteIcon,
   RocketIcon,
+  GemIcon,
+  ListIcon,
   ShareIcon,
   ShieldCheckIcon,
   SmileIcon,
@@ -45,6 +49,9 @@ const FEATURE_TOOLS: FeatureTool[] = [
   { icon: PhoneIcon, tint: 5, name: 'WhatsApp Status Generator', blurb: 'Five statuses per run, nine vibes, sized for the 139-character About limit.', href: '/whatsapp-status-generator' },
   { icon: ShareIcon, tint: 6, name: 'Snapchat Caption Generator', blurb: 'Five captions per run in English, Hindi or Hinglish.', href: '/snapchat-caption-generator' },
   { icon: SparkIcon, tint: 1, name: 'Bio Editor', blurb: 'Hand-build your bio — platform counters, Unicode fonts, dividers, designer card previews.', href: '/bio-editor' },
+  { icon: GemIcon, tint: 2, name: 'Colour Palette Generator', blurb: `${LIBRARY_COUNTS.colours.toLocaleString()} named colours, six harmony types, WCAG contrast and CSS/Tailwind export.`, href: '/color-palette-generator' },
+  { icon: ListIcon, tint: 4, name: 'Text Toolkit', blurb: 'Word and character count, 10 case formats, list cleaning and extraction of emails, links and hashtags.', href: '/text-toolkit' },
+  { icon: GridIcon, tint: 3, name: 'Icon Finder', blurb: `${LIBRARY_COUNTS.icons.toLocaleString()} CC0 brand icons — copy the SVG markup or download a ready-to-use file.`, href: '/icon-finder' },
 ];
 
 const PLATFORMS = ['Instagram', 'Facebook', 'Threads', 'TikTok', 'X', 'LinkedIn', 'WhatsApp', 'Snapchat'];
@@ -57,7 +64,7 @@ export default function FeaturesPage() {
         <header className="features-hero">
           <p className="features-eyebrow">Everything inside BioCraft</p>
           <h1 id="page-title" className="features-title">
-            One toolkit. Twelve generators.<br />
+            {`One toolkit. ${TOOLS.length} generators.`}<br />
             <span className="features-title-accent">$0 forever.</span>
           </h1>
           <p className="features-lede">

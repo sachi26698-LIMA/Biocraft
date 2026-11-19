@@ -60,8 +60,8 @@ export default function CategoriesPage() {
               from the registry, and favourites live only in your browser.
             </p>
           </span>
-          <span className="hub-header-count" aria-label="Twelve tools across six categories">
-            12 tools · 6 categories
+          <span className="hub-header-count" aria-label={`${TOOLS.length} tools across ${CATEGORY_META.length} categories`}>
+            {TOOLS.length} tools · {CATEGORY_META.length} categories
           </span>
         </header>
 

@@ -125,6 +125,38 @@ const ROUTES = [
     ogDescription: 'Streak, story & vibe captions — EN, हिंदी & Hinglish, one-tap copy.',
   },
   {
+    path: '/color-palette-generator',
+    title: 'Colour Palette Generator — 32,004 Named Colours — BioCraft',
+    description:
+      'Free colour palette generator — search 32,004 named colours, build analogous, complementary, triadic, tetradic, split-complementary and monochrome harmonies, check WCAG contrast, copy HSL/OKLCH values and export CSS or Tailwind. Private, no sign-up.',
+    ogTitle: 'Colour Palette Generator — BioCraft',
+    ogDescription: '32,004 named colours, harmonies, WCAG contrast and CSS/Tailwind export.',
+  },
+  {
+    path: '/icon-finder',
+    title: 'Icon Finder — 3,472 Free Brand Icons — BioCraft',
+    description:
+      'Search 3,472 CC0-licensed brand icons, copy the SVG markup or download ready-to-use .svg files. Works offline in your browser, no sign-up, no attribution required.',
+    ogTitle: 'Icon Finder — 3,472 Brand Icons — BioCraft',
+    ogDescription: '3,472 CC0 brand icons — copy SVG or download, no sign-up.',
+  },
+  {
+    path: '/text-toolkit',
+    title: 'Text Toolkit — Word Count, Case Converter & Text Extractor — BioCraft',
+    description:
+      'Free text toolkit — live word and character count, reading time, UPPERCASE, lowercase, Title Case, Sentence case, camelCase, PascalCase, snake_case, kebab-case, CONSTANT_CASE, URL slugs, line de-duplication, sorting and reversing, plus extraction of emails, links, hashtags, @mentions and numbers. Runs entirely in your browser.',
+    ogTitle: 'Text Toolkit — BioCraft',
+    ogDescription: 'Word count, case conversion, list cleaning and text extraction — private and offline.',
+  },
+  {
+    path: '/premium-bios',
+    title: 'Premium Bio Library — Verified English, Hindi & Hinglish Bios | BioCraft',
+    description:
+      'Browse verified original bios in English, native Hindi (Devanagari) and natural Hinglish. Filter by language, category and tone, search instantly, save favourites and copy in one tap. Every record passed duplicate and script checks.',
+    ogTitle: 'Premium Bio Library — BioCraft',
+    ogDescription: 'Verified English, Hindi and Hinglish bios — filter, search, save and copy.',
+  },
+  {
     path: '/features',
     title: 'Features — BioCraft Social Media Toolkit',
     description:

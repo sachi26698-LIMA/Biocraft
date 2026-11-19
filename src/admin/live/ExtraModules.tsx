@@ -4,6 +4,9 @@ import { handleAnchorClick } from '../../lib/router';
 import Analytics from './Analytics';
 import { SeoPages } from './Catalog';
 import ImportPreflight from './ImportPreflight';
+import BioLibraryDashboard from './BioLibrary';
+import bioRecords from '../../data/bios/records.json';
+import bioIndex from '../../data/bios/index.json';
 import { Entries, type Kind } from './PublishedLibrary';
 import { Badge, CursorPager, EmptyState, PageHead, Panel, StateNotice } from './common';
 import type { BackupRow, NotificationRow, RoleRow } from './types';
@@ -138,6 +141,7 @@ export default function ExtraModule({module, authorized}: {module: {key: string;
     case 'db-management': content = <><StatusPanel mode={key} /><RecordedBackups /></>; break;
     case 'api-management': case 'vercel-status': case 'supabase-health': content = <StatusPanel mode={key} />; break;
     case 'imports': content = <ImportPreflight />; break;
+    case 'bio-library': content = <BioLibraryDashboard records={bioRecords as never} index={bioIndex as never} />; break;
     case 'ai-configuration': content = <Panel title="AI integration not connected"><p>No provider is configured through this console. No prompts, credentials or content are sent to an AI service.</p></Panel>; break;
   }
   return <><PageHead eyebrow="ADMIN WORKSPACE" title={label} description={description} />{content}</>;
