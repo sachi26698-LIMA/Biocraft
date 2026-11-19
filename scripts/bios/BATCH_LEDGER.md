@@ -118,10 +118,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 074 | `batch-074.mjs` | 44 | 33 | 33 | 110 | 0 | 7761 | 0 — clean on second precheck pass |
 | 075 | `batch-075.mjs` | 44 | 33 | 33 | 110 | 0 | 7871 | 0 — 1 gate hole found and closed |
+| 076 | `batch-076.mjs` | 44 | 33 | 33 | 110 | 0 | 7981 | 0 — 1 couplet gate fix, counts trimmed |
 
-**Verified so far: 7,871 / 50,000 (15.7%)**
-Remaining: 42,129 (EN 16,851 · HI 12,639 · HG 12,639)
-Split check: EN 15.75% · HI 15.74% · HG 15.74% of their targets — spread 0.01.
+**Verified so far: 7,981 / 50,000 (16.0%)**
+Remaining: 42,019 (EN 16,807 · HI 12,606 · HG 12,606)
+Split check: EN 15.96% · HI 15.96% · HG 15.96% of their targets — spread 0.00.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -151,7 +152,15 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 075 — split 15.75 / 15.74 / 15.74, spread 0.01. This batch found a
+Batch 076 — split 15.96 / 15.96 / 15.96, spread 0.00. One Hinglish couplet
+failed on the new stricter vocabulary test ('Bus ruki, darwaaza khula...' had no
+Roman-Hindi marker in the old spelling set) and was rewritten to 'Bus ruki thi,
+darwaaza khula tha...'. The file then landed two long and was trimmed. Subjects:
+the tailor's trial date, the last metre of a crowded bus where you stand, a
+wedding album nobody opens, a night guard's hourly register, a grandmother who
+names the pigeons, and a landlord's letter that never arrived.
+
+(previous) Batch 075 — split 15.75 / 15.74 / 15.74, spread 0.01. This batch found a
 real hole in the language gate, the same shape as the 055 Gurmukhi glyph but
 worse: a Hinglish line shipped with one Devanagari word in it ('... chal सीं.')
 and `validateLanguage` passed it, because the Devanagari test only fired when
