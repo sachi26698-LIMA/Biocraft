@@ -6,6 +6,8 @@ import { TOOLS, toolForPath } from '../tools/registry';
 import { useRecentlyUsed } from '../lib/toolbox';
 import { infoPageForPath } from '../pages/info';
 import { collectionForPath } from '../lib/bioCollections';
+import { PREMIUM_STATS } from '../lib/premiumBios';
+import { LIBRARY_TOTAL } from '../lib/readyMadeBios';
 import {
   BioEditorSkeleton,
   BioLibrarySkeleton,
@@ -28,6 +30,7 @@ const BioEditorPage = lazy(() => import('../pages/BioEditorPage'));
 const GlobalSearchPage = lazy(() => import('../pages/GlobalSearchPage'));
 const FontLibraryPage = lazy(() => import('../pages/FontLibraryPage'));
 const BioLibraryPage = lazy(() => import('../pages/BioLibraryPage'));
+const PremiumBiosPage = lazy(() => import('../pages/PremiumBiosPage'));
 
 const TOOL_PATHS = new Set(TOOLS.map((tool) => tool.path));
 const COLLECTIONS_INDEX = '/bio-collections';
@@ -35,6 +38,7 @@ const BIO_EDITOR = '/bio-editor';
 const LIBRARY_SEARCH = '/library-search';
 const FONT_LIBRARY = '/font-library';
 const BIO_LIBRARY = '/bio-library';
+const PREMIUM_BIOS = '/premium-bios';
 const HOME = '/';
 // This import is removed from production builds; the route is not linked publicly.
 
@@ -87,6 +91,7 @@ export default function ToolShell() {
   const isCollectionsIndex = path === COLLECTIONS_INDEX;
   const isBioEditor = path === BIO_EDITOR;
   const isBioLibrary = path === BIO_LIBRARY;
+  const isPremiumBios = path === PREMIUM_BIOS;
   const isFeatures = path === '/features';
   const isLibrarySearch = path === LIBRARY_SEARCH;
   const isFontLibrary = path === FONT_LIBRARY;
@@ -97,10 +102,10 @@ export default function ToolShell() {
   const { record } = useRecentlyUsed();
 
   useEffect(() => {
-    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isBioLibrary && !isFeatures && !isLibrarySearch && !isFontLibrary && !collection) {
+    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isBioLibrary && !isPremiumBios && !isFeatures && !isLibrarySearch && !isFontLibrary && !collection) {
       navigate(HOME, { replace: true });
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isLibrarySearch, isFontLibrary, collection]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isLibrarySearch, isFontLibrary, collection, isPremiumBios]);
 
   // Load only the small common-math font on routes whose content needs it.
   useEffect(() => {
@@ -108,7 +113,7 @@ export default function ToolShell() {
     if ((hasCommonMath || path === '/stylish-name-generator' || path === '/fancy-font-generator') && document.fonts?.load) {
       void document.fonts.load('400 1em "Noto Sans Math"', '𝐀').catch(() => {});
     }
-  }, [path, collection]);
+  }, [path, collection, isPremiumBios]);
 
   useEffect(() => {
     if (isToolRoute) record(tool.key);
@@ -139,7 +144,9 @@ export default function ToolShell() {
     } else if (isCollectionsIndex) {
       document.title = 'Ready-Made Bio Collections — BioCraft Social Media Toolkit';
     } else if (isBioLibrary) {
-      document.title = 'Bio Library — Search 506 Ready-Made Bios | BioCraft';
+      document.title = `Bio Library — Search ${LIBRARY_TOTAL} Ready-Made Bios | BioCraft`;
+    } else if (isPremiumBios) {
+      document.title = `Premium Bio Library — ${PREMIUM_STATS.total.toLocaleString()} Verified Bios | BioCraft`;
     } else if (isFeatures) {
       document.title = 'Features — BioCraft Social Media Toolkit';
     } else if (isBioEditor) {
@@ -158,6 +165,7 @@ export default function ToolShell() {
   if (isCollectionsIndex) return <DeferredPage path={path} skeleton={<CollectionsIndexSkeleton />}><BioCollectionsPage /></DeferredPage>;
   if (isBioEditor) return <DeferredPage path={path} skeleton={<BioEditorSkeleton />}><BioEditorPage /></DeferredPage>;
   if (isBioLibrary) return <DeferredPage path={path} skeleton={<BioLibrarySkeleton />}><BioLibraryPage /></DeferredPage>;
+  if (isPremiumBios) return <DeferredPage path={path} skeleton={<BioLibrarySkeleton />}><PremiumBiosPage /></DeferredPage>;
   if (collection) return <DeferredPage path={path} skeleton={<CollectionDetailSkeleton />}><BioCollectionPage slug={collection.slug} /></DeferredPage>;
   if (isToolRoute) {
     return (

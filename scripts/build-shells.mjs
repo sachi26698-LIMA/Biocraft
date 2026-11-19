@@ -149,6 +149,14 @@ const ROUTES = [
     ogDescription: 'Word count, case conversion, list cleaning and text extraction — private and offline.',
   },
   {
+    path: '/premium-bios',
+    title: 'Premium Bio Library — Verified English, Hindi & Hinglish Bios | BioCraft',
+    description:
+      'Browse verified original bios in English, native Hindi (Devanagari) and natural Hinglish. Filter by language, category and tone, search instantly, save favourites and copy in one tap. Every record passed duplicate and script checks.',
+    ogTitle: 'Premium Bio Library — BioCraft',
+    ogDescription: 'Verified English, Hindi and Hinglish bios — filter, search, save and copy.',
+  },
+  {
     path: '/features',
     title: 'Features — BioCraft Social Media Toolkit',
     description:
