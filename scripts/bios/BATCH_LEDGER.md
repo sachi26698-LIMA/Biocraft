@@ -58,9 +58,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 044 | `batch-044.mjs` | 30 | 41 | 39 | 110 | 3 → fixed | 4421 | balance.mjs allocation; 1 exact, 1 near-dup, 1 language |
 
-**Verified so far: 4,421 / 50,000 (8.8%)**
-Remaining: 45,579 (EN 18,235 · HI 13,671 · HG 13,673)
-Split check: EN 8.82% · HI 8.86% · HG 8.85% of their targets.
+| 045 | `batch-045.mjs` | 57 | 30 | 32 | 119 | 2 → fixed | 4540 | balance.mjs allocation; 1 near-dup, 1 language |
+
+**Verified so far: 4,540 / 50,000 (9.1%)**
+Remaining: 45,460 (EN 18,178 · HI 13,641 · HG 13,641)
+Split check: EN 9.11% · HI 9.06% · HG 9.06% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -90,9 +92,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 045 — split 8.82 / 8.86 / 8.85, spread 0.04 points, the tightest yet, and
-it came from balance.mjs rather than from guessing. Continue using it for the
-allocation each batch.
+Batch 046 — split 9.11 / 9.06 / 9.06, spread 0.05 points, English now marginally
+ahead. Continue taking the allocation from balance.mjs each batch.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
