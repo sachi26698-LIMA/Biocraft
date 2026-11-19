@@ -116,9 +116,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 073 | `batch-073.mjs` | 44 | 33 | 33 | 110 | 0 at build time (13 caught by precheck) | 7651 | 1 gate, 4 exact, 8 dedup, all fixed pre-build |
 
-**Verified so far: 7,651 / 50,000 (15.3%)**
-Remaining: 42,349 (EN 16,939 · HI 12,705 · HG 12,705)
-Split check: EN 15.30% · HI 15.30% · HG 15.30% of their targets — spread 0.00.
+| 074 | `batch-074.mjs` | 44 | 33 | 33 | 110 | 0 | 7761 | 0 — clean on second precheck pass |
+
+**Verified so far: 7,761 / 50,000 (15.5%)**
+Remaining: 42,239 (EN 16,895 · HI 12,672 · HG 12,672)
+Split check: EN 15.53% · HI 15.52% · HG 15.52% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -148,7 +150,14 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 074 — split 15.30 / 15.30 / 15.30, spread 0.00. 073 drew on a book binder
+Batch 075 — split 15.53 / 15.52 / 15.52, spread 0.01. 074 drew on the knife
+sharpener who cycles through the lane, a school bag bought on credit, a father
+who reads slowly with his finger under each line, the rooftop water drum, and a
+hand-written wedding invitation. No rejections and no dedup collisions; the only
+thing the precheck had to say was that the draft was six English lines heavy,
+which is the normal shape of a first draft.
+
+(previous) 073 drew on a book binder
 rebinding a school register, a father's cycle shop closing when the road was
 widened, a lost admit card found in a rickshaw, the last bus of the night, and a
 deposit returned eight months late.
