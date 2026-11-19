@@ -80,9 +80,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 055 | `batch-055.mjs` | 43 | 33 | 34 | 110 | 1 → fixed | 5659 | 1 near-dup; gate hardened against foreign Indic scripts |
 
-**Verified so far: 5,659 / 50,000 (11.3%)**
-Remaining: 44,341 (EN 17,737 · HI 13,304 · HG 13,300)
-Split check: EN 11.31% · HI 11.31% · HG 11.33% of their targets — spread 0.02.
+| 056 | `batch-056.mjs` | 43 | 33 | 33 | 109 | 2 → fixed | 5768 | 2 near-dup |
+
+**Verified so far: 5,768 / 50,000 (11.5%)**
+Remaining: 44,232 (EN 17,694 · HI 13,271 · HG 13,267)
+Split check: EN 11.53% · HI 11.53% · HG 11.55% of their targets — spread 0.02.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -112,7 +114,12 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 056 — split 11.31 / 11.31 / 11.33, spread 0.02 points. 055 tripped a real
+Batch 057 — split 11.53 / 11.53 / 11.55, spread 0.02 points. 056 drew on a
+tailor's bill, the bus conductor, a rented shop, the neighbour's loud TV and
+negotiating a first salary. Both rejections were the same line in Hindi and
+Hinglish form, which the trigram layer read as its own duplicate.
+
+Reminder from 055, still the sharpest lesson so far: batch 055 tripped a real
 gap in the gate: a Hindi line had one Gurmukhi word (`ਨਹੀਂ` for `नहीं`), which
 `validateLanguage` accepted because Devanagari still dominated the line. Only
 the test suite caught it, and only after acceptance. `validateLanguage` now
