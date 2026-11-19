@@ -68,9 +68,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 049 | `batch-049.mjs` | 35 | 37 | 37 | 109 | 7 → fixed | 4987 | 5 near-dups + 2 language; 15 surplus EN lines removed |
 
-**Verified so far: 4,987 / 50,000 (10.0%)**
-Remaining: 45,013 (EN 18,002 · HI 13,505 · HG 13,506)
-Split check: EN 9.99% · HI 9.97% · HG 9.96% of their targets.
+| 050 | `batch-050.mjs` | 42 | 35 | 38 | 115 | 2 → fixed | 5102 | Library passes 5,000; new subject matter |
+
+**Verified so far: 5,102 / 50,000 (10.2%)**
+Remaining: 44,898 (EN 17,960 · HI 13,470 · HG 13,468)
+Split check: EN 10.20% · HI 10.20% · HG 10.21% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -100,9 +102,16 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 050 — split 9.99 / 9.97 / 9.96, spread 0.03 points. 049 was the weakest
-batch of this stretch: 7 rejections, five of them near-duplicates recycling
-035/036 subject matter. Lesson logged: vary the *topic*, not the wording.
+Batch 051 — split 10.20 / 10.20 / 10.21, spread 0.01 points and 5,102 verified.
+The topic-variety rule from 049 worked: 050 drew on new material (asking
+directions, hospital waiting rooms, ageing parents, moving house, learning to
+drive late) and produced 1 rejection instead of 7, even at 116 seeds.
+The library is at 10.2% of its 50,000 target, evenly spread across the three
+languages.
+
+049 was the weakest batch of this stretch: 7 rejections, five of them
+near-duplicates recycling 035/036 subject matter. Lesson logged: vary the
+*topic*, not the wording.
 
 **Topic-fatigue rule (from batch 049).** My failures cluster when I keep mining
 the same few themes — rest vs burnout, full calendar vs full life, waiting
