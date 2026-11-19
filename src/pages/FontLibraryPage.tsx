@@ -13,9 +13,11 @@ const PAGE_SIZE = 48;
 /**
  * Font library browser.
  *
- * Reads the real Google Fonts catalogue that the sync engine imported — 1,908
- * families at the time of writing — one keyset page at a time. The browser never
- * receives the whole catalogue.
+ * Reads the bundled Google Fonts catalogue — 1,908 families, generated from the
+ * MIT-licensed `google-font-metadata` package by scripts/build-font-catalog.mjs.
+ * The catalogue ships with the application, so this page needs no backend and
+ * works with the database unreachable or unconfigured. Paging is a rendering
+ * limit, not a network limit.
  *
  * Preview honesty: we only render a family in its own typeface when the font is
  * actually available to the page. We do NOT @import 1,900 fonts from a third
@@ -92,8 +94,8 @@ export default function FontLibraryPage() {
       <header className="fontlib-head">
         <h1>Font library</h1>
         <p>
-          Every font family stored in the BioCraft library, with its real category, weights and
-          character subsets. Loaded one page at a time.
+          Every font family in the BioCraft library, with its real category, weights and
+          character subsets — loaded with the page, no backend required.
         </p>
       </header>
 

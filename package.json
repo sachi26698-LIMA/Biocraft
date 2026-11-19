@@ -2,7 +2,7 @@
   "name": "biocraft",
   "private": true,
   "version": "1.0.0",
-  "description": "BioCraft — All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
+  "description": "BioCraft \u2014 All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,7 @@
     "test:collections": "node tests/collection-navigation.cjs && node tests/remote-dedup.cjs && node tests/collection-pagination.cjs && node tests/collection-card-renders.cjs",
     "test:infinite": "node tests/infinite-expansion.cjs",
     "test:review": "esbuild review-harness.tsx --bundle --platform=node --format=cjs --loader:.css=empty --outfile=review-harness.bundle.cjs && node review-check.cjs",
-    "test:diagnostics": "node tests/preview-diagnostics.cjs",
+    "test:diagnostics": "node tests/local-first/content-sources.mjs && node tests/local-first/pages-render.mjs",
     "test:generation": "node tests/generation-runner.cjs && node tests/generation-steps.cjs && node tests/generation-ui.cjs",
     "test:performance": "node tests/symbol-search.cjs && node tests/symbol-renders.cjs && node tests/font-preloads.cjs",
     "test:admin-draft": "node tests/admin-draft-rbac.cjs && node tests/admin-workflow-draft.cjs && node tests/admin-gateway-draft.cjs",
@@ -85,7 +85,8 @@
     "test:admin-password-reset-browser": "node tests/admin-password-reset-browser.cjs",
     "test:admin-extra-modules": "node tests/admin-extra-modules-browser.cjs",
     "test:hybrid": "node tests/local-db-proxy.mjs",
-    "test:hybrid:db": "node tests/hybrid-sync-replication.mjs"
+    "test:hybrid:db": "node tests/hybrid-sync-replication.mjs",
+    "test:local-first": "node tests/local-first/content-sources.mjs && node tests/local-first/pages-render.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

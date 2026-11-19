@@ -70,12 +70,6 @@ export default defineConfig(({ mode }) => {
       });
     },
   }],
-  // Temporary diagnostics are only compiled into this branch's Vercel Preview.
-  define: {
-    __BIOCRAFT_PREVIEW_DIAGNOSTICS__: JSON.stringify(
-      adminPreview,
-    ),
-  },
   // Emit an independent admin entry only for this branch's Preview; the
   // public entry never imports the admin workspace.
   build: adminPreview ? { rollupOptions: { input: { main: 'index.html', admin: 'admin-preview.html' } } } : undefined,

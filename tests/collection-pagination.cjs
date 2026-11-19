@@ -1,60 +1,70 @@
-/** Stable keyset paging, server caps, exact counts, retries and concurrent changes. */
+/**
+ * Replaces the old "keyset pagination against the database" test.
+ *
+ * The collection page no longer pages over the network: every bio of a
+ * collection is already in the bundle, so the whole set renders at once and the
+ * paging grammar that existed to keep HTTP requests honest has no counterpart.
+ *
+ * This test asserts the replacement guarantee directly against the shipped
+ * registry: a collection renders *all* of its bios (never a truncated first
+ * page), and the counts shown to the user are real.
+ */
 const esbuild = require('esbuild');
+const { JSDOM } = require('jsdom');
 const assert = require('node:assert/strict');
 const path = require('node:path');
+
 async function main() {
-  const output = await esbuild.build({
-    entryPoints: ['src/lib/biosRemote.ts'], bundle: true, write: false, platform: 'node', format: 'cjs',
-    plugins: [{ name: 'mock-client', setup(build) {
-      build.onResolve({ filter: /^\.\/supabase$/ }, () => ({ path: 'client', namespace: 'mock' }));
-      build.onLoad({ filter: /.*/, namespace: 'mock' }, () => ({ contents: 'export const supabase = globalThis.__paginationClient;', loader: 'js' }));
-    } }],
+  const built = await esbuild.build({
+    entryPoints: ['src/lib/bioCollections.ts'],
+    bundle: true, write: false, platform: 'node', format: 'cjs',
   });
-  let rows = [], calls = [], cap = 500, changeCount = false, failPage = false;
-  const makeRows = (n) => Array.from({ length: n }, (_, i) => ({ id: `00000000-0000-0000-0000-${String(i + 1).padStart(12, '0')}`, created_at: '2026-01-01T00:00:00+00:00', content: `row ${i}`, language: 'en', plain_content: null, style_type: null }));
-  global.__paginationClient = { from(table) {
-    assert.equal(table, 'bios');
-    const state = { filters: [], order: [], cursor: null, options: {} };
-    const q = {
-      select(columns, options = {}) { state.columns = columns; state.options = options; return q; },
-      eq(k, v) { state.filters.push([k, v]); return q; },
-      order(k, v) { state.order.push([k, v.ascending]); return q; },
-      or(value) { state.cursor = value; return q; },
-      limit(value) { return Promise.resolve(execute(value)); },
-      then(resolve, reject) { return Promise.resolve(execute(null)).then(resolve, reject); },
-    };
-    function execute(limit) {
-      calls.push({ ...state, limit });
-      assert.deepEqual(state.filters, [['source_slug', 'test'], ['is_active', true]]);
-      if (state.options.head) return { count: rows.length + (changeCount ? 1 : 0), error: null, data: null };
-      assert.deepEqual(state.order, [['created_at', true], ['id', true]]);
-      if (failPage && state.cursor) return { data: null, error: { message: 'offline' }, count: null };
-      let result = rows;
-      if (state.cursor) {
-        const m = /^created_at\.gt\."([^"]+)",and\(created_at\.eq\."([^"]+)",id\.gt\.([0-9a-f-]+)\)$/.exec(state.cursor);
-        assert.ok(m, 'valid keyset filter'); assert.equal(m[1], m[2]);
-        result = rows.filter(r => r.created_at > m[1] || (r.created_at === m[1] && r.id > m[3]));
-      }
-      return { data: result.slice(0, Math.min(cap, limit)), count: state.options.count ? rows.length : null, error: null };
-    }
-    return q;
-  } };
   const Module = module.constructor;
-  const m = new Module(path.join(process.cwd(), 'collection-pagination-bundle.cjs'), module); m.filename = path.join(process.cwd(), 'collection-pagination-bundle.cjs'); m.paths = module.paths; m._compile(output.outputFiles[0].text, m.filename);
-  const { fetchCollectionBios, diagnoseCollectionKeyset } = m.exports;
-  rows = makeRows(0); assert.deepEqual((await fetchCollectionBios('test')).bios, []); assert.equal(calls.length, 1);
-  calls = []; rows = makeRows(500); assert.equal((await fetchCollectionBios('test')).bios.length, 500); assert.equal(calls.length, 1, 'full single page needs no speculative second request');
-  calls = []; cap = 200; rows = makeRows(1005); const all = await fetchCollectionBios('test');
-  assert.deepEqual(all.bios.map(x => x.text), rows.map(x => x.content));
-  assert.equal(calls.length, 7, 'six capped pages and one final count');
-  assert.ok(calls[calls.length - 1].options.head, 'verify count after multiple requests');
-  calls = []; cap = 500; rows = makeRows(12);
-  assert.deepEqual(await diagnoseCollectionKeyset('test'), { count: 12, matches: true });
-  assert.deepEqual(calls.map(call => call.limit), [500, 5, 5, 5, null], 'diagnostic exercises the real reader with multiple pages');
-  cap = 200; rows = makeRows(1005);
-  calls = []; changeCount = true; await assert.rejects(fetchCollectionBios('test'), /changed/); changeCount = false;
-  calls = []; failPage = true; await assert.rejects(fetchCollectionBios('test'), /offline/); failPage = false;
-  assert.equal((await fetchCollectionBios('test')).bios.length, 1005, 'a failed read can retry');
-  console.log('PASS complete keyset pages, tied timestamps, server row caps, changes and fresh retries');
+  const dataModule = new Module(path.join(process.cwd(), 'pagination-data.cjs'), module);
+  dataModule.filename = path.join(process.cwd(), 'pagination-data.cjs');
+  dataModule.paths = module.paths;
+  dataModule._compile(built.outputFiles[0].text, dataModule.filename);
+  const { BIO_COLLECTIONS, TOTAL_BIOS, collectionBySlug } = dataModule.exports;
+
+  // Every collection must be complete in the bundle: no page cap, no truncation.
+  for (const collection of BIO_COLLECTIONS) {
+    assert.ok(collection.bios.length > 0, `${collection.slug} must not be empty`);
+    assert.ok(collection.bios.length <= 30, `${collection.slug} unexpectedly large: ${collection.bios.length}`);
+  }
+  const sum = BIO_COLLECTIONS.reduce((n, c) => n + c.bios.length, 0);
+  assert.equal(sum, TOTAL_BIOS, 'per-collection counts must sum to the published total');
+
+  // Render a real page and confirm all of its bios appear at once.
+  const output = await esbuild.build({
+    stdin: {
+      contents: "export { default as Page } from './src/pages/BioCollectionPage'; export { default as React, act } from 'react'; export { createRoot } from 'react-dom/client';",
+      resolveDir: process.cwd(), loader: 'tsx',
+    },
+    bundle: true, write: false, platform: 'node', format: 'cjs', packages: 'external',
+  });
+  const testModule = new Module(path.join(process.cwd(), 'pagination-page.cjs'), module);
+  testModule.filename = path.join(process.cwd(), 'pagination-page.cjs');
+  testModule.paths = module.paths;
+  testModule._compile(output.outputFiles[0].text, testModule.filename);
+  const { Page, React, act, createRoot } = testModule.exports;
+
+  const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/', pretendToBeVisual: true });
+  global.window = dom.window; global.document = dom.window.document;
+  global.HTMLElement = dom.window.HTMLElement; global.Node = dom.window.Node;
+  global.IS_REACT_ACT_ENVIRONMENT = true;
+
+  const slug = 'instagram-bio-for-boys';
+  const expected = collectionBySlug(slug).bios.length;
+  const root = createRoot(document.getElementById('root'));
+  await act(async () => { root.render(React.createElement(Page, { slug })); });
+
+  const cards = document.querySelectorAll('.bio-grid > li').length;
+  assert.equal(cards, expected, `all ${expected} bios must render, got ${cards}`);
+  assert.match(document.body.textContent, new RegExp(`Showing ${expected} of ${expected} bios`),
+    'the shown count must be the real total');
+
+  await act(async () => root.unmount());
+  console.log(`PASS collection completeness: all ${expected} bios of ${slug} render at once, no truncation`);
 }
-main().catch(error => { console.error(error); process.exitCode = 1; });
+
+main().catch((error) => { console.error(error); process.exit(1); });

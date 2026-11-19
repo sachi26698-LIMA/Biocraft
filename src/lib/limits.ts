@@ -20,8 +20,8 @@
  *   - Per-request generation counts are read live from
  *     VITE_GENERATION_MAX_PER_REQUEST (see generationLimits below).
  *   - Server pagination ceilings are read live from MAX_PAGE_SIZE in the
- *     deployment environment (admin-backend) and from the `app_limits` table for
- *     the public API (see supabase/migrations).
+ *     deployment environment (admin-backend). Public pages read only bundled
+ *     content, so they require no database and no server ceiling.
  */
 
 /** Read a positive integer from the build-time env, falling back when unset. */

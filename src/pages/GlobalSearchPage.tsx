@@ -15,8 +15,9 @@ import {
 /**
  * Global library search.
  *
- * One box across every stored library. Results are real database rows; when the
- * backend is absent the page says so plainly instead of pretending.
+ * One box across every bundled library. Results are real entries from content
+ * that ships with the application, so the page needs no backend and works with
+ * the database unreachable.
  *
  * Design notes:
  *  - Debounced, and every in-flight request is abandoned when a newer one starts,
@@ -51,12 +52,14 @@ export default function GlobalSearchPage() {
     const id = ++requestId.current;
     if (offset === 0) setStatus('loading'); else setLoadingMore(true);
 
+    // The index is bundled, so this cannot fail on a network error. The try
+    // remains as a guard against a malformed entry rather than a backend state.
     let outcome: SearchOutcome;
     try {
       outcome = await searchGlobal({ query: q, domain: d, offset, limit: SEARCH_PAGE_SIZE });
-    } catch (e) {
+    } catch {
       if (id !== requestId.current) return;
-      setNotice(e instanceof Error ? e.message : 'Search failed.');
+      setNotice('Search could not read the bundled library.');
       setStatus('done');
       setLoadingMore(false);
       return;
@@ -65,15 +68,9 @@ export default function GlobalSearchPage() {
     // A newer keystroke has superseded this response.
     if (id !== requestId.current) return;
 
-    if (outcome.searched) {
-      setNotice(null);
-      setHits((prev) => (offset === 0 ? outcome.hits : [...prev, ...outcome.hits]));
-      setHasMore(outcome.hasMore);
-    } else {
-      setNotice(outcome.message);
-      if (offset === 0) setHits([]);
-      setHasMore(false);
-    }
+    setNotice(null);
+    setHits((prev) => (offset === 0 ? outcome.hits : [...prev, ...outcome.hits]));
+    setHasMore(outcome.hasMore);
     setStatus('done');
     setLoadingMore(false);
   }, []);
@@ -108,7 +105,7 @@ export default function GlobalSearchPage() {
         <h1>Search every library</h1>
         <p>
           Bios, captions, hashtags, symbols, fonts and emoji — one search. Every result is a real
-          stored entry.
+          entry from BioCraft’s own library, loaded with the page.
         </p>
       </header>
 

@@ -37,8 +37,6 @@ const FONT_LIBRARY = '/font-library';
 const BIO_LIBRARY = '/bio-library';
 const HOME = '/';
 // This import is removed from production builds; the route is not linked publicly.
-const diagnosticsEnabled = typeof __BIOCRAFT_PREVIEW_DIAGNOSTICS__ !== 'undefined' && __BIOCRAFT_PREVIEW_DIAGNOSTICS__;
-const DiagnosticsPage = diagnosticsEnabled ? lazy(() => import('../pages/PreviewDiagnosticsPage')) : null;
 
 // Resolve in-page links only after lazy route content is mounted.
 function ReadyPage({ path, children }: { path: string; children: ReactNode }) {
@@ -90,7 +88,6 @@ export default function ToolShell() {
   const isBioEditor = path === BIO_EDITOR;
   const isBioLibrary = path === BIO_LIBRARY;
   const isFeatures = path === '/features';
-  const isDiagnostics = diagnosticsEnabled && path === '/preview-diagnostics';
   const isLibrarySearch = path === LIBRARY_SEARCH;
   const isFontLibrary = path === FONT_LIBRARY;
   const collection = collectionForPath(path);
@@ -100,10 +97,10 @@ export default function ToolShell() {
   const { record } = useRecentlyUsed();
 
   useEffect(() => {
-    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isBioLibrary && !isFeatures && !isDiagnostics && !isLibrarySearch && !isFontLibrary && !collection) {
+    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isBioLibrary && !isFeatures && !isLibrarySearch && !isFontLibrary && !collection) {
       navigate(HOME, { replace: true });
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isDiagnostics, isLibrarySearch, isFontLibrary, collection]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isLibrarySearch, isFontLibrary, collection]);
 
   // Load only the small common-math font on routes whose content needs it.
   useEffect(() => {
@@ -131,9 +128,7 @@ export default function ToolShell() {
   }, [path]);
 
   useEffect(() => {
-    if (isDiagnostics) {
-      document.title = 'Preview Diagnostics — BioCraft';
-    } else if (isHome) {
+    if (isHome) {
       document.title = 'BioCraft — All-in-One Social Media Toolkit';
     } else if (isToolRoute) {
       document.title = tool.title;
@@ -156,9 +151,8 @@ export default function ToolShell() {
     } else if (collection) {
       document.title = collection.seoTitle;
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isDiagnostics, isLibrarySearch, isFontLibrary, collection, tool]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isLibrarySearch, isFontLibrary, collection, tool]);
 
-  if (isDiagnostics && DiagnosticsPage) return <Suspense fallback={<div role="status">Loading diagnostics…</div>}><DiagnosticsPage /></Suspense>;
   if (isHome) return <DeferredPage path={path} skeleton={<HomeSkeleton />}><HomePage /></DeferredPage>;
   if (isCategories) return <DeferredPage path={path} skeleton={<CategoriesSkeleton />}><CategoriesPage /></DeferredPage>;
   if (isCollectionsIndex) return <DeferredPage path={path} skeleton={<CollectionsIndexSkeleton />}><BioCollectionsPage /></DeferredPage>;
