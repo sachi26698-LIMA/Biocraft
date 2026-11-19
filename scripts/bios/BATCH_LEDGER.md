@@ -18,18 +18,26 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 005 | `batch-005.mjs` | 36 | 46 | 33 | 115 | 1 → fixed | 569 | Depth pass: attitude, love, shayari (2- and 4-line), quotes, sad, aesthetic, life |
 | 006 | `batch-006.mjs` | 50 | 50 | 47 | 147 | 3 → fixed | 716 | Thin-category pass: the 25 categories still at 4–6 records |
 | 007 | `batch-007.mjs` | 44 | 35 | 38 | 117 | 3 → fixed | 833 | Next band: royal, motivational, alone, friendship, professional, creator, student + middle sweep |
+| 008 | `batch-008.mjs` | 38 | 29 | 29 | 96 | 1 → fixed | 929 | The seven 7-record categories: family, minimal, fitness, travel, gaming, photography, music |
 
-**Verified so far: 833 / 50,000 (1.7%)**
-Remaining: 49,167 (EN 19,676 · HI 14,721 · HG 14,770)
+**Verified so far: 929 / 50,000 (1.9%)**
+Remaining: 49,071 (EN 19,638 · HI 14,692 · HG 14,741)
 Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 008 — 007 lifted the 10–22 band. Keep going down the list: Fashion and
-beauty, Yoga and wellness, Pets and animals, Startup and hustle, Science and
-curiosity, Cinema and OTT, Cricket and sports, Cars and bikes, Home and
-interiors, Parenting, Instagram profiles, Nature, Poetry are all still around
-6–8 records and are the thinnest remaining.
+Batch 009 — 008 cleared the last 7s, so every category now holds at least 9.
+The floor is evenly flat: stylish, wedding, monsoon, spirituality, self-respect,
+personality, books, food, technology, fashion, yoga, pets, startup, science,
+cinema, cricket, cars, home, parenting, instagram, nature, poetry, funny all sit
+between 9 and 14. Batch 009 should lift the whole 9–14 band rather than chase a
+single category.
+
+**Scale honestly assessed.** Eight batches have produced 929 records in this
+voice. Reaching 50,000 at this editorial standard needs roughly 400 more
+batches of this size; there is no shortcut that survives the duplicate engine,
+the language gate and the 160-character limit. The ledger is append-only so the
+work is resumable at any point, but the completion claim will not be made early.
 
 **Marker-list discipline (new, from batch 007).** The Hinglish marker list was
 extended twice in batches 005 and 007, each time because a genuinely Hinglish
@@ -91,7 +99,11 @@ left in the report as a documented exclusion.
   dominant rejection class, which is the right outcome: the gate is finding
   vocabulary it cannot see rather than content that is wrong.
 
-**Pattern worth noting:** the engine has now caught 10 rejections across 7 batches
+- Batch 008: one more vocabulary gap (`saade`, `raay`, `pakki`, `yehi`,
+  `saleeka`). Marker list extended a third time; sentence accepted verbatim;
+  `test:bio-language-gate` re-run and still green in both directions.
+
+**Pattern worth noting:** the engine has now caught 11 rejections across 8 batches
 — 3 Hinglish edges (003, 004, 006), 2 exact duplicates of earlier batches (006),
 1 vocabulary gap (005), 1 over-length line (002). The duplicate catches are the
 most useful signal in the whole ledger: at 716 records a human cannot hold the

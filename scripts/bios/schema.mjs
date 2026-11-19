@@ -115,6 +115,9 @@ const HINGLISH_MARKERS = [
   'samjhaya', 'samajh', 'chauthi', 'doosri', 'pehli', 'mat', 'chhodo', 'chhoda',
   'shukraguzaar', 'shukriya', 'maangna', 'maanga', 'dena', 'diya', 'liya',
   'hoga', 'hogi', 'hota', 'hoti', 'hote', 'rahega', 'rahegi', 'chalega',
+  // third sweep (batch 008): common nouns/adjectives in everyday Roman Hindi
+  'saade', 'saada', 'pakki', 'pakka', 'yehi', 'yahi', 'saleeka', 'cheez',
+  'cheezein', 'joote', 'aadmi', 'yaadein', 'yojana', 'bhool', 'khushbu',
 ];
 
 export function detectScript(text) {
