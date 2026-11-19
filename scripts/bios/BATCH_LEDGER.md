@@ -52,10 +52,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 039 | `batch-039.mjs` | 40 | 28 | 29 | 97 | 1 → fixed | 3806 | 1 language rejection |
 | 040 | `batch-040.mjs` | 40 | 28 | 29 | 97 | 1 → fixed | 3903 | 1 language rejection |
 | 041 | `batch-041.mjs` | 52 | 30 | 30 | 112 | 2 → fixed | 4015 | Wide category band; token-set + language |
+| 042 | `batch-042.mjs` | 14 | 55 | 52 | 121 | 1 → fixed | 4136 | Hindi/Hinglish leaning to correct EN lead |
 
-**Verified so far: 4,015 / 50,000 (8.0%)**
-Remaining: 45,985 (EN 18,384 · HI 13,796 · HG 13,805)
-Split check: EN 8.08% · HI 8.03% · HG 7.97% of their targets.
+**Verified so far: 4,136 / 50,000 (8.3%)**
+Remaining: 45,864 (EN 18,370 · HI 13,741 · HG 13,753)
+Split check: EN 8.15% · HI 8.39% · HG 8.31% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -85,9 +86,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 042 — library passed 4,000. Split 8.08 / 8.03 / 7.97, within 0.11 points;
-EN is running slightly ahead, so 042 leans Hindi/Hinglish.
-Continue strict proportional 40/30/30.
+Batch 043 — the correction overshot: 8.15 / 8.39 / 8.31 now leaves English
+lowest by 0.24 points. 043 leans English. Continue strict proportional 40/30/30.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
