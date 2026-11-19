@@ -41,9 +41,30 @@ const tools = [...registrySrc.matchAll(/key: '([^']+)'[\s\S]*?path: '([^']+)'/g)
 
 section('1. the registries parse');
 {
-  ok('found all 8 platforms', platforms.length === 8, `got ${platforms.length}`);
-  ok('found all 15 tools', tools.length === 15, `got ${tools.length}`);
+  // Counts are NOT hardcoded to 8 and 15. A literal here would fail the day a
+  // tool is legitimately added — and "a new tool was added" is precisely the
+  // event that caused the bug this file guards. Instead: assert the parse is
+  // non-empty, and cross-check it against a second, independent signal (the
+  // ToolKey union in registry.ts) so a silently broken regex cannot pass.
+  const unionKeys = [...registrySrc.matchAll(/^\s*\| '([a-z-]+)'/gm)].map((m) => m[1]);
+  ok('found at least one platform', platforms.length > 0, `got ${platforms.length}`);
+  ok('found at least one tool', tools.length > 0, `got ${tools.length}`);
+  ok('the ToolKey union parses too (independent of the key: entries)', unionKeys.length > 0,
+    `got ${unionKeys.length}`);
+  ok('registry keys and the ToolKey union agree',
+    unionKeys.length === tools.length && unionKeys.every((k) => tools.some((t) => t.key === k)),
+    `union ${unionKeys.length} vs entries ${tools.length}`);
   ok('every platform lists at least one tool', platforms.every((p) => p.tools.length > 0));
+}
+
+section('1b. no platform lists a tool that does not exist');
+{
+  // A dangling key would also fall back silently to `bio`, with no route of its
+  // own — the same symptom, a different cause.
+  const known = new Set(tools.map((t) => t.key));
+  const dangling = [];
+  for (const p of platforms) for (const k of p.tools) if (!known.has(k)) dangling.push(`${p.id}:${k}`);
+  ok('every listed tool key exists in the registry', dangling.length === 0, dangling.join(', '));
 }
 
 section('2. no registered tool is unreachable');
