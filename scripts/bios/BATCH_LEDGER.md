@@ -45,10 +45,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 032 | `batch-032.mjs` | 42 | 31 | 26 | 99 | 0 | 3126 | Strict proportional; library passes 3,100 |
 | 033 | `batch-033.mjs` | 37 | 24 | 33 | 94 | 3 → fixed | 3220 | Hinglish-leaning; 2 exact repeats + 1 language |
 | 034 | `batch-034.mjs` | 41 | 29 | 29 | 99 | 1 → fixed | 3319 | 1 exact repeat + 1 unknown-category seed |
+| 035 | `batch-035.mjs` | 40 | 28 | 30 | 98 | 3 → fixed | 3417 | 1 exact, 1 near-duplicate, 1 language |
 
-**Verified so far: 3,319 / 50,000 (6.6%)**
-Remaining: 46,681 (EN 18,676 · HI 13,995 · HG 14,010)
-Split check: EN 6.62% · HI 6.70% · HG 6.60% of their targets.
+**Verified so far: 3,417 / 50,000 (6.8%)**
+Remaining: 46,583 (EN 18,636 · HI 13,967 · HG 13,980)
+Split check: EN 6.82% · HI 6.89% · HG 6.80% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -78,10 +79,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 035 — split 6.62 / 6.70 / 6.60, within 0.10 points. One seed was filed
-under `Travel` instead of `Travel and adventure` and was dropped silently; the
-builder now throws on an unknown category so that can never happen quietly
-again. Continue strict proportional 40/30/30.
+Batch 036 — split 6.82 / 6.89 / 6.80, within 0.09 points, the tightest yet.
+Hinglish passed 1,000. Continue strict proportional 40/30/30.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
