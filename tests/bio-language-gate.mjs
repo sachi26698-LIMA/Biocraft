@@ -69,6 +69,15 @@ section('3. Hindi requires Devanagari; Latin cannot masquerade');
     !validateLanguage('मेहनत का फल मीठा होता है।', 'en').ok);
   ok('rejects Devanagari text declared Hinglish',
     !validateLanguage('मेहनत का फल मीठा होता है।', 'hg').ok);
+  // Batch 075 shipped a mixed line: 'aur woh mahina bhar chal सीं.' The old
+  // threshold only rejected Devanagari above 20% of letters, so one stray word
+  // in a Latin line passed. Any Devanagari at all is now wrong.
+  ok('rejects one stray Devanagari word inside a Hinglish line',
+    !validateLanguage('Aur woh mahina bhar chal सीं.', 'hg').ok);
+  ok('rejects one stray Devanagari word inside an English line',
+    !validateLanguage('The drum stayed empty for eleven days, सीं.', 'en').ok);
+  ok('still accepts pure Latin Hinglish',
+    validateLanguage('Dhang se kaam karo, sab dekh rahe hain.', 'hg').ok);
 }
 
 /* ---------------------------------------------------------------- */

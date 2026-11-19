@@ -183,7 +183,12 @@ export function validateLanguage(text, lang) {
     return { ok: true };
   }
 
-  if (devanagari / letters > 0.2) return { ok: false, reason: 'contains Devanagari but declared Latin script' };
+  // Any Devanagari at all is wrong in a Latin-script record. The old check only
+  // fired above 20%, which let a single stray word through: batch 075 had
+  // 'aur woh mahina bhar chal सीं.' and the gate accepted it. Verified against
+  // every stored record first — 0 of the hg and en records contain any
+  // Devanagari, so this tightening rejects nothing already accepted.
+  if (devanagari > 0) return { ok: false, reason: 'contains Devanagari but declared Latin script' };
   if (!LATIN.test(text)) return { ok: false, reason: 'no Latin letters' };
 
   if (lang === 'hg') {

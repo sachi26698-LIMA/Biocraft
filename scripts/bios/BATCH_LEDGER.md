@@ -117,10 +117,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 073 | `batch-073.mjs` | 44 | 33 | 33 | 110 | 0 at build time (13 caught by precheck) | 7651 | 1 gate, 4 exact, 8 dedup, all fixed pre-build |
 
 | 074 | `batch-074.mjs` | 44 | 33 | 33 | 110 | 0 | 7761 | 0 — clean on second precheck pass |
+| 075 | `batch-075.mjs` | 44 | 33 | 33 | 110 | 0 | 7871 | 0 — 1 gate hole found and closed |
 
-**Verified so far: 7,761 / 50,000 (15.5%)**
-Remaining: 42,239 (EN 16,895 · HI 12,672 · HG 12,672)
-Split check: EN 15.53% · HI 15.52% · HG 15.52% of their targets — spread 0.01.
+**Verified so far: 7,871 / 50,000 (15.7%)**
+Remaining: 42,129 (EN 16,851 · HI 12,639 · HG 12,639)
+Split check: EN 15.75% · HI 15.74% · HG 15.74% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -150,7 +151,19 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 075 — split 15.53 / 15.52 / 15.52, spread 0.01. 074 drew on the knife
+Batch 075 — split 15.75 / 15.74 / 15.74, spread 0.01. This batch found a
+real hole in the language gate, the same shape as the 055 Gurmukhi glyph but
+worse: a Hinglish line shipped with one Devanagari word in it ('... chal सीं.')
+and `validateLanguage` passed it, because the Devanagari test only fired when
+Devanagari was more than 20% of the letters. The hole is now closed — any
+Devanagari at all in an `en` or `hg` record is rejected. Checked against every
+stored record first: 0 of 3,149 en and 0 of 2,361 hg records contain Devanagari,
+so tightening the gate invalidated nothing. Three assertions were added to
+tests/bio-language-gate.mjs (now 40). Subjects: a bangle seller on a train, a
+father's first bank account at sixty, the photocopy shop outside school, a pair
+of shoes taken from outside a temple, and a shuttered cinema hall.
+
+(previous) Batch 074 — split 15.53 / 15.52 / 15.52, spread 0.01. 074 drew on the knife
 sharpener who cycles through the lane, a school bag bought on credit, a father
 who reads slowly with his finger under each line, the rooftop water drum, and a
 hand-written wedding invitation. No rejections and no dedup collisions; the only
