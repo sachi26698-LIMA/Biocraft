@@ -41,7 +41,8 @@ const HINDI_FONT_LINKS: Array<{ label: string; href: string }> = [
 
 const READY_MADE_LINKS: Array<{ label: string; href: string }> = [
   { label: 'Ready-Made Bios', href: '/bio-collections' },
-  { label: 'Bio Library', href: '/bio-library' },
+  { label: 'Bio Library (506)', href: '/bio-library' },
+  { label: 'Premium Bio Library (8,421)', href: '/premium-bios' },
   { label: 'Bio Editor', href: '/bio-editor' },
   { label: 'Design Studio', href: '/design-studio' },
 ];

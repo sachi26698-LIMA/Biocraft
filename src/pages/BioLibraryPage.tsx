@@ -128,7 +128,7 @@ interface DropdownProps {
 function Dropdown({ id, label, value, options, onChange, allLabel, className }: DropdownProps) {
   return (
     <div className={`lib-facet bl-dropdown ${className ?? ''}`}>
-      <label className="bl-dropdown-label">{label}</label>
+      <label className="bl-dropdown-label" htmlFor={id}>{label}</label>
       <select
         id={id}
         className="bl-dropdown-select select"
@@ -335,6 +335,12 @@ export default function BioLibraryPage() {
             <button type="button" className="btn btn-outline btn-large" onClick={() => navigate('/bio-editor', { replace: false })}>
               <span style={{ marginRight: 8 }}>{'+'}</span> Create Custom Bio
             </button>
+            {/* /bio-library holds the 506 hand-curated collection bios. The much
+                larger verified library lives at /premium-bios; without this link
+                (and the footer one) it was reachable only by typing the URL. */}
+            <a className="btn btn-outline btn-large" href="/premium-bios" onClick={handleAnchorClick}>
+              Browse the full 8,421-bio library →
+            </a>
           </div>
           <div className="bl-hero-stats">
             <div className="bl-stat">
@@ -389,7 +395,7 @@ export default function BioLibraryPage() {
           </div>
 
           {/* ── Category chips (two rows) ── */}
-          <nav className="bl-category-nav" role="group" aria-label="Browse categories">
+          <div className="bl-category-nav" role="group" aria-label="Browse categories">
             <button
               type="button"
               className={`bl-chip${query.category === 'all' ? ' is-active' : ''}`}
@@ -413,14 +419,15 @@ export default function BioLibraryPage() {
               type="button"
               className="bl-chip bl-chip--more"
               aria-expanded={viewMore}
+              aria-label={viewMore ? 'Show fewer categories' : 'Show all categories'}
               onClick={() => setViewMore((current) => !current)}
             >
               <MoreIcon size={16} aria-hidden="true" />
             </button>
-          </nav>
+          </div>
 
           {viewMore && (
-            <nav className="bl-category-nav bl-category-nav--second" role="group" aria-label="More categories">
+            <div className="bl-category-nav bl-category-nav--second" role="group" aria-label="More categories">
               <button
                 type="button"
                 className={`bl-chip${query.category === 'english' ? ' is-active' : ''}`}
@@ -484,7 +491,7 @@ export default function BioLibraryPage() {
               >
                 <CloseIcon size={16} aria-hidden="true" />
               </button>
-            </nav>
+            </div>
           )}
 
           {/* Expandable, searchable category drawer */}
@@ -684,7 +691,7 @@ export default function BioLibraryPage() {
                               type="button"
                               className={`btn btn-secondary${copiedId === bio.id ? ' is-copied' : ''}`}
                               onClick={() => void copyBio(bio)}
-                              aria-label={`Copy this bio from ${bio.collectionName}`}
+                              aria-label={`${copiedId === bio.id ? 'Copied' : 'Copy Bio'} — ${bio.collectionName}`}
                             >
                               {copiedId === bio.id ? (
                                 <>

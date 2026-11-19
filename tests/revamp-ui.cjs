@@ -70,8 +70,11 @@ async function main() {
 
   // ---------------- skeletons ----------------
   console.log('\n--- Skeleton system ---');
-  check('every registry tool key has its own skeleton', Object.keys(TOOL_SKELETONS).length === 12);
-  check('no two tools share a skeleton component', new Set(Object.values(TOOL_SKELETONS)).size === 12);
+  // PR #28 added palette, icons and text-toolkit, taking the registry from 12
+  // tool keys to 15. Each needs its own skeleton, so the expectation tracks the
+  // registry rather than staying pinned to the old count.
+  check('every registry tool key has its own skeleton', Object.keys(TOOL_SKELETONS).length === 15);
+  check('no two tools share a skeleton component', new Set(Object.values(TOOL_SKELETONS)).size === 15);
 
   await act(async () => root.render(h(BioSkeleton)));
   const region = document.querySelector('[role="status"]');

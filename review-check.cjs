@@ -271,11 +271,16 @@ const runAxe = async (routeName) => {
   check('skip link lives inside the banner landmark', Boolean($('.site-header .skip-link')));
   check('tool panel exists', Boolean($('#tool-panel')));
   const tabs = $$('.tool-tab');
-  check('Instagram workspace renders 8 tool tabs', tabs.length === 8);
+  // PR #28 made palette, icons and text-toolkit platform-neutral, so every
+  // platform now carries eleven tabs instead of eight. The registry is the
+  // source of truth: assert the eight original tabs still lead, in order, and
+  // that the three neutral tools follow — not a hardcoded count that silently
+  // rots the next time a tool is added.
+  check('Instagram workspace renders 11 tool tabs', tabs.length === 11);
   check(
     'tool tab hrefs in order',
     tabs.map((a) => a.getAttribute('href')).join(',') ===
-      '/bio-generator,/stylish-name-generator,/fancy-font-generator,/design-studio,/username-generator,/emoji-symbol-generator,/hashtag-generator,/caption-generator',
+      '/bio-generator,/stylish-name-generator,/fancy-font-generator,/design-studio,/username-generator,/emoji-symbol-generator,/hashtag-generator,/caption-generator,/color-palette-generator,/icon-finder,/text-toolkit',
   );
   check('Bio tab is aria-current=page', $('.tool-tab[aria-current="page"]')?.textContent.trim() === 'Bio');
   check('workspace renders eight platform pills', $$('.toolkit-workspace .platform-pill').length === 8);
@@ -1002,9 +1007,16 @@ const runAxe = async (routeName) => {
   await settle('/bio-library');
   check('library route renders real bio cards', $$('.lib-card').length === 36);
   check('library reports the honest total', ($('.lib-count')?.textContent ?? '').includes('506'));
-  check('library facets cover category, platform, language, design, collection, sort',
-    ['lib-category', 'lib-platform', 'lib-language', 'lib-design', 'lib-collection', 'lib-sort']
+  // PR #27 replaced the collection dropdown with a browse row that links each
+  // collection to its own route. The facet still exists in the query layer and
+  // is exercised by the deep-link check below, so assert the four live selects
+  // plus a working collection entry point rather than a removed element id.
+  check('library facets cover category, platform, language, design, sort',
+    ['lib-category', 'lib-platform', 'lib-language', 'lib-design', 'lib-sort']
       .every((id) => Boolean(document.getElementById(id))));
+  check('library exposes a collection entry point',
+    $$('.bl-category-nav button').length > 0 &&
+      $$('a[href="/bio-collections"]').length > 0);
   const libCollectionLinks = $$('.lib-card-collection').map((el) => el.getAttribute('href') ?? '');
   check('every bio card links to a real collection route',
     libCollectionLinks.length === 36 && libCollectionLinks.every((href) => /^\/[a-z0-9-]+$/.test(href)));
