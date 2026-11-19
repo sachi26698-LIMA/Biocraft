@@ -39,10 +39,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 026 | `batch-026.mjs` | 41 | 31 | 25 | 97 | 0 | 2531 | Proportional depth; zero rejections. English passes 1,000 |
 | 027 | `batch-027.mjs` | 31 | 24 | 45 | 100 | 3 → fixed | 2631 | Hinglish-leaning rebalance; 3 near-duplicates replaced |
 | 028 | `batch-028.mjs` | 49 | 33 | 27 | 109 | 2 → fixed | 2740 | English-leaning rebalance; one exact repeat caught |
+| 029 | `batch-029.mjs` | 40 | 31 | 25 | 96 | 2 → fixed | 2836 | Strict proportional mix; two vocabulary-gap fixes |
 
-**Verified so far: 2,740 / 50,000 (5.5%)**
-Remaining: 47,260 (EN 18,916 · HI 14,170 · HG 14,174)
-Split check: EN 5.42% · HI 5.53% · HG 5.51% of their targets.
+**Verified so far: 2,836 / 50,000 (5.7%)**
+Remaining: 47,164 (EN 18,876 · HI 14,139 · HG 14,149)
+Split check: EN 5.62% · HI 5.74% · HG 5.67% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -72,8 +73,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 029 — split is now within 0.11 points across all three (5.42 / 5.53 / 5.51).
-Return to strict proportional 40/30/30.
+Batch 030 — split within 0.12 points (5.62 / 5.74 / 5.67). Continue strict
+proportional 40/30/30 with depth in the leaders.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This

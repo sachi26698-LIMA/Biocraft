@@ -131,6 +131,9 @@ const HINGLISH_MARKERS = [
   'vyanjan', 'shikayat', 'dekhbhaal', 'shabd', 'aalsi', 'oobe', 'nivesh',
   // ninth sweep (batch 025)
   'pasand', 'afsos', 'paanch', 'mehngi', 'sasti', 'ikatthi', 'mahaul', 'ausat',
+  // tenth sweep (batch 029)
+  'poocho', 'poochho', 'imaandaar', 'jayega', 'jayegi', 'bach', 'sabka',
+  'mushkil', 'seemit', 'tehalna', 'swabhav', 'sthir',
 ];
 
 export function detectScript(text) {
