@@ -121,6 +121,8 @@ const HINGLISH_MARKERS = [
   // fourth sweep (batch 011)
   'aasaan', 'aasan', 'mushkil', 'likhna', 'samajhna', 'seekhna', 'padhna',
   'bolna', 'sunna', 'karna', 'hona', 'jaana', 'aana', 'dena', 'lena',
+  // fifth sweep (batch 012)
+  'khaali', 'bhare', 'vichaar', 'kaafi', 'saamaan', 'aadat', 'dhang', 'duniya',
 ];
 
 export function detectScript(text) {

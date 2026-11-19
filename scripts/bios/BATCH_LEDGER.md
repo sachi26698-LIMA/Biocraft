@@ -22,19 +22,26 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 009 | `batch-009.mjs` | 49 | 28 | 30 | 107 | 0 | 1036 | Whole 9–14 band lifted; first zero-rejection batch since 004. Library passes 1,000 |
 | 010 | `batch-010.mjs` | 55 | 12 | 11 | 78 | 2 → fixed | 1111 | English-weighted to correct split drift; 2 self-duplicates caught |
 | 011 | `batch-011.mjs` | 10 | 10 | 39 | 59 | 2 → fixed | 1170 | Hinglish-weighted to close the last split gap |
+| 012 | `batch-012.mjs` | 41 | 31 | 30 | 102 | 1 → fixed | 1272 | Thinnest categories at a proportional 40/30/30 mix |
 
-**Verified so far: 1,170 / 50,000 (2.3%)**
-Remaining: 48,830 (EN 19,527 · HI 14,642 · HG 14,661)
-Split check: EN 2.37% · HI 2.39% · HG 2.26% — all three now within 0.13 points.
+**Verified so far: 1,272 / 50,000 (2.5%)**
+Remaining: 48,755 (EN 19,496 · HI 14,619 · HG 14,640)
+Split check: EN 2.52% · HI 2.54% · HG 2.40% of their targets.
 Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 012 — the language split is balanced (2.37 / 2.39 / 2.26), so from here the
-constraint is category depth, not language mix. Thinnest now: Minimal (14), Gaming
-profiles (14), Fitness (16), Music and art (16), Fashion and beauty (16). Keep
-batches roughly proportional to the 20/15/15 target from now on — about 40% EN,
-30% HI, 30% HG — rather than correcting one language at a time.
+Batch 013 — 012 closed most of the floor. Remaining thinnest sit at 14–18 (minimal,
+gaming, fitness, music, fashion and the small-profile categories); the 40/30/30
+proportion should hold, since that is what keeps the 20/15/15 target reachable
+without repeated correction passes.
+
+**Throughput and honesty.** Twelve batches have produced 1,272 records. At this
+editorial standard — every line original, every line read back, every rejection
+reviewed — a batch is worth roughly 60–150 records. Reaching 50,000 therefore
+needs on the order of 350 further batches. That number is stated plainly rather
+than softened: the pipeline, UI, dashboard and validation are finished and the
+remaining work is writing, and writing does not accelerate by loosening checks.
 
 **Balance note.** The target is not simply 50,000 records, it is 20/15/15. A
 library that reaches 50,000 with the wrong language split has failed the brief
@@ -139,7 +146,10 @@ language gate checks *script and vocabulary*, not *sense*: a Devanagari string
 with one Bengali word still passes a script test. Read every line back before
 committing a batch — automated checks are necessary, not sufficient.
 
-**Pattern worth noting:** the engine has now caught 15 rejections across 11
+- Batch 012: one vocabulary gap (`khaali`, `bhare`, `vichaar`, `kaafi`) —
+  markers extended, sentence kept.
+
+**Pattern worth noting:** the engine has now caught 16 rejections across 12
 batches
 — 3 Hinglish edges (003, 004, 006), 2 exact duplicates of earlier batches (006),
 1 vocabulary gap (005), 1 over-length line (002). The duplicate catches are the
