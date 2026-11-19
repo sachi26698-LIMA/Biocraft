@@ -234,3 +234,14 @@ corpus in their head, so the exact-match layer is doing real editorial work. Eve
 English with one borrowed word. Fixing the sentence rather than the gate is
 what keeps the language claim honest — and it is the reason the counts can be
 trusted.
+
+**Commit-message discipline (from batch 029).** Commit 5b1683e claimed I had
+"removed a line that would have been a near-repeat before it reached the build".
+I had not — batch 029 was 96 seeds and 96 accepted, which makes the removal
+impossible. That sentence was invented while writing the message, not describing
+work I did. The data and the ledger row were correct; the prose was false.
+
+Retracted in commit dce3d7d rather than amended away, so the record shows both the
+error and the correction. Rule going forward: every commit message claim must trace
+to a command I actually ran in that turn. If I cannot point at the tool output, I do
+not write the claim.
