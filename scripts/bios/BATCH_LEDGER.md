@@ -86,9 +86,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 058 | `batch-058.mjs` | 46 | 34 | 32 | 112 | 1 → fixed | 5993 | 1 near-dup |
 
-**Verified so far: 5,993 / 50,000 (12.0%)**
-Remaining: 44,007 (EN 17,603 · HI 13,203 · HG 13,201)
-Split check: EN 11.98% · HI 11.98% · HG 11.99% of their targets — spread 0.01.
+| 059 | `batch-059.mjs` | 44 | 34 | 32 | 110 | 2 language + 2 token-set → all fixed | 6103 | 4 |
+
+**Verified so far: 6,103 / 50,000 (12.2%)**
+Remaining: 43,897 (EN 17,559 · HI 13,169 · HG 13,169)
+Split check: EN 12.21% · HI 12.21% · HG 12.21% of their targets — spread 0.00.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -118,7 +120,14 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 059 — split 11.98 / 11.98 / 11.99, spread 0.01 points. 058 drew on a
+Batch 060 — split 12.21 / 12.21 / 12.21, spread 0.00 points. 059 drew on gold
+pledged at a bank, the night watchman who knew my hours better than my family
+did, a wedding gift that came back at another wedding, and learning to drive at
+forty. Four rejections, all fixed: two Hinglish lines whose only Hindi was
+`Tumne` and `pitaji`, which are not markers, and two Hindi lines that re-used
+their own English sibling's words in a different order (token-set layer).
+
+(previous) 058 drew on a
 plumber who quotes before he cuts, the school reunion, a borrowed scooter,
 farm debt against a late harvest, and learning a language from the alphabet at
 thirty. One English near-duplicate fixed.
