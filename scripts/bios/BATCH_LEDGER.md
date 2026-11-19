@@ -29,10 +29,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 016 | `batch-016.mjs` | 30 | 23 | 21 | 74 | 1 → fixed | 1592 | Depth on attitude, love, sad, shayari, life, quotes, motivational |
 | 017 | `batch-017.mjs` | 44 | 35 | 30 | 109 | 0 | 1701 | Depth continued; zero rejections |
 | 018 | `batch-018.mjs` | 39 | 33 | 29 | 101 | 0 | 1802 | Leaders + mid-field top-ups (food, tech, photography) |
+| 019 | `batch-019.mjs` | 15 | 14 | 34 | 63 | 0 | 1865 | Hinglish-weighted rebalance; zero rejections |
 
-**Verified so far: 1,802 / 50,000 (3.6%)**
-Remaining: 48,198 (EN 19,274 · HI 14,444 · HG 14,480)
-Split check: EN 3.63% · HI 3.71% · HG 3.47% of their targets.
+**Verified so far: 1,865 / 50,000 (3.7%)**
+Remaining: 48,135 (EN 19,259 · HI 14,430 · HG 14,446)
+Split check: EN 3.71% · HI 3.80% · HG 3.69% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -62,9 +63,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 019 — depth continues at 40/30/30, with another mid-field pass. Hindi is
-pulling ahead of Hinglish (3.71% vs 3.47%), so batch 019 should lean slightly
-HG-heavy to keep the split converging.
+Batch 020 — the split is level again (3.71 / 3.80 / 3.69), so return to a
+proportional 40/30/30 mix and depth in the leaders.
 
 **Phase change recorded.** Batches 001–013 were a breadth phase: the job was to
 get all 46 categories populated and roughly even, which is now done. From 014
