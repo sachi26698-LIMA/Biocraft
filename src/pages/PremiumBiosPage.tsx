@@ -159,6 +159,14 @@ export default function PremiumBiosPage() {
           </span>
         </header>
 
+        <p className="pm-disclosure" role="note" style={{ marginBottom: 12 }}>
+          Looking for hand-curated collection bios instead?{' '}
+          <a href="/bio-library" onClick={handleAnchorClick}>
+            The 506 ready-made bios
+          </a>{' '}
+          are grouped by collection, mood and platform.
+        </p>
+
         {!PREMIUM_STATS.complete && (
           <p className="pm-disclosure" role="note">
             This library is being written in verified batches. It currently holds{' '}

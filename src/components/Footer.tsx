@@ -42,9 +42,12 @@ const HINDI_FONT_LINKS: Array<{ label: string; href: string }> = [
 
 const READY_MADE_LINKS: Array<{ label: string; href: string }> = [
   { label: 'Ready-Made Bios', href: '/bio-collections' },
-  { label: 'Bio Library', href: '/bio-library' },
-  // The full verified library (8,421 records, 46 categories) was reachable only
-  // by typing the URL. It belongs next to the curated set, not instead of it.
+  // Both libraries are real and both are linked: /bio-library holds the 506
+  // curated collection bios, /premium-bios the 8,421 verified records. Label the
+  // counts so visitors can tell them apart instead of assuming one replaced the
+  // other. main and this branch fixed this orphan route independently; keeping a
+  // single pair of links rather than four.
+  { label: 'Bio Library (506)', href: '/bio-library' },
   { label: 'All Verified Bios (8,421)', href: '/premium-bios' },
   { label: 'Bio Editor', href: '/bio-editor' },
   { label: 'Design Studio', href: '/design-studio' },
