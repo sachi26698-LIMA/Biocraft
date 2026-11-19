@@ -37,10 +37,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 024 | `batch-024.mjs` | 38 | 29 | 25 | 92 | 1 → fixed | 2334 | Proportional depth + fitness/food/cinema top-ups |
 | 025 | `batch-025.mjs` | 45 | 30 | 25 | 100 | 2 → fixed | 2434 | English-leaning rebalance; 100 seeds accepted exactly |
 | 026 | `batch-026.mjs` | 41 | 31 | 25 | 97 | 0 | 2531 | Proportional depth; zero rejections. English passes 1,000 |
+| 027 | `batch-027.mjs` | 31 | 24 | 45 | 100 | 3 → fixed | 2631 | Hinglish-leaning rebalance; 3 near-duplicates replaced |
 
-**Verified so far: 2,531 / 50,000 (5.1%)**
-Remaining: 47,469 (EN 18,996 · HI 14,227 · HG 14,246)
-Split check: EN 5.02% · HI 5.15% · HG 5.03% of their targets.
+**Verified so far: 2,631 / 50,000 (5.3%)**
+Remaining: 47,369 (EN 18,965 · HI 14,203 · HG 14,201)
+Split check: EN 5.18% · HI 5.31% · HG 5.19% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -70,8 +71,14 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 027 — library passed 2,500, five percent of target. Split 5.02 / 5.15 / 5.03;
-Hindi marginally ahead, so a slightly HG-heavy batch will level it.
+Batch 028 — split 5.18 / 5.31 / 5.19, tight again. Return to proportional 40/30/30.
+
+**Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
+near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
+is the brief's "lightly modified bios" failure mode, and it is happening at about
+3-in-100 seeds. Two lessons: at 2,600 records the corpus is dense enough that
+paraphrase is detectable, and the fix is to write a genuinely different thought
+rather than swap adjectives.
 
 **Phase change recorded.** Batches 001–013 were a breadth phase: the job was to
 get all 46 categories populated and roughly even, which is now done. From 014
