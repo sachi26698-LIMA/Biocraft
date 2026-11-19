@@ -110,9 +110,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 070 | `batch-070.mjs` | 44 | 33 | 33 | 110 | 0 | 7321 | 0 at build time; 1 gate failure caught by precheck first |
 
-**Verified so far: 7,321 / 50,000 (14.6%)**
-Remaining: 42,679 (EN 17,071 · HI 12,804 · HG 12,804)
-Split check: EN 14.64% · HI 14.64% · HG 14.64% of their targets — spread 0.00.
+| 071 | `batch-071.mjs` | 44 | 33 | 33 | 110 | 0 at build time (3 near-dups caught by upgraded precheck) | 7431 | 3 near-dup, all rewritten pre-build |
+
+**Verified so far: 7,431 / 50,000 (14.9%)**
+Remaining: 42,569 (EN 17,027 · HI 12,771 · HG 12,771)
+Split check: EN 14.87% · HI 14.86% · HG 14.86% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -142,7 +144,20 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 071 — split 14.64 / 14.64 / 14.64, spread 0.00. 070 drew on the grain shop
+Batch 072 — split 14.87 / 14.86 / 14.86, spread 0.01. 071 drew on the umbrella
+repair man before the rain, a father's pension file in four folders with one
+missing signature, a phone stolen on a crowded bus, the tailor's daughter
+sitting her board exam at the shop counter, and an office water cooler.
+
+**Precheck upgraded.** 071 exposed a real blind spot: the precheck checked
+language, length, categories and repeats *within* a file, but never ran the
+deduper *across* files. A batch could be perfectly balanced and still repeat an
+idea from batch 012. The precheck now replays every batch from 001 in order
+through `BioDeduplicator` and fails on any seed in the current batch that does
+not survive. It reproduced all three of 071's near-duplicates before the build,
+which is why 071's build reported 0.
+
+(previous) 070 drew on the grain shop
 scale, a mother's first day at a job at forty-four, a stolen bicycle bell, the
 bank queue at ten, a landline that only rings, and the last day of a rented
 house. The precheck caught another gate failure before the build

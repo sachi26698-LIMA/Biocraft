@@ -20,7 +20,7 @@
  */
 import { readFileSync } from 'node:fs';
 import {
-  validateLanguage, MAX_BIO_LENGTH, MIN_BIO_LENGTH,
+  validateLanguage, MAX_BIO_LENGTH, MIN_BIO_LENGTH, BioDeduplicator,
   // CATEGORIES lives in batch-001; imported lazily below to avoid a cycle
 } from './schema.mjs';
 
@@ -97,6 +97,36 @@ console.log(`\nprecheck batch ${padded} — ${seeds.length} seeds\n`);
   } else {
     ok('every seed passes the language gate as written');
   }
+}
+
+/* 6. full deduper against every earlier batch --------------------------- */
+// Batch 071 shipped 3 near-duplicates that every other check missed, because
+// none of the earlier checks ran the deduper: the gate only asks "is this the
+// right language", and the file check only compares a batch with itself. A
+// batch can be perfectly balanced, in the right language, the right length, and
+// still repeat an idea from batch 012.
+{
+  const { readdirSync } = await import('node:fs');
+  const files = readdirSync('./content').filter((f) => f.endsWith('.mjs')).sort();
+  const dedupe = new BioDeduplicator();
+  const mine = new Set();
+  for (const f of files) {
+    const m = await import(`./content/${f}`);
+    const k = Object.keys(m).find((x) => x.startsWith('BATCH_'));
+    const isMine = f.includes(`-${padded}.mjs`);
+    for (const seed of m[k] ?? []) {
+      const accepted = dedupe.consider(seed.text, seed.lang, seed.category);
+      if (isMine) {
+        mine.add(seed);
+        if (!accepted) {
+          const r = dedupe.rejections[dedupe.rejections.length - 1];
+          problem(`${seed.lang} ${r.layer}: ${seed.text.slice(0, 64)}`);
+        }
+      }
+    }
+  }
+  const mineRejected = dedupe.rejections.filter((r) => mine.has(r) || [...mine].some((m) => m.text === r.text));
+  if (mineRejected.length === 0) ok('every seed survives the full deduper against batches 001 onwards');
 }
 
 console.log(`\n${fail === 0 ? `PASS — batch ${padded} is clean to build` : `FAIL — ${fail} problem(s), fix before building`}`);
