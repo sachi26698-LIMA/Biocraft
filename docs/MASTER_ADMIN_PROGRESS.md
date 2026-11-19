@@ -1,6 +1,10 @@
 # Master Admin — persistent execution tracker
 
-## Active branch · 2026-11-18 UTC
+## PR #16 integration with main (`e4b8cd1`)
+
+The combined tree keeps the public site local-first, and keeps Admin's database and Auth readiness checks. Disposable PostgreSQL/Chromium tests passed for private catalogue drafts, MFA with synthetic upstream and 015 rollback/reinstall. The canonical inventory now covers 57 functions (52 grants and five ungranted triggers). The public no-network tests and strict pooler TLS/diagnostic tests passed. In disposable databases the standard sync passed eight checks, the two-cluster hybrid suite passed and the 200,000-row importer repeat skipped all 200,000 with zero missing provenance. No shared migration, grant or credential change was made during conflict resolution.
+
+## Earlier branch checkpoint · 2026-11-18 UTC
 
 `arena/21fb7968-biocraft`. Production release `dff59e3` was promoted; [actual hosted status and completed syncs](PRODUCTION_SYNC.md). The private Admin schema and existing executor are present. **Do not replay the historical bootstrap below.** The live session pooler still rejects the confirmed tenant/user (`XX000`); Auth health is not a successful Admin login.
 

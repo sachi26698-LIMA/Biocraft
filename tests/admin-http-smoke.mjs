@@ -44,7 +44,9 @@ const server=http.createServer(async (req,res)=>{
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const base=`http://127.0.0.1:${server.address().port}`;
 try {
- assert.equal((await fetch(base+'/api/admin/v1/health')).status,503); // DB reachable, Auth not healthy
+ const unavailable=await fetch(base+'/api/admin/v1/health'); // DB reachable, Auth not healthy
+ assert.equal(unavailable.status,503);assert.equal(unavailable.headers.get('x-admin-stage'),'auth provider unavailable');
+ assert.deepEqual(await unavailable.json(),{error:{code:'UNAVAILABLE',stage:'auth provider unavailable'}});
  authHealthy=true;clock+=10_001;
  const health=await fetch(base+'/api/admin/v1/health');assert.equal(health.status,200);assert.deepEqual(await health.json(),{ok:true});
  assert.equal(health.headers.get('cache-control'),'no-store');

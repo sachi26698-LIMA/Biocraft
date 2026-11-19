@@ -14,7 +14,7 @@ const options = [
 
 export default function PublishedLibrary() {
   const [kind, setKind] = useState<Kind>('captions');
-  return <Panel title="Published catalogue" description="Active database entries shown on the public tools. This view does not edit or publish content.">
+  return <Panel title="Published catalogue" description="Active database entries. Public tools use bundled content; this view does not change it.">
     <SegmentedControl ariaLabel="Catalogue type" value={kind} onChange={value => setKind(value as Kind)} options={[...options]} />
     <Entries key={kind} kind={kind} />
   </Panel>;

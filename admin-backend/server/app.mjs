@@ -17,9 +17,10 @@ import {verifyProviderIdentity} from './identity.mjs';
 import {createCookieGateway} from './session-cookie.mjs';
 import {createAdminHandler} from './api.mjs';
 import {createPublishedCatalog} from './published-catalog.mjs';
-import {createDatabaseExecutor,createPostgresPool} from './database.mjs';
-import {inspectAdminDatabase,databaseReady} from './db-readiness.mjs';
-export {verifyAdminDatabase} from './db-readiness.mjs';
+import {createDatabaseExecutor,createPostgresPool,databaseCa} from './database.mjs';
+export {databaseCa} from './database.mjs';
+import {inspectAdminDatabase,databaseReady,readinessStage} from './db-readiness.mjs';
+export {verifyAdminDatabase,databaseStage} from './db-readiness.mjs';
 import {createAuthStorage} from './auth-storage.mjs';
 import {isEmailAllowed} from './auth-flow.mjs';
 import {createProviderLogout} from './provider-logout.mjs';
@@ -98,7 +99,7 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  const dbPort=env.ADMIN_DB_PORT===undefined||env.ADMIN_DB_PORT===''?undefined:/^\d{1,5}$/.test(env.ADMIN_DB_PORT)?Number(env.ADMIN_DB_PORT):NaN;
  if(dbPort!==undefined&&dbPort!==5432) return fail('invalid database configuration');
  let pool;
- try {pool=poolFactory({host:dbHost,port:dbPort,user:env.ADMIN_DB_USER,password:env.ADMIN_DB_PASSWORD});} catch {return fail('invalid database configuration');}
+ try {pool=poolFactory({host:dbHost,port:dbPort,user:env.ADMIN_DB_USER,password:env.ADMIN_DB_PASSWORD,ca:databaseCa(env,dbHost)});} catch {return fail('invalid database configuration');}
  const execute=createDatabaseExecutor(pool,{now});
  const storage=createAuthStorage({pool,encryptionKey:flowKey,hashKey});
  // Supabase clients must be per-request so sessions never leak between requests.
@@ -182,14 +183,8 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
   if(!sharedWrites&&url.pathname==='/api/admin/v1/auth/recovery/complete'&&request.method==='POST') return bad(403);
   if(url.pathname.startsWith('/api/admin/v1/auth/')) return auth(request,key);
   if(url.pathname==='/api/admin/v1/health') {
-   // A 503 from THIS branch has two distinct shapes, which makes a deployed
-   // failure self-diagnosing:
-   //   {error:{code:'UNAVAILABLE',stage:'...'}}  -> a configuration gate closed
-   //   {error:{code:'UNAVAILABLE'}}              -> configuration was fine, but
-   //      dependency readiness (limited DB commands or Auth probe) failed.
-   // `?diagnose=1` additionally reports which dependency answers. It is gated on
-   // the same proxy HMAC signature the rate limiter uses, so a direct caller
-   // learns nothing about the deployment.
+   // Normal health names the failing stage. Diagnostics add bounded details
+   // from the same read-only DB and Auth probes, never raw errors or secrets.
    return health(request.method,url.searchParams.get('diagnose')==='1');
   }
   if(url.pathname.startsWith('/api/admin/v1/')) return gateway(request);
@@ -201,7 +196,7 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  // Cache an in-flight DB check as well as the result. A diagnostic and a
  // normal health check must not make duplicate login attempts during an outage.
  function dbReport() {
-  if(!readiness||readiness.expires<=now()) readiness={expires:now()+10_000,result:inspectAdminDatabase(pool)};
+  if(!readiness||readiness.expires<=now()) readiness={expires:now()+10_000,result:inspectAdminDatabase(pool,now)};
   return readiness.result;
  }
  async function providerHealth() {
@@ -229,7 +224,9 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    const ok=databaseReady(diagnostics)&&diagnostics.provider==='reachable';
    return new Response(JSON.stringify({ok,diagnostics}),{status:ok?200:503,headers});
   }
-  const ok=databaseReady(await dbReport()) && await authReport()==='reachable';
-  return new Response(JSON.stringify(ok?{ok:true}:{error:{code:'UNAVAILABLE'}}),{status:ok?200:503,headers});
+  const db=await dbReport();
+  const stage=!databaseReady(db)?readinessStage(db):(await authReport()!=='reachable'?'auth provider unavailable':null);
+  if(!stage) return new Response(JSON.stringify({ok:true}),{status:200,headers});
+  return new Response(JSON.stringify({error:{code:'UNAVAILABLE',stage}}),{status:503,headers:{...headers,'X-Admin-Stage':stage}});
  }
 }

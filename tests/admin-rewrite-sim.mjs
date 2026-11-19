@@ -49,7 +49,9 @@ try {
     const result = await call(path);
     assert.equal(result.status, 503, `${path} -> ${result.status}`);
     assert.match(result.type, /application\/json/, `${path} is not JSON (static fallback would be HTML)`);
-    assert.deepEqual(JSON.parse(result.text), {error: {code: 'UNAVAILABLE',...(path==='/api/admin/v1/health'?{stage:'disabled'}:{})}}, path);
+    // The body keeps its leading {error:{code}} shape; `stage` now names the
+    // closed gate, which is what makes a deployed 503 diagnosable at all.
+    assert.deepEqual(JSON.parse(result.text), {error: {code: 'UNAVAILABLE', stage: 'disabled'}}, path);
   }
   // The rewrite must only touch /api/admin/v1/*: a non-API path reaches the
   // entry with its URL unchanged (in production Vercel serves the SPA shell).

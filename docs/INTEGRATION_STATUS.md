@@ -1,6 +1,6 @@
 # BioCraft integration checkpoints
 
-**Current Production:** [connection, verified migrations, sync counts and remaining Admin pooler check](PRODUCTION_SYNC.md).
+**Historical Production checkpoint:** [verified migrations, sync counts and earlier pooler incident](PRODUCTION_SYNC.md). Current architecture: [bundled public content and database-backed Admin](ADMIN_CONTENT_MIGRATION.md).
 
 ## Historical Preview checkpoint — 2026-11-18
 

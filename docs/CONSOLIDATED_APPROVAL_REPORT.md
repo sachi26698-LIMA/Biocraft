@@ -2515,3 +2515,417 @@ Section 8 previously repeated rollbacks and grants in a second, manually
 maintained appendix. That duplication is gone: one generated appendix is the only
 copy, so there is exactly one place that can drift — and it is checked by
 `test:admin-grant-inventory` on every run.
+
+
+## Appendix C — Migration 015 and the corrected executor grant list (verbatim, SHA-256 pinned)
+Reproduced here because `tests/admin-grant-inventory.mjs` requires every migration,
+rollback and the grant list to appear byte-for-byte with the digest it recomputes
+from disk. Migration 015 is already applied to the project; this appendix records
+the exact bytes that match the live schema.
+
+* `015_content_library_read_surface.sql` — each `SECURITY DEFINER` body pins
+  `search_path=pg_catalog`. It previously pinned `public,pg_catalog`, which lets a
+  caller-influenced `public` schema resolve before `pg_catalog`.
+* `rollback/015_content_library_read_surface.sql` — 015 shipped with no rollback, so
+  the reverse path had never been exercised. Drops are per-signature, no `CASCADE`.
+* `executor-grants.sql` — the eight readers created by 015 were never granted to
+  `bc_admin_executor`, so the console could not read fonts, emoji, symbols,
+  languages, translations, data sources, sync jobs or library totals.
+
+### `admin-backend/migrations/015_content_library_read_surface.sql`
+
+SHA-256: `88ce88a3882f7f4bc4fdc87cedd3dcdb3953ddc57179e5f22a1b61386e44568e`
+
+```sql
+-- 015. Master Admin read surface for the content-intelligence libraries.
+--
+-- Scope discipline, matching 014:
+--   * creates no table in bc_admin, changes no RLS policy, grants nothing to a
+--     client;
+--   * every function is security definer, revokes EXECUTE from PUBLIC/anon/
+--     authenticated, and re-checks its own permission inside SQL;
+--   * reads public.* only. No writes to public.* are introduced here, so content
+--     mutation still requires the service role.
+--
+-- What this unblocks: the Admin console had no way to see fonts, emoji, symbols,
+-- the data-source registry, sync jobs or the language table, because those
+-- libraries were added to public.* by 0006 and had no bc_admin_v1 reader. Without
+-- this, five Phase 3 modules would have been screens with no data behind them.
+--
+-- Paging is keyset everywhere. A count(*) over a 200,000-row library on every
+-- console page would be real work for a number nobody acts on; totals are exposed
+-- once, by content_library_stats().
+begin;
+
+-- ---------------------------------------------------------------------------
+-- 1. Library totals — one call, cheap aggregate
+-- ---------------------------------------------------------------------------
+create or replace function bc_admin_v1.content_library_stats()
+returns table (domain text, total bigint, active bigint)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid;
+begin
+  actor := bc_admin_v1.require_actor('content.read');
+  if actor is null then
+    raise exception 'forbidden' using errcode='42501';
+  end if;
+
+  return query
+    select g.domain,
+           count(*)::bigint,
+           count(*) filter (where g.is_active)::bigint
+    from public.global_content g
+    group by g.domain
+    order by count(*) desc;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 2. Data source registry — licence, permissions, sync status
+-- ---------------------------------------------------------------------------
+create or replace function bc_admin_v1.list_data_sources(
+  p_limit integer default 50,
+  p_after text default null
+)
+returns table (
+  id uuid, slug text, name text, provider text, kind text, endpoint text,
+  license_code text, license_url text, attribution text,
+  status text, last_sync_at timestamptz, last_sync_count integer,
+  last_error text, next_cursor text
+)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; lim integer;
+begin
+  actor := bc_admin_v1.require_actor('content.read');
+  if actor is null then
+    raise exception 'forbidden' using errcode='42501';
+  end if;
+  lim := greatest(1, least(coalesce(p_limit, 50), 200));
+
+  return query
+    select s.id, s.slug, s.name, s.provider, s.kind, s.endpoint,
+           s.license_code, s.license_url, s.attribution,
+           s.status, s.last_sync_at, s.last_sync_count, s.last_error, s.slug
+    from public.data_sources s
+    where p_after is null or s.slug > p_after
+    order by s.slug
+    limit lim;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 3. Sync job history — what actually ran, and what failed
+-- ---------------------------------------------------------------------------
+create or replace function bc_admin_v1.list_sync_jobs(
+  p_limit integer default 50,
+  p_before timestamptz default null
+)
+returns table (
+  id uuid, source_slug text, source_name text, status text, mode text,
+  started_at timestamptz, finished_at timestamptz, attempts integer,
+  items_seen integer, items_inserted integer, items_updated integer,
+  items_skipped integer, error text
+)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; lim integer;
+begin
+  actor := bc_admin_v1.require_actor('content.read');
+  if actor is null then
+    raise exception 'forbidden' using errcode='42501';
+  end if;
+  lim := greatest(1, least(coalesce(p_limit, 50), 200));
+
+  return query
+    select j.id, s.slug, s.name, j.status, j.mode,
+           j.started_at, j.finished_at, j.attempts,
+           j.items_seen, j.items_inserted, j.items_updated, j.items_skipped,
+           j.error
+    from public.data_sync_jobs j
+    join public.data_sources s on s.id = j.source_id
+    where p_before is null or j.created_at < p_before
+    order by j.created_at desc
+    limit lim;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 4. Fonts library
+-- ---------------------------------------------------------------------------
+create or replace function bc_admin_v1.list_fonts(
+  p_limit integer default 50,
+  p_after text default null,
+  p_category text default null,
+  p_search text default null
+)
+returns table (
+  id uuid, slug text, name text, family text, category text,
+  subsets text[], weights text[], styles text[], variable boolean,
+  license_code text, source_slug text, is_active boolean, next_cursor text
+)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; lim integer;
+begin
+  actor := bc_admin_v1.require_actor('content.read');
+  if actor is null then
+    raise exception 'forbidden' using errcode='42501';
+  end if;
+  lim := greatest(1, least(coalesce(p_limit, 50), 200));
+
+  return query
+    select f.id, f.slug, f.name, f.family, f.category,
+           f.subsets, f.weights, f.styles, f.variable,
+           f.license_code, s.slug, f.is_active, f.slug
+    from public.fonts f
+    left join public.data_sources s on s.id = f.source_id
+    where (p_after is null or f.slug > p_after)
+      and (p_category is null or f.category = p_category)
+      and (p_search is null or f.name ilike '%' || p_search || '%')
+    order by f.slug
+    limit lim;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 5. Emoji and symbols libraries
+-- ---------------------------------------------------------------------------
+create or replace function bc_admin_v1.list_emoji(
+  p_limit integer default 50,
+  p_after text default null
+)
+returns table (
+  id uuid, emoji text, name text, slug text, group_name text,
+  unicode_version text, skin_tone_support boolean, license_code text,
+  is_active boolean, next_cursor text
+)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; lim integer;
+begin
+  actor := bc_admin_v1.require_actor('content.read');
+  if actor is null then
+    raise exception 'forbidden' using errcode='42501';
+  end if;
+  lim := greatest(1, least(coalesce(p_limit, 50), 200));
+
+  return query
+    select e.id, e.emoji, e.name, e.slug, e.group_name,
+           e.unicode_version, e.skin_tone_support, e.license_code,
+           e.is_active, e.slug
+    from public.emoji_library e
+    where p_after is null or e.slug > p_after
+    order by e.slug
+    limit lim;
+end $$;
+
+create or replace function bc_admin_v1.list_symbols(
+  p_limit integer default 50,
+  p_after text default null,
+  p_category text default null
+)
+returns table (
+  id uuid, symbol text, title text, category text, codepoints text,
+  license_code text, is_active boolean, sort_order integer, next_cursor text
+)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; lim integer;
+begin
+  actor := bc_admin_v1.require_actor('content.read');
+  if actor is null then
+    raise exception 'forbidden' using errcode='42501';
+  end if;
+  lim := greatest(1, least(coalesce(p_limit, 50), 200));
+
+  return query
+    select s.id, s.symbol, s.title, s.category, s.codepoints,
+           s.license_code, s.is_active, s.sort_order, s.codepoints
+    from public.symbols s
+    where (p_after is null or s.codepoints > p_after)
+      and (p_category is null or s.category = p_category)
+    order by s.codepoints
+    limit lim;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 6. Languages — registry plus real coverage
+-- ---------------------------------------------------------------------------
+create or replace function bc_admin_v1.list_languages()
+returns table (
+  code text, name_en text, name_native text, direction text, script text,
+  is_active boolean, sort_order integer, content_count bigint
+)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid;
+begin
+  actor := bc_admin_v1.require_actor('content.read');
+  if actor is null then
+    raise exception 'forbidden' using errcode='42501';
+  end if;
+
+  return query
+    select l.code, l.name_en, l.name_native, l.direction, l.script,
+           l.is_active, l.sort_order,
+           coalesce(c.n, 0)::bigint
+    from public.languages l
+    left join (
+      select g.language, count(*)::bigint n
+      from public.global_content g
+      where g.is_active and g.language is not null
+      group by g.language
+    ) c on c.language = l.code
+    order by l.sort_order;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 7. Translation queue — status is real, never assumed
+-- ---------------------------------------------------------------------------
+create or replace function bc_admin_v1.list_translations(
+  p_limit integer default 50,
+  p_status text default null
+)
+returns table (
+  id uuid, source_table text, source_id uuid, source_language text,
+  target_language text, status text, provider text, created_at timestamptz
+)
+language plpgsql security definer set search_path=pg_catalog as $$
+declare actor uuid; lim integer;
+begin
+  actor := bc_admin_v1.require_actor('content.read');
+  if actor is null then
+    raise exception 'forbidden' using errcode='42501';
+  end if;
+  lim := greatest(1, least(coalesce(p_limit, 50), 200));
+
+  return query
+    select t.id, t.source_table, t.source_id, t.source_language,
+           t.target_language, t.status, t.provider, t.created_at
+    from public.content_translations t
+    where p_status is null or t.status = p_status
+    order by t.created_at desc
+    limit lim;
+end $$;
+
+-- ---------------------------------------------------------------------------
+-- 8. Lock every function down to the admin role only
+-- ---------------------------------------------------------------------------
+do $$
+declare f text;
+begin
+  foreach f in array array[
+    'content_library_stats()',
+    'list_data_sources(integer,text)',
+    'list_sync_jobs(integer,timestamp with time zone)',
+    'list_fonts(integer,text,text,text)',
+    'list_emoji(integer,text)',
+    'list_symbols(integer,text,text)',
+    'list_languages()',
+    'list_translations(integer,text)'
+  ] loop
+    execute format('revoke all on function bc_admin_v1.%s from public', f);
+    execute format('revoke all on function bc_admin_v1.%s from anon', f);
+    execute format('revoke all on function bc_admin_v1.%s from authenticated', f);
+  end loop;
+end $$;
+
+commit;
+```
+
+### `admin-backend/rollback/015_content_library_read_surface.sql`
+
+SHA-256: `a06a679510abf860b25a9d98c276a760fb1388093625ebb7e2b8139dff5b82fb`
+
+```sql
+-- Rollback for 015. Drops the eight read functions created by the migration.
+--
+-- Nothing else is touched, on purpose:
+--   * 015 creates no table, trigger, policy, index or role, so there is nothing
+--     else to reverse;
+--   * it reads public.* only and never writes there, so dropping the readers
+--     cannot lose a content record — every row they exposed stays in its own
+--     table and simply stops having a bc_admin_v1 accessor;
+--   * the EXECUTE grants for these eight signatures live in
+--     admin-backend/grants/executor-grants.sql, not in the migration, so they
+--     vanish with the functions and need no separate REVOKE.
+--
+-- No CASCADE: each function is dropped by explicit signature, so a future
+-- dependency fails loudly here instead of silently removing more surface.
+begin;
+drop function if exists bc_admin_v1.list_translations(integer,text);
+drop function if exists bc_admin_v1.list_languages();
+drop function if exists bc_admin_v1.list_symbols(integer,text,text);
+drop function if exists bc_admin_v1.list_emoji(integer,text);
+drop function if exists bc_admin_v1.list_fonts(integer,text,text,text);
+drop function if exists bc_admin_v1.list_sync_jobs(integer,timestamptz);
+drop function if exists bc_admin_v1.list_data_sources(integer,text);
+drop function if exists bc_admin_v1.content_library_stats();
+commit;
+```
+
+### `admin-backend/grants/executor-grants.sql`
+
+SHA-256: `a6f4caadc9f3b018bc837beba09038a34216dc9c4b462b7badf3fe3290edcdd7`
+
+```sql
+-- CANONICAL EXECUTOR GRANT LIST. Executed by a human with project access AFTER
+-- migrations 001–012, never by the application, and never as the executor itself.
+--
+-- 52 signatures = 57 functions created by 001–015 minus the 5 trigger bodies
+-- (reject_mutation, guard_draft, guard_approval, stamp_mfa_enrolled). Trigger
+-- functions are invoked by the trigger machinery as the table owner and must not
+-- be granted: a direct EXECUTE would widen the surface for no benefit.
+--
+-- `tests/admin-grant-inventory.mjs` fails if this file and the migrations ever
+-- disagree, so a new function cannot be created without a decision about whether
+-- the executor may call it.
+
+grant usage on schema bc_admin_v1 to bc_admin_executor;
+
+grant execute on function
+  bc_admin_v1.require_actor(text),
+  bc_admin_v1.enrolment_eligible(uuid),
+  bc_admin_v1.factor_gate(uuid),
+  bc_admin_v1.open_admin_session(uuid),
+  bc_admin_v1.revoke_admin_session(uuid),
+  bc_admin_v1.revoke_my_sessions(uuid),
+  bc_admin_v1.store_login_flow(bytea,bytea,integer),
+  bc_admin_v1.take_login_flow(bytea),
+  bc_admin_v1.consume_rate_limit(text,bytea),
+  bc_admin_v1.list_staff(integer,uuid),
+  bc_admin_v1.update_staff(uuid,bigint,boolean,text[],uuid),
+  bc_admin_v1.create_bio_draft(text,jsonb,uuid),
+  bc_admin_v1.update_bio_draft(uuid,bigint,jsonb,uuid),
+  bc_admin_v1.get_bio_draft(uuid),
+  bc_admin_v1.submit_draft(uuid,bigint,uuid,uuid),
+  bc_admin_v1.review_draft(uuid,bigint,boolean,uuid),
+  bc_admin_v1.list_my_bio_drafts(integer,timestamptz,uuid),
+  bc_admin_v1.list_bio_review_queue(integer,timestamptz,uuid),
+  bc_admin_v1.list_platforms(integer,uuid),
+  bc_admin_v1.list_categories(integer,uuid),
+  bc_admin_v1.list_collections(integer,text),
+  bc_admin_v1.list_generators(integer,uuid),
+  bc_admin_v1.list_seo_pages(integer,uuid),
+  bc_admin_v1.analytics_overview(),
+  bc_admin_v1.list_settings(integer,text),
+  bc_admin_v1.update_setting(text,jsonb,bigint,uuid),
+  bc_admin_v1.list_role_catalog(),
+  bc_admin_v1.list_my_sessions(integer,timestamptz),
+  bc_admin_v1.list_audit_logs(integer,bigint),
+  bc_admin_v1.issue_recovery_grant(uuid,bytea,bytea,interval,uuid),
+  bc_admin_v1.revoke_recovery_grant(uuid,uuid),
+  bc_admin_v1.reset_factor_enrolment(uuid,uuid),
+  bc_admin_v1.consume_recovery_grant(bytea,uuid),
+  bc_admin_v1.recovery_grant_state(uuid),
+  bc_admin_v1.cleanup_expired(text,integer,uuid),
+  bc_admin_v1.publish_bio_draft(uuid,bigint,uuid,uuid),
+  bc_admin_v1.list_bio_publications(uuid,integer,bigint),
+  bc_admin_v1.create_revert_draft(bigint,uuid),
+  bc_admin_v1.session_identity(),
+  bc_admin_v1.list_my_notifications(integer,timestamptz),
+  bc_admin_v1.mark_notifications_read(timestamptz),
+  bc_admin_v1.list_publication_jobs(integer,uuid),
+  bc_admin_v1.list_backup_records(integer,timestamptz),
+  bc_admin_v1.list_public_bios(integer,uuid,text,text,boolean),
+  bc_admin_v1.content_library_stats(),
+  bc_admin_v1.list_data_sources(integer,text),
+  bc_admin_v1.list_sync_jobs(integer,timestamptz),
+  bc_admin_v1.list_fonts(integer,text,text,text),
+  bc_admin_v1.list_emoji(integer,text),
+  bc_admin_v1.list_symbols(integer,text,text),
+  bc_admin_v1.list_languages(),
+  bc_admin_v1.list_translations(integer,text)
+ to bc_admin_executor;
+```

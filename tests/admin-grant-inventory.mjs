@@ -12,18 +12,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const dir = 'admin-backend/migrations';
-// The approved 001–014 package and its checksummed report are frozen. 015 is
-// an independent library-read surface, not part of that credential generator.
-const allFiles = fs.readdirSync(dir).filter(name => name.endsWith('.sql')).sort();
-const files = allFiles.filter(name => name.slice(0,3)<='014');
-const additional = allFiles.filter(name => !files.includes(name));
-assert.deepEqual(additional,['015_content_library_read_surface.sql']);
-const readers=fs.readFileSync(`${dir}/${additional[0]}`,'utf8').replace(/--[^\n]*/g,'');
+const files = fs.readdirSync(dir).filter(name => name.endsWith('.sql')).sort();
+assert.deepEqual(files.map(f => f.slice(0, 3)), ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '011', '012', '013', '014', '015'], 'migration set changed');
+
+// The eight library commands now belong to main's canonical 52 grants.
+// Independently keep their read-only SQL and client revocations under test.
+const readers=fs.readFileSync(`${dir}/015_content_library_read_surface.sql`,'utf8').replace(/--[^\n]*/g,'');
 const expectedReaders=['content_library_stats','list_data_sources','list_sync_jobs','list_fonts','list_emoji','list_symbols','list_languages','list_translations'];
 const readBodies=[...readers.matchAll(/create or replace function bc_admin_v1\.(\w+)\(([\s\S]*?)\)\s*returns table[\s\S]*?end \$\$;/g)];
 assert.deepEqual(readBodies.map(m=>m[1]),expectedReaders);
 for (const [body,name,args] of readBodies) {
-  assert.match(body,/security definer set search_path=public,pg_catalog/);
+  assert.match(body,/security definer set search_path=pg_catalog/);
   assert.match(body,/bc_admin_v1\.require_actor\('content\.read'\)/);
   assert.doesNotMatch(body,/\b(insert|update|delete|truncate|grant|execute)\b/i);
   const types=args.trim()?args.trim().split(',').map(a=>a.trim().split(/\s+/)[1].replace('timestamptz','timestamp with time zone')).join(','):'';
@@ -32,7 +31,6 @@ for (const [body,name,args] of readBodies) {
 for (const role of ['public','anon','authenticated']) assert.ok(readers.includes(`revoke all on function bc_admin_v1.%s from ${role}'`));
 assert.doesNotMatch(readers,/\bgrant\b/i);
 console.log('PASS independent 015 inventory: eight fixed-signature content.read functions, no writers or client grants');
-assert.deepEqual(files.map(f => f.slice(0, 3)), ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010', '011', '012', '013', '014'], 'migration set changed');
 
 const sql = files.map(name => ({ name, body: fs.readFileSync(`${dir}/${name}`, 'utf8') }));
 
@@ -41,11 +39,12 @@ const created = [];
 for (const { name, body } of sql) {
   for (const match of body.matchAll(/^create (?:or replace )?function (bc_admin_v1\.[a-z0-9_]+)\(([^)]*)\)\s*([\s\S]*?)(?=^create |^revoke |^commit;|^alter |^do \$\$)/gm)) {
     const [, fn, args, rest] = match;
-    const types = args.split(',').map(a => a.trim()).filter(Boolean).map(a => a.split(/\s+/)[0].replace(/^p_[a-z_]+$/, '?'));
+    const typeOf = a => a.replace(/\s+default\s+[\s\S]*$/i, '').trim().split(/\s+/).slice(-1)[0];
+    const types = args.split(',').map(a => a.trim()).filter(Boolean).map(typeOf);
     created.push({
       name,
       fn,
-      signature: `${fn}(${args.split(',').map(a => a.trim()).filter(Boolean).map(a => a.split(/\s+/).slice(-1)[0]).join(',')})`,
+      signature: `${fn}(${args.split(',').map(a => a.trim()).filter(Boolean).map(typeOf).join(',')})`,
       securityDefiner: /security definer/.test(rest),
       fixedSearchPath: /set search_path\s*=\s*pg_catalog/.test(rest),
       types,
@@ -75,11 +74,11 @@ const granted = [...grants.matchAll(/bc_admin_v1\.([a-z0-9_]+)\(([^)]*)\)/g)]
 // 3. Numbers the review and the approval report must both state.
 assert.equal(tables.length, 20, `expected 20 tables, found ${tables.length}`);
 assert.equal(new Set(tables).size, 20, 'duplicate table definition');
-assert.equal(created.length, 49, `expected 49 functions, found ${created.length}`);
+assert.equal(created.length, 57, `expected 57 functions, found ${created.length}`);
 assert.equal(triggerBodies.length, 5, `expected 5 trigger bodies, found ${triggerBodies.length}`);
-assert.equal(granted.length, 44, `expected 44 granted signatures, found ${granted.length}`);
+assert.equal(granted.length, 52, `expected 52 granted signatures, found ${granted.length}`);
 assert.equal(new Set(granted).size, granted.length, 'duplicate grant');
-assert.equal(functions.length, 44, 'callable functions must equal the 44 grants');
+assert.equal(functions.length, 52, 'callable functions must equal the 52 grants');
 assert.equal(invoker.length, 0, `unexpected SECURITY INVOKER function: ${invoker.map(f => f.fn)}`);
 
 // 4. Every granted name exists in the migrations, and nothing else is granted.
@@ -200,4 +199,4 @@ for (const file of sqlFiles) {
   assert.ok(review.includes(digest), `${file} SHA-256 missing from the security review checklist`);
 }
 
-console.log(`PASS 001–014 grant inventory: ${tables.length} tables, ${created.length} functions = ${functions.length} callable SECURITY DEFINER (all ${granted.length} granted) + ${triggerBodies.length} trigger bodies (none granted), every search_path fixed, only 013 may publish a public bio, no CASCADE; all ${sqlFiles.length} SQL files and their SHA-256 reproduced in both documents`);
+console.log(`PASS grant inventory: ${tables.length} tables, ${created.length} functions = ${functions.length} callable SECURITY DEFINER (all ${granted.length} granted) + ${triggerBodies.length} trigger bodies (none granted), every search_path fixed, only the 013 publication bridge may write public bios, no CASCADE; all ${sqlFiles.length} SQL files and their SHA-256 reproduced in both documents`);

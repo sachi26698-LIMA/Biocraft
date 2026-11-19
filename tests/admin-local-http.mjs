@@ -31,6 +31,8 @@ const send=(path,{headers={},method='GET',body}={})=>new Promise((resolve,reject
 });
 try {
   assert.equal((await send('/api/status/live')).body.live,true);
+  const bundled=await send('/api/status/content');
+  assert.equal(bundled.status,200);assert.deepEqual(bundled.body,{ok:true,source:'bundled',database_required:false});
   assert.equal((await send('/else')).status,404);
   assert.equal((await send('/api/admin/v1/session',{headers:{host:'wrong.example'}})).status,403);
   assert.equal((await send('/api/admin/v1/auth/login',{method:'POST'})).status,403);

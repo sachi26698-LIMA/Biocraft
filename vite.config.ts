@@ -38,15 +38,11 @@ export default defineConfig(({ mode, command }) => {
     /^[a-z0-9-]+$/.test(sandboxId || '') ? `5173-${sandboxId}.e2b.app` : undefined].filter(Boolean) : true;
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   const key = env.VITE_SUPABASE_PUBLISHABLE_KEY;
-  // The project URL is a public constant in shared/supabase-config.mjs, not a
-  // secret. The Preview scope only defines the publishable key, so a build that
-  // demanded both variables failed at config load while the client itself would
-  // have fallen back to the bundled registry. Validate against the constant
-  // when the URL is unset; a *wrong* URL still fails, because
-  // publicSupabaseConfig rejects anything that is not this project.
+  // Public pages use only the bundled catalogue. Legacy optional settings and
+  // Admin's public provider key must still be scoped to the correct project.
   const url = env.VITE_SUPABASE_URL;
   if ((url !== undefined || key) && !publicSupabaseConfig(url, key)) {
-    throw new Error('Set both public Supabase variables with the BioCraft project URL and a publishable or matching anon key. Never use a service key.');
+    throw new Error('Use a publishable or matching anon key for the BioCraft project. Omit both public Supabase variables for a bundled-only build.');
   }
   // Vite exposes every VITE_ variable; reject unexpected Supabase variables
   // before producing any client asset, including a mistakenly prefixed secret.
@@ -80,14 +76,7 @@ export default defineConfig(({ mode, command }) => {
       });
     },
   }],
-  // Temporary diagnostics are only compiled into this branch's Vercel Preview.
-  define: {
-    __BIOCRAFT_PREVIEW_DIAGNOSTICS__: JSON.stringify(
-      adminPreview,
-    ),
-  },
-  // Emit an independent admin entry only for this branch's Preview; the
-  // public entry never imports the admin workspace.
+  // Emit the independent Admin entry only in explicitly enabled scopes.
   build: adminPreview ? { rollupOptions: { input: { main: 'index.html', admin: 'admin-preview.html' } } } : undefined,
   server: {
     proxy: localProxy,

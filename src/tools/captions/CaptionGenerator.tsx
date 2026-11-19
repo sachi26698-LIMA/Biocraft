@@ -1,4 +1,3 @@
-import PublishedCatalog from '../../components/PublishedCatalog';
 import { useState } from 'react';
 import { RefreshIcon } from '../../components/icons';
 import {
@@ -238,7 +237,6 @@ export default function CaptionGenerator() {
           {statusMessage}
         </p>
       </div>
-      <PublishedCatalog kind="captions" language={generationLanguage} tone={generationTone} />
     </div>
   );
 }

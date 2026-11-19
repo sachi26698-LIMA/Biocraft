@@ -34,7 +34,22 @@ console.log('PASS Node adapter: platform-derived client identity, forged signatu
  const res=()=>({headers:{},setHeader(k,v){this.headers[k]=v},end(b){this.body=b}});
  // Default export with no env configured returns 503 before parsing anything.
  const r1=res();await disabled.default({method:'POST',url:'/api/admin/v1/auth/login',headers:{'x-real-ip':'1.2.3.4'},body:{}},r1);
- assert.equal(r1.statusCode,503);assert.equal(r1.body.toString(),'{"error":{"code":"UNAVAILABLE"}}');
+ assert.equal(r1.statusCode,503);
+ // The body keeps its leading {error:{code}} shape, but now names the closed
+ // gate. Without this the deployed outage was indistinguishable from a failed
+ // database round-trip: both rendered a byte-identical bare 503.
+ assert.equal(r1.body.toString(),'{"error":{"code":"UNAVAILABLE","stage":"disabled"}}');
+ assert.equal(r1.headers['x-admin-stage'],'disabled');
+ // The stage must never be an environment value: it is drawn from a fixed
+ // vocabulary, not merely constrained by a pattern.
+ assert.match(r1.headers['x-admin-stage'],/^[a-z][a-z0-9 -]{0,63}$/);
+ for (const reason of ['unverified TLS','unknown string from upstream']) {
+   const closed=Object.assign(async()=>assert.fail('closed gate invoked'),{configuration:{enabled:false,reason}});
+   const reply=res();await createHandler(closed)({method:'GET',url:'/api/admin/v1/health',headers:{}},reply);
+   assert.equal(reply.statusCode,503);
+   const expected=reason==='unverified TLS'?reason:undefined;
+   assert.equal(reply.headers['x-admin-stage'],expected);assert.equal(JSON.parse(reply.body).error.stage,expected);
+ }
  const diagnostic=res();await disabled.default({method:'GET',url:'/api/admin/v1/health',headers:{}},diagnostic);
  assert.equal(diagnostic.statusCode,503);assert.deepEqual(JSON.parse(diagnostic.body),{error:{code:'UNAVAILABLE',stage:'disabled'}});
  const fake=async function(){};fake.configuration={enabled:true,origin};

@@ -1,6 +1,8 @@
 # BioCraft — Global Infinite Data Ecosystem
 
-**Current Production checkpoint:** [live migrations, counts and Admin status](docs/PRODUCTION_SYNC.md).
+**PR #16 merge validation:** Integrated main’s bundled public content, 001–015 grant catalogue and pooler diagnostics with the real local Admin listener and resumable importer. The 7-page local-first render suite made zero network calls; TypeScript/build, the 160-file bundle scan and the native PostgreSQL/Chromium Admin suite passed. A separate build of main at `e4b8cd1` matched the integrated build on all 52 public routes for metadata, headings and layout landmarks, with no page or failed-request errors. No database or deployment settings changed. See [Admin progress](docs/MASTER_ADMIN_PROGRESS.md).
+
+**Historical Production checkpoint:** [observed migrations, counts and earlier Admin status](docs/PRODUCTION_SYNC.md).
 
 **Active local batch** (`arena/21fb7968-biocraft`, 2026-11-18 UTC): frontend :5173 and real Admin HTTP listener :4190 started. Same-origin liveness 200; readiness 503 without private configuration. Origin, peer signing, body limits and cookie forwarding verified locally. No Production changes. See [Admin progress](docs/MASTER_ADMIN_PROGRESS.md).
 

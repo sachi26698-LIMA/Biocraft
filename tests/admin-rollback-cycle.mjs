@@ -13,7 +13,7 @@ const socket = process.env.BIOCRAFT_TEST_PG_SOCKET;
 if (!socket) throw new Error('BIOCRAFT_TEST_PG_SOCKET is required');
 const user = process.env.USER ?? 'postgres';
 const db = 'biocraft_rollback_cycle';
-const migrations = ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','007_staff_commands.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql','011_totp_enrolment.sql','012_recovery_and_cleanup.sql','013_publication_bridge.sql','014_module_read_surface.sql'];
+const migrations = ['001_admin_foundation.sql','002_workflow_integrity.sql','003_permission_catalog.sql','004_private_draft_commands.sql','005_session_commands.sql','006_auth_controls.sql','007_staff_commands.sql','008_bio_edit.sql','009_recovery_sessions.sql','010_admin_module_commands.sql','011_totp_enrolment.sql','012_recovery_and_cleanup.sql','013_publication_bridge.sql','014_module_read_surface.sql','015_content_library_read_surface.sql'];
 
 const root = new pg.Client({host: socket, database: 'postgres', user});
 await root.connect();
@@ -100,7 +100,10 @@ try {
   for (const table of ['admin_user_roles','admin_role_permissions','admin_users','admin_roles','admin_permissions','admin_sessions','admin_settings','admin_notifications','admin_backup_records']) {
     await client.query(`delete from bc_admin_v1.${table}`);
   }
-  // 014 first (newest), then 013: 014's triggers reference 013's table.
+  // 015 first (newest), then 014. 015 only adds leaf readers, but reversing in
+  // creation order keeps the teardown honest if a later migration depends on it.
+  await client.query(fs.readFileSync('admin-backend/rollback/015_content_library_read_surface.sql','utf8'));
+  // 014 next, then 013: 014's triggers reference 013's table.
   await client.query(fs.readFileSync('admin-backend/rollback/014_module_read_surface.sql','utf8'));
   for (const name of ['011_totp_enrolment.sql','010_admin_module_commands.sql','009_recovery_sessions.sql','008_bio_edit.sql','007_staff_commands.sql','006_auth_controls.sql','005_session_commands.sql','004_private_draft_commands.sql','003_permission_catalog.sql','002_workflow_integrity.sql','001_admin_foundation.sql']) {
     await client.query(fs.readFileSync(`admin-backend/rollback/${name}`,'utf8'));
@@ -113,9 +116,9 @@ try {
   for (const name of migrations) await client.query(fs.readFileSync(`admin-backend/migrations/${name}`,'utf8'));
   const counts = await client.query("select (select count(*)::int from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='bc_admin_v1' and c.relkind='r') tables, (select count(*)::int from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='bc_admin_v1') functions");
   assert.equal(counts.rows[0].tables, 20);
-  assert.equal(counts.rows[0].functions, 49);
+  assert.equal(counts.rows[0].functions, 57);
 
-  console.log('PASS rollback cycle (fresh database): all three 012 guards refuse before touching anything, rollback/012 restores a working 011 gate after dropping mfa_enrolled_at, rollback/013 removes the bridge without touching public.bios, rollback/014 drops the notification triggers before their function, full reverse teardown leaves no schema or function, and a clean reinstall recreates 20 tables and 49 functions');
+  console.log('PASS rollback cycle (fresh database): all three 012 guards refuse before touching anything, rollback/012 restores a working 011 gate after dropping mfa_enrolled_at, rollback/013 removes the bridge without touching public.bios, rollback/014 drops the notification triggers before their function, full reverse teardown leaves no schema or function, and a clean reinstall recreates 20 tables and 57 functions');
 } finally {
   await client.end();
   const cleanup = new pg.Client({host: socket, database: 'postgres', user});

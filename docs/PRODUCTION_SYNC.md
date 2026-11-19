@@ -1,5 +1,7 @@
 # BioCraft Production — connection and sync checkpoint
 
+> **Historical release checkpoint.** Main subsequently recorded a successful Admin health check after the pooler configuration was corrected ([incident resolution](../MASTER_IMPLEMENTATION_TRACKER.md)). Public pages now use bundled data; `/api/status/content` does not check REST. Do not revert a working host or replay the migrations or sync jobs below.
+
 **2026-11-18 UTC · [Production site](https://biocraft-bice.vercel.app) · Supabase project `jvpadtzfsuekixrquzjv` · release branch `arena/21fb7968-biocraft`.** This is a dated observation, not a continuously updated status page. The guest catalogue is live. **The Admin database connection is not ready.** No new Supabase project, Admin account, MFA change, recurring hosted worker or paid upgrade was created.
 
 Application release: `dff59e3` (`dpl_7goSuCiVnxPzTUsXWjENt8YL2aNa`), **READY / PROMOTED** on the canonical domain. The release branch has not been merged into `main`.

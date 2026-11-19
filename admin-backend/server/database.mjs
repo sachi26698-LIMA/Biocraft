@@ -4,7 +4,6 @@
 // DB EXECUTE/schema grants and owner design need separate security review.
 import pg from 'pg';
 import {readFileSync} from 'node:fs';
-import {rootCertificates} from 'node:tls';
 const {Pool}=pg;
 // Preserve exact bigint keys outside the safe JS integer range.
 pg.types.setTypeParser(20,value=>Number.isSafeInteger(Number(value))?Number(value):value);
@@ -20,6 +19,16 @@ const DIRECT=`db.${PROJECT_REF}.supabase.co`;
 // Supavisor hostname shape: aws-<index>-<region>.pooler.supabase.com, where the
 // region is a real multi-label region code (ap-southeast-2, us-east-1, ...).
 const POOLER=/^aws-[0-9]{1,3}-[a-z]{2}-[a-z]{3,20}(?:-[a-z]{3,20})?-[0-9]{1,2}\.pooler\.supabase\.com$/;
+// Public 2021/2025 pooler roots; packaged with the function via vercel.json.
+// Fingerprints are pinned in tests/admin-pool-config.mjs. No global TLS change.
+export const SUPABASE_ROOT_CA=readFileSync(new URL('../certs/supabase-roots.pem',import.meta.url),'utf8');
+export const DIRECT_HOST=DIRECT;
+export function databaseCa(env,host) {
+ const override=typeof env?.ADMIN_DB_CA_PEM==='string'?env.ADMIN_DB_CA_PEM.trim():'';
+ if (override?.startsWith('-----BEGIN CERTIFICATE-----')) return override;
+ return host===DIRECT_HOST ? undefined : SUPABASE_ROOT_CA;
+}
+
 export function createPostgresPool({host,user,password,ca,port}={}) {
  if(typeof host!=='string'||(host!==DIRECT && !POOLER.test(host)) || typeof user!=='string' || !user || typeof password!=='string' || !password || (ca!==undefined && typeof ca!=='string')) throw new Error('Invalid database configuration');
  // Use an explicit limited login (role.<ref> in pooler mode); a direct
@@ -30,9 +39,7 @@ export function createPostgresPool({host,user,password,ca,port}={}) {
  // session-scoped assumptions this adapter relies on, so it is refused outright.
  const resolvedPort=port===undefined?5432:port;
  if(resolvedPort!==5432) throw new Error('Invalid database configuration');
- // Supavisor can present a chain rooted in Supabase's private (publicly
- // distributed) CA. Add those roots for this pool ONLY; keep hostname checks.
- const trust=ca ?? [...rootCertificates,readFileSync(new URL('../certs/supabase-roots.pem',import.meta.url),'utf8')];
+ const trust=ca ?? databaseCa({},host);
  const pool=new Pool({host,port:resolvedPort,user,password,database:'postgres',ssl:{rejectUnauthorized:true,ca:trust},max:3,connectionTimeoutMillis:5000,idleTimeoutMillis:10000});
  // pg removes a broken idle client itself. Keep a long-lived listener up and
  // never log a raw driver error or retry an in-flight write.
