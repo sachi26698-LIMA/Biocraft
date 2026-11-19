@@ -67,8 +67,21 @@ const root = createRoot(document.getElementById('root'));
 await act(async () => {
   root.render(React.createElement(mod.default, { records: mod.records, index: mod.index }));
 });
-// The duplicate scan is async (SHA-256 per record); let it settle.
-await act(async () => { await new Promise((r) => setTimeout(r, 600)); });
+// The duplicate scan is async — one SHA-256 digest per record — so it cannot be
+// waited out with a fixed sleep. At 8,300 records a 600 ms sleep was sometimes
+// too short, and the "scan finished" assertion below could not catch that
+// because the progress text is comma-formatted ('Scanning 8,311 records…') and
+// /\d+/ does not match through the comma. So: poll until the panel leaves the
+// scanning state, and treat a timeout as a hard failure rather than guessing.
+const SCAN_TIMEOUT_MS = 20_000;
+const scanDeadline = Date.now() + SCAN_TIMEOUT_MS;
+let scanFinished = false;
+while (Date.now() < scanDeadline) {
+  await act(async () => { await new Promise((r) => setTimeout(r, 100)); });
+  const t = document.body.textContent ?? '';
+  if (!/Scanning [\d,]+ records/.test(t)) { scanFinished = true; break; }
+}
+if (!scanFinished) throw new Error(`duplicate scan did not finish within ${SCAN_TIMEOUT_MS} ms`);
 
 section('1. dashboard reports the true counts');
 {
@@ -92,7 +105,9 @@ section('2. incompleteness is stated, not hidden');
 section('3. duplicate scan runs against real data');
 {
   const text = document.body.textContent ?? '';
-  ok('scan finished (not still running)', !/Scanning \d+ records/.test(text), 'still scanning');
+  // Comma-formatted on purpose: the old /\d+/ here silently matched nothing once
+  // the count passed a thousand, which made this assertion vacuous.
+  ok('scan finished (not still running)', !/Scanning [\d,]+ records/.test(text), 'still scanning');
   ok('reports no duplicates for a clean library', /No duplicate fingerprints/i.test(text));
 }
 

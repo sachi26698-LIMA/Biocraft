@@ -121,10 +121,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 076 | `batch-076.mjs` | 44 | 33 | 33 | 110 | 0 | 7981 | 0 — 1 couplet gate fix, counts trimmed |
 | 077 | `batch-077.mjs` | 44 | 33 | 33 | 110 | 0 | 8091 | 0 — 1 couplet gate fix |
 | 078 | `batch-078.mjs` | 44 | 33 | 33 | 110 | 0 | 8201 | 0 — counts only, no gate or dedup failure |
+| 079 | `batch-079.mjs` | 44 | 33 | 33 | 110 | 0 | 8311 | 0 — counts only, trimmed twice |
 
-**Verified so far: 8,201 / 50,000 (16.4%)**
-Remaining: 41,799 (EN 16,719 · HI 12,540 · HG 12,540)
-Split check: EN 16.41% · HI 16.40% · HG 16.40% of their targets — spread 0.00.
+**Verified so far: 8,311 / 50,000 (16.6%)**
+Remaining: 41,689 (EN 16,675 · HI 12,507 · HG 12,507)
+Split check: EN 16.63% · HI 16.62% · HG 16.62% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -154,7 +155,15 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 078 — split 16.41 / 16.40 / 16.40, spread 0.00. Cleanest first draft
+Batch 079 — split 16.63 / 16.62 / 16.62, spread 0.01. Second batch running
+with no gate or dedup finding at all: the draft was one English line over and a
+trifle short in both other languages, and it took two rounds of arithmetic to
+land on 44/33/33 exactly, but nothing was rejected. Subjects: kite string cut
+over a terrace, a mother's stitching money kept in a tin, the hospital token
+window at six, a ceiling that leaks in one spot for four years, and a scooter
+that starts on the fourth kick.
+
+(previous) Batch 078 — split 16.41 / 16.40 / 16.40, spread 0.00. Cleanest first draft
 since 074: the only finding was the usual two-line English surplus, and the file
 passed internal repeats, gate and full cross-file dedup on the first try. Subjects:
 the milkman's cycle bell before dawn, a father teaching left-hand driving in an
