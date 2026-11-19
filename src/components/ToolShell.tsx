@@ -29,6 +29,11 @@ const BioCollectionPage = lazy(() => import('../pages/BioCollectionPage'));
 const BioEditorPage = lazy(() => import('../pages/BioEditorPage'));
 const GlobalSearchPage = lazy(() => import('../pages/GlobalSearchPage'));
 const FontLibraryPage = lazy(() => import('../pages/FontLibraryPage'));
+const HindiFontsPage = lazy(() => import('../pages/HindiFontsPage'));
+const HindiFontSpecimenPage = lazy(() => import('../pages/HindiFontSpecimenPage'));
+const HindiFontStudioPage = lazy(() => import('../pages/HindiFontStudioPage'));
+const HindiPosterStudioPage = lazy(() => import('../pages/HindiPosterStudioPage'));
+const HindiFontLicensesPage = lazy(() => import('../pages/HindiFontLicensesPage'));
 const BioLibraryPage = lazy(() => import('../pages/BioLibraryPage'));
 const PremiumBiosPage = lazy(() => import('../pages/PremiumBiosPage'));
 
@@ -37,6 +42,18 @@ const COLLECTIONS_INDEX = '/bio-collections';
 const BIO_EDITOR = '/bio-editor';
 const LIBRARY_SEARCH = '/library-search';
 const FONT_LIBRARY = '/font-library';
+// Hindi Font Ecosystem: /hindi-fonts, /hindi-fonts/<slug>, /hindi-font-studio,
+// /hindi-poster-studio and /hindi-font-licenses. Data is bundled, never fetched.
+const HINDI_FONTS = '/hindi-fonts';
+const HINDI_FONT_STUDIO = '/hindi-font-studio';
+const HINDI_POSTER_STUDIO = '/hindi-poster-studio';
+const HINDI_FONT_LICENSES = '/hindi-font-licenses';
+const hindiSpecimenSlug = (path: string): string | null => {
+  if (!path.startsWith(`${HINDI_FONTS}/`)) return null;
+  const slug = path.slice(HINDI_FONTS.length + 1);
+  // One segment only: /hindi-fonts/<slug>, never a deeper path.
+  return /^[a-z0-9-]{1,80}$/.test(slug) ? slug : '';
+};
 const BIO_LIBRARY = '/bio-library';
 const PREMIUM_BIOS = '/premium-bios';
 const HOME = '/';
@@ -95,6 +112,17 @@ export default function ToolShell() {
   const isFeatures = path === '/features';
   const isLibrarySearch = path === LIBRARY_SEARCH;
   const isFontLibrary = path === FONT_LIBRARY;
+  const specimenSlug = hindiSpecimenSlug(path);
+  const isHindiFonts = path === HINDI_FONTS;
+  const isHindiFontStudio = path === HINDI_FONT_STUDIO;
+  const isHindiPosterStudio = path === HINDI_POSTER_STUDIO;
+  const isHindiFontLicenses = path === HINDI_FONT_LICENSES;
+  const isHindiRoute =
+    isHindiFonts ||
+    specimenSlug !== null ||
+    isHindiFontStudio ||
+    isHindiPosterStudio ||
+    isHindiFontLicenses;
   const collection = collectionForPath(path);
   const tool = toolForPath(path);
   const isToolRoute = TOOL_PATHS.has(path);
@@ -102,10 +130,10 @@ export default function ToolShell() {
   const { record } = useRecentlyUsed();
 
   useEffect(() => {
-    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isBioLibrary && !isPremiumBios && !isFeatures && !isLibrarySearch && !isFontLibrary && !collection) {
+    if (!isHome && !isToolRoute && !infoPage && !isCategories && !isCollectionsIndex && !isBioEditor && !isBioLibrary && !isPremiumBios && !isFeatures && !isLibrarySearch && !isFontLibrary && !isHindiRoute && !collection) {
       navigate(HOME, { replace: true });
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isLibrarySearch, isFontLibrary, collection, isPremiumBios]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isLibrarySearch, isFontLibrary, isHindiRoute, collection, isPremiumBios]);
 
   // Load only the small common-math font on routes whose content needs it.
   useEffect(() => {
@@ -155,10 +183,18 @@ export default function ToolShell() {
       document.title = 'Search Every Library — BioCraft';
     } else if (isFontLibrary) {
       document.title = 'Font Library — BioCraft';
+    } else if (isHindiFonts) {
+      document.title = 'हिंदी फ़ॉन्ट लाइब्रेरी — 62 Verified Devanagari Fonts | BioCraft';
+    } else if (isHindiFontStudio) {
+      document.title = 'Hindi Preview, Bio & Shayari Studio | BioCraft';
+    } else if (isHindiPosterStudio) {
+      document.title = 'Hindi Poster & Typography Studio | BioCraft';
+    } else if (isHindiFontLicenses) {
+      document.title = 'Hindi Font Licences & Attribution | BioCraft';
     } else if (collection) {
       document.title = collection.seoTitle;
     }
-  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isLibrarySearch, isFontLibrary, collection, tool]);
+  }, [isHome, isToolRoute, infoPage, isCategories, isCollectionsIndex, isBioEditor, isBioLibrary, isFeatures, isLibrarySearch, isFontLibrary, isHindiFonts, isHindiFontStudio, isHindiPosterStudio, isHindiFontLicenses, collection, tool]);
 
   if (isHome) return <DeferredPage path={path} skeleton={<HomeSkeleton />}><HomePage /></DeferredPage>;
   if (isCategories) return <DeferredPage path={path} skeleton={<CategoriesSkeleton />}><CategoriesPage /></DeferredPage>;
@@ -194,6 +230,20 @@ export default function ToolShell() {
   }
   if (isLibrarySearch) return <DeferredPage path={path} skeleton={<LibrarySkeleton />}><GlobalSearchPage /></DeferredPage>;
   if (isFontLibrary) return <DeferredPage path={path} skeleton={<LibrarySkeleton />}><FontLibraryPage /></DeferredPage>;
+  if (isHindiFonts) return <DeferredPage path={path} skeleton={<LibrarySkeleton />}><HindiFontsPage /></DeferredPage>;
+  if (isHindiFontStudio) return <DeferredPage path={path} skeleton={<BioEditorSkeleton />}><HindiFontStudioPage /></DeferredPage>;
+  if (isHindiPosterStudio) return <DeferredPage path={path} skeleton={<BioEditorSkeleton />}><HindiPosterStudioPage /></DeferredPage>;
+  if (isHindiFontLicenses) return <DeferredPage path={path} skeleton={<InfoSkeleton />}><HindiFontLicensesPage /></DeferredPage>;
+  if (specimenSlug !== null) {
+    // A specimen slug that is not in the catalogue renders the shared 404 body.
+    return (
+      <Suspense fallback={<InfoSkeleton />}>
+        <ReadyPage path={path}>
+          <HindiFontSpecimenPage slug={specimenSlug} />
+        </ReadyPage>
+      </Suspense>
+    );
+  }
   if (isFeatures) return <DeferredPage path={path} skeleton={<FeaturesSkeleton />}><FeaturesPage /></DeferredPage>;
   if (infoPage) return <DeferredPage path={path} skeleton={<InfoSkeleton />}><InfoPage path={path} /></DeferredPage>;
   return <DeferredPage path={path} skeleton={<HomeSkeleton />}><HomePage /></DeferredPage>;

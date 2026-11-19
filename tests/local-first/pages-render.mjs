@@ -22,6 +22,14 @@ const PAGES = [
   ['FeaturesPage', 'src/pages/FeaturesPage.tsx', {}],
   ['GlobalSearchPage', 'src/pages/GlobalSearchPage.tsx', {}],
   ['FontLibraryPage', 'src/pages/FontLibraryPage.tsx', {}],
+  // Hindi Font Ecosystem — every public Hindi route must render from the bundled
+  // catalogue. The specimen route receives its slug the way ToolShell passes it.
+  ['HindiFontsPage', 'src/pages/HindiFontsPage.tsx', {}],
+  ['HindiFontSpecimenPage', 'src/pages/HindiFontSpecimenPage.tsx', { slug: 'tiro-devanagari-hindi' }],
+  ['HindiFontSpecimenNotFound', 'src/pages/HindiFontSpecimenPage.tsx', { slug: 'no-such-family' }],
+  ['HindiFontStudioPage', 'src/pages/HindiFontStudioPage.tsx', {}],
+  ['HindiPosterStudioPage', 'src/pages/HindiPosterStudioPage.tsx', {}],
+  ['HindiFontLicensesPage', 'src/pages/HindiFontLicensesPage.tsx', {}],
 ];
 
 // Pages that consume shared state need the real providers the app uses, so the
@@ -107,10 +115,10 @@ for (const [name, file, props] of PAGES) {
     assert.doesNotMatch(text, /Checking the live library/i, 'showed a live-library pending state');
     assert.doesNotMatch(text, /No live bios are available/i, 'showed the empty-live state');
     assert.equal(networkCalls.length, 0, `made ${networkCalls.length} network call(s): ${networkCalls.slice(0,3).join(', ')}`);
-    console.log(`PASS ${name.padEnd(20)} rendered ${String(text.length).padStart(6)} chars, ${String(cards).padStart(3)} nodes, 0 network calls`);
+    console.log(`PASS ${name.padEnd(26)} rendered ${String(text.length).padStart(6)} chars, ${String(cards).padStart(3)} nodes, 0 network calls`);
   } catch (error) {
     failures++;
-    console.log(`FAIL ${name.padEnd(20)} ${error.message}`);
+    console.log(`FAIL ${name.padEnd(26)} ${error.message}`);
   }
 
   await act(async () => root.unmount());

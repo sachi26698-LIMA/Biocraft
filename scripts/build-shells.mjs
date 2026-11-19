@@ -397,6 +397,39 @@ const ROUTES = [
     ogDescription: 'Browse the BioCraft font library with real metadata and live previews.',
   },
   {
+    path: '/hindi-fonts',
+    title: 'हिंदी फ़ॉन्ट लाइब्रेरी — 62 Verified Devanagari Fonts | BioCraft',
+    description:
+      'Browse 62 glyph-verified Hindi Devanagari font families — 354 WOFF2 files checked with HarfBuzz for matras, conjuncts, nukta and ०–९ numerals. Search in Hindi or English, preview your own text, compare and download under the SIL Open Font License.',
+    ogTitle: 'Hindi Font Library — BioCraft',
+    ogDescription:
+      '62 verified Devanagari families with real WOFF2 previews, Hindi search and OFL downloads.',
+  },
+  {
+    path: '/hindi-font-studio',
+    title: 'Hindi Preview, Bio & Shayari Studio | BioCraft',
+    description:
+      'Write Hindi text and set it in any verified Devanagari font. Generate Instagram bios, shayari, quotes, captions, usernames and stylish text, then copy or send it to the poster studio.',
+    ogTitle: 'Hindi Preview & Bio Studio — BioCraft',
+    ogDescription: 'Hindi bios, shayari, captions and handles — set in a real Devanagari font.',
+  },
+  {
+    path: '/hindi-poster-studio',
+    title: 'Hindi Poster & Typography Studio | BioCraft',
+    description:
+      'Turn Hindi text into a typographic poster. Choose a verified Devanagari family, size, weight and format, then download a 1080 px PNG rendered by the actual font file.',
+    ogTitle: 'Hindi Poster Studio — BioCraft',
+    ogDescription: 'Hindi text → 1080 px poster PNG, painted by the font you choose.',
+  },
+  {
+    path: '/hindi-font-licenses',
+    title: 'Hindi Font Licences & Attribution | BioCraft',
+    description:
+      'Every BioCraft Hindi font is listed with its SIL Open Font License, upstream Google Fonts source, version, author attribution and bundled licence file — plus the one family withheld by validation.',
+    ogTitle: 'Hindi Font Licences — BioCraft',
+    ogDescription: 'Licence, source, version and attribution for all 62 Hindi font families.',
+  },
+  {
     path: '/resources',
     title: 'Resources — BioCraft Social Media Toolkit',
     description:
@@ -461,6 +494,26 @@ const ROUTES = [
     ogDescription: 'No cookies, no storage. Here is how to verify.',
   },
 ];
+
+// One crawlable shell per verified Hindi specimen, generated from the committed
+// catalogue so a new family needs no hand-edited route. The OG description uses
+// the family's own recorded category and verification counts.
+try {
+  const catalogue = JSON.parse(
+    readFileSync(join(root, 'src', 'data', 'hindi-fonts', 'catalogue.json'), 'utf8'),
+  );
+  for (const font of catalogue.fonts) {
+    ROUTES.push({
+      path: `/hindi-fonts/${font.slug}`,
+      title: `${font.family} — Hindi Devanagari Font | BioCraft`,
+      description: `${font.family}: ${font.description} ${font.verification.conjunctSingleGlyph} of ${font.verification.conjunctTotal} conjuncts form a single glyph; ${font.verification.devanagariCoverage}% Devanagari coverage. Download the WOFF2 and read the licence.`,
+      ogTitle: `${font.family} · BioCraft`,
+      ogDescription: `${font.category} · ${font.verification.conjunctSingleGlyph}/${font.verification.conjunctTotal} conjuncts · OFL-1.1`,
+    });
+  }
+} catch (error) {
+  throw new Error(`build-shells: could not read the Hindi font catalogue — ${error.message}`);
+}
 
 // Direct links to the temporary diagnostic and admin shells exist only in Preview builds.
 // The Admin console is emitted into whichever scope has been explicitly enabled.

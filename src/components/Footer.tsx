@@ -29,6 +29,16 @@ const CATEGORY_LINKS: Array<{ label: string; href: string }> = [
   { label: 'Social Media Tools', href: '/categories#cat-linkedin' },
 ];
 
+// Hindi Font Ecosystem — a dedicated route family, cross-linked from every page
+// so it is discoverable without touching the existing tool list.
+const HINDI_FONT_LINKS: Array<{ label: string; href: string }> = [
+  { label: 'Hindi Font Library', href: '/hindi-fonts' },
+  { label: 'Hindi Preview & Bio Studio', href: '/hindi-font-studio' },
+  { label: 'Hindi Poster Studio', href: '/hindi-poster-studio' },
+  { label: 'Hindi Font Licences', href: '/hindi-font-licenses' },
+  { label: 'Google Fonts Library', href: '/font-library' },
+];
+
 const READY_MADE_LINKS: Array<{ label: string; href: string }> = [
   { label: 'Ready-Made Bios', href: '/bio-collections' },
   { label: 'Bio Library', href: '/bio-library' },
@@ -82,7 +92,7 @@ function FooterColumn({
 }
 
 /**
- * Light-glass footer: brand block on the left, six link columns on the right.
+ * Light-glass footer: brand block on the left, seven link columns on the right.
  * Every link points at a real route — no placeholders, no external profiles.
  */
 export default function Footer() {
@@ -118,6 +128,7 @@ export default function Footer() {
           <FooterColumn heading="Categories" links={CATEGORY_LINKS} />
           <FooterColumn heading="Ready-Made Bios" links={READY_MADE_LINKS} />
           <FooterColumn heading="Popular Tools" links={POPULAR_TOOLS} />
+          <FooterColumn heading="Hindi Fonts" links={HINDI_FONT_LINKS} />
           <FooterColumn heading="Company" links={COMPANY_LINKS} />
           <FooterColumn heading="Legal" links={LEGAL_LINKS} />
         </div>
