@@ -15,16 +15,17 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 002 | `batch-002.mjs` | 38 | 40 | 31 | 109 | 1 → fixed | 199 | Priority cats: attitude, royal, love, sad, alone, shayari, quotes |
 | 003 | `batch-003.mjs` | 47 | 34 | 32 | 113 | 1 → fixed | 312 | Life, friendship, motivation, aesthetic, professional, creator, student, fitness, travel, gaming, photography, music |
 
-**Verified so far: 312 / 50,000 (0.6%)**
-Remaining: 49,688 (EN 19,876 · HI 14,900 · HG 14,912)
-Categories populated: 22 / 46
+| 004 | `batch-004.mjs` | 70 | 48 | 24 | 142 | 1 → fixed | 454 | **All 46 categories now populated** |
+
+**Verified so far: 454 / 50,000 (0.9%)**
+Remaining: 49,546 (EN 19,806 · HI 14,852 · HG 14,888)
+Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 004 — finish the remaining 24 categories (spirituality, self-respect,
-personality, books, food, technology, fashion, yoga, pets, startup, science,
-cinema, cricket, cars, home, parenting, wedding, monsoon, deep/emotional,
-savage, instagram profiles, nature, poetry, funny), then deepen priority cats.
+Batch 005 — depth pass. All categories exist but are thin (2-20 records each).
+Target the highest-demand categories first: attitude, love, sad, shayari (two-
+and four-line), quotes, aesthetic, professional, creator, funny.
 
 ## Rejection log
 
@@ -41,3 +42,12 @@ left in the report as a documented exclusion.
   line was rewritten to `"Aim average hai, par bakwaas top class."` rather than
   weakening the validator. This is the intended behaviour: the gate catches
   under-Hinglish text that a human might let slide.
+- Batch 004: `"Gully cricket ka Sachin, ground pe aam insaan."` refused the same
+  way; rewritten to `"...Sachin tha, ground pe aam insaan hoon."` so the
+  sentence carries real Roman-Hindi grammar.
+
+**Pattern worth noting:** the Hinglish gate has now caught 3 records across 4
+batches. Every one was a sentence that *felt* Hinglish but was structurally
+English with one borrowed word. Fixing the sentence rather than the gate is
+what keeps the language claim honest — and it is the reason the counts can be
+trusted.
