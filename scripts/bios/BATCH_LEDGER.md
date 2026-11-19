@@ -96,9 +96,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 063 | `batch-063.mjs` | 45 | 33 | 33 | 111 | 0 | 6548 | 0 |
 
-**Verified so far: 6,548 / 50,000 (13.1%)**
-Remaining: 43,452 (EN 17,381 · HI 13,034 · HG 13,037)
-Split check: EN 13.10% · HI 13.11% · HG 13.09% of their targets — spread 0.02.
+| 064 | `batch-064.mjs` | 44 | 32 | 34 | 110 | 0 | 6658 | 0 |
+
+**Verified so far: 6,658 / 50,000 (13.3%)**
+Remaining: 43,342 (EN 17,337 · HI 13,002 · HG 13,003)
+Split check: EN 13.31% · HI 13.32% · HG 13.31% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -128,7 +130,13 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 064 — split 13.10 / 13.11 / 13.09, spread 0.02. 063 drew on the licence
+Batch 065 — split 13.31 / 13.32 / 13.31, spread 0.01. 064 drew on the man who
+irons shirts on a pavement, a cycle stolen the week its last instalment was
+paid, a chit fund that ended an eleven-year friendship over four thousand
+rupees, an exam clock four minutes fast, and a balcony that faces a wall. Zero
+rejections on the first build, and the draft landed on the allocation exactly.
+
+(previous) 063 drew on the licence
 office queue, a tailor's measure book with a dead man's numbers still in it, the
 school bus driver, a photograph of a demolished house and the first night in a
 hostel. Zero rejections on the first build.
