@@ -109,14 +109,25 @@ section('5. no stray non-Devanagari Indic scripts');
     Hiragana: /[\u3040-\u309F]/,
     Katakana: /[\u30A0-\u30FF]/,
   };
+  // Scan every user-visible field, not just the bio text: batch 015 shipped an
+  // Arabic character inside a Devanagari *tag*, which renders in the filter
+  // chips even though the bio itself was clean.
   const records = JSON.parse(readFileSync('src/data/bios/records.json', 'utf8'));
   const offenders = [];
   for (const record of records) {
-    for (const [name, pattern] of Object.entries(STRAY)) {
-      if (pattern.test(record[1])) offenders.push(`${record[0]} (${name})`);
+    const fields = [
+      ['text', record[1]], ['category', record[3]], ['subcategory', record[4]], ['tone', record[5]],
+    ];
+    for (const tag of record[6] ?? []) fields.push(['tag', tag]);
+    for (const [fieldName, value] of fields) {
+      if (typeof value !== 'string') continue;
+      for (const [name, pattern] of Object.entries(STRAY)) {
+        if (pattern.test(value)) offenders.push(`${record[0]}/${fieldName} (${name}): ${value}`);
+      }
     }
   }
-  ok(`no stray scripts in ${records.length} records`, offenders.length === 0, offenders.slice(0, 5).join(', '));
+  ok(`no stray scripts in ${records.length} records (text, category, subcategory, tone, tags)`,
+    offenders.length === 0, offenders.slice(0, 4).join(' | '));
 
   // And the scan must actually be able to fail.
   ok('the stray-script scan detects Bengali', STRAY.Bengali.test('आरাম'));

@@ -25,18 +25,17 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 012 | `batch-012.mjs` | 41 | 31 | 30 | 102 | 1 → fixed | 1272 | Thinnest categories at a proportional 40/30/30 mix |
 | 013 | `batch-013.mjs` | 42 | 28 | 28 | 98 | 2 → fixed | 1342 | The 16–18 band: cinema, savage, instagram, nature, photography, pets, startup, cricket, cars, wedding, monsoon, funny |
 | 014 | `batch-014.mjs` | 34 | 30 | 29 | 93 | 0 | 1435 | Depth phase begins: the seven highest-demand categories |
+| 015 | `batch-015.mjs` | 33 | 26 | 24 | 83 | 0 | 1518 | Depth continued + thin-category top-ups |
 
-**Verified so far: 1,435 / 50,000 (2.9%)**
-Remaining: 48,565 (EN 19,420 · HI 14,561 · HG 14,584)
-Split check: EN 2.90% · HI 2.93% · HG 2.77% of their targets.
+**Verified so far: 1,518 / 50,000 (3.0%)**
+Remaining: 48,482 (EN 19,387 · HI 14,535 · HG 14,560)
+Split check: EN 3.07% · HI 3.10% · HG 2.93% of their targets.
 Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 015 — depth continues in the leaders (attitude 69, love 61, shayari 68, sad
-50, life 38, quotes 41, aesthetic 36), while keeping the 40/30/30 language
-proportion. The thin categories are now stable at ~20 each and only need
-occasional top-ups to stay balanced.
+Batch 016 — depth continues in the leaders at the 40/30/30 language proportion.
+Thin categories (~20 each) need only occasional top-ups now.
 
 **Phase change recorded.** Batches 001–013 were a breadth phase: the job was to
 get all 46 categories populated and roughly even, which is now done. From 014
@@ -162,7 +161,14 @@ committing a batch — automated checks are necessary, not sufficient.
 
 - Batch 014: zero rejections.
 
-**Pattern worth noting:** the engine has now caught 18 rejections across 14
+- Batch 015: zero validator rejections, but one **corrupted tag** the validators
+  do not cover: an Arabic character had slipped into a Devanagari tag
+  (`मुस्कुरاना` instead of `मुस्कुराना`). The bio text was clean, so the language
+  gate passed it, but the tag renders in the UI's filter chips. Fixed, and
+  `test:bio-language-gate` now scans **text, category, subcategory, tone and
+  tags** for 16 stray scripts instead of the bio text alone.
+
+**Pattern worth noting:** the engine has now caught 18 rejections across 15
 batches
 — 3 Hinglish edges (003, 004, 006), 2 exact duplicates of earlier batches (006),
 1 vocabulary gap (005), 1 over-length line (002). The duplicate catches are the
