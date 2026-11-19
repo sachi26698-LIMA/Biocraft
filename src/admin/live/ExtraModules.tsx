@@ -2,15 +2,15 @@ import { useState, type ReactNode } from 'react';
 import { useAdminContext } from '../context';
 import { handleAnchorClick } from '../../lib/router';
 import Analytics from './Analytics';
-import { LiveCollections, SeoPages } from './Catalog';
+import { SeoPages } from './Catalog';
 import ImportPreflight from './ImportPreflight';
 import BioLibraryDashboard from './BioLibrary';
 import bioRecords from '../../data/bios/records.json';
 import bioIndex from '../../data/bios/index.json';
 import { Entries, type Kind } from './PublishedLibrary';
-import { Badge, EmptyState, PageHead, Panel, StateNotice } from './common';
+import { Badge, CursorPager, EmptyState, PageHead, Panel, StateNotice } from './common';
 import type { BackupRow, NotificationRow, RoleRow } from './types';
-import { describeError, formatDate, mutate, useLive } from './useLive';
+import { describeError, formatDate, mutate, useLive, usePaged } from './useLive';
 
 function Link({to, children}: {to: string; children: ReactNode}) {
   return <a className="ad-text-link" href={`/admin${to}`} onClick={handleAnchorClick}>{children}</a>;
@@ -66,6 +66,32 @@ function Notifications() {
   </Panel>;
 }
 
+type Source = {id: string; name: string; license_code: string; status: string; last_sync_count: number | null; last_sync_at: string | null; next_cursor: string};
+type SyncJob = {id: string; source_name: string; status: string; items_seen: number; items_inserted: number; items_updated: number; items_skipped: number; finished_at: string | null};
+function SourceDirectory() {
+  const sources = usePaged<Source>('/data-sources?limit=25', row => row?.next_cursor ?? null);
+  const jobs = useLive<{items: SyncJob[]}>('/sync-jobs?limit=25');
+  return <>
+    <Panel title="Registered sources" description="Registration does not mean a source has synced. Counts and times come from the last successful run." aside={<button className="ad-btn ad-btn--secondary" onClick={() => { sources.reload(); jobs.reload(); }}>Refresh</button>}>
+      <StateNotice state={sources.state} error={sources.error} reload={sources.reload} />
+      {sources.state === 'ready' && (sources.data?.length ? <>
+        <Table title="Registered sources" columns={['Source', 'Licence', 'Status', 'Rows checked', 'Last success']}>
+          {sources.data.map(row => <tr key={row.id}><th scope="row">{row.name}</th><td>{row.license_code}</td><td>{row.status}</td><td>{row.last_sync_count ?? '—'}</td><td>{row.last_sync_at ? formatDate(row.last_sync_at) : 'Never'}</td></tr>)}
+        </Table>
+        <CursorPager count={sources.data.length} hasNext={sources.hasMore} loading={sources.loadingMore} onNext={sources.loadMore} onReset={sources.reload} />
+      </> : <EmptyState title="No registered sources" text="The registry returned no rows." />)}
+      <p><Link to="/collections">Browse bio collection groups</Link></p>
+    </Panel>
+    <Panel title="Recent sync jobs" description="Latest 25 database jobs. Refreshing this page reads history; it does not start an import.">
+      <StateNotice state={jobs.state} error={jobs.error} reload={jobs.reload} />
+      {jobs.state === 'ready' && (jobs.data?.items.length ?
+        <Table title="Recent sync jobs" columns={['Source', 'Result', 'Seen', 'New', 'Updated', 'Skipped', 'Finished']}>
+          {jobs.data.items.map(row => <tr key={row.id}><th scope="row">{row.source_name}</th><td>{row.status}</td><td>{row.items_seen}</td><td>{row.items_inserted}</td><td>{row.items_updated}</td><td>{row.items_skipped}</td><td>{formatDate(row.finished_at)}</td></tr>)}
+        </Table> : <EmptyState title="No sync jobs yet" text="No jobs have been recorded." />)}
+    </Panel>
+  </>;
+}
+
 function RecordedBackups() {
   const list = useLive<{items: BackupRow[]}>('/backups?limit=25');
   const items = list.data?.items ?? [];
@@ -106,17 +132,16 @@ export default function ExtraModule({module, authorized}: {module: {key: string;
   let content: ReactNode;
   if (!authorized) content = <Panel title="Live Admin access required"><p>Sign in to an enabled Admin backend to use this module. No live data or controls are available in this view.</p><Link to="/login">Go to Admin sign-in</Link></Panel>;
   else switch (key) {
-    case 'captions': case 'hashtags': case 'fonts': content = <Panel title={`Published ${label.toLowerCase()}`}><Entries kind={key as Kind} /></Panel>; break;
+    case 'captions': case 'hashtags': case 'fonts': case 'templates': case 'designs': case 'symbols': case 'emoji': case 'languages': content = <Panel title={`Published ${label.toLowerCase()}`}><Entries kind={key as Kind} /></Panel>; break;
     case 'seo': content = <SeoPages />; break;
     case 'content-intelligence': return <Analytics intelligence />;
-    case 'data-sources': content = <><p>These are existing bio provenance groups, not external source connections.</p><LiveCollections embedded /></>; break;
+    case 'data-sources': content = <SourceDirectory />; break;
     case 'notifications': content = <Notifications />; break;
     case 'roles': case 'permissions': content = <Roles matrix={key === 'permissions'} />; break;
     case 'db-management': content = <><StatusPanel mode={key} /><RecordedBackups /></>; break;
     case 'api-management': case 'vercel-status': case 'supabase-health': content = <StatusPanel mode={key} />; break;
     case 'imports': content = <ImportPreflight />; break;
     case 'bio-library': content = <BioLibraryDashboard records={bioRecords as never} index={bioIndex as never} />; break;
-    case 'templates': content = <Panel title="Template store not connected"><p>A reviewed template store and publication workflow are not available yet. This module does not display placeholder records.</p></Panel>; break;
     case 'ai-configuration': content = <Panel title="AI integration not connected"><p>No provider is configured through this console. No prompts, credentials or content are sent to an AI service.</p></Panel>; break;
   }
   return <><PageHead eyebrow="ADMIN WORKSPACE" title={label} description={description} />{content}</>;

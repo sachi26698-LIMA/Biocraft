@@ -20,7 +20,7 @@
  * nothing. It is the default when no DATABASE_URL is present.
  */
 
-import pg from 'pg';
+import {batchCtes} from './standard-sync-sql.mjs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -39,21 +39,6 @@ const BATCH = Number(opt('batch', '500'));
 /* ------------------------------------------------------------------ helpers */
 
 const log = (...a) => console.log(...a);
-
-/** Deterministic content hash so re-imports can tell "changed" from "same". */
-function hash(str) {
-  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
-  for (let i = 0; i < str.length; i++) {
-    const ch = str.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761);
-    h2 = Math.imul(h2 ^ ch, 1597334677);
-  }
-  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36) + '-' + str.length.toString(36);
-}
-
-const codepoints = (s) => [...s].map((c) => 'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')).join(' ');
 
 /* ----------------------------------------------------------------- adapters */
 
@@ -102,7 +87,7 @@ export async function adaptSymbols() {
   let otherSymbol = new Set();
   try {
     otherSymbol = new Set((await import('@unicode/unicode-15.1.0/General_Category/Other_Symbol/code-points.mjs')).default);
-  } catch { /* optional refinement */ }
+  } catch { return {available:false,reason:'UCD subcategory missing',rows:[]}; }
 
   const rows = [];
   for (const cp of points) {
@@ -176,81 +161,19 @@ export function validate(kind, rows) {
 /* ------------------------------------------------------------------- writers */
 
 async function ensureSource(db, slug) {
-  const { rows } = await db.query('select id from public.data_sources where slug=$1', [slug]);
+  const { rows } = await db.query('select id from public.data_sources where slug=$1 and status<>\'disabled\'', [slug]);
   return rows[0]?.id ?? null;
 }
 
 export async function importRows(db, kind, source, rows) {
   const sourceId = await ensureSource(db, source.slug);
-  const license = source.license;
-  let inserted = 0, updated = 0, skipped = 0;
-
-  for (let i = 0; i < rows.length; i += BATCH) {
-    const chunk = rows.slice(i, i + BATCH);
-
-    if (kind === 'emoji') {
-      // match on emoji (unique)
-      const keys = chunk.map((r) => r.emoji);
-      const existing = new Map(
-        (await db.query('select emoji, name, group_name from public.emoji_library where emoji = any($1)', [keys]))
-          .rows.map((r) => [r.emoji, r]),
-      );
-      for (const r of chunk) {
-        const prev = existing.get(r.emoji);
-        if (!prev) {
-          await db.query(
-            `insert into public.emoji_library (emoji,name,slug,group_name,unicode_version,emoji_version,skin_tone_support,license_code,source_id)
-             values ($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict (emoji) do nothing`,
-            [r.emoji, r.name, r.slug, r.group_name, r.unicode_version, r.emoji_version, r.skin_tone_support, license, sourceId],
-          );
-          inserted++;
-        } else if (prev.name !== r.name || prev.group_name !== r.group_name) {
-          await db.query('update public.emoji_library set name=$2, group_name=$3, license_code=$4, source_id=$5 where emoji=$1',
-            [r.emoji, r.name, r.group_name, license, sourceId]);
-          updated++;
-        } else skipped++;
-      }
-    }
-
-    if (kind === 'symbol') {
-      const keys = chunk.map((r) => r.codepoints);
-      const existing = new Set(
-        (await db.query('select codepoints from public.symbols where codepoints = any($1)', [keys]))
-          .rows.map((r) => r.codepoints),
-      );
-      for (const r of chunk) {
-        if (existing.has(r.codepoints)) { skipped++; continue; }
-        await db.query(
-          `insert into public.symbols (symbol,title,category,codepoints,sort_order,license_code,source_id,is_active)
-           values ($1,$2,$3,$4,$5,$6,$7,true)`,
-          [r.symbol, r.title, r.category, r.codepoints, r.sort_order, license, sourceId],
-        );
-        inserted++;
-      }
-    }
-
-    if (kind === 'font') {
-      const keys = chunk.map((r) => r.slug);
-      const existing = new Map(
-        (await db.query('select slug, category, preview_text from public.fonts where slug = any($1)', [keys]))
-          .rows.map((r) => [r.slug, r]),
-      );
-      for (const r of chunk) {
-        const prev = existing.get(r.slug);
-        if (!prev) {
-          await db.query(
-            `insert into public.fonts (name,slug,family,font_type,category,subsets,weights,styles,variable,preview_text,license_code,source_id,is_active)
-             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,true)`,
-            [r.name, r.slug, r.family, r.font_type, r.category, r.subsets, r.weights, r.styles, r.variable, r.preview_text, license, sourceId],
-          );
-          inserted++;
-        } else if (prev.category !== r.category) {
-          await db.query('update public.fonts set category=$2, subsets=$3, weights=$4, styles=$5, variable=$6, license_code=$7, source_id=$8 where slug=$1',
-            [r.slug, r.category, r.subsets, r.weights, r.styles, r.variable, license, sourceId]);
-          updated++;
-        } else skipped++;
-      }
-    }
+  if (!sourceId) throw new Error(`Source not registered: ${source.slug}`);
+  if (!Number.isSafeInteger(BATCH) || BATCH < 1 || BATCH > 5000) throw new Error('Invalid batch size');
+  let inserted=0, updated=0, skipped=0;
+  const sql=`${batchCtes(kind)} select a,c,n-a-c as skipped from counts`;
+  for(let i=0;i<rows.length;i+=BATCH) {
+    const result=await db.query(sql,[sourceId,source.license,JSON.stringify(rows.slice(i,i+BATCH))]);
+    inserted+=result.rows[0].a; updated+=result.rows[0].c; skipped+=result.rows[0].skipped;
   }
   return { inserted, updated, skipped };
 }
@@ -270,65 +193,26 @@ const ALIAS = {
 };
 
 async function main() {
-  const wanted = ALIAS[SOURCE] || SOURCE;
+  const wanted = Object.hasOwn(ALIAS, SOURCE) ? ALIAS[SOURCE] : SOURCE;
   const names = wanted === 'all' ? Object.keys(SOURCES) : [wanted];
-  if (names.some((n) => !SOURCES[n])) {
-    console.error(`Unknown source "${SOURCE}". Known: ${Object.keys(ALIAS).join(', ')}`);
-    process.exit(2);
-  }
-
-  let db = null;
+  if (names.some(name => !Object.hasOwn(SOURCES,name))) throw new Error('Unknown standard source');
   if (!DRY) {
-    db = new pg.Client({ connectionString: process.env.DATABASE_URL });
-    await db.connect();
+    // Use the same source lock, job accounting, retry and completion transaction
+    // as the worker. Do not maintain a second, record-by-record CLI write path.
+    const {runPass} = await import('./sync.mjs');
+    const results = await runPass({dryRun:false,slugs:names.map(n=>SOURCES[n].slug)});
+    if (results.some(r=>!r.ok)) process.exitCode = 1;
+    return;
   }
-  log(`mode: ${DRY ? 'DRY RUN (nothing written)' : 'IMPORT'}\n`);
-
-  const report = [];
+  log('mode: DRY RUN (nothing written)');
   for (const name of names) {
-    const s = SOURCES[name];
-    const { available, reason, rows, license } = await s.adapt();
-    if (!available) {
-      log(`✗ ${s.label}: unavailable — ${reason}`);
-      report.push({ name, available: false, reason });
-      continue;
-    }
-    const v = validate(s.kind, rows);
-    log(`• ${s.label}: ${rows.length} raw → ${v.clean.length} valid (${v.dropped} duplicate/invalid)`);
-    if (v.errors.length) v.errors.forEach((e) => log(`    ! ${e}`));
-
-    let res = { inserted: 0, updated: 0, skipped: 0 };
-    if (!DRY) res = await importRows(db, s.kind, { slug: s.slug, license }, v.clean);
-
-    log(`    ${DRY ? 'would write' : 'wrote'}: +${res.inserted} new, ~${res.updated} updated, =${res.skipped} unchanged`);
-    report.push({ name, available: true, total: v.clean.length, ...res });
+    const source = SOURCES[name];
+    const built = await source.adapt();
+    if (!built.available) throw new Error(built.reason);
+    const v = validate(source.kind, built.rows);
+    if (!v.clean.length || v.errors.length) throw new Error(`Invalid pinned catalogue: ${source.slug}`);
+    log(`${source.label}: ${built.rows.length} raw → ${v.clean.length} valid (${v.dropped} duplicates)`);
   }
-
-  if (!DRY) {
-    for (const r of report.filter((x) => x.available)) {
-      const s = SOURCES[r.name];
-      await db.query(
-        `update public.data_sources set status='ready', last_sync_at=now(), last_sync_count=$2, last_error=null where slug=$1`,
-        [s.slug, r.total],
-      );
-    }
-    // Record the run.
-    for (const r of report.filter((x) => x.available)) {
-      const sid = await ensureSource(db, SOURCES[r.name].slug);
-      const job = await db.query(
-        `insert into public.data_sync_jobs (source_id,status,mode,started_at,finished_at,items_seen,items_inserted,items_updated,items_skipped,attempts)
-         values ($1,'succeeded','full',now(),now(),$2,$3,$4,$5,1) returning id`,
-        [sid, r.total, r.inserted, r.updated, r.skipped],
-      );
-      await db.query(`insert into public.data_sync_logs (job_id,level,message) values ($1,'info',$2)`,
-        [job.rows[0].id, `imported ${r.total} items for ${r.name}`]);
-    }
-    await db.end();
-  }
-
-  const totalRows = report.filter((r) => r.available).reduce((a, r) => a + r.total, 0);
-  log(`\ntotal valid rows: ${totalRows}`);
-  if (report.some((r) => !r.available)) process.exitCode = 1;
 }
 
 // Only run the CLI when invoked directly, so the sync engine can reuse the

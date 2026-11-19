@@ -13,6 +13,12 @@ import pg from 'pg';
 const SOCKET = process.env.TEST_PG_SOCKET;
 const ADMIN_URL = process.env.TEST_DATABASE_ADMIN_URL;
 const DBNAME = process.env.TEST_DB_NAME || 'biocraft_sync_test';
+if (!/^biocraft_sync_test(?:_[a-z0-9_]+)?$/.test(DBNAME)) throw Error('Use a disposable biocraft_sync_test database name');
+if (SOCKET && !SOCKET.startsWith('/')) throw Error('Use an absolute local Unix socket directory');
+if (ADMIN_URL && !SOCKET) {
+  const target=new URL(ADMIN_URL);
+  if (!['postgresql:','postgres:'].includes(target.protocol) || !['localhost','127.0.0.1','[::1]'].includes(target.hostname) || target.search) throw Error('Test bootstrap requires a local disposable cluster');
+}
 const user = process.env.TEST_PG_USER || process.env.USER;
 
 const adminConfig = SOCKET
@@ -32,6 +38,11 @@ const MIGRATIONS = [
   '0004_stable_bio_pagination.sql',
   '0005_infinite_expansion_limits.sql',
   '0006_global_content_intelligence.sql',
+  '0007_library_read_api.sql',
+  '0008_library_provenance_and_search.sql',
+  '0009_reconcile_catalogue_sync.sql',
+  '0010_library_import_provenance.sql',
+  '0011_synced_library_search.sql',
 ];
 
 let admin;
@@ -43,12 +54,8 @@ try {
   process.exit(0);
 }
 
-try {
-  await admin.query(`drop database if exists ${DBNAME}`);
-  await admin.query(`create database ${DBNAME}`);
-} finally {
-  // keep the connection for the URL below, then close
-}
+await admin.query(`drop database if exists ${DBNAME}`);
+await admin.query(`create database ${DBNAME}`);
 
 // Explicit fields rather than `...adminConfig`: spreading a config that carries a
 // `connectionString` keeps that DSN and ignores the `database` override.

@@ -78,6 +78,34 @@ try {
  assert.equal(fonts.status,200);
  assert.deepEqual((await fonts.json()).items,[{id:b,text:'Published fixture'}]);
  assert.deepEqual(catalogCalls,[{kind:'fonts',after:a,limit:10}]);
+ for(const kind of ['templates','designs','published/emoji','published/symbols','published/languages']) {
+  const start=catalogCalls.length, after=kind.endsWith('languages')?'zh-Hans':a;
+  assert.equal((await call(`/api/admin/v1/${kind}?limit=3&after=${after}`,'GET',undefined,token(outsider,sa))).status,403);
+  assert.equal((await call(`/api/admin/v1/${kind}?after=not.a.cursor`)).status,422);
+  assert.equal(catalogCalls.length,start);
+  assert.equal((await call(`/api/admin/v1/${kind}?limit=3&after=${after}`)).status,200);
+  assert.deepEqual(catalogCalls.at(-1),{kind,after,limit:3});
+ }
+
+ // A signed-in writer still needs both independent catalogue gates. No 016
+ // schema is installed in this test; verify denied requests issue no command.
+ const draftApi='/api/admin/v1/catalog-drafts';
+ for(const [catalogDrafts,sharedWrites,method,suffix,body,code] of [
+   [undefined,true,'GET','?domain=templates',undefined,503],
+   [false,true,'POST','',{},503],
+   [true,false,'POST','',{},403],
+   [true,false,'PUT','/'+a,{},403],
+   [true,false,'DELETE','/'+a,{},403],
+   [true,true,'GET','?domain=staff',undefined,422],
+   [true,true,'GET','?domain=seo&after=invalid',undefined,422],
+   [true,true,'POST','',{domain:'templates',fields:{key:'missing'}},422],
+ ]) {
+   let calls=0;
+   const guarded=createAdminHandler({enabled:true,provider,rateLimit:async()=>true,execute:async()=>{calls++;return []},catalogDrafts,sharedWrites});
+   const result=await guarded(new Request('https://admin.example'+draftApi+suffix,{method,headers:{authorization:'Bearer '+token(a,sa),'content-type':'application/json'},body:body && JSON.stringify(body)}));
+   assert.equal(result.status,code);assert.equal(calls,0);
+   if(code===403)assert.equal((await result.json()).error.code,'PREVIEW_READ_ONLY');
+ }
  assert.equal((await call('/api/admin/v1/system/status')).status,403);
  const system=await call('/api/admin/v1/system/status','GET',undefined,token(b,sb));
  assert.equal(system.status,200);

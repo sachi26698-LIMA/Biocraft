@@ -41,8 +41,17 @@ console.log('PASS Node adapter: platform-derived client identity, forged signatu
  assert.equal(r1.body.toString(),'{"error":{"code":"UNAVAILABLE","stage":"disabled"}}');
  assert.equal(r1.headers['x-admin-stage'],'disabled');
  // The stage must never be an environment value: it is drawn from a fixed
- // vocabulary and additionally constrained by the handler's own pattern.
+ // vocabulary, not merely constrained by a pattern.
  assert.match(r1.headers['x-admin-stage'],/^[a-z][a-z0-9 -]{0,63}$/);
+ for (const reason of ['unverified TLS','unknown string from upstream']) {
+   const closed=Object.assign(async()=>assert.fail('closed gate invoked'),{configuration:{enabled:false,reason}});
+   const reply=res();await createHandler(closed)({method:'GET',url:'/api/admin/v1/health',headers:{}},reply);
+   assert.equal(reply.statusCode,503);
+   const expected=reason==='unverified TLS'?reason:undefined;
+   assert.equal(reply.headers['x-admin-stage'],expected);assert.equal(JSON.parse(reply.body).error.stage,expected);
+ }
+ const diagnostic=res();await disabled.default({method:'GET',url:'/api/admin/v1/health',headers:{}},diagnostic);
+ assert.equal(diagnostic.statusCode,503);assert.deepEqual(JSON.parse(diagnostic.body),{error:{code:'UNAVAILABLE',stage:'disabled'}});
  const fake=async function(){};fake.configuration={enabled:true,origin};
  const handler=createHandler(fake,{secret});
  const r2=res();await handler({method:'GET',url:'/api/admin/v1/health',headers:{'x-real-ip':'1.2.3.4'}},r2);

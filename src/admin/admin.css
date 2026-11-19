@@ -3340,3 +3340,6 @@ html, body {
   gap: 0.5rem;
   margin-top: 0.6rem;
 }
+
+/* Source labels, notes and licence IDs are user text, not layout constraints. */
+.ad-catalog-draft { min-width: 0; overflow-wrap: anywhere; }

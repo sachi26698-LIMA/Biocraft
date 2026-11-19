@@ -14,6 +14,7 @@ try {
   {ADMIN_ORIGIN:'http://preview.example',reason:'invalid origin'},
   {ADMIN_COOKIE_KEY_HEX:keys.ADMIN_FLOW_KEY_HEX,reason:'invalid keys'},
   {ADMIN_SUPABASE_PUBLISHABLE_KEY:'',reason:'missing publishable key'},
+  {NODE_TLS_REJECT_UNAUTHORIZED:'0',reason:'unverified TLS'},
   {ADMIN_DB_PASSWORD:'',reason:'missing database credentials'},
   {ADMIN_TRUSTED_CLIENT_HEADER:'',reason:'missing trusted client header'},
   {ADMIN_INGRESS_SECRET_HEX:'abc',reason:'missing trusted client header'},

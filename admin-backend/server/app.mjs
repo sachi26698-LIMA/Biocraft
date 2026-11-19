@@ -1,8 +1,6 @@
-// Server-side Admin HTTP application. NOT mounted in this repository by default:
-// there is no reviewed, isolated deployment target and no approved database
-// credentials. Nothing here listens on a port or opens a database connection on
-// import. Enabling it requires: server-only secrets, a reviewed limited DB login,
-// independently reviewed SQL grants, and an approved Preview origin + proxy.
+// Shared Admin composition used by the Vercel function and the local listener.
+// Importing this module never opens a socket or a database connection.
+// Activation requires explicit, server-only configuration and a limited role.
 //
 // Request chain:
 //   /api/admin/v1/auth/*  -> auth controller (password + TOTP, encrypted flows)
@@ -18,7 +16,11 @@ import {issueRecoveryGrant,revokeRecoveryGrant,runCleanup,redeemRecoveryCode,fac
 import {verifyProviderIdentity} from './identity.mjs';
 import {createCookieGateway} from './session-cookie.mjs';
 import {createAdminHandler} from './api.mjs';
-import {createDatabaseExecutor,createPostgresPool,assertLimitedRole,SUPABASE_ROOT_CA,DIRECT_HOST} from './database.mjs';
+import {createPublishedCatalog} from './published-catalog.mjs';
+import {createDatabaseExecutor,createPostgresPool,databaseCa} from './database.mjs';
+export {databaseCa} from './database.mjs';
+import {inspectAdminDatabase,databaseReady,readinessStage} from './db-readiness.mjs';
+export {verifyAdminDatabase,databaseStage} from './db-readiness.mjs';
 import {createAuthStorage} from './auth-storage.mjs';
 import {isEmailAllowed} from './auth-flow.mjs';
 import {createProviderLogout} from './provider-logout.mjs';
@@ -56,21 +58,7 @@ export function clientKey(request,{trustedHeader,ingressSecret}={}) {
  *   ADMIN_INGRESS_SECRET_HEX=<64 hex chars shared with that proxy>
  *   ADMIN_ALLOWED_EMAILS=comma-separated (bootstrap allow-list, optional)
  */
-/** The trust anchor for the database TLS handshake.
- *
- * A pooler login is verified against Supabase's published Root 2021 CA, which is
- * bundled with the deployment because it is not in Node's system trust store.
- * The direct (non-pooler) host keeps the system store: its certificate is issued
- * normally, and widening trust there would be a needless weakening. An operator
- * can supply ADMIN_DB_CA_PEM to override either case. */
-export function databaseCa(env,host) {
- const override=typeof env?.ADMIN_DB_CA_PEM==='string'?env.ADMIN_DB_CA_PEM.trim():'';
- if (override.startsWith('-----BEGIN CERTIFICATE-----')) return override;
- if (host===DIRECT_HOST) return undefined; // system trust store
- return SUPABASE_ROOT_CA ?? undefined;
-}
-
-export function createAdminApp({env=process.env,poolFactory=createPostgresPool,now=()=>Date.now()}={}) {
+export function createAdminApp({env=process.env,poolFactory=createPostgresPool,now=()=>Date.now(),localDevelopment=false}={}) {
  // `stage` names the configuration check that failed. It is a fixed identifier
  // from this file's own vocabulary — never an environment value, never a secret —
  // so an operator can tell WHICH gate closed without reading the deployment logs.
@@ -78,8 +66,13 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  // the Admin client and the existing regression tests remain correct.
  const fail=reason=>{const app=()=>new Response(JSON.stringify({error:{code:'UNAVAILABLE',stage:reason}}),{status:503,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff','X-Admin-Stage':reason}});app.configuration={enabled:false,reason};app.shutdown=async()=>{};return app;};
  if (env.ADMIN_BACKEND_ENABLED!=='true') return fail('disabled');
+ if (env.NODE_TLS_REJECT_UNAUTHORIZED==='0') return fail('unverified TLS');
  const origin=env.ADMIN_ORIGIN;
- if (typeof origin!=='string'||!/^https:\/\/[a-z0-9.-]{1,200}$/i.test(origin)) return fail('invalid origin');
+ // A TLS-terminating proxy on a nonstandard port is supported for local
+ // loopback development only. Never infer an origin from forwarding headers.
+ if (typeof origin!=='string' || !(/^https:\/\/[a-z0-9.-]{1,200}$/i.test(origin) ||
+   (localDevelopment && /^https:\/\/(localhost|127\.0\.0\.1):[1-9]\d{0,4}$/.test(origin)))) return fail('invalid origin');
+ try { if(new URL(origin).origin!==origin) return fail('invalid origin'); } catch {return fail('invalid origin');}
  const cookieKey=key32(env.ADMIN_COOKIE_KEY_HEX),flowKey=key32(env.ADMIN_FLOW_KEY_HEX),hashKey=key32(env.ADMIN_HASH_KEY_HEX);
  if (!cookieKey||!flowKey||!hashKey||cookieKey.equals(flowKey)||cookieKey.equals(hashKey)||flowKey.equals(hashKey)) return fail('invalid keys');
  const publishableKey=env.ADMIN_SUPABASE_PUBLISHABLE_KEY ?? env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -105,14 +98,6 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  // starts with a transaction-mode or typo'd port.
  const dbPort=env.ADMIN_DB_PORT===undefined||env.ADMIN_DB_PORT===''?undefined:/^\d{1,5}$/.test(env.ADMIN_DB_PORT)?Number(env.ADMIN_DB_PORT):NaN;
  if(dbPort!==undefined&&dbPort!==5432) return fail('invalid database configuration');
- // Supabase's pooler presents a chain rooted in "Supabase Root 2021 CA", a
- // PRIVATE root that is not in Node's trust store. Without this the handshake
- // fails with SELF_SIGNED_CERT_IN_CHAIN and the connection is never made — which
- // is exactly what the deployed health check reported ("database certificate
- // untrusted"). The fix is to trust that one published root, NOT to disable
- // verification: `ca` replaces the default store for this socket, so the pooler
- // is still verified against Supabase's own root and the hostname is still
- // checked by pg. ADMIN_DB_CA_PEM can override it for a differently-rooted host.
  let pool;
  try {pool=poolFactory({host:dbHost,port:dbPort,user:env.ADMIN_DB_USER,password:env.ADMIN_DB_PASSWORD,ca:databaseCa(env,dbHost)});} catch {return fail('invalid database configuration');}
  const execute=createDatabaseExecutor(pool,{now});
@@ -130,20 +115,9 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
   revoke:options=>revokeRecoveryGrant({execute,...options}),
   reset:options=>resetFactorEnrolment({execute,...options}),
   cleanup:options=>runCleanup({execute,...options})};
- const columns={captions:'id,title,text:content,language,tone',hashtags:'id,text:tag,language,popularity',fonts:'id,title:name,text:preview_text,font_type'};
- const readPublicCatalog=async({kind,after,limit})=>{
-   if(!Object.hasOwn(columns,kind)) throw new Error('Unknown catalogue');
-   // Use a fresh guest client (no admin JWT or database credentials). This read
-   // can never expose inactive entries, even on the privileged route.
-   let query=client().from(kind).select(columns[kind]).eq('is_active',true).order('id').limit(limit)
-    .retry(false).abortSignal(AbortSignal.timeout(5000));
-   if(after) query=query.gt('id',after);
-   const {data,error}=await query;
-   if(error) throw new Error('Catalogue unavailable');
-   return data;
- };
+ const readPublicCatalog=createPublishedCatalog(client); // fresh guest client, never an Admin JWT
  const isPreviewOrUnknownHosted=env.VERCEL_ENV==='preview'||(env.VERCEL==='1'&&env.VERCEL_ENV!=='production');
- const sharedWrites=!isPreviewOrUnknownHosted||env.ADMIN_SHARED_WRITES_ENABLED==='true';
+ const sharedWrites=env.ADMIN_SHARED_WRITES_ENABLED==='true' || (env.ADMIN_SHARED_WRITES_ENABLED===undefined && !localDevelopment && !isPreviewOrUnknownHosted);
  const passwordReset=sharedWrites&&env.ADMIN_PASSWORD_RESET_ENABLED==='true';
  const readSystemStatus=async()=>({
   database:'ready', // settings.read and the live session were just checked in Postgres.
@@ -153,7 +127,7 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
   shared_writes:sharedWrites, password_reset:passwordReset,
   revision: /^[0-9a-f]{40}$/.test(env.VERCEL_GIT_COMMIT_SHA??'')?env.VERCEL_GIT_COMMIT_SHA.slice(0,12):null,
  });
- const api=createAdminHandler({sharedWrites,editorialDirectory:env.ADMIN_EDITORIAL_DIRECTORY_ENABLED==='true',readSystemStatus,enabled:true,provider,execute,rateLimit,platformRules:PLATFORM_RULES,recovery:recoveryService,readPublicCatalog,emailAllowed});
+ const api=createAdminHandler({sharedWrites,catalogDrafts:env.ADMIN_CATALOG_DRAFTS_ENABLED==='true',editorialDirectory:env.ADMIN_EDITORIAL_DIRECTORY_ENABLED==='true',readSystemStatus,enabled:true,provider,execute,rateLimit,platformRules:PLATFORM_RULES,recovery:recoveryService,readPublicCatalog,emailAllowed});
  // Enrolment gate: live Admin membership + provider session, checked in the DB
  // before any TOTP factor is created. It is the only pre-AAL2 database call.
  const enrolment=async identity=>{
@@ -189,11 +163,11 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    return false;
   } catch { return false; }
  };
- const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:storage,limiter:rateLimit,sessionHandler:api,enrolment,recovery:factorDecision,factorGate:factorDecision,allowList});
+ const auth=createAuthController({enabled:true,origin,key:cookieKey,createClient:client,flowStore:storage,limiter:rateLimit,sessionHandler:api,enrolment:sharedWrites?enrolment:null,recovery:sharedWrites?factorDecision:null,factorGate:sharedWrites?factorDecision:null,allowList});
  const recoverPassword=createRecoveryController({enabled:passwordReset,origin,createClient:client,flowStore:storage,limiter:rateLimit,execute,emailAllowed,
   checkMembership:async identity=>['enrol','recover'].includes(await factorGate({execute,identity}))});
  const gateway=createCookieGateway({key:cookieKey,origin,delegate:api,providerLogout:createProviderLogout({url:PROJECT_URL,publishableKey})});
- let readiness;
+ let readiness,authReadiness;
  const app=async function handle(request){
   const key=clientKey(request,{trustedHeader,ingressSecret});
   if(!key) return new Response(JSON.stringify({error:{code:'UNAVAILABLE'}}),{status:503,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8'}});
@@ -209,20 +183,9 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
   if(!sharedWrites&&url.pathname==='/api/admin/v1/auth/recovery/complete'&&request.method==='POST') return bad(403);
   if(url.pathname.startsWith('/api/admin/v1/auth/')) return auth(request,key);
   if(url.pathname==='/api/admin/v1/health') {
-   // A 503 from THIS branch has two distinct shapes, which makes a deployed
-   // failure self-diagnosing:
-   //   {error:{code:'UNAVAILABLE',stage:'...'}}  -> a configuration gate closed
-   //   {error:{code:'UNAVAILABLE'}}              -> configuration was fine, but
-   //      verifyAdminDatabase() could not reach the database or the login is not
-   //      a genuinely limited role.
-   // `?diagnose=1` additionally reports which dependency answers. It is gated on
-   // the same proxy HMAC signature the rate limiter uses, so a direct caller
-   // learns nothing about the deployment.
-   if(request.method!=='GET') return health(request.method);
-   if(url.searchParams.get('diagnose')==='1'&&clientKey(request,{trustedHeader,ingressSecret})!==null){
-    return app.diagnose().then(r=>new Response(JSON.stringify({ok:true,diagnostics:r}),{status:200,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}})).catch(()=>health(request.method));
-   }
-   return health(request.method);
+   // Normal health names the failing stage. Diagnostics add bounded details
+   // from the same read-only DB and Auth probes, never raw errors or secrets.
+   return health(request.method,url.searchParams.get('diagnose')==='1');
   }
   if(url.pathname.startsWith('/api/admin/v1/')) return gateway(request);
   return bad(404);
@@ -230,132 +193,40 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  app.configuration={enabled:true,origin,trustedHeader,limits:{maxBodyBytes:32768}};
  app.shutdown=async()=>{await pool.end()};
  app.execute=execute;
- // Runtime diagnosis. Configuration can be complete and the service still fail on
- // the first real database round-trip. `diagnose()` reports WHICH dependency is
- // not answering, using fixed labels and a coarse SQLSTATE — never a driver
- // message, host, user or secret. It runs no content query and changes nothing:
- // a transaction is opened, the same limited-role assertion the startup path uses
- // is executed, and it is rolled back.
+ // Cache an in-flight DB check as well as the result. A diagnostic and a
+ // normal health check must not make duplicate login attempts during an outage.
+ function dbReport() {
+  if(!readiness||readiness.expires<=now()) readiness={expires:now()+10_000,result:inspectAdminDatabase(pool,now)};
+  return readiness.result;
+ }
+ async function providerHealth() {
+  try {
+   const probe=await fetch(`${PROJECT_URL}/auth/v1/health`,{headers:{apikey:publishableKey},redirect:'error',signal:AbortSignal.timeout(3500)});
+   await probe.body?.cancel();
+   return probe.ok?'reachable':'unavailable';
+  } catch {return 'unreachable';}
+ }
+ function authReport() {
+  if(!authReadiness||authReadiness.expires<=now()) authReadiness={expires:now()+10_000,result:providerHealth()};
+  return authReadiness.result;
+ }
  app.diagnose=async()=>{
-  const report={database:'unknown',provider:'unknown'};
-  let client;
-  try {
-   client=await pool.connect();
-   report.database='reachable';
-   try {
-    await client.query('begin');
-    try { await assertLimitedRole(client); }
-  catch (e) { throw databaseStage(e,'database role not limited'); }
-    report.limited_role='ok';
-   } catch (e) {
-    // A role that is not limited is a security stop, not a transient fault.
-    report.limited_role='failed';
-    report.sqlstate=typeof e?.code==='string'?e.code:'unknown';
-   } finally {try{await client.query('rollback')}catch{} }
-  } catch (e) {
-   report.database='unreachable';
-   report.sqlstate=typeof e?.code==='string'?e.code:'unknown';
-  } finally {try{client?.release()}catch{} }
-  try {
-   const probe=await provider.auth.getUser('');
-   // Any well-formed refusal means the provider answered; provider.auth.getUser
-   // resolves with {data:{user:null},error:{...}} rather than throwing.
-   report.provider=probe&&typeof probe==='object'?'reachable':'unexpected';
-  } catch (e) {
-   // A network/DNS failure reaching Supabase is distinguishable from a 401.
-   report.provider=e?.name==='AuthRetryableFetchError'?'unreachable':'reachable';
-  }
-  return report;
+  const [database,provider]=await Promise.all([dbReport(),authReport()]);
+  return {...database,provider};
  };
  return app;
  function bad(status){return new Response(JSON.stringify({error:{code:status===404?'NOT_FOUND':'FORBIDDEN'}}),{status,headers:{'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'}})}
- async function health(method) {
+ async function health(method,diagnose=false) {
   const headers={'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'};
   if(method!=='GET') return new Response(JSON.stringify({error:{code:'METHOD_NOT_ALLOWED'}}),{status:405,headers:{...headers,Allow:'GET'}});
-  if(!readiness||readiness.expires<=now()) readiness={expires:now()+10_000,result:verifyAdminDatabase(pool).then(()=>true,e=>e)};
-  const outcome=await readiness.result;
-  const ok=outcome===true;
-  // A refusal now names its cause with a fixed identifier so the deployed
-  // failure is diagnosable from outside. Only the stage is reported: never a
-  // driver message, a host, a user or a secret.
-  if(ok) return new Response(JSON.stringify({ok:true}),{status:200,headers});
-  const stage=typeof outcome?.stage==='string'?outcome.stage:'database unavailable';
+  if(diagnose) {
+   const diagnostics=await app.diagnose();
+   const ok=databaseReady(diagnostics)&&diagnostics.provider==='reachable';
+   return new Response(JSON.stringify({ok,diagnostics}),{status:ok?200:503,headers});
+  }
+  const db=await dbReport();
+  const stage=!databaseReady(db)?readinessStage(db):(await authReport()!=='reachable'?'auth provider unavailable':null);
+  if(!stage) return new Response(JSON.stringify({ok:true}),{status:200,headers});
   return new Response(JSON.stringify({error:{code:'UNAVAILABLE',stage}}),{status:503,headers:{...headers,'X-Admin-Stage':stage}});
  }
-}
-
-/** Check that the committed SQL surface exists and can be called by a limited
- * executor. Readiness never creates a session, consumes attempts or mutates data. */
-export async function verifyAdminDatabase(pool,clock=()=>Date.now()) {
- let client;
- const connectStarted=clock();
- try { client=await pool.connect(); }
- catch (e) {
-  // pg's pool rejects its own connection timeout with a plain Error that has NO
-  // `code`, so classification by transport code alone cannot see it. The wait is
-  // the reliable signal: the pool is built with connectionTimeoutMillis=5000, so
-  // a refusal arriving at or after that limit is the pool giving up on a socket
-  // that never completed — not a rejected login.
-  const waited=clock()-connectStarted;
-  if(!e?.code && waited>=4500) throw databaseStage({code:'ETIMEDOUT'},'database connection timed out');
-  const message=typeof e?.message==='string'?e.message:'';
-  // Match, never echo. Some Supavisor refusals also arrive codeless.
-  if(!e?.code && /timeout/i.test(message)) throw databaseStage({code:'ETIMEDOUT'},'database connection timed out');
-  if(!e?.code && /(terminat|closed|socket|econn)/i.test(message)) throw databaseStage({code:'ECONNRESET'},'database network blocked');
-  throw databaseStage(e,'database unreachable');
- }
- try {
-  await client.query('begin read only');
-  await client.query("set local statement_timeout = '3000ms'");
-  await assertLimitedRole(client);
-  const {rows}=await client.query(`select pg_catalog.has_schema_privilege(current_user,'bc_admin_v1','USAGE')
-    and bool_and(coalesce(pg_catalog.has_function_privilege(current_user,pg_catalog.to_regprocedure(signature),'EXECUTE'),false)) as ready
-    from unnest($1::text[]) as signatures(signature)`,[[
-      'bc_admin_v1.consume_rate_limit(text,bytea)', 'bc_admin_v1.require_actor(text)',
-      'bc_admin_v1.store_login_flow(bytea,bytea,integer)', 'bc_admin_v1.take_login_flow(bytea)',
-      'bc_admin_v1.factor_gate(uuid)', 'bc_admin_v1.open_admin_session(uuid)', 'bc_admin_v1.session_identity()',
-    ]]);
-  if(rows[0]?.ready!==true) throw databaseStage(null,'database grants missing');
- } catch (e) {
-  throw databaseStage(e,'database unavailable');
- } finally {
-  // A rollback can itself fail once the connection is gone; that must not mask
-  // the classification thrown above, so it is swallowed here.
-  try{await client.query('rollback')}catch{}
-  client.release();
- }
-}
-
-/** Attach a fixed diagnostic stage to a database refusal.
- *
- * The stage is derived from the SQLSTATE alone, so it distinguishes the causes
- * an operator actually has to act on — a rejected login (28xxx), a role that is
- * not least-privilege (42501), a missing database, a timeout, an unreachable
- * server — without ever echoing a credential, host or SQL statement. The
- * caller's default is kept when the driver supplies no code (a network failure
- * before authentication completes, for example). */
-export function databaseStage(error,fallback) {
- const code=typeof error?.code==='string'?error.code:'';
- // Transport failures are named individually: 'unreachable' alone cannot tell a
- // wrong hostname from a blocked network or an untrusted certificate, and those
- // need completely different fixes. Every stage is a fixed phrase, never a
- // driver message, host, user, password or SQL statement.
- const stage=
-  code==='ENOTFOUND'||code==='EAI_AGAIN'?'database host not resolvable':
-  code==='ECONNREFUSED'?'database refused connection':
-  code==='ETIMEDOUT'?'database connection timed out':
-  code==='ECONNRESET'||code==='EHOSTUNREACH'||code==='ENETUNREACH'?'database network blocked':
-  code==='SELF_SIGNED_CERT_IN_CHAIN'||code==='DEPTH_ZERO_SELF_SIGNED_CERT'||
-   code==='UNABLE_TO_VERIFY_LEAF_SIGNATURE'||code==='CERT_HAS_EXPIRED'||
-   code==='ERR_TLS_CERT_ALTNAME_INVALID'?'database certificate untrusted':
-  code.startsWith('28')?'database authentication rejected':
-  code==='3D000'?'database absent':
-  code==='42501'?'database permission denied':
-  code==='57014'?'database timeout':
-  code.startsWith('08')||code==='53300'||code==='57P03'?'database unreachable':
-  fallback;
- const wrapped=new Error(stage);
- wrapped.stage=stage;
- wrapped.code=code||undefined;
- return wrapped;
 }

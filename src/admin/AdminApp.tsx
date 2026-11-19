@@ -12,6 +12,7 @@
  * - When /api/admin/v1/health is unreachable → honest read-only Preview mode.
  */
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import draftDomains from '../../shared/admin-draft-domains.json';
 import extraModules from '../../shared/admin-extra-modules.json';
 import { handleAnchorClick, navigate as routerNavigate, usePath } from '../lib/router';
 import { currentSession, logoutSession, probeBackend, type AdminSession, type BackendStatus } from './backend';
@@ -27,6 +28,7 @@ import { ToastProvider, useToast } from './ui/Toast';
 import './admin.css';
 
 // Lazy-loaded Live modules for fast route switching & minimal bundle on first paint
+const CatalogDrafts = lazy(() => import('./live/CatalogDrafts'));
 const ExtraModule = lazy(() => import('./live/ExtraModules'));
 const PasswordReset = lazy(() => import('./PasswordReset'));
 const LiveOverview = lazy(() => import('./live/Overview'));
@@ -378,6 +380,8 @@ function AdminShell() {
   const activeNav = LEGACY_NAV.find(n => n.path === path);
   const extraModule = extraModules.find(module => `/admin/${module.key}` === path);
 
+  const domainKey = activeNav?.key ?? extraModule?.key;
+  const draftDomain = domainKey && Object.prototype.hasOwnProperty.call(draftDomains,domainKey) ? domainKey as keyof typeof draftDomains : null;
   let content: ReactNode;
   if (extraModule) {
     content = <ExtraModule key={extraModule.key} module={extraModule} authorized={backend === 'ready' && session !== null} />;
@@ -767,8 +771,8 @@ function AdminShell() {
 
           {/* Main Route Viewport */}
           <main id="admin-main" className="ad-main">
-            {session?.sharedWrites === false && <p role="status" className="ad-auth-note">Read-only Preview: shared content, staff and setting changes are disabled.</p>}
-            <Suspense fallback={<RouteFallback />}>{content}</Suspense>
+            {session?.sharedWrites === false && <p role="status" className="ad-auth-note">Read-only workspace: shared content, staff and setting changes are disabled.</p>}
+            <Suspense fallback={<RouteFallback />}>{content}{session?.catalogDrafts && draftDomain && session.permissions.includes(draftDomains[draftDomain]) && <CatalogDrafts key={`${session.userId}:${draftDomain}`} domain={draftDomain}/>}</Suspense>
             <footer className="ad-footer">
               <span>{live ? 'BioCraft Master Admin v2.0' : 'BioCraft Admin Preview'}</span>
               <span>{live ? 'Server-verified AAL2 session · Every action audited' : 'Public catalog only · No admin session'}</span>

@@ -1,0 +1,10 @@
+{
+  "sources": {
+    "icons": {"slug":"iconify-json","kind":"icon","package":"@iconify/json"},
+    "brands": {"slug":"simple-icons","kind":"icon","package":"simple-icons"},
+    "colors": {"slug":"color-name-list","kind":"palette","package":"color-name-list"}
+  },
+  "acceptedSpdx": ["MIT","Apache-2.0","CC0-1.0","CC-BY-4.0","CC-BY-3.0","BSD-3-Clause","ISC","Unlicense","OFL-1.1"],
+  "reviewIconifyCategories": ["Logos"],
+  "reviewIconifyPrefixes": ["simple-icons","logos","devicon","devicon-plain","fa-brands","fa6-brands"]
+}

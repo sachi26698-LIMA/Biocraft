@@ -48,7 +48,7 @@ export function isDenied(error: unknown): boolean {
 
 export function describeError(error: unknown): string {
   const code = (error as { code?: unknown } | null)?.code;
-  if (code === 'PREVIEW_READ_ONLY') return 'Shared changes are disabled on this Preview.';
+  if (code === 'PREVIEW_READ_ONLY') return 'Shared changes are disabled in this workspace.';
   if (isDenied(error)) return 'Your account does not have permission for this module.';
   if (code === 'RATE_LIMITED') return 'Too many requests just now. Wait a moment and try again.';
   if (code === 'UNAVAILABLE') return 'The Admin service is not reachable right now.';
@@ -130,7 +130,7 @@ export function usePaged<T>(path: string | null, take: (last: T | null) => strin
 }
 
 /** POST/PUT a write and report what happened, without pretending it worked. */
-export async function mutate<T>(path: string, body: unknown, method: 'POST' | 'PUT' | 'PATCH' = 'POST'): Promise<T> {
+export async function mutate<T>(path: string, body: unknown, method: 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'POST'): Promise<T> {
   return request<T>(path, { method, body: JSON.stringify(body) });
 }
 
