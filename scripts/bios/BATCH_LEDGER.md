@@ -20,26 +20,26 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 007 | `batch-007.mjs` | 44 | 35 | 38 | 117 | 3 → fixed | 833 | Next band: royal, motivational, alone, friendship, professional, creator, student + middle sweep |
 | 008 | `batch-008.mjs` | 38 | 29 | 29 | 96 | 1 → fixed | 929 | The seven 7-record categories: family, minimal, fitness, travel, gaming, photography, music |
 | 009 | `batch-009.mjs` | 49 | 28 | 30 | 107 | 0 | 1036 | Whole 9–14 band lifted; first zero-rejection batch since 004. Library passes 1,000 |
+| 010 | `batch-010.mjs` | 55 | 12 | 11 | 78 | 2 → fixed | 1111 | English-weighted to correct split drift; 2 self-duplicates caught |
 
-**Verified so far: 1,036 / 50,000 (2.1%)**
-Remaining: 48,964 (EN 19,589 · HI 14,664 · HG 14,711)
+**Verified so far: 1,111 / 50,000 (2.2%)**
+Remaining: 48,889 (EN 19,537 · HI 14,652 · HG 14,700)
+Split check: EN 2.31% · HI 2.32% · HG 2.00% of their targets — converging again.
 Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 010 — the floor is now roughly 16 across all 46 categories; the mid-field
-(food, technology, fashion, yoga, pets, startup, science, cinema, cricket, cars,
-home, parenting, deep, savage, instagram, nature, poetry, funny) sits at 16–18
-and the leaders (attitude 57, love 55, shayari 55) at the other end. Batch 010
-should keep the breadth-first approach: two to six records per category rather
-than deep stacks in a few, so the library stays balanced as it grows.
+Batch 011 — English is now level with Hindi again, but Hinglish has slipped to
+2.00%. Batch 011 should weight Hinglish heavier (roughly 2:1 HG:HI) to close that
+gap while keeping English steady at the 20,000-side ratio. Keep breadth-first at
+two to six records per category.
 
-**Balance note.** The language split has drifted: English is at 2.05% of its
-20,000 target while Hinglish is at 1.93% and Hindi at 2.24%. Hindi is pulling
-ahead and English is the laggard. Future batches should weight English slightly
-heavier until the three ratios converge — the target is not simply 50,000
-records, it is 20/15/15, and a library that hits 50,000 with the wrong split has
-failed the brief.
+**Balance note.** The target is not simply 50,000 records, it is 20/15/15. A
+library that reaches 50,000 with the wrong language split has failed the brief
+even though the total looks right, so every batch from here reports the split as
+a percentage of each target rather than just a raw count. Batch 010 moved English
+from 2.05% to 2.31% of its target and the three are now close enough that a few
+Hinglish-heavy batches will level them.
 
 **Scale honestly assessed.** Eight batches have produced 929 records in this
 voice. Reaching 50,000 at this editorial standard needs roughly 400 more
@@ -117,7 +117,15 @@ left in the report as a documented exclusion.
   its plain-English probes after the third extension and still rejects them, so
   the zero is not the result of a loosened gate.
 
-**Pattern worth noting:** the engine has now caught 11 rejections across 9 batches
+- Batch 010: two **exact duplicates of earlier batches** again
+  (`"I would rather be underestimated than explained."` and `"Manners cost
+  nothing and separate everything."`). Both replaced with genuinely new lines.
+  This is the second time the engine has caught my own repeats, and it confirms
+  the earlier finding: past a few hundred records, exact-match detection is doing
+  real editorial work that memory cannot.
+
+**Pattern worth noting:** the engine has now caught 13 rejections across 10
+batches
 — 3 Hinglish edges (003, 004, 006), 2 exact duplicates of earlier batches (006),
 1 vocabulary gap (005), 1 over-length line (002). The duplicate catches are the
 most useful signal in the whole ledger: at 716 records a human cannot hold the
