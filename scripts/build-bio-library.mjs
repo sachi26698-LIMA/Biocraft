@@ -70,6 +70,19 @@ for (const seed of seeds) {
   }
 }
 
+// A seed filed under a category that is not in the declared list used to be
+// dropped silently, which made a typo indistinguishable from a clean batch.
+// It is a mistake in the content file, not a property of the record, so it
+// fails the build rather than being counted as a rejection.
+if (unknownCategory.length > 0) {
+  const detail = unknownCategory
+    .map((seed) => `  ${seed.file}: "${seed.category}" <- ${seed.text.slice(0, 60)}`)
+    .join('\n');
+  throw new Error(
+    `batch content references ${unknownCategory.length} categor${unknownCategory.length === 1 ? 'y' : 'ies'} not in the declared list:\n${detail}`,
+  );
+}
+
 /* ---------------------------------------------------------------- records */
 
 const CREATED = '2026-11-09';

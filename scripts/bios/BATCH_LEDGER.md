@@ -44,10 +44,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 031 | `batch-031.mjs` | 40 | 30 | 26 | 96 | 2 → fixed | 3027 | Strict proportional; library passes 3,000 |
 | 032 | `batch-032.mjs` | 42 | 31 | 26 | 99 | 0 | 3126 | Strict proportional; library passes 3,100 |
 | 033 | `batch-033.mjs` | 37 | 24 | 33 | 94 | 3 → fixed | 3220 | Hinglish-leaning; 2 exact repeats + 1 language |
+| 034 | `batch-034.mjs` | 41 | 29 | 29 | 99 | 1 → fixed | 3319 | 1 exact repeat + 1 unknown-category seed |
 
-**Verified so far: 3,220 / 50,000 (6.4%)**
-Remaining: 46,780 (EN 18,717 · HI 14,024 · HG 14,039)
-Split check: EN 6.42% · HI 6.51% · HG 6.41% of their targets.
+**Verified so far: 3,319 / 50,000 (6.6%)**
+Remaining: 46,681 (EN 18,676 · HI 13,995 · HG 14,010)
+Split check: EN 6.62% · HI 6.70% · HG 6.60% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -77,8 +78,10 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 034 — the Hinglish nudge worked: 6.42 / 6.51 / 6.41, spread back to 0.10
-points. Continue strict proportional 40/30/30.
+Batch 035 — split 6.62 / 6.70 / 6.60, within 0.10 points. One seed was filed
+under `Travel` instead of `Travel and adventure` and was dropped silently; the
+builder now throws on an unknown category so that can never happen quietly
+again. Continue strict proportional 40/30/30.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
