@@ -559,3 +559,12 @@ export function ShapesIcon({ size = 18 }: IconProps) {
     </svg>
   );
 }
+export function MoreIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="1.1" fill="currentColor" />
+      <circle cx="17" cy="12" r="1.1" fill="currentColor" />
+      <circle cx="7" cy="12" r="1.1" fill="currentColor" />
+    </svg>
+  );
+}
