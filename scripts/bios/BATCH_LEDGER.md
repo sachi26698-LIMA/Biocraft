@@ -43,10 +43,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 030 | `batch-030.mjs` | 40 | 30 | 25 | 95 | 0 | 2931 | Strict proportional; zero rejections |
 | 031 | `batch-031.mjs` | 40 | 30 | 26 | 96 | 2 → fixed | 3027 | Strict proportional; library passes 3,000 |
 | 032 | `batch-032.mjs` | 42 | 31 | 26 | 99 | 0 | 3126 | Strict proportional; library passes 3,100 |
+| 033 | `batch-033.mjs` | 37 | 24 | 33 | 94 | 3 → fixed | 3220 | Hinglish-leaning; 2 exact repeats + 1 language |
 
-**Verified so far: 3,126 / 50,000 (6.3%)**
-Remaining: 46,874 (EN 18,754 · HI 14,048 · HG 14,072)
-Split check: EN 6.23% · HI 6.35% · HG 6.19% of their targets.
+**Verified so far: 3,220 / 50,000 (6.4%)**
+Remaining: 46,780 (EN 18,717 · HI 14,024 · HG 14,039)
+Split check: EN 6.42% · HI 6.51% · HG 6.41% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -76,9 +77,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 033 — split 6.23 / 6.35 / 6.19, within 0.16 points. Hinglish is now the
-lowest of the three; nudge Hinglish up slightly in 033. Continue strict
-proportional 40/30/30.
+Batch 034 — the Hinglish nudge worked: 6.42 / 6.51 / 6.41, spread back to 0.10
+points. Continue strict proportional 40/30/30.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
