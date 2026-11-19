@@ -20,6 +20,7 @@ const ALL_TOOLS: Array<{ label: string; href: string }> = [
 
 const CATEGORY_LINKS: Array<{ label: string; href: string }> = [
   { label: 'Ready-Made Bios', href: '/bio-collections' },
+  { label: 'All Verified Bios', href: '/premium-bios' },
   { label: 'Bio Editor', href: '/bio-editor' },
   { label: 'Bio Generators', href: '/categories#cat-bio' },
   { label: 'Stylish Names & Fonts', href: '/categories#cat-names-fonts' },
@@ -42,6 +43,9 @@ const HINDI_FONT_LINKS: Array<{ label: string; href: string }> = [
 const READY_MADE_LINKS: Array<{ label: string; href: string }> = [
   { label: 'Ready-Made Bios', href: '/bio-collections' },
   { label: 'Bio Library', href: '/bio-library' },
+  // The full verified library (8,421 records, 46 categories) was reachable only
+  // by typing the URL. It belongs next to the curated set, not instead of it.
+  { label: 'All Verified Bios (8,421)', href: '/premium-bios' },
   { label: 'Bio Editor', href: '/bio-editor' },
   { label: 'Design Studio', href: '/design-studio' },
 ];

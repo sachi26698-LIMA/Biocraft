@@ -57,6 +57,7 @@
     "test:admin-live-modules": "node tests/admin-live-modules-browser.cjs",
     "test:tools-browser": "node tests/tools-workflow-browser.cjs",
     "test:tools-reachability": "node tests/tool-reachability.mjs",
+    "test:library-discoverability": "node tests/library-discoverability.mjs",
     "test:admin-csv-export": "node tests/admin-csv-export-browser.cjs",
     "test:build-admin-entry": "node tests/build-admin-entry.cjs",
     "test:admin-allowlist": "node tests/admin-allowlist.mjs",
