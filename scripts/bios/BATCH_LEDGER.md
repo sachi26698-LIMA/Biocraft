@@ -119,10 +119,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 074 | `batch-074.mjs` | 44 | 33 | 33 | 110 | 0 | 7761 | 0 — clean on second precheck pass |
 | 075 | `batch-075.mjs` | 44 | 33 | 33 | 110 | 0 | 7871 | 0 — 1 gate hole found and closed |
 | 076 | `batch-076.mjs` | 44 | 33 | 33 | 110 | 0 | 7981 | 0 — 1 couplet gate fix, counts trimmed |
+| 077 | `batch-077.mjs` | 44 | 33 | 33 | 110 | 0 | 8091 | 0 — 1 couplet gate fix |
 
-**Verified so far: 7,981 / 50,000 (16.0%)**
-Remaining: 42,019 (EN 16,807 · HI 12,606 · HG 12,606)
-Split check: EN 15.96% · HI 15.96% · HG 15.96% of their targets — spread 0.00.
+**Verified so far: 8,091 / 50,000 (16.2%)**
+Remaining: 41,909 (EN 16,763 · HI 12,573 · HG 12,573)
+Split check: EN 16.18% · HI 16.18% · HG 16.18% of their targets — spread 0.00.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -152,7 +153,17 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 076 — split 15.96 / 15.96 / 15.96, spread 0.00. One Hinglish couplet
+Batch 077 — split 16.18 / 16.18 / 16.18, spread 0.00. Same couplet problem in
+a different place: 'Ek chhatri, ek thaila, ek bus pass. Poora barsaati saaman
+itna hi.' read as a list of nouns with no verb, so the vocabulary test found
+nothing Roman-Hindi in it. Rewritten to end '... Bas itna hi saaman chahiye.'
+Two long English lines were traded for the pair. Pattern worth keeping in mind:
+bare noun lists in Hinglish fail the gate even when every word is correct Hindi
+vocabulary. Subjects: a barber's queue counted in heads, a father's cycle
+repair shop lost to a widened road, exam-hall seating lists, a borrowed umbrella,
+and a conductor's hole punch.
+
+(previous) Batch 076 — split 15.96 / 15.96 / 15.96, spread 0.00. One Hinglish couplet
 failed on the new stricter vocabulary test ('Bus ruki, darwaaza khula...' had no
 Roman-Hindi marker in the old spelling set) and was rewritten to 'Bus ruki thi,
 darwaaza khula tha...'. The file then landed two long and was trimmed. Subjects:
