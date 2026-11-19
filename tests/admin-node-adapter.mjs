@@ -34,7 +34,15 @@ console.log('PASS Node adapter: platform-derived client identity, forged signatu
  const res=()=>({headers:{},setHeader(k,v){this.headers[k]=v},end(b){this.body=b}});
  // Default export with no env configured returns 503 before parsing anything.
  const r1=res();await disabled.default({method:'POST',url:'/api/admin/v1/auth/login',headers:{'x-real-ip':'1.2.3.4'},body:{}},r1);
- assert.equal(r1.statusCode,503);assert.equal(r1.body.toString(),'{"error":{"code":"UNAVAILABLE"}}');
+ assert.equal(r1.statusCode,503);
+ // The body keeps its leading {error:{code}} shape, but now names the closed
+ // gate. Without this the deployed outage was indistinguishable from a failed
+ // database round-trip: both rendered a byte-identical bare 503.
+ assert.equal(r1.body.toString(),'{"error":{"code":"UNAVAILABLE","stage":"disabled"}}');
+ assert.equal(r1.headers['x-admin-stage'],'disabled');
+ // The stage must never be an environment value: it is drawn from a fixed
+ // vocabulary and additionally constrained by the handler's own pattern.
+ assert.match(r1.headers['x-admin-stage'],/^[a-z][a-z0-9 -]{0,63}$/);
  const fake=async function(){};fake.configuration={enabled:true,origin};
  const handler=createHandler(fake,{secret});
  const r2=res();await handler({method:'GET',url:'/api/admin/v1/health',headers:{'x-real-ip':'1.2.3.4'}},r2);
