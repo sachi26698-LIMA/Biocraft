@@ -92,9 +92,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 061 | `batch-061.mjs` | 44 | 34 | 33 | 111 | 0 | 6324 | 0 |
 
-**Verified so far: 6,324 / 50,000 (12.6%)**
-Remaining: 43,676 (EN 17,471 · HI 13,102 · HG 13,103)
-Split check: EN 12.64% · HI 12.65% · HG 12.65% of their targets — spread 0.01.
+| 062 | `batch-062.mjs` | 45 | 35 | 33 | 113 | 1 lang + 1 near-dup → fixed | 6437 | 2 |
+
+**Verified so far: 6,437 / 50,000 (12.9%)**
+Remaining: 43,563 (EN 17,426 · HI 13,067 · HG 13,070)
+Split check: EN 12.87% · HI 12.89% · HG 12.87% of their targets — spread 0.02.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -124,7 +126,13 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 062 — split 12.64 / 12.65 / 12.65, spread 0.01. 061 drew on the barber
+Batch 063 — split 12.87 / 12.89 / 12.87, spread 0.02. 062 drew on the cycle
+puncture shop, a father's transfer order, the neighbourhood loudspeaker, a first
+day at a new school and a grandmother's recipe nobody wrote down. Two fixed: a
+Hinglish line with no markers (`samasya` is not one; `dikkat ... ho jaati hai`
+is), and a Hindi line that mirrored its English sibling word for word.
+
+(previous) 061 drew on the barber
 who remembers your father, the four a.m. water tanker, a lost wedding
 invitation, the night train corridor and a stopped watch still worn. Zero
 rejections on the first build.
