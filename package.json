@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && node scripts/build-shells.mjs",
+    "build": "tsc --noEmit && vite build && node scripts/build-shells.mjs && node scripts/build-sitemap.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "seed": "node scripts/seed-supabase.mjs",
@@ -58,6 +58,7 @@
     "test:tools-browser": "node tests/tools-workflow-browser.cjs",
     "test:tools-reachability": "node tests/tool-reachability.mjs",
     "test:library-discoverability": "node tests/library-discoverability.mjs",
+    "test:sitemap": "node scripts/build-sitemap.mjs && node tests/sitemap.mjs",
     "test:admin-csv-export": "node tests/admin-csv-export-browser.cjs",
     "test:build-admin-entry": "node tests/build-admin-entry.cjs",
     "test:admin-allowlist": "node tests/admin-allowlist.mjs",
