@@ -46,10 +46,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 033 | `batch-033.mjs` | 37 | 24 | 33 | 94 | 3 → fixed | 3220 | Hinglish-leaning; 2 exact repeats + 1 language |
 | 034 | `batch-034.mjs` | 41 | 29 | 29 | 99 | 1 → fixed | 3319 | 1 exact repeat + 1 unknown-category seed |
 | 035 | `batch-035.mjs` | 40 | 28 | 30 | 98 | 3 → fixed | 3417 | 1 exact, 1 near-duplicate, 1 language |
+| 036 | `batch-036.mjs` | 40 | 28 | 29 | 97 | 1 → fixed | 3514 | 1 exact repeat |
 
-**Verified so far: 3,417 / 50,000 (6.8%)**
-Remaining: 46,583 (EN 18,636 · HI 13,967 · HG 13,980)
-Split check: EN 6.82% · HI 6.89% · HG 6.80% of their targets.
+**Verified so far: 3,514 / 50,000 (7.0%)**
+Remaining: 46,486 (EN 18,596 · HI 13,939 · HG 13,951)
+Split check: EN 7.02% · HI 7.07% · HG 6.99% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -79,8 +80,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 036 — split 6.82 / 6.89 / 6.80, within 0.09 points, the tightest yet.
-Hinglish passed 1,000. Continue strict proportional 40/30/30.
+Batch 037 — every language passed 7% together for the first time; split
+7.02 / 7.07 / 6.99, within 0.08 points. Continue strict proportional 40/30/30.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
