@@ -112,9 +112,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 071 | `batch-071.mjs` | 44 | 33 | 33 | 110 | 0 at build time (3 near-dups caught by upgraded precheck) | 7431 | 3 near-dup, all rewritten pre-build |
 
-**Verified so far: 7,431 / 50,000 (14.9%)**
-Remaining: 42,569 (EN 17,027 · HI 12,771 · HG 12,771)
-Split check: EN 14.87% · HI 14.86% · HG 14.86% of their targets — spread 0.01.
+| 072 | `batch-072.mjs` | 44 | 33 | 33 | 110 | 0 at build time (12 caught by precheck) | 7541 | 3 gate, 9 dedup, all fixed pre-build |
+
+**Verified so far: 7,541 / 50,000 (15.1%)**
+Remaining: 42,459 (EN 16,983 · HI 12,738 · HG 12,738)
+Split check: EN 15.09% · HI 15.08% · HG 15.08% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -144,7 +146,19 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 072 — split 14.87 / 14.86 / 14.86, spread 0.01. 071 drew on the umbrella
+Batch 073 — split 15.09 / 15.08 / 15.08, spread 0.01. 072 drew on a plumber's
+apprentice who holds the torch for two years, a water connection that follows
+the file, a father's first smartphone hidden in a drawer, and a bank passbook
+with one entry.
+
+**The precheck earned its cost twelve times over.** This batch needed three
+rounds, and every problem was caught before a build: 3 Hinglish gate failures
+(short lines where `pakdi`/`pankti` are not markers — fixed with `thi` and `hi`),
+4 exact repeats I had re-added to the file, and 6 cross-file dedup collisions on
+the wobbling-desk subject, which I resolved by dropping the subject rather than
+rewording it. Final build: 0 rejections.
+
+(previous) 071 drew on the umbrella
 repair man before the rain, a father's pension file in four folders with one
 missing signature, a phone stolen on a crowded bus, the tailor's daughter
 sitting her board exam at the shop counter, and an office water cooler.
