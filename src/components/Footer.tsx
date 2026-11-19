@@ -20,6 +20,7 @@ const ALL_TOOLS: Array<{ label: string; href: string }> = [
 
 const CATEGORY_LINKS: Array<{ label: string; href: string }> = [
   { label: 'Ready-Made Bios', href: '/bio-collections' },
+  { label: 'All Verified Bios', href: '/premium-bios' },
   { label: 'Bio Editor', href: '/bio-editor' },
   { label: 'Bio Generators', href: '/categories#cat-bio' },
   { label: 'Stylish Names & Fonts', href: '/categories#cat-names-fonts' },
@@ -41,8 +42,13 @@ const HINDI_FONT_LINKS: Array<{ label: string; href: string }> = [
 
 const READY_MADE_LINKS: Array<{ label: string; href: string }> = [
   { label: 'Ready-Made Bios', href: '/bio-collections' },
+  // Both libraries are real and both are linked: /bio-library holds the 506
+  // curated collection bios, /premium-bios the 8,421 verified records. Label the
+  // counts so visitors can tell them apart instead of assuming one replaced the
+  // other. main and this branch fixed this orphan route independently; keeping a
+  // single pair of links rather than four.
   { label: 'Bio Library (506)', href: '/bio-library' },
-  { label: 'Premium Bio Library (8,421)', href: '/premium-bios' },
+  { label: 'All Verified Bios (8,421)', href: '/premium-bios' },
   { label: 'Bio Editor', href: '/bio-editor' },
   { label: 'Design Studio', href: '/design-studio' },
 ];

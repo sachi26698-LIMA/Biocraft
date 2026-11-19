@@ -335,13 +335,16 @@ export default function BioLibraryPage() {
             <button type="button" className="btn btn-outline btn-large" onClick={() => navigate('/bio-editor', { replace: false })}>
               <span style={{ marginRight: 8 }}>{'+'}</span> Create Custom Bio
             </button>
-            {/* /bio-library holds the 506 hand-curated collection bios. The much
-                larger verified library lives at /premium-bios; without this link
-                (and the footer one) it was reachable only by typing the URL. */}
-            <a className="btn btn-outline btn-large" href="/premium-bios" onClick={handleAnchorClick}>
-              Browse the full 8,421-bio library →
-            </a>
           </div>
+          {/* The curated set above is a hand-picked subset. The full verified
+              library lives on /premium-bios and previously had no link at all,
+              so visitors could not reach 8,421 records from here. */}
+          <p className="lib-note bl-hero-note">
+            Looking for more?{' '}
+            <a href="/premium-bios" onClick={handleAnchorClick}>
+              Browse all 8,421 verified bios across 46 categories →
+            </a>
+          </p>
           <div className="bl-hero-stats">
             <div className="bl-stat">
               <span className="bl-stat-value">{LIBRARY_TOTAL.toLocaleString()}+</span>
