@@ -41,10 +41,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 028 | `batch-028.mjs` | 49 | 33 | 27 | 109 | 2 → fixed | 2740 | English-leaning rebalance; one exact repeat caught |
 | 029 | `batch-029.mjs` | 40 | 31 | 25 | 96 | 2 → fixed | 2836 | Strict proportional mix; two vocabulary-gap fixes |
 | 030 | `batch-030.mjs` | 40 | 30 | 25 | 95 | 0 | 2931 | Strict proportional; zero rejections |
+| 031 | `batch-031.mjs` | 40 | 30 | 26 | 96 | 2 → fixed | 3027 | Strict proportional; library passes 3,000 |
 
-**Verified so far: 2,931 / 50,000 (5.9%)**
-Remaining: 47,069 (EN 18,836 · HI 14,109 · HG 14,124)
-Split check: EN 5.82% · HI 5.94% · HG 5.84% of their targets.
+**Verified so far: 3,027 / 50,000 (6.1%)**
+Remaining: 46,973 (EN 18,796 · HI 14,079 · HG 14,098)
+Split check: EN 6.02% · HI 6.14% · HG 6.01% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -74,8 +75,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 031 — split within 0.12 points (5.82 / 5.94 / 5.84). Continue strict
-proportional 40/30/30.
+Batch 032 — library passed 3,000. Split 6.02 / 6.14 / 6.01, within 0.13 points.
+Continue strict proportional 40/30/30.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
