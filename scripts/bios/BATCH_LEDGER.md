@@ -258,3 +258,19 @@ Retracted in commit dce3d7d rather than amended away, so the record shows both t
 error and the correction. Rule going forward: every commit message claim must trace
 to a command I actually ran in that turn. If I cannot point at the tool output, I do
 not write the claim.
+
+**Deduper fact worth remembering (found in batch 041).** The token-set layer
+strips Devanagari dependent vowel signs before comparing, so a line saying
+"padhna mushkil nahi" and one saying "padhne mein mushkil nahi" reduce to the
+same key: `ए क न नह पढ बस म ल श सबक ह`. Two Hindi lines differing only in
+inflection or in a postposition therefore collide as "same words in a different
+order". That is correct for catching reordered copies, but it means a Hindi
+rewrite must change its content words, not its grammar. I first described this
+rejection as a collision with an English line; that was wrong and unchecked. The
+actual collision was with a Hindi line in batch 017.
+
+**Explanations count as claims (added after batch 041).** A commit message that
+explains *why* something was rejected makes a factual claim just as much as a
+count does. Guessing which line a rejection collided with is the same error as
+inventing a number. Check the collision with `tokenKey` before writing about it.
+
