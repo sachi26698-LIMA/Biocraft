@@ -19,19 +19,27 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 006 | `batch-006.mjs` | 50 | 50 | 47 | 147 | 3 → fixed | 716 | Thin-category pass: the 25 categories still at 4–6 records |
 | 007 | `batch-007.mjs` | 44 | 35 | 38 | 117 | 3 → fixed | 833 | Next band: royal, motivational, alone, friendship, professional, creator, student + middle sweep |
 | 008 | `batch-008.mjs` | 38 | 29 | 29 | 96 | 1 → fixed | 929 | The seven 7-record categories: family, minimal, fitness, travel, gaming, photography, music |
+| 009 | `batch-009.mjs` | 49 | 28 | 30 | 107 | 0 | 1036 | Whole 9–14 band lifted; first zero-rejection batch since 004. Library passes 1,000 |
 
-**Verified so far: 929 / 50,000 (1.9%)**
-Remaining: 49,071 (EN 19,638 · HI 14,692 · HG 14,741)
+**Verified so far: 1,036 / 50,000 (2.1%)**
+Remaining: 48,964 (EN 19,589 · HI 14,664 · HG 14,711)
 Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 009 — 008 cleared the last 7s, so every category now holds at least 9.
-The floor is evenly flat: stylish, wedding, monsoon, spirituality, self-respect,
-personality, books, food, technology, fashion, yoga, pets, startup, science,
-cinema, cricket, cars, home, parenting, instagram, nature, poetry, funny all sit
-between 9 and 14. Batch 009 should lift the whole 9–14 band rather than chase a
-single category.
+Batch 010 — the floor is now roughly 16 across all 46 categories; the mid-field
+(food, technology, fashion, yoga, pets, startup, science, cinema, cricket, cars,
+home, parenting, deep, savage, instagram, nature, poetry, funny) sits at 16–18
+and the leaders (attitude 57, love 55, shayari 55) at the other end. Batch 010
+should keep the breadth-first approach: two to six records per category rather
+than deep stacks in a few, so the library stays balanced as it grows.
+
+**Balance note.** The language split has drifted: English is at 2.05% of its
+20,000 target while Hinglish is at 1.93% and Hindi at 2.24%. Hindi is pulling
+ahead and English is the laggard. Future batches should weight English slightly
+heavier until the three ratios converge — the target is not simply 50,000
+records, it is 20/15/15, and a library that hits 50,000 with the wrong split has
+failed the brief.
 
 **Scale honestly assessed.** Eight batches have produced 929 records in this
 voice. Reaching 50,000 at this editorial standard needs roughly 400 more
@@ -103,7 +111,13 @@ left in the report as a documented exclusion.
   `saleeka`). Marker list extended a third time; sentence accepted verbatim;
   `test:bio-language-gate` re-run and still green in both directions.
 
-**Pattern worth noting:** the engine has now caught 11 rejections across 8 batches
+- Batch 009: zero rejections — the first clean batch since 004. This is expected
+  rather than lucky: the marker list now covers the vocabulary this voice
+  actually uses, so fewer correct lines are refused. The gate was re-run against
+  its plain-English probes after the third extension and still rejects them, so
+  the zero is not the result of a loosened gate.
+
+**Pattern worth noting:** the engine has now caught 11 rejections across 9 batches
 — 3 Hinglish edges (003, 004, 006), 2 exact duplicates of earlier batches (006),
 1 vocabulary gap (005), 1 over-length line (002). The duplicate catches are the
 most useful signal in the whole ledger: at 716 records a human cannot hold the
