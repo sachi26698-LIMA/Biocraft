@@ -104,9 +104,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 067 | `batch-067.mjs` | 45 | 32 | 33 | 110 | 0 | 6991 | 0 |
 
-**Verified so far: 6,991 / 50,000 (14.0%)**
-Remaining: 43,009 (EN 17,203 · HI 12,903 · HG 12,903)
-Split check: EN 13.98% · HI 13.98% · HG 13.98% of their targets — spread 0.00.
+| 068 | `batch-068.mjs` | 44 | 33 | 33 | 110 | 0 | 7101 | 0 |
+
+**Verified so far: 7,101 / 50,000 (14.2%)**
+Remaining: 42,899 (EN 17,159 · HI 12,870 · HG 12,870)
+Split check: EN 14.21% · HI 14.20% · HG 14.20% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -136,7 +138,13 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 068 — split 13.98 / 13.98 / 13.98, spread 0.00. 067 drew on the cobbler
+Batch 069 — split 14.21 / 14.20 / 14.20, spread 0.01. 068 drew on a ration shop
+shutter that opens at four, a father who stopped hearing the birds before he
+told anyone, the school gate at 7:40, a wedding band hired by the hour and a
+scooter older than the marriage. Zero rejections; the second batch where the
+precheck predicted clean and the build agreed.
+
+(previous) 067 drew on the cobbler
 under a tree, a brother who left for the Gulf at nine and returned a stranger,
 examination answer sheets stolen from a centre, a ceiling that leaks every July,
 and a bus stop with no roof. Zero rejections.
