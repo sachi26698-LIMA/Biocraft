@@ -70,9 +70,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 050 | `batch-050.mjs` | 42 | 35 | 38 | 115 | 2 → fixed | 5102 | Library passes 5,000; new subject matter |
 
-**Verified so far: 5,102 / 50,000 (10.2%)**
-Remaining: 44,898 (EN 17,960 · HI 13,470 · HG 13,468)
-Split check: EN 10.20% · HI 10.20% · HG 10.21% of their targets — spread 0.01.
+| 051 | `batch-051.mjs` | 45 | 37 | 32 | 114 | 0 | 5216 | New subject matter; zero rejections |
+
+**Verified so far: 5,216 / 50,000 (10.4%)**
+Remaining: 44,784 (EN 17,915 · HI 13,433 · HG 13,436)
+Split check: EN 10.43% · HI 10.45% · HG 10.43% of their targets — spread 0.02.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -102,7 +104,11 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 051 — split 10.20 / 10.20 / 10.21, spread 0.01 points and 5,102 verified.
+Batch 052 — split 10.43 / 10.45 / 10.43, spread 0.02 points. 051 landed with
+zero rejections at 114 seeds, again on new material (interviews, shifting
+cities, siblings, first salary). Continue the same approach.
+
+(previous note) 050 reached 5,102 verified, spread 0.01.
 The topic-variety rule from 049 worked: 050 drew on new material (asking
 directions, hospital waiting rooms, ageing parents, moving house, learning to
 drive late) and produced 1 rejection instead of 7, even at 116 seeds.
