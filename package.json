@@ -2,7 +2,7 @@
   "name": "biocraft",
   "private": true,
   "version": "1.0.0",
-  "description": "BioCraft \u2014 All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
+  "description": "BioCraft — All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -73,7 +73,7 @@
     "test:library-search": "node tests/library-search-ui.cjs",
     "sync": "node scripts/sync.mjs",
     "sync:status": "node scripts/sync.mjs --status",
-    "test:sync": "node tests/sync-bootstrap.mjs > /tmp/sync-db-url && TEST_DATABASE_URL=$(cat /tmp/sync-db-url) node tests/sync-engine.mjs",
+    "test:sync": "node tests/sync-bootstrap.mjs && node tests/sync-engine.mjs",
     "test:font-library": "node tests/font-library-ui.cjs",
     "test:ai": "node tests/ai-engine.mjs",
     "test:admin-content-library": "node tests/admin-content-library.mjs",
@@ -83,7 +83,9 @@
     "test:public-content-status": "node tests/public-content-status.mjs",
     "test:published-catalog-browser": "node tests/published-catalog-browser.mjs",
     "test:admin-password-reset-browser": "node tests/admin-password-reset-browser.cjs",
-    "test:admin-extra-modules": "node tests/admin-extra-modules-browser.cjs"
+    "test:admin-extra-modules": "node tests/admin-extra-modules-browser.cjs",
+    "test:hybrid": "node tests/local-db-proxy.mjs",
+    "test:hybrid:db": "node tests/hybrid-sync-replication.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
