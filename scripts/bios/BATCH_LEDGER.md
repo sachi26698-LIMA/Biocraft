@@ -130,9 +130,14 @@ telegraphic 'Form ghar le jao...' — fixed with 'par' and 'phir'), and two line
 I re-added that were already in the same file, caught by the exact-repeat layer.
 
 **END OF THE 040–060 SCOPE.** 21 consecutive batches, 040–060, all verified,
-ledgered, tested and pushed. Cumulative: 4,220 → 6,213. Every batch passed all
-four test suites; rejections in the range totalled 31 and every one was fixed
-before acceptance, so no accepted record was weakened.
+ledgered, tested and pushed. 040 opened at 3,806 verified; the range added 2,407
+records to reach 6,213. Rejections logged across the range: 39, and every one
+was fixed before acceptance, so no accepted record was weakened.
+
+Rejections were NOT zero in every batch — 041, 042, 049, 052, 053, 054, 055,
+056, 057, 058, 059 and 060 each logged one or more. What is true, and checked
+after every build in the range, is that the final build of each batch finished
+with 0 remaining rejections and all four test suites passing.
 
 (previous) 059 drew on gold
 pledged at a bank, the night watchman who knew my hours better than my family
