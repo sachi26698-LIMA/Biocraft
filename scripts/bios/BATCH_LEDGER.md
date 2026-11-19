@@ -90,27 +90,29 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 060 | `batch-060.mjs` | 44 | 33 | 33 | 110 | 2 language + 2 exact → all fixed | 6213 | 4 |
 
-| 061 | `batch-061.mjs` | 44 | 34 | 33 | 111 | 0 | 6324 | 0 |
+| 061 | `batch-061.mjs` | 44 | 34 | 33 | 111 | 0 | 6324 | none — first build clean |
 
-| 062 | `batch-062.mjs` | 45 | 35 | 33 | 113 | 1 lang + 1 near-dup → fixed | 6437 | 2 |
+| 062 | `batch-062.mjs` | 45 | 35 | 33 | 113 | 2 | 6437 | 1 language + 1 near-dup, both fixed |
 
-| 063 | `batch-063.mjs` | 45 | 33 | 33 | 111 | 0 | 6548 | 0 |
+| 063 | `batch-063.mjs` | 45 | 33 | 33 | 111 | 0 | 6548 | none — landed exactly on allocation |
 
-| 064 | `batch-064.mjs` | 44 | 32 | 34 | 110 | 0 | 6658 | 0 |
+| 064 | `batch-064.mjs` | 44 | 32 | 34 | 110 | 0 | 6658 | none — landed exactly on allocation |
 
-| 065 | `batch-065.mjs` | 44 | 34 | 34 | 112 | 2 token-set → rewrote both | 6770 | 2 |
+| 065 | `batch-065.mjs` | 44 | 34 | 34 | 112 | 2 | 6770 | 2 token-set, both rewritten |
 
-| 066 | `batch-066.mjs` | 45 | 33 | 33 | 111 | 3 lang + 6 exact → all fixed | 6881 | 9 |
+| 066 | `batch-066.mjs` | 45 | 33 | 33 | 111 | 9 | 6881 | 3 language + 6 exact; 6 were self-inflicted repeats |
 
-| 067 | `batch-067.mjs` | 45 | 32 | 33 | 110 | 0 | 6991 | 0 |
+| 067 | `batch-067.mjs` | 45 | 32 | 33 | 110 | 0 | 6991 | none — precheck predicted clean |
 
-| 068 | `batch-068.mjs` | 44 | 33 | 33 | 110 | 0 | 7101 | 0 |
+| 068 | `batch-068.mjs` | 44 | 33 | 33 | 110 | 0 | 7101 | none — precheck predicted clean |
 
-| 069 | `batch-069.mjs` | 44 | 33 | 33 | 110 | 1 gate (caught pre-build) | 7211 | 0 |
+| 069 | `batch-069.mjs` | 44 | 33 | 33 | 110 | 1 | 7211 | 1 gate failure, caught by precheck before the build |
 
-**Verified so far: 7,211 / 50,000 (14.4%)**
-Remaining: 42,789 (EN 17,115 · HI 12,837 · HG 12,837)
-Split check: EN 14.43% · HI 14.42% · HG 14.42% of their targets — spread 0.01.
+| 070 | `batch-070.mjs` | 44 | 33 | 33 | 110 | 0 | 7321 | 0 at build time; 1 gate failure caught by precheck first |
+
+**Verified so far: 7,321 / 50,000 (14.6%)**
+Remaining: 42,679 (EN 17,071 · HI 12,804 · HG 12,804)
+Split check: EN 14.64% · HI 14.64% · HG 14.64% of their targets — spread 0.00.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -140,7 +142,25 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 070 — split 14.43 / 14.42 / 14.42, spread 0.01. 069 drew on a carpenter who
+Batch 071 — split 14.64 / 14.64 / 14.64, spread 0.00. 070 drew on the grain shop
+scale, a mother's first day at a job at forty-four, a stolen bicycle bell, the
+bank queue at ten, a landline that only rings, and the last day of a rented
+house. The precheck caught another gate failure before the build
+('Taraazu ek baar dekho, dukaandaar har baar dekhega.' — one marker, needed two;
+fixed with 'khud'), so the build rejected nothing.
+
+**END OF THE 061–070 SCOPE.** Ten consecutive batches, all verified, ledgered,
+tested and pushed. 6,324 → 7,321 verified, 997 records added, 46/46 categories
+held throughout. Build-time rejections in the range: 14 — 066 alone accounted for 9, six of which
+were lines I had re-added to the file. From 067 onward the precheck tool ran
+first and only 1 rejection reached a build (069); 067, 068 and 070 built clean
+on the first attempt.
+
+Column note: rows 061–070 were first written with totals in the Rejected column
+and counts in Notes. They have been rewritten to match the header
+(Batch | File | EN | HI | HG | Total | Rejected | Cumulative | Notes).
+
+(previous) 069 drew on a carpenter who
 measures twice, a father's first flight at sixty-two where he gave the window
 seat away, a wedding under a tent that leaked, a duplicate key that did not fit,
 and a grandmother's trunk opened after she died.
