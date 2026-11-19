@@ -302,6 +302,38 @@ export function SnapchatCaptionSkeleton() {
   return <MoodBoardSkeleton label="Loading Snapchat caption generator" />;
 }
 
+/** Palette tool: a swatch grid mirrors the real output shape. */
+export function PaletteSkeleton() {
+  return (
+    <SkeletonRegion label="Loading colour palette generator">
+      <PanelHeadSkeleton />
+      <div className="skel-field">
+        <SkeletonLine width="22%" height={12} />
+        <SkeletonLine width="100%" height={40} />
+      </div>
+      <div className="skel-swatch-grid">
+        {Array.from({ length: 12 }, (_, i) => <span key={i} className="skel-swatch" />)}
+      </div>
+    </SkeletonRegion>
+  );
+}
+
+/** Icon finder: a dense square grid mirrors the real output shape. */
+export function IconSkeleton() {
+  return (
+    <SkeletonRegion label="Loading brand icon library">
+      <PanelHeadSkeleton />
+      <div className="skel-field">
+        <SkeletonLine width="26%" height={12} />
+        <SkeletonLine width="100%" height={40} />
+      </div>
+      <div className="skel-icon-grid">
+        {Array.from({ length: 30 }, (_, i) => <span key={i} className="skel-icon-cell" />)}
+      </div>
+    </SkeletonRegion>
+  );
+}
+
 /** Registry: tool key → its own skeleton. No generic fallback exists. */
 export const TOOL_SKELETONS: Record<ToolKey, ComponentType> = {
   bio: BioSkeleton,
@@ -316,6 +348,8 @@ export const TOOL_SKELETONS: Record<ToolKey, ComponentType> = {
   'linkedin-summary': LinkedInSummarySkeleton,
   'whatsapp-status': WhatsappStatusSkeleton,
   'snapchat-caption': SnapchatCaptionSkeleton,
+  palette: PaletteSkeleton,
+  icons: IconSkeleton,
 };
 
 /* ------------------------------------------------------------------ */

@@ -528,3 +528,34 @@ export function FlowerIcon({ size = 22 }: IconProps) {
     </svg>
   );
 }
+
+export function DownloadIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+      <path d="M12 4v10m0 0l-4-4m4 4l4-4" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 17.5V19a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-1.5" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function PaletteIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+      <path d="M12 3a9 9 0 1 0 0 18c1.3 0 2-.9 2-1.9 0-.6-.3-1-.5-1.4-.2-.4-.4-.7-.4-1.2 0-1 .8-1.7 1.8-1.7H16a5 5 0 0 0 5-5C21 5.6 16.9 3 12 3Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <circle cx="7.8" cy="11.2" r="1.25" fill="currentColor" />
+      <circle cx="10.4" cy="7.6" r="1.25" fill="currentColor" />
+      <circle cx="15" cy="8.1" r="1.25" fill="currentColor" />
+      <circle cx="7.9" cy="15.6" r="1.25" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function ShapesIcon({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+      <circle cx="7.5" cy="7.5" r="3.6" stroke="currentColor" strokeWidth="1.8" />
+      <rect x="13" y="13" width="7.6" height="7.6" rx="1.4" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M7.6 13.2 11 19.5H4.2L7.6 13.2Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
+}

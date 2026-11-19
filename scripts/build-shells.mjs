@@ -125,6 +125,22 @@ const ROUTES = [
     ogDescription: 'Streak, story & vibe captions — EN, हिंदी & Hinglish, one-tap copy.',
   },
   {
+    path: '/color-palette-generator',
+    title: 'Colour Palette Generator — 32,004 Named Colours — BioCraft',
+    description:
+      'Free colour palette generator — search 32,004 named colours, build analogous, complementary, triadic, tetradic, split-complementary and monochrome harmonies, check WCAG contrast, copy HSL/OKLCH values and export CSS or Tailwind. Private, no sign-up.',
+    ogTitle: 'Colour Palette Generator — BioCraft',
+    ogDescription: '32,004 named colours, harmonies, WCAG contrast and CSS/Tailwind export.',
+  },
+  {
+    path: '/icon-finder',
+    title: 'Icon Finder — 3,472 Free Brand Icons — BioCraft',
+    description:
+      'Search 3,472 CC0-licensed brand icons, copy the SVG markup or download ready-to-use .svg files. Works offline in your browser, no sign-up, no attribution required.',
+    ogTitle: 'Icon Finder — 3,472 Brand Icons — BioCraft',
+    ogDescription: '3,472 CC0 brand icons — copy SVG or download, no sign-up.',
+  },
+  {
     path: '/features',
     title: 'Features — BioCraft Social Media Toolkit',
     description:
