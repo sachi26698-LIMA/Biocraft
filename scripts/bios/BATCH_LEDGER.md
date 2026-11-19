@@ -98,9 +98,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 064 | `batch-064.mjs` | 44 | 32 | 34 | 110 | 0 | 6658 | 0 |
 
-**Verified so far: 6,658 / 50,000 (13.3%)**
-Remaining: 43,342 (EN 17,337 · HI 13,002 · HG 13,003)
-Split check: EN 13.31% · HI 13.32% · HG 13.31% of their targets — spread 0.01.
+| 065 | `batch-065.mjs` | 44 | 34 | 34 | 112 | 2 token-set → rewrote both | 6770 | 2 |
+
+**Verified so far: 6,770 / 50,000 (13.5%)**
+Remaining: 43,230 (EN 17,293 · HI 12,968 · HG 12,969)
+Split check: EN 13.54% · HI 13.55% · HG 13.54% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -130,7 +132,18 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 065 — split 13.31 / 13.32 / 13.31, spread 0.01. 064 drew on the man who
+Batch 066 — split 13.54 / 13.55 / 13.54, spread 0.01. 065 drew on the key maker
+under the stairs, a father who could not swim and stood at the edge of every
+pool, a scooter that will not start in winter, a school farewell nobody kept up,
+and credit at the chemist running eleven months. Both rejections were Hindi and
+Hinglish halves of one line that mirrored the English one; rewritten with a
+different image rather than reworded.
+
+Tally: 6,658 + 112 = 6,770, which matches the row. The batch landed one over
+allocation in each of HI and HG (34/34 against 33/33); the split is what matters
+and it is 0.01 apart.
+
+(previous) 064 drew on the man who
 irons shirts on a pavement, a cycle stolen the week its last instalment was
 paid, a chit fund that ended an eleven-year friendship over four thousand
 rupees, an exam clock four minutes fast, and a balcony that faces a wall. Zero
