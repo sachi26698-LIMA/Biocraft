@@ -82,9 +82,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 056 | `batch-056.mjs` | 43 | 33 | 33 | 109 | 2 → fixed | 5768 | 2 near-dup |
 
-**Verified so far: 5,768 / 50,000 (11.5%)**
-Remaining: 44,232 (EN 17,694 · HI 13,271 · HG 13,267)
-Split check: EN 11.53% · HI 11.53% · HG 11.55% of their targets — spread 0.02.
+| 057 | `batch-057.mjs` | 45 | 34 | 34 | 113 | 2 → rewrote both | 5881 | 2 near-dup |
+
+**Verified so far: 5,881 / 50,000 (11.8%)**
+Remaining: 44,119 (EN 17,649 · HI 13,237 · HG 13,233)
+Split check: EN 11.76% · HI 11.75% · HG 11.78% of their targets — spread 0.03.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -114,7 +116,13 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 057 — split 11.53 / 11.53 / 11.55, spread 0.02 points. 056 drew on a
+Batch 058 — split 11.76 / 11.75 / 11.78, spread 0.03 points. 057 drew on
+splitting a wedding hall bill, saying no to relatives, the milkman, the night
+bus home and a friend's divorce. The two rejections were the Hindi and Hinglish
+halves of one line, read as duplicates of each other — the same trap as 056.
+Both were rewritten, and the Hinglish count came out two over allocation.
+
+(previous) 056 drew on a
 tailor's bill, the bus conductor, a rented shop, the neighbour's loud TV and
 negotiating a first salary. Both rejections were the same line in Hindi and
 Hinglish form, which the trigram layer read as its own duplicate.
