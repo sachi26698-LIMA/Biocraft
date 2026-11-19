@@ -100,9 +100,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 065 | `batch-065.mjs` | 44 | 34 | 34 | 112 | 2 token-set → rewrote both | 6770 | 2 |
 
-**Verified so far: 6,770 / 50,000 (13.5%)**
-Remaining: 43,230 (EN 17,293 · HI 12,968 · HG 12,969)
-Split check: EN 13.54% · HI 13.55% · HG 13.54% of their targets — spread 0.01.
+| 066 | `batch-066.mjs` | 45 | 33 | 33 | 111 | 3 lang + 6 exact → all fixed | 6881 | 9 |
+
+**Verified so far: 6,881 / 50,000 (13.8%)**
+Remaining: 43,119 (EN 17,248 · HI 12,935 · HG 12,936)
+Split check: EN 13.76% · HI 13.77% · HG 13.76% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -132,7 +134,20 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 066 — split 13.54 / 13.55 / 13.54, spread 0.01. 065 drew on the key maker
+Batch 067 — split 13.76 / 13.77 / 13.76, spread 0.01. 066 drew on the fruit cart
+at closing time, a father who signs with a thumb after thirty years of running a
+shop, a fan that grinds all night, a lost school certificate, a cousin's
+engagement and the electricity meter reader. Nine rejections, all fixed — the
+highest count in the run so far, and all nine were self-inflicted: three Hinglish
+lines built out of non-markers, and six lines I re-added that were already in the
+same file.
+
+Rule added: after writing a Hindi/Hinglish top-up block, check the new lines
+against the rest of the file for exact repeats BEFORE building. The exact layer
+catches them, but each build with repeats spends a cycle and inflates the
+rejection log.
+
+(previous) 065 drew on the key maker
 under the stairs, a father who could not swim and stood at the edge of every
 pool, a scooter that will not start in winter, a school farewell nobody kept up,
 and credit at the chemist running eleven months. Both rejections were Hindi and
