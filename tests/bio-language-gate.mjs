@@ -86,7 +86,44 @@ section('4. script detection agrees with the declared language');
 }
 
 /* ---------------------------------------------------------------- */
-section('5. length ceiling is enforced, not raised');
+section('5. no stray non-Devanagari Indic scripts');
+{
+  // Batch 011 shipped a Bengali glyph (আরাম) inside a Hindi line. validateLanguage
+  // only asks "is there Devanagari and is it dominant", so one Bengali word
+  // passed a script test. This scan is the missing check.
+  const STRAY = {
+    Bengali: /[\u0980-\u09FF]/,
+    Gurmukhi: /[\u0A00-\u0A7F]/,
+    Gujarati: /[\u0A80-\u0AFF]/,
+    Oriya: /[\u0B00-\u0B7F]/,
+    Tamil: /[\u0B80-\u0BFF]/,
+    Telugu: /[\u0C00-\u0C7F]/,
+    Kannada: /[\u0C80-\u0CFF]/,
+    Malayalam: /[\u0D00-\u0D7F]/,
+    Sinhala: /[\u0D80-\u0DFF]/,
+    Thai: /[\u0E00-\u0E7F]/,
+    Arabic: /[\u0600-\u06FF]/,
+    Cyrillic: /[\u0400-\u04FF]/,
+    Greek: /[\u0370-\u03FF]/,
+    Hangul: /[\uAC00-\uD7AF]/,
+    Hiragana: /[\u3040-\u309F]/,
+    Katakana: /[\u30A0-\u30FF]/,
+  };
+  const records = JSON.parse(readFileSync('src/data/bios/records.json', 'utf8'));
+  const offenders = [];
+  for (const record of records) {
+    for (const [name, pattern] of Object.entries(STRAY)) {
+      if (pattern.test(record[1])) offenders.push(`${record[0]} (${name})`);
+    }
+  }
+  ok(`no stray scripts in ${records.length} records`, offenders.length === 0, offenders.slice(0, 5).join(', '));
+
+  // And the scan must actually be able to fail.
+  ok('the stray-script scan detects Bengali', STRAY.Bengali.test('आरাম'));
+}
+
+/* ---------------------------------------------------------------- */
+section('6. length ceiling is enforced, not raised');
 {
   // Length lives in BioDeduplicator.consider(), not validateLanguage() — that
   // separation is deliberate (one checker for language, one for the record), so
@@ -109,7 +146,7 @@ section('5. length ceiling is enforced, not raised');
 }
 
 /* ---------------------------------------------------------------- */
-section('6. every stored record independently re-validates');
+section('7. every stored record independently re-validates');
 {
   const records = JSON.parse(readFileSync('src/data/bios/records.json', 'utf8'));
   const bad = records.filter((r) => !validateLanguage(r[1], r[2]).ok);
