@@ -67,7 +67,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioSubheading:
       'Five unique bios in English, Hindi or Hinglish — each within Instagram’s 150-character limit — right in your browser.',
     captionsLabel: 'Caption Generator',
-    tools: ['bio', 'stylish-name', 'fancy-fonts', 'design-studio', 'username', 'symbols', 'hashtags', 'captions'],
+    tools: ['bio', 'stylish-name', 'fancy-fonts', 'design-studio', 'username', 'symbols', 'hashtags', 'captions', 'palette', 'icons', 'text-toolkit'],
   },
   {
     id: 'facebook',
@@ -86,7 +86,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioSubheading:
       'Five unique intro lines for your Facebook profile — each within the 101-character intro limit. English, Hindi or Hinglish. Private.',
     captionsLabel: 'Caption Generator',
-    tools: ['bio', 'stylish-name', 'fancy-fonts', 'design-studio', 'username', 'symbols', 'hashtags', 'captions'],
+    tools: ['bio', 'stylish-name', 'fancy-fonts', 'design-studio', 'username', 'symbols', 'hashtags', 'captions', 'palette', 'icons', 'text-toolkit'],
   },
   {
     id: 'threads',
@@ -105,7 +105,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioSubheading:
       'Five unique bios for Threads — each within the 150-character limit. English, Hindi or Hinglish — right in your browser.',
     captionsLabel: 'Caption Generator',
-    tools: ['bio', 'username', 'fancy-fonts', 'design-studio', 'symbols', 'hashtags', 'captions'],
+    tools: ['bio', 'username', 'fancy-fonts', 'design-studio', 'symbols', 'hashtags', 'captions', 'palette', 'icons', 'text-toolkit'],
   },
   {
     id: 'tiktok',
@@ -124,7 +124,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioSubheading:
       'Five unique bios for TikTok — each within the tight 80-character limit. English, Hindi or Hinglish. Private.',
     captionsLabel: 'Caption Generator',
-    tools: ['bio', 'username', 'fancy-fonts', 'design-studio', 'hashtags', 'captions', 'symbols'],
+    tools: ['bio', 'username', 'fancy-fonts', 'design-studio', 'hashtags', 'captions', 'symbols', 'palette', 'icons', 'text-toolkit'],
   },
   {
     id: 'x',
@@ -143,7 +143,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioSubheading:
       'Five unique bios for X — each within the 160-character limit. English, Hindi or Hinglish — right in your browser.',
     captionsLabel: 'Post Captions',
-    tools: ['bio', 'username', 'fancy-fonts', 'design-studio', 'hashtags', 'captions', 'symbols'],
+    tools: ['bio', 'username', 'fancy-fonts', 'design-studio', 'hashtags', 'captions', 'symbols', 'palette', 'icons', 'text-toolkit'],
   },
   {
     id: 'linkedin',
@@ -162,7 +162,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioSubheading:
       'Five professional bio drafts for your LinkedIn About section — English — right in your browser.',
     captionsLabel: 'Professional Captions',
-    tools: ['bio', 'linkedin-headline', 'linkedin-summary', 'stylish-name', 'username', 'captions', 'design-studio'],
+    tools: ['bio', 'linkedin-headline', 'linkedin-summary', 'stylish-name', 'username', 'captions', 'design-studio', 'palette', 'icons', 'text-toolkit'],
     englishOnlyNote: 'LinkedIn tools currently produce English output.',
   },
   {
@@ -182,7 +182,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioSubheading:
       'Five unique lines for your WhatsApp About — each within the 139-character limit. English, Hindi or Hinglish. Private.',
     captionsLabel: 'Status Captions',
-    tools: ['bio', 'whatsapp-status', 'stylish-name', 'fancy-fonts', 'design-studio', 'captions', 'symbols'],
+    tools: ['bio', 'whatsapp-status', 'stylish-name', 'fancy-fonts', 'design-studio', 'captions', 'symbols', 'palette', 'icons', 'text-toolkit'],
   },
   {
     id: 'snapchat',
@@ -201,7 +201,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
     bioSubheading:
       'Five unique lines for your Snapchat bio — each within roughly 150 characters. English, Hindi or Hinglish. Private.',
     captionsLabel: 'Story Captions',
-    tools: ['bio', 'snapchat-caption', 'username', 'fancy-fonts', 'design-studio', 'symbols'],
+    tools: ['bio', 'snapchat-caption', 'username', 'fancy-fonts', 'design-studio', 'symbols', 'palette', 'icons', 'text-toolkit'],
   },
 ];
 
