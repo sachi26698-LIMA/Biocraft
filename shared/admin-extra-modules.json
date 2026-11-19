@@ -8,6 +8,7 @@
   {"key":"languages","label":"Languages","section":"CONTENT","icon":"content","description":"Browse enabled languages, native names and writing directions. Registration does not imply translation coverage."},
   {"key":"fonts","label":"Fonts","section":"CONTENT","icon":"content","description":"Browse active font records in the database catalogue."},
   {"key":"seo","label":"SEO","section":"CONTENT","icon":"content","description":"Inspect recorded SEO metadata without changing the public site."},
+  {"key":"hindi-fonts","label":"Hindi Font Library","section":"CONTENT","icon":"content","description":"Review, validate and export 62 verified Devanagari families. Reads the committed catalogue and a browser-local review overlay; no upload and no database write."},
   {"key":"bio-library","label":"Bio Library","section":"CONTENT","icon":"content","description":"Verify, validate and export the premium bio library locally. No upload, no database write."},
   {"key":"content-intelligence","label":"Global Content Intelligence","section":"INSIGHTS","icon":"analytics","description":"Inspect existing inventory and editorial throughput. These are database aggregates, not audience telemetry or AI predictions."},
   {"key":"data-sources","label":"Data Sources","section":"SYSTEM","icon":"database","description":"Inspect the Supabase source registry, last successful sync and recent import jobs."},

@@ -49,6 +49,11 @@ character counters, 33 Unicode fonts, decorative dividers, emoji quick-insert
 (including your symbol favourites and recents), 18 designer card styles with a
 live preview, and exactly the styled text copied to your clipboard.
 
+Plus a **Hindi typography ecosystem**: 62 HarfBuzz-verified Devanagari families
+with a font library, specimen sheets, a preview/bio studio, a poster studio and a
+licence index — every preview painted by the real self-hosted WOFF2 file, with no
+font API and no database. See [the font ledger](docs/BIOCRAFT_FONT_ECOSYSTEM.md).
+
 Public rule-based generators run client-side; their inputs stay in the browser.
 Rule-based generation only — no AI services, no paid APIs.
 
@@ -56,11 +61,14 @@ Rule-based generation only — no AI services, no paid APIs.
 
 **Production operations:** [Supabase sync, migration ledger and Admin connection status](docs/PRODUCTION_SYNC.md).
 
+**Hindi / Devanagari typography:** [font ecosystem ledger](docs/BIOCRAFT_FONT_ECOSYSTEM.md) — what is imported, what the shaping gate verified, what ships, and how to reproduce it.
+
 ## Routes
 
 `/` plus one discovery hub, 12 tool routes, the hand-rolled
 `/bio-editor`, 12 info pages and the ready-made bio collection system
-(index + 20 collections) — 48 static shells total:
+(index + 20 collections), plus the five Hindi typography routes and one shell per
+verified Devanagari family — 121 static shells total:
 
 - Hub: `/categories` — pastel category cards with live tool counts, favourites
   (localStorage), recently used tools, and the full twelve-tool grid.
@@ -82,6 +90,14 @@ Rule-based generation only — no AI services, no paid APIs.
   gallery with Remix, one-tap copy.
 - Pages: `/features` `/use-cases` `/pricing` `/blog` `/resources` `/about`
   `/help` `/contact` `/login` `/privacy` `/terms` `/cookie`
+- Hindi typography: `/hindi-fonts` — 62 verified Devanagari families, Hindi +
+  English search, facets, cursor paging, favourites and side-by-side comparison.
+  Each family has its own specimen route `/hindi-fonts/<slug>` (glyph sheet,
+  weights, conjunct evidence, licence, licensed WOFF2 download). Around it:
+  `/hindi-font-studio` (bios, shayari, quotes, captions, usernames, styled text
+  set in the chosen family), `/hindi-poster-studio` (a real 1080-px canvas
+  poster in 4:5, 1:1 or 9:16) and `/hindi-font-licenses`. The console lives at
+  `/admin/hindi-fonts` and is absent from public navigation.
 
 **Platform pills** at the top of the workspace switch the whole experience:
 tools, headings, character limits and accent colour follow the platform,
@@ -172,8 +188,11 @@ rewrite rules and no duplicate content. Canonical links, `og:url` and
 │   ├── favicon.svg             # Lavender/rose gradient "B" mark on #FCF9FC
 │   └── robots.txt
 ├── scripts/
-│   └── build-shells.mjs        # Post-build: one static shell per route (48);
-│                               #   canonical/og:url only when SITE_URL is set
+│   ├── build-shells.mjs        # Post-build: one static shell per route (121,
+│   │                           #   incl. 62 Hindi specimens); canonical/og:url
+│   │                           #   only when SITE_URL is set
+│   ├── fonts/                  # Discovery, HarfBuzz gate and catalogue build
+│   └── prepare-headless-chromium.mjs  # Optional Chromium for the e2e suite
 ├── src/
 │   ├── main.tsx                # React entry, mounts <App />
 │   ├── App.tsx                 # Composition: skip link / header / main / footer
@@ -210,6 +229,10 @@ rewrite rules and no duplicate content. Canonical links, `og:url` and
 │   │   ├── BioEditorPage.tsx   # /bio-editor — hand-rolled bio workbench
 │   │   ├── info.tsx            # Info pages (honest, original content)
 │   │   └── InfoPage.tsx        # Info page renderer
+│   ├── data/hindi-fonts/       # Committed catalogue, licences, verification
+│   ├── lib/hindiFonts/         # Local-first catalogue, search, loader, admin tooling
+│   ├── components/hindi/       # Library, card, specimen, picker, studio, poster
+│   ├── hindi-fonts.css         # Scoped `.bc-*` design system for the Hindi routes
 │   └── tools/
 │       ├── platforms.ts        # Per-platform config (limits, headings, tools)
 │       ├── registry.ts         # Tool metadata: id, path, titles, headings
@@ -270,6 +293,25 @@ Hindi/Devanagari round-trips, copy-to-clipboard byte-exactness, the hero live
 preview driving the shared platform state, the search overlay, localStorage
 favourites, toast feedback and the /categories hub. The production build is
 `tsc --noEmit` clean and the harness exits `0`.
+
+The Hindi typography ecosystem has its own suites:
+
+```bash
+npm run test:hindi-fonts            # catalogue integrity (20 checks) + runtime (10)
+npm run test:hindi-fonts-rendering  # 62 families painted through Skia (6 checks)
+npm run test:local-first            # 13 public pages, no database, no network
+npm run test:hindi-fonts-browser     # 13 Chromium tests against the built site
+```
+
+The catalogue suite re-hashes all 354 WOFF2 files and their licences, re-reads
+the HarfBuzz evidence, and exercises cursor paging (including stale and foreign
+cursors), Hindi/English search, facets, nearest-weight selection and duplicate
+detection. The browser suite proves real WOFF2 requests, mixed Hindi/English
+preview text, search + pagination + favourites with zero API calls, comparison,
+specimen download, the unknown-slug 404, the licence index, all studio
+generators, a downloaded poster PNG and no horizontal overflow at 390 px. See
+[docs/BIOCRAFT_FONT_ECOSYSTEM.md](docs/BIOCRAFT_FONT_ECOSYSTEM.md) for the full
+ledger and the evidence behind every count.
 
 A second dev-only script, `responsive-audit.cjs`, evaluates the stylesheet's
 min/max-width media queries against the nine supported breakpoints
