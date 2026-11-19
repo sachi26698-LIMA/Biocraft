@@ -21,18 +21,20 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 008 | `batch-008.mjs` | 38 | 29 | 29 | 96 | 1 → fixed | 929 | The seven 7-record categories: family, minimal, fitness, travel, gaming, photography, music |
 | 009 | `batch-009.mjs` | 49 | 28 | 30 | 107 | 0 | 1036 | Whole 9–14 band lifted; first zero-rejection batch since 004. Library passes 1,000 |
 | 010 | `batch-010.mjs` | 55 | 12 | 11 | 78 | 2 → fixed | 1111 | English-weighted to correct split drift; 2 self-duplicates caught |
+| 011 | `batch-011.mjs` | 10 | 10 | 39 | 59 | 2 → fixed | 1170 | Hinglish-weighted to close the last split gap |
 
-**Verified so far: 1,111 / 50,000 (2.2%)**
-Remaining: 48,889 (EN 19,537 · HI 14,652 · HG 14,700)
-Split check: EN 2.31% · HI 2.32% · HG 2.00% of their targets — converging again.
+**Verified so far: 1,170 / 50,000 (2.3%)**
+Remaining: 48,830 (EN 19,527 · HI 14,642 · HG 14,661)
+Split check: EN 2.37% · HI 2.39% · HG 2.26% — all three now within 0.13 points.
 Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 011 — English is now level with Hindi again, but Hinglish has slipped to
-2.00%. Batch 011 should weight Hinglish heavier (roughly 2:1 HG:HI) to close that
-gap while keeping English steady at the 20,000-side ratio. Keep breadth-first at
-two to six records per category.
+Batch 012 — the language split is balanced (2.37 / 2.39 / 2.26), so from here the
+constraint is category depth, not language mix. Thinnest now: Minimal (14), Gaming
+profiles (14), Fitness (16), Music and art (16), Fashion and beauty (16). Keep
+batches roughly proportional to the 20/15/15 target from now on — about 40% EN,
+30% HI, 30% HG — rather than correcting one language at a time.
 
 **Balance note.** The target is not simply 50,000 records, it is 20/15/15. A
 library that reaches 50,000 with the wrong language split has failed the brief
@@ -124,7 +126,20 @@ left in the report as a documented exclusion.
   the earlier finding: past a few hundred records, exact-match detection is doing
   real editorial work that memory cannot.
 
-**Pattern worth noting:** the engine has now caught 13 rejections across 10
+- Batch 011: one vocabulary gap (`aasaan`, `mushkil`, `likhna`, `samajhna`) —
+  markers extended, sentence kept — and one exact duplicate of an earlier line
+  (`"Rest is part of the work, not a break from it."`), replaced with new content.
+
+**Author-error class worth recording.** Batch 011 also contained three errors the
+validators did *not* catch, which I found by reading the file back: a Bengali
+glyph (`আরাম`) inside a Hindi subcategory, an autocorrect slip that turned a line
+into `"...purani galtiyan blouse nahi."`, and a broken verb (`ghar nahi chuntiyan`).
+All three were fixed before the batch was accepted. The lesson is that the
+language gate checks *script and vocabulary*, not *sense*: a Devanagari string
+with one Bengali word still passes a script test. Read every line back before
+committing a batch — automated checks are necessary, not sufficient.
+
+**Pattern worth noting:** the engine has now caught 15 rejections across 11
 batches
 — 3 Hinglish edges (003, 004, 006), 2 exact duplicates of earlier batches (006),
 1 vocabulary gap (005), 1 over-length line (002). The duplicate catches are the

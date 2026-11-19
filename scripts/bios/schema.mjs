@@ -118,6 +118,9 @@ const HINGLISH_MARKERS = [
   // third sweep (batch 008): common nouns/adjectives in everyday Roman Hindi
   'saade', 'saada', 'pakki', 'pakka', 'yehi', 'yahi', 'saleeka', 'cheez',
   'cheezein', 'joote', 'aadmi', 'yaadein', 'yojana', 'bhool', 'khushbu',
+  // fourth sweep (batch 011)
+  'aasaan', 'aasan', 'mushkil', 'likhna', 'samajhna', 'seekhna', 'padhna',
+  'bolna', 'sunna', 'karna', 'hona', 'jaana', 'aana', 'dena', 'lena',
 ];
 
 export function detectScript(text) {
