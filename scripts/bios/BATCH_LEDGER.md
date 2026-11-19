@@ -27,10 +27,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 014 | `batch-014.mjs` | 34 | 30 | 29 | 93 | 0 | 1435 | Depth phase begins: the seven highest-demand categories |
 | 015 | `batch-015.mjs` | 33 | 26 | 24 | 83 | 0 | 1518 | Depth continued + thin-category top-ups |
 | 016 | `batch-016.mjs` | 30 | 23 | 21 | 74 | 1 → fixed | 1592 | Depth on attitude, love, sad, shayari, life, quotes, motivational |
+| 017 | `batch-017.mjs` | 44 | 35 | 30 | 109 | 0 | 1701 | Depth continued; zero rejections |
 
-**Verified so far: 1,592 / 50,000 (3.2%)**
-Remaining: 48,408 (EN 19,357 · HI 14,512 · HG 14,539)
-Split check: EN 3.22% · HI 3.25% · HG 3.07% of their targets.
+**Verified so far: 1,701 / 50,000 (3.4%)**
+Remaining: 48,299 (EN 19,313 · HI 14,477 · HG 14,509)
+Split check: EN 3.44% · HI 3.49% · HG 3.27% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -60,8 +61,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 017 — depth continues at 40/30/30. Attitude 78, love 70, shayari 80, sad
-57, life 43, quotes 47, motivational 29, aesthetic 42.
+Batch 018 — depth continues at 40/30/30. Leaders after 017: attitude 140, love 127,
+sad 98, shayari 102, quotes 91, life 88, aesthetic 67, motivational 64.
 
 **Phase change recorded.** Batches 001–013 were a breadth phase: the job was to
 get all 46 categories populated and roughly even, which is now done. From 014
@@ -69,12 +70,14 @@ onward every batch is depth in the categories people actually browse. This
 matters for the remaining-work estimate: depth batches are the same size but
 they improve the product, whereas breadth batches mostly improved coverage.
 
-**Throughput and honesty.** Twelve batches have produced 1,272 records. At this
-editorial standard — every line original, every line read back, every rejection
-reviewed — a batch is worth roughly 60–150 records. Reaching 50,000 therefore
-needs on the order of 350 further batches. That number is stated plainly rather
-than softened: the pipeline, UI, dashboard and validation are finished and the
-remaining work is writing, and writing does not accelerate by loosening checks.
+**Throughput and honesty.** Seventeen batches have produced 1,701 records, an
+average of exactly 100 per batch. At this editorial standard — every line
+original, every line read back, every rejection reviewed — a batch is worth
+60–150 records. Reaching 50,000 therefore needs on the order of 350 further
+batches at the same size. That number is stated plainly rather than softened: the
+pipeline, UI, dashboard and validation are finished, the remaining work is
+writing, and writing does not accelerate by loosening checks. The batch size was
+reviewed with the project owner at batch 017 and deliberately kept at ~100.
 
 **Balance note.** The target is not simply 50,000 records, it is 20/15/15. A
 library that reaches 50,000 with the wrong language split has failed the brief
