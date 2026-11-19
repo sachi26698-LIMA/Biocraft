@@ -74,9 +74,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 052 | `batch-052.mjs` | 44 | 35 | 34 | 113 | 1 → fixed | 5329 | New subject matter; 1 language |
 
-**Verified so far: 5,329 / 50,000 (10.7%)**
-Remaining: 44,671 (EN 17,871 · HI 13,398 · HG 13,402)
-Split check: EN 10.64% · HI 10.68% · HG 10.65% of their targets — spread 0.04.
+| 053 | `batch-053.mjs` | 46 | 30 | 35 | 111 | 2 → fixed | 5440 | 2 language |
+
+**Verified so far: 5,440 / 50,000 (10.9%)**
+Remaining: 44,560 (EN 17,825 · HI 13,368 · HG 13,367)
+Split check: EN 10.88% · HI 10.88% · HG 10.89% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -106,9 +108,12 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 053 — split 10.64 / 10.68 / 10.65, spread 0.04 points. 052 used another new
-set of subjects (shopkeepers, slow repairs, road trips, results day, learning
-to swim at thirty-six) and produced 1 rejection. Continue the same approach.
+Batch 054 — split 10.88 / 10.88 / 10.89, spread 0.01 points. 053 used another
+fresh set (night shifts, the tailor, hospital bills, house hunting,
+apologising to a child, the January gym). Both its rejections were Hinglish
+lines whose English halves carried the sentence — 'dhang' fixed both.
+Rule of thumb now confirmed across 050-053: two Hinglish markers per line,
+placed in the clauses that carry the meaning.
 
 (previous note) 050 reached 5,102 verified, spread 0.01.
 The topic-variety rule from 049 worked: 050 drew on new material (asking
