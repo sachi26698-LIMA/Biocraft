@@ -69,10 +69,11 @@ export function clampGenerationCount(requested: number, fallback = 5): number {
 }
 
 /**
- * Public content paging. Growth is served by paging, not by raising a cap:
- * a collection with 500,000 rows is read in pages of this size, and the reader
- * keeps walking pages until it has them all (see lib/biosRemote.ts, which uses a
- * keyset cursor rather than an offset so deep pages stay fast).
+ * Rendering page size for bundled public content.
+ *
+ * Bios are no longer read over the network, so this is a render batch size
+ * rather than a network page. It bounds how many entries are painted at once for
+ * very large future collections; it is not a limit on what ships.
  */
 export const CONTENT_PAGE_SIZE = envInt(metaEnv?.VITE_CONTENT_PAGE_SIZE, 500);
 
