@@ -4,6 +4,9 @@ import { handleAnchorClick } from '../../lib/router';
 import Analytics from './Analytics';
 import { LiveCollections, SeoPages } from './Catalog';
 import ImportPreflight from './ImportPreflight';
+import BioLibraryDashboard from './BioLibrary';
+import bioRecords from '../../data/bios/records.json';
+import bioIndex from '../../data/bios/index.json';
 import { Entries, type Kind } from './PublishedLibrary';
 import { Badge, EmptyState, PageHead, Panel, StateNotice } from './common';
 import type { BackupRow, NotificationRow, RoleRow } from './types';
@@ -112,6 +115,7 @@ export default function ExtraModule({module, authorized}: {module: {key: string;
     case 'db-management': content = <><StatusPanel mode={key} /><RecordedBackups /></>; break;
     case 'api-management': case 'vercel-status': case 'supabase-health': content = <StatusPanel mode={key} />; break;
     case 'imports': content = <ImportPreflight />; break;
+    case 'bio-library': content = <BioLibraryDashboard records={bioRecords as never} index={bioIndex as never} />; break;
     case 'templates': content = <Panel title="Template store not connected"><p>A reviewed template store and publication workflow are not available yet. This module does not display placeholder records.</p></Panel>; break;
     case 'ai-configuration': content = <Panel title="AI integration not connected"><p>No provider is configured through this console. No prompts, credentials or content are sent to an AI service.</p></Panel>; break;
   }

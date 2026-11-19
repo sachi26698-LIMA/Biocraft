@@ -105,7 +105,11 @@ const HINGLISH_MARKERS = [
   'bakwaas', 'bakwas', 'faltu', 'bekaar', 'mast', 'mazaa', 'maja', 'yaar',
   'bhai', 'bindaas', 'jhakaas', 'zabardast', 'shandar', 'badhiya', 'achha',
   'acha', 'theek', 'thik', 'matlab', 'zaroori', 'zarurat', 'zaroorat', 'himmat',
-  'kirdaar', 'rivaz', 'riwaz', 'hisaab', 'hisaab', 'sach', 'jhooth', 'jhoot',
+  'kirdaar', 'rivaz', 'riwaz', 'hisaab', 'sach', 'jhooth', 'jhoot',
+  // everyday words that recur in this library's editorial voice
+  'aadatein', 'aadat', 'mahine', 'mahina', 'pehle', 'pehla', 'bewakoofi',
+  'bewakoof', 'lagti', 'lagta', 'lagte', 'raha', 'rahi', 'gayi', 'gaya',
+  'gaye', 'nikla', 'nikli', 'sasti', 'sasta', 'wapas', 'wahi', 'wajah',
 ];
 
 export function detectScript(text) {

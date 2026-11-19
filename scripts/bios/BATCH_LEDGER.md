@@ -14,18 +14,26 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 001 | `batch-001.mjs` | 39 | 26 | 25 | 90 | 0 | 90 | Foundation: 12 categories, engine probe |
 | 002 | `batch-002.mjs` | 38 | 40 | 31 | 109 | 1 → fixed | 199 | Priority cats: attitude, royal, love, sad, alone, shayari, quotes |
 | 003 | `batch-003.mjs` | 47 | 34 | 32 | 113 | 1 → fixed | 312 | Life, friendship, motivation, aesthetic, professional, creator, student, fitness, travel, gaming, photography, music |
-
 | 004 | `batch-004.mjs` | 70 | 48 | 24 | 142 | 1 → fixed | 454 | **All 46 categories now populated** |
+| 005 | `batch-005.mjs` | 36 | 46 | 33 | 115 | 1 → fixed | 569 | Depth pass: attitude, love, shayari (2- and 4-line), quotes, sad, aesthetic, life |
 
-**Verified so far: 454 / 50,000 (0.9%)**
-Remaining: 49,546 (EN 19,806 · HI 14,852 · HG 14,888)
+**Verified so far: 569 / 50,000 (1.1%)**
+Remaining: 49,431 (EN 19,770 · HI 14,806 · HG 14,855)
 Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 005 — depth pass. All categories exist but are thin (2-20 records each).
-Target the highest-demand categories first: attitude, love, sad, shayari (two-
-and four-line), quotes, aesthetic, professional, creator, funny.
+Batch 006 — depth pass continues. Batch 005 deepened seven categories. Current
+thinnest after it: Royal and VIP (22), Motivational (19), Alone and loneliness
+(20), Friendship (~20), Professional and business, Creator and influencer,
+Funny and sarcastic, Student. Keep the shayari two-line/four-line split going: it
+is the only place where the Hindi library can outrun a literal reading of the
+target without inventing content.
+
+Note on the shayari four-line rows: they contain literal `\n` line breaks, which
+the fingerprint strips before comparison. This is intentional — line breaks are
+typography, not content, so a four-line verse cannot be smuggled in as "new"
+content by re-wrapping it.
 
 ## Rejection log
 
@@ -46,7 +54,16 @@ left in the report as a documented exclusion.
   way; rewritten to `"...Sachin tha, ground pe aam insaan hoon."` so the
   sentence carries real Roman-Hindi grammar.
 
-**Pattern worth noting:** the Hinglish gate has now caught 3 records across 4
+- Batch 005: `"Achhi aadatein pehle mahine bewakoofi lagti hain."` was refused
+  as "reads as English". This one was a genuine **validator gap**, not a bad
+  sentence: the line is real Hinglish, but the marker list only held
+  high-salience slang, so ordinary grammar words (`aadatein`, `mahine`, `pehle`,
+  `bewakoofi`, `rahti`) did not count. The marker list was extended with those
+  everyday words and the line was then accepted unchanged — the *sentence* was
+  not edited to satisfy the gate. Worth being precise about the difference:
+  batches 003 and 004 were wrong content, batch 005 was incomplete vocabulary.
+
+**Pattern worth noting:** the Hinglish gate has now caught 4 records across 5
 batches. Every one was a sentence that *felt* Hinglish but was structurally
 English with one borrowed word. Fixing the sentence rather than the gate is
 what keeps the language claim honest — and it is the reason the counts can be

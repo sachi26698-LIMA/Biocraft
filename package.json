@@ -92,7 +92,8 @@
     "build:data": "node scripts/build-ecosystem-data.mjs",
     "test:ecosystem-data": "node scripts/build-ecosystem-data.mjs --check",
     "build:bios": "node scripts/build-bio-library.mjs",
-    "test:bios": "node scripts/build-bio-library.mjs --check && node tests/bio-library.mjs"
+    "test:bios": "node scripts/build-bio-library.mjs --check && node tests/bio-library.mjs",
+    "test:bio-admin": "node tests/bio-admin-dashboard.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

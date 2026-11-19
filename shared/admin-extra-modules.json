@@ -1,18 +1,121 @@
 [
-  {"key":"captions","label":"Captions","section":"CONTENT","icon":"content","description":"Browse active captions served by the public generator."},
-  {"key":"hashtags","label":"Hashtags","section":"CONTENT","icon":"content","description":"Browse active hashtags served by the public generator."},
-  {"key":"templates","label":"Templates","section":"CONTENT","icon":"content","description":"Manage reusable editorial templates when a reviewed template store is available."},
-  {"key":"fonts","label":"Fonts","section":"CONTENT","icon":"content","description":"Browse active font records served by the public generator."},
-  {"key":"seo","label":"SEO","section":"CONTENT","icon":"content","description":"Inspect recorded SEO metadata without changing the public site."},
-  {"key":"content-intelligence","label":"Global Content Intelligence","section":"INSIGHTS","icon":"analytics","description":"Inspect existing inventory and editorial throughput. These are database aggregates, not audience telemetry or AI predictions."},
-  {"key":"data-sources","label":"Data Sources","section":"SYSTEM","icon":"database","description":"Inspect source slugs recorded on BioCraft bios and their visibility counts."},
-  {"key":"imports","label":"Imports","section":"SYSTEM","icon":"database","description":"Validate a local bio import file without uploading or writing to the database."},
-  {"key":"ai-configuration","label":"AI Configuration","section":"SYSTEM","icon":"settings","description":"See whether the Admin has an approved AI integration."},
-  {"key":"notifications","label":"Notifications","section":"PEOPLE","icon":"bell","description":"Read your own review decisions and publication notices from the Admin inbox."},
-  {"key":"roles","label":"Roles","section":"PEOPLE","icon":"users","description":"Review the live role catalog and each role’s granted permission count."},
-  {"key":"permissions","label":"Permissions","section":"PEOPLE","icon":"security","description":"Inspect the permissions granted to each role in the live catalog."},
-  {"key":"db-management","label":"DB Management","section":"SYSTEM","icon":"database","description":"Inspect the limited executor and recorded database backup evidence."},
-  {"key":"api-management","label":"API Management","section":"SYSTEM","icon":"settings","description":"Inspect the API serving this session and the public catalogue connectivity check."},
-  {"key":"vercel-status","label":"Vercel Status","section":"SYSTEM","icon":"overview","description":"Inspect this deployment’s runtime metadata without treating it as Vercel control-plane health."},
-  {"key":"supabase-health","label":"Supabase Health","section":"SYSTEM","icon":"database","description":"Check current Admin database authorization, Supabase Auth and the public REST path."}
+  {
+    "key": "captions",
+    "label": "Captions",
+    "section": "CONTENT",
+    "icon": "content",
+    "description": "Browse active captions served by the public generator."
+  },
+  {
+    "key": "hashtags",
+    "label": "Hashtags",
+    "section": "CONTENT",
+    "icon": "content",
+    "description": "Browse active hashtags served by the public generator."
+  },
+  {
+    "key": "templates",
+    "label": "Templates",
+    "section": "CONTENT",
+    "icon": "content",
+    "description": "Manage reusable editorial templates when a reviewed template store is available."
+  },
+  {
+    "key": "fonts",
+    "label": "Fonts",
+    "section": "CONTENT",
+    "icon": "content",
+    "description": "Browse active font records served by the public generator."
+  },
+  {
+    "key": "seo",
+    "label": "SEO",
+    "section": "CONTENT",
+    "icon": "content",
+    "description": "Inspect recorded SEO metadata without changing the public site."
+  },
+  {
+    "key": "bio-library",
+    "label": "Bio Library",
+    "section": "CONTENT",
+    "icon": "content",
+    "description": "Verify, validate and export the premium bio library locally. No upload, no database write."
+  },
+  {
+    "key": "content-intelligence",
+    "label": "Global Content Intelligence",
+    "section": "INSIGHTS",
+    "icon": "analytics",
+    "description": "Inspect existing inventory and editorial throughput. These are database aggregates, not audience telemetry or AI predictions."
+  },
+  {
+    "key": "data-sources",
+    "label": "Data Sources",
+    "section": "SYSTEM",
+    "icon": "database",
+    "description": "Inspect source slugs recorded on BioCraft bios and their visibility counts."
+  },
+  {
+    "key": "imports",
+    "label": "Imports",
+    "section": "SYSTEM",
+    "icon": "database",
+    "description": "Validate a local bio import file without uploading or writing to the database."
+  },
+  {
+    "key": "ai-configuration",
+    "label": "AI Configuration",
+    "section": "SYSTEM",
+    "icon": "settings",
+    "description": "See whether the Admin has an approved AI integration."
+  },
+  {
+    "key": "notifications",
+    "label": "Notifications",
+    "section": "PEOPLE",
+    "icon": "bell",
+    "description": "Read your own review decisions and publication notices from the Admin inbox."
+  },
+  {
+    "key": "roles",
+    "label": "Roles",
+    "section": "PEOPLE",
+    "icon": "users",
+    "description": "Review the live role catalog and each role’s granted permission count."
+  },
+  {
+    "key": "permissions",
+    "label": "Permissions",
+    "section": "PEOPLE",
+    "icon": "security",
+    "description": "Inspect the permissions granted to each role in the live catalog."
+  },
+  {
+    "key": "db-management",
+    "label": "DB Management",
+    "section": "SYSTEM",
+    "icon": "database",
+    "description": "Inspect the limited executor and recorded database backup evidence."
+  },
+  {
+    "key": "api-management",
+    "label": "API Management",
+    "section": "SYSTEM",
+    "icon": "settings",
+    "description": "Inspect the API serving this session and the public catalogue connectivity check."
+  },
+  {
+    "key": "vercel-status",
+    "label": "Vercel Status",
+    "section": "SYSTEM",
+    "icon": "overview",
+    "description": "Inspect this deployment’s runtime metadata without treating it as Vercel control-plane health."
+  },
+  {
+    "key": "supabase-health",
+    "label": "Supabase Health",
+    "section": "SYSTEM",
+    "icon": "database",
+    "description": "Check current Admin database authorization, Supabase Auth and the public REST path."
+  }
 ]
