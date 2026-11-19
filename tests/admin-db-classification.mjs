@@ -62,6 +62,15 @@ for (const [env,stage] of gates) {
 // 3. Classification is derived from SQLSTATE, with a caller default when the
 //    driver supplies no code (e.g. a socket failure before authentication).
 const cases=[
+  // Transport failures are named individually: "unreachable" alone cannot tell a
+  // wrong hostname from a blocked network or an untrusted certificate, and each
+  // needs a different fix.
+  [{code:'ENOTFOUND'},'database host not resolvable'],
+  [{code:'ECONNREFUSED'},'database refused connection'],
+  [{code:'ETIMEDOUT'},'database connection timed out'],
+  [{code:'ECONNRESET'},'database network blocked'],
+  [{code:'SELF_SIGNED_CERT_IN_CHAIN'},'database certificate untrusted'],
+  [{code:'UNABLE_TO_VERIFY_LEAF_SIGNATURE'},'database certificate untrusted'],
   [{code:'28P01'},'database authentication rejected'],
   [{code:'28000'},'database authentication rejected'],
   [{code:'42501'},'database permission denied'],
