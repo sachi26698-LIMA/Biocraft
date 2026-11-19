@@ -90,7 +90,9 @@
     "test:ecosystem": "node tests/ecosystem-libraries.mjs",
     "test:text-ops": "node tests/text-ops.mjs",
     "build:data": "node scripts/build-ecosystem-data.mjs",
-    "test:ecosystem-data": "node scripts/build-ecosystem-data.mjs --check"
+    "test:ecosystem-data": "node scripts/build-ecosystem-data.mjs --check",
+    "build:bios": "node scripts/build-bio-library.mjs",
+    "test:bios": "node scripts/build-bio-library.mjs --check && node tests/bio-library.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",
