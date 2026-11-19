@@ -129,6 +129,8 @@ const HINGLISH_MARKERS = [
   'pankti', 'panktiyon', 'kavita', 'adhyaay', 'sanskaran', 'soochi', 'chaahat',
   // eighth sweep (batch 024)
   'vyanjan', 'shikayat', 'dekhbhaal', 'shabd', 'aalsi', 'oobe', 'nivesh',
+  // ninth sweep (batch 025)
+  'pasand', 'afsos', 'paanch', 'mehngi', 'sasti', 'ikatthi', 'mahaul', 'ausat',
 ];
 
 export function detectScript(text) {
