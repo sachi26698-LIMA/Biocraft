@@ -84,9 +84,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 057 | `batch-057.mjs` | 45 | 34 | 34 | 113 | 2 → rewrote both | 5881 | 2 near-dup |
 
-**Verified so far: 5,881 / 50,000 (11.8%)**
-Remaining: 44,119 (EN 17,649 · HI 13,237 · HG 13,233)
-Split check: EN 11.76% · HI 11.75% · HG 11.78% of their targets — spread 0.03.
+| 058 | `batch-058.mjs` | 46 | 34 | 32 | 112 | 1 → fixed | 5993 | 1 near-dup |
+
+**Verified so far: 5,993 / 50,000 (12.0%)**
+Remaining: 44,007 (EN 17,603 · HI 13,203 · HG 13,201)
+Split check: EN 11.98% · HI 11.98% · HG 11.99% of their targets — spread 0.01.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -116,7 +118,12 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 058 — split 11.76 / 11.75 / 11.78, spread 0.03 points. 057 drew on
+Batch 059 — split 11.98 / 11.98 / 11.99, spread 0.01 points. 058 drew on a
+plumber who quotes before he cuts, the school reunion, a borrowed scooter,
+farm debt against a late harvest, and learning a language from the alphabet at
+thirty. One English near-duplicate fixed.
+
+(previous) 057 drew on
 splitting a wedding hall bill, saying no to relatives, the milkman, the night
 bus home and a friend's divorce. The two rejections were the Hindi and Hinglish
 halves of one line, read as duplicates of each other — the same trap as 056.
