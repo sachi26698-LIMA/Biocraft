@@ -23,7 +23,7 @@ begin;
 -- ---------------------------------------------------------------------------
 create or replace function bc_admin_v1.content_library_stats()
 returns table (domain text, total bigint, active bigint)
-language plpgsql security definer set search_path=public,pg_catalog as $$
+language plpgsql security definer set search_path=pg_catalog as $$
 declare actor uuid;
 begin
   actor := bc_admin_v1.require_actor('content.read');
@@ -53,7 +53,7 @@ returns table (
   status text, last_sync_at timestamptz, last_sync_count integer,
   last_error text, next_cursor text
 )
-language plpgsql security definer set search_path=public,pg_catalog as $$
+language plpgsql security definer set search_path=pg_catalog as $$
 declare actor uuid; lim integer;
 begin
   actor := bc_admin_v1.require_actor('content.read');
@@ -85,7 +85,7 @@ returns table (
   items_seen integer, items_inserted integer, items_updated integer,
   items_skipped integer, error text
 )
-language plpgsql security definer set search_path=public,pg_catalog as $$
+language plpgsql security definer set search_path=pg_catalog as $$
 declare actor uuid; lim integer;
 begin
   actor := bc_admin_v1.require_actor('content.read');
@@ -120,7 +120,7 @@ returns table (
   subsets text[], weights text[], styles text[], variable boolean,
   license_code text, source_slug text, is_active boolean, next_cursor text
 )
-language plpgsql security definer set search_path=public,pg_catalog as $$
+language plpgsql security definer set search_path=pg_catalog as $$
 declare actor uuid; lim integer;
 begin
   actor := bc_admin_v1.require_actor('content.read');
@@ -154,7 +154,7 @@ returns table (
   unicode_version text, skin_tone_support boolean, license_code text,
   is_active boolean, next_cursor text
 )
-language plpgsql security definer set search_path=public,pg_catalog as $$
+language plpgsql security definer set search_path=pg_catalog as $$
 declare actor uuid; lim integer;
 begin
   actor := bc_admin_v1.require_actor('content.read');
@@ -182,7 +182,7 @@ returns table (
   id uuid, symbol text, title text, category text, codepoints text,
   license_code text, is_active boolean, sort_order integer, next_cursor text
 )
-language plpgsql security definer set search_path=public,pg_catalog as $$
+language plpgsql security definer set search_path=pg_catalog as $$
 declare actor uuid; lim integer;
 begin
   actor := bc_admin_v1.require_actor('content.read');
@@ -209,7 +209,7 @@ returns table (
   code text, name_en text, name_native text, direction text, script text,
   is_active boolean, sort_order integer, content_count bigint
 )
-language plpgsql security definer set search_path=public,pg_catalog as $$
+language plpgsql security definer set search_path=pg_catalog as $$
 declare actor uuid;
 begin
   actor := bc_admin_v1.require_actor('content.read');
@@ -242,7 +242,7 @@ returns table (
   id uuid, source_table text, source_id uuid, source_language text,
   target_language text, status text, provider text, created_at timestamptz
 )
-language plpgsql security definer set search_path=public,pg_catalog as $$
+language plpgsql security definer set search_path=pg_catalog as $$
 declare actor uuid; lim integer;
 begin
   actor := bc_admin_v1.require_actor('content.read');

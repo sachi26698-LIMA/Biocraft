@@ -19,38 +19,48 @@ export function createHandler(instance,{secret}={}) {
   if (typeof instance!=='function') throw new Error('app required');
   if (typeof instance.configuration!=='object') throw new Error('app configuration required');
   return async function handle(req,res) {
-    if (instance.configuration?.enabled!==true) return unavailable(res);
+    if (instance.configuration?.enabled!==true) return unavailable(res,instance.configuration?.reason);
     try {
-      if (!Buffer.isBuffer(secret)||secret.length!==32) return unavailable(res);
+      if (!Buffer.isBuffer(secret)||secret.length!==32) return unavailable(res,'missing trusted client header');
       const request=toWebRequest(req,{origin:instance.configuration.origin,secret});
       await sendResponse(res,await instance(request));
-    } catch { unavailable(res); }
+    } catch { unavailable(res,'runtime'); }
   };
 }
-function unavailable(res) {
+
+/** Emit the unavailable response, naming the failing stage when it is known.
+ *
+ * Previously this function discarded the app's `configuration.reason`, so a
+ * closed configuration gate and a failed database round-trip produced byte-for
+ * byte identical 503 bodies. That made the deployed outage impossible to
+ * diagnose from outside without reading the platform logs: the operator could
+ * see "503" and nothing else. `stage` is a fixed identifier from app.mjs's own
+ * vocabulary (disabled, invalid origin, missing database credentials, invalid
+ * database configuration, ...) and never contains an environment value or a
+ * secret, so reporting it is safe. The leading `{error:{code:'UNAVAILABLE'}}`
+ * shape is preserved for clients and for the existing regression tests. */
+function unavailable(res,stage) {
   res.statusCode=503;
   res.setHeader('cache-control','no-store');
   res.setHeader('content-type','application/json; charset=utf-8');
+  if (typeof stage==='string' && /^[a-z][a-z0-9 -]{0,63}$/.test(stage)) {
+    res.setHeader('x-admin-stage',stage);
+    res.end(JSON.stringify({error:{code:'UNAVAILABLE',stage}}));
+    return;
+  }
   res.end(JSON.stringify({error:{code:'UNAVAILABLE'}}));
 }
 
 export default async function handler(req,res) {
-  const instance=app();
-  if (instance.configuration?.enabled!==true) {
-    res.statusCode=503;
-    res.setHeader('cache-control','no-store');
-    res.setHeader('content-type','application/json; charset=utf-8');
-    res.end(JSON.stringify({error:{code:'UNAVAILABLE'}}));
-    return;
-  }
+  let instance;
+  try { instance=app(); }
+  catch { return unavailable(res,'invalid configuration'); }
+  if (instance.configuration?.enabled!==true) return unavailable(res,instance.configuration?.reason);
   try {
     const secret=Buffer.from(process.env.ADMIN_INGRESS_SECRET_HEX,'hex');if(secret.length!==32)throw Error('invalid ingress secret');
     const request=toWebRequest(req,{origin:instance.configuration.origin,secret});
     await sendResponse(res,await instance(request));
   } catch {
-    res.statusCode=503;
-    res.setHeader('cache-control','no-store');
-    res.setHeader('content-type','application/json; charset=utf-8');
-    res.end(JSON.stringify({error:{code:'UNAVAILABLE'}}));
+    unavailable(res,'runtime');
   }
 }

@@ -807,3 +807,13 @@ confers capability — the migrations only define the functions.
 
 Until that final hosted verification succeeds, this work is **not** complete and
 will not be described as complete.
+
+
+## Appendix B — SHA-256 of the changed SQL (migration 015, its rollback, the grant list)
+
+* `admin-backend/migrations/015_content_library_read_surface.sql` — `88ce88a3882f7f4bc4fdc87cedd3dcdb3953ddc57179e5f22a1b61386e44568e`
+* `admin-backend/rollback/015_content_library_read_surface.sql` — `a06a679510abf860b25a9d98c276a760fb1388093625ebb7e2b8139dff5b82fb`
+* `admin-backend/grants/executor-grants.sql` — `a6f4caadc9f3b018bc837beba09038a34216dc9c4b462b7badf3fe3290edcdd7`
+
+Each digest is recomputed from disk by `tests/admin-grant-inventory.mjs`, which fails
+if a file and this checklist disagree.

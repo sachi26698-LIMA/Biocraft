@@ -222,7 +222,8 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
    report.database='reachable';
    try {
     await client.query('begin');
-    await assertLimitedRole(client);
+    try { await assertLimitedRole(client); }
+  catch (e) { throw databaseStage(e,'database role not limited'); }
     report.limited_role='ok';
    } catch (e) {
     // A role that is not limited is a security stop, not a transient fault.
@@ -249,16 +250,24 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  async function health(method) {
   const headers={'Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'};
   if(method!=='GET') return new Response(JSON.stringify({error:{code:'METHOD_NOT_ALLOWED'}}),{status:405,headers:{...headers,Allow:'GET'}});
-  if(!readiness||readiness.expires<=now()) readiness={expires:now()+10_000,result:verifyAdminDatabase(pool).then(()=>true,()=>false)};
-  const ok=await readiness.result;
-  return new Response(JSON.stringify(ok?{ok:true}:{error:{code:'UNAVAILABLE'}}),{status:ok?200:503,headers});
+  if(!readiness||readiness.expires<=now()) readiness={expires:now()+10_000,result:verifyAdminDatabase(pool).then(()=>true,e=>e)};
+  const outcome=await readiness.result;
+  const ok=outcome===true;
+  // A refusal now names its cause with a fixed identifier so the deployed
+  // failure is diagnosable from outside. Only the stage is reported: never a
+  // driver message, a host, a user or a secret.
+  if(ok) return new Response(JSON.stringify({ok:true}),{status:200,headers});
+  const stage=typeof outcome?.stage==='string'?outcome.stage:'database unavailable';
+  return new Response(JSON.stringify({error:{code:'UNAVAILABLE',stage}}),{status:503,headers:{...headers,'X-Admin-Stage':stage}});
  }
 }
 
 /** Check that the committed SQL surface exists and can be called by a limited
  * executor. Readiness never creates a session, consumes attempts or mutates data. */
 export async function verifyAdminDatabase(pool) {
- const client=await pool.connect();
+ let client;
+ try { client=await pool.connect(); }
+ catch (e) { throw databaseStage(e,'database unreachable'); }
  try {
   await client.query('begin read only');
   await client.query("set local statement_timeout = '3000ms'");
@@ -270,6 +279,37 @@ export async function verifyAdminDatabase(pool) {
       'bc_admin_v1.store_login_flow(bytea,bytea,integer)', 'bc_admin_v1.take_login_flow(bytea)',
       'bc_admin_v1.factor_gate(uuid)', 'bc_admin_v1.open_admin_session(uuid)', 'bc_admin_v1.session_identity()',
     ]]);
-  if(rows[0]?.ready!==true) throw new Error('Admin database commands unavailable');
- } finally {try{await client.query('rollback')}catch{}client.release()}
+  if(rows[0]?.ready!==true) throw databaseStage(null,'database grants missing');
+ } catch (e) {
+  throw databaseStage(e,'database unavailable');
+ } finally {
+  // A rollback can itself fail once the connection is gone; that must not mask
+  // the classification thrown above, so it is swallowed here.
+  try{await client.query('rollback')}catch{}
+  client.release();
+ }
+}
+
+/** Attach a fixed diagnostic stage to a database refusal.
+ *
+ * The stage is derived from the SQLSTATE alone, so it distinguishes the causes
+ * an operator actually has to act on — a rejected login (28xxx), a role that is
+ * not least-privilege (42501), a missing database, a timeout, an unreachable
+ * server — without ever echoing a credential, host or SQL statement. The
+ * caller's default is kept when the driver supplies no code (a network failure
+ * before authentication completes, for example). */
+export function databaseStage(error,fallback) {
+ const code=typeof error?.code==='string'?error.code:'';
+ const map=c=>
+  c.startsWith('28')?'database authentication rejected':
+  c==='3D000'?'database absent':
+  c==='42501'?'database permission denied':
+  c==='57014'?'database timeout':
+  c.startsWith('08')||c==='53300'||c==='57P03'?'database unreachable':
+  null;
+ const stage=map(code)??fallback;
+ const wrapped=new Error(stage);
+ wrapped.stage=stage;
+ wrapped.code=code||undefined;
+ return wrapped;
 }
