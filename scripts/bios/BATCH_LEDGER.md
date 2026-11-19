@@ -40,10 +40,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 027 | `batch-027.mjs` | 31 | 24 | 45 | 100 | 3 → fixed | 2631 | Hinglish-leaning rebalance; 3 near-duplicates replaced |
 | 028 | `batch-028.mjs` | 49 | 33 | 27 | 109 | 2 → fixed | 2740 | English-leaning rebalance; one exact repeat caught |
 | 029 | `batch-029.mjs` | 40 | 31 | 25 | 96 | 2 → fixed | 2836 | Strict proportional mix; two vocabulary-gap fixes |
+| 030 | `batch-030.mjs` | 40 | 30 | 25 | 95 | 0 | 2931 | Strict proportional; zero rejections |
 
-**Verified so far: 2,836 / 50,000 (5.7%)**
-Remaining: 47,164 (EN 18,876 · HI 14,139 · HG 14,149)
-Split check: EN 5.62% · HI 5.74% · HG 5.67% of their targets.
+**Verified so far: 2,931 / 50,000 (5.9%)**
+Remaining: 47,069 (EN 18,836 · HI 14,109 · HG 14,124)
+Split check: EN 5.82% · HI 5.94% · HG 5.84% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -73,8 +74,8 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 030 — split within 0.12 points (5.62 / 5.74 / 5.67). Continue strict
-proportional 40/30/30 with depth in the leaders.
+Batch 031 — split within 0.12 points (5.82 / 5.94 / 5.84). Continue strict
+proportional 40/30/30.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
 near-duplicate layer — reworded versions of earlier bios rather than new ideas. This
