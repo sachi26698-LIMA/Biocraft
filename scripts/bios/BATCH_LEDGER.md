@@ -16,17 +16,18 @@ reports the batch accepted. Counts are cumulative verified totals, never
 | 003 | `batch-003.mjs` | 47 | 34 | 32 | 113 | 1 → fixed | 312 | Life, friendship, motivation, aesthetic, professional, creator, student, fitness, travel, gaming, photography, music |
 | 004 | `batch-004.mjs` | 70 | 48 | 24 | 142 | 1 → fixed | 454 | **All 46 categories now populated** |
 | 005 | `batch-005.mjs` | 36 | 46 | 33 | 115 | 1 → fixed | 569 | Depth pass: attitude, love, shayari (2- and 4-line), quotes, sad, aesthetic, life |
+| 006 | `batch-006.mjs` | 50 | 50 | 47 | 147 | 3 → fixed | 716 | Thin-category pass: the 25 categories still at 4–6 records |
 
-**Verified so far: 569 / 50,000 (1.1%)**
-Remaining: 49,431 (EN 19,770 · HI 14,806 · HG 14,855)
+**Verified so far: 716 / 50,000 (1.4%)**
+Remaining: 49,284 (EN 19,720 · HI 14,756 · HG 14,805)
 Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 006 — depth pass continues. Batch 005 deepened seven categories. Current
-thinnest after it: Royal and VIP (22), Motivational (19), Alone and loneliness
-(20), Friendship (~20), Professional and business, Creator and influencer,
-Funny and sarcastic, Student. Keep the shayari two-line/four-line split going: it
+Batch 007 — after 006 every category holds at least 8 records, so the 4s, 5s and
+6s are gone. Work the next band: Royal and VIP (22), Motivational (19), Alone and
+loneliness (20), Friendship (19), Professional and business (12), Creator and
+influencer (10), Student life (10). Keep the shayari two-line/four-line split going: it
 is the only place where the Hindi library can outrun a literal reading of the
 target without inventing content.
 
@@ -63,8 +64,21 @@ left in the report as a documented exclusion.
   not edited to satisfy the gate. Worth being precise about the difference:
   batches 003 and 004 were wrong content, batch 005 was incomplete vocabulary.
 
-**Pattern worth noting:** the Hinglish gate has now caught 4 records across 5
-batches. Every one was a sentence that *felt* Hinglish but was structurally
+- Batch 006: three rejections, and two of them were **my own sloppiness, caught
+  by the engine**. `"I do not audition for people who already decided."` and
+  `"Professional overthinker. Amateur everything else."` were word-for-word
+  repeats of batch 004 lines. Both were deleted and replaced with genuinely new
+  sentences — not reworded, since rewording a repeat is exactly the
+  "lightly modified bio" the brief forbids. The third was `"Puraani bike, naye
+  raaste..."`, refused as English because `puraani` is not in the marker list;
+  the sentence was rewritten to lead with `Bike` so the Roman-Hindi is
+  unmistakable, rather than the marker list being patched for one word.
+
+**Pattern worth noting:** the engine has now caught 7 rejections across 6 batches
+— 3 Hinglish edges (003, 004, 006), 2 exact duplicates of earlier batches (006),
+1 vocabulary gap (005), 1 over-length line (002). The duplicate catches are the
+most useful signal in the whole ledger: at 716 records a human cannot hold the
+corpus in their head, so the exact-match layer is doing real editorial work. Every one was a sentence that *felt* Hinglish but was structurally
 English with one borrowed word. Fixing the sentence rather than the gate is
 what keeps the language claim honest — and it is the reason the counts can be
 trusted.
