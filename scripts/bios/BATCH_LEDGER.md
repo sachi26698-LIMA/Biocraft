@@ -94,9 +94,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 062 | `batch-062.mjs` | 45 | 35 | 33 | 113 | 1 lang + 1 near-dup → fixed | 6437 | 2 |
 
-**Verified so far: 6,437 / 50,000 (12.9%)**
-Remaining: 43,563 (EN 17,426 · HI 13,067 · HG 13,070)
-Split check: EN 12.87% · HI 12.89% · HG 12.87% of their targets — spread 0.02.
+| 063 | `batch-063.mjs` | 45 | 33 | 33 | 111 | 0 | 6548 | 0 |
+
+**Verified so far: 6,548 / 50,000 (13.1%)**
+Remaining: 43,452 (EN 17,381 · HI 13,034 · HG 13,037)
+Split check: EN 13.10% · HI 13.11% · HG 13.09% of their targets — spread 0.02.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -126,7 +128,12 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 063 — split 12.87 / 12.89 / 12.87, spread 0.02. 062 drew on the cycle
+Batch 064 — split 13.10 / 13.11 / 13.09, spread 0.02. 063 drew on the licence
+office queue, a tailor's measure book with a dead man's numbers still in it, the
+school bus driver, a photograph of a demolished house and the first night in a
+hostel. Zero rejections on the first build.
+
+(previous) 062 drew on the cycle
 puncture shop, a father's transfer order, the neighbourhood loudspeaker, a first
 day at a new school and a grandmother's recipe nobody wrote down. Two fixed: a
 Hinglish line with no markers (`samasya` is not one; `dikkat ... ho jaati hai`
