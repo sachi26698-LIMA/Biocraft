@@ -64,9 +64,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 047 | `batch-047.mjs` | 47 | 33 | 33 | 113 | 2 → fixed | 4766 | 1 exact, 1 token-set (nukta variant of a 029 line) |
 
-**Verified so far: 4,766 / 50,000 (9.5%)**
-Remaining: 45,234 (EN 18,084 · HI 13,575 · HG 13,575)
-Split check: EN 9.58% · HI 9.50% · HG 9.50% of their targets.
+| 048 | `batch-048.mjs` | 47 | 33 | 32 | 112 | 2 → fixed | 4878 | 1 exact, 1 language |
+
+**Verified so far: 4,878 / 50,000 (9.8%)**
+Remaining: 45,122 (EN 18,037 · HI 13,542 · HG 13,543)
+Split check: EN 9.81% · HI 9.72% · HG 9.71% of their targets.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -96,7 +98,7 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 048 — split 9.58 / 9.50 / 9.50, spread 0.08 points. Continue taking the
+Batch 049 — split 9.81 / 9.72 / 9.71, spread 0.10 points. Continue taking the
 allocation from balance.mjs each batch.
 
 **Near-duplicate rejection trend.** Batches 023 and 027 each lost three lines to the
