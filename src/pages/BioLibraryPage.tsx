@@ -336,6 +336,15 @@ export default function BioLibraryPage() {
               <span style={{ marginRight: 8 }}>{'+'}</span> Create Custom Bio
             </button>
           </div>
+          {/* The curated set above is a hand-picked subset. The full verified
+              library lives on /premium-bios and previously had no link at all,
+              so visitors could not reach 8,421 records from here. */}
+          <p className="lib-note bl-hero-note">
+            Looking for more?{' '}
+            <a href="/premium-bios" onClick={handleAnchorClick}>
+              Browse all 8,421 verified bios across 46 categories →
+            </a>
+          </p>
           <div className="bl-hero-stats">
             <div className="bl-stat">
               <span className="bl-stat-value">{LIBRARY_TOTAL.toLocaleString()}+</span>
