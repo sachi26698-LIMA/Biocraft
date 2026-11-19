@@ -18,7 +18,7 @@ import {issueRecoveryGrant,revokeRecoveryGrant,runCleanup,redeemRecoveryCode,fac
 import {verifyProviderIdentity} from './identity.mjs';
 import {createCookieGateway} from './session-cookie.mjs';
 import {createAdminHandler} from './api.mjs';
-import {createDatabaseExecutor,createPostgresPool,assertLimitedRole} from './database.mjs';
+import {createDatabaseExecutor,createPostgresPool,assertLimitedRole,SUPABASE_ROOT_CA,DIRECT_HOST} from './database.mjs';
 import {createAuthStorage} from './auth-storage.mjs';
 import {isEmailAllowed} from './auth-flow.mjs';
 import {createProviderLogout} from './provider-logout.mjs';
@@ -56,6 +56,20 @@ export function clientKey(request,{trustedHeader,ingressSecret}={}) {
  *   ADMIN_INGRESS_SECRET_HEX=<64 hex chars shared with that proxy>
  *   ADMIN_ALLOWED_EMAILS=comma-separated (bootstrap allow-list, optional)
  */
+/** The trust anchor for the database TLS handshake.
+ *
+ * A pooler login is verified against Supabase's published Root 2021 CA, which is
+ * bundled with the deployment because it is not in Node's system trust store.
+ * The direct (non-pooler) host keeps the system store: its certificate is issued
+ * normally, and widening trust there would be a needless weakening. An operator
+ * can supply ADMIN_DB_CA_PEM to override either case. */
+export function databaseCa(env,host) {
+ const override=typeof env?.ADMIN_DB_CA_PEM==='string'?env.ADMIN_DB_CA_PEM.trim():'';
+ if (override.startsWith('-----BEGIN CERTIFICATE-----')) return override;
+ if (host===DIRECT_HOST) return undefined; // system trust store
+ return SUPABASE_ROOT_CA ?? undefined;
+}
+
 export function createAdminApp({env=process.env,poolFactory=createPostgresPool,now=()=>Date.now()}={}) {
  // `stage` names the configuration check that failed. It is a fixed identifier
  // from this file's own vocabulary — never an environment value, never a secret —
@@ -91,8 +105,16 @@ export function createAdminApp({env=process.env,poolFactory=createPostgresPool,n
  // starts with a transaction-mode or typo'd port.
  const dbPort=env.ADMIN_DB_PORT===undefined||env.ADMIN_DB_PORT===''?undefined:/^\d{1,5}$/.test(env.ADMIN_DB_PORT)?Number(env.ADMIN_DB_PORT):NaN;
  if(dbPort!==undefined&&dbPort!==5432) return fail('invalid database configuration');
+ // Supabase's pooler presents a chain rooted in "Supabase Root 2021 CA", a
+ // PRIVATE root that is not in Node's trust store. Without this the handshake
+ // fails with SELF_SIGNED_CERT_IN_CHAIN and the connection is never made — which
+ // is exactly what the deployed health check reported ("database certificate
+ // untrusted"). The fix is to trust that one published root, NOT to disable
+ // verification: `ca` replaces the default store for this socket, so the pooler
+ // is still verified against Supabase's own root and the hostname is still
+ // checked by pg. ADMIN_DB_CA_PEM can override it for a differently-rooted host.
  let pool;
- try {pool=poolFactory({host:dbHost,port:dbPort,user:env.ADMIN_DB_USER,password:env.ADMIN_DB_PASSWORD});} catch {return fail('invalid database configuration');}
+ try {pool=poolFactory({host:dbHost,port:dbPort,user:env.ADMIN_DB_USER,password:env.ADMIN_DB_PASSWORD,ca:databaseCa(env,dbHost)});} catch {return fail('invalid database configuration');}
  const execute=createDatabaseExecutor(pool,{now});
  const storage=createAuthStorage({pool,encryptionKey:flowKey,hashKey});
  // Supabase clients must be per-request so sessions never leak between requests.
