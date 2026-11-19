@@ -102,9 +102,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 066 | `batch-066.mjs` | 45 | 33 | 33 | 111 | 3 lang + 6 exact → all fixed | 6881 | 9 |
 
-**Verified so far: 6,881 / 50,000 (13.8%)**
-Remaining: 43,119 (EN 17,248 · HI 12,935 · HG 12,936)
-Split check: EN 13.76% · HI 13.77% · HG 13.76% of their targets — spread 0.01.
+| 067 | `batch-067.mjs` | 45 | 32 | 33 | 110 | 0 | 6991 | 0 |
+
+**Verified so far: 6,991 / 50,000 (14.0%)**
+Remaining: 43,009 (EN 17,203 · HI 12,903 · HG 12,903)
+Split check: EN 13.98% · HI 13.98% · HG 13.98% of their targets — spread 0.00.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -134,7 +136,19 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 067 — split 13.76 / 13.77 / 13.76, spread 0.01. 066 drew on the fruit cart
+Batch 068 — split 13.98 / 13.98 / 13.98, spread 0.00. 067 drew on the cobbler
+under a tree, a brother who left for the Gulf at nine and returned a stranger,
+examination answer sheets stolen from a centre, a ceiling that leaks every July,
+and a bus stop with no roof. Zero rejections.
+
+**New tool: `scripts/bios/precheck-batch.mjs`.** Added because 060 and 066 both
+burned a build on lines re-added to a file they were already in. The precheck
+checks, before the expensive build: exact repeats inside the file, per-language
+counts against the allocation, unknown categories, length limits, and the
+language gate applied to every seed as written. It predicted 067 clean and the
+build agreed — 0 rejections on the first try.
+
+(previous) 066 drew on the fruit cart
 at closing time, a father who signs with a thumb after thirty years of running a
 shop, a fan that grinds all night, a lost school certificate, a cousin's
 engagement and the electricity meter reader. Nine rejections, all fixed — the
