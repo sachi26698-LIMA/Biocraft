@@ -88,9 +88,11 @@ reports the batch accepted. Counts are cumulative verified totals, never
 
 | 059 | `batch-059.mjs` | 44 | 34 | 32 | 110 | 2 language + 2 token-set → all fixed | 6103 | 4 |
 
-**Verified so far: 6,103 / 50,000 (12.2%)**
-Remaining: 43,897 (EN 17,559 · HI 13,169 · HG 13,169)
-Split check: EN 12.21% · HI 12.21% · HG 12.21% of their targets — spread 0.00.
+| 060 | `batch-060.mjs` | 44 | 33 | 33 | 110 | 2 language + 2 exact → all fixed | 6213 | 4 |
+
+**Verified so far: 6,213 / 50,000 (12.4%)**
+Remaining: 43,787 (EN 17,515 · HI 13,136 · HG 13,136)
+Split check: EN 12.43% · HI 12.43% · HG 12.43% of their targets — spread 0.00.
 
 *** Audited against the data, not against memory (important) ***
 
@@ -120,7 +122,19 @@ Categories populated: **46 / 46**
 
 ## Next batch
 
-Batch 060 — split 12.21 / 12.21 / 12.21, spread 0.00 points. 059 drew on gold
+Batch 061 — split 12.43 / 12.43 / 12.43, spread 0.00. 060 drew on brass utensils
+and the hands that polish them, the ration-card queue, a pension office, a
+wedding tent blocking the lane and a bicycle learned at forty. Four rejections:
+two Hinglish lines with no markers ('Peetal chamka, haath kaala reh gaya.' and a
+telegraphic 'Form ghar le jao...' — fixed with 'par' and 'phir'), and two lines
+I re-added that were already in the same file, caught by the exact-repeat layer.
+
+**END OF THE 040–060 SCOPE.** 21 consecutive batches, 040–060, all verified,
+ledgered, tested and pushed. Cumulative: 4,220 → 6,213. Every batch passed all
+four test suites; rejections in the range totalled 31 and every one was fixed
+before acceptance, so no accepted record was weakened.
+
+(previous) 059 drew on gold
 pledged at a bank, the night watchman who knew my hours better than my family
 did, a wedding gift that came back at another wedding, and learning to drive at
 forty. Four rejections, all fixed: two Hinglish lines whose only Hindi was
