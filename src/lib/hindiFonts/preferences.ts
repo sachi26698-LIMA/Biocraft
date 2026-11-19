@@ -32,7 +32,7 @@ function writeList(key: string, values: string[]) {
   } catch {
     // Private mode with storage disabled: favourites simply do not persist.
   }
-  window.dispatchEvent(new CustomEvent("biocraft:fonts-change"));
+  window.dispatchEvent(new window.CustomEvent("biocraft:fonts-change"));
 }
 
 export function readFavorites(): string[] {
@@ -81,7 +81,7 @@ export function rememberSelectedFont(slug: string): void {
     // Ignore storage failures.
   }
   window.dispatchEvent(
-    new CustomEvent("biocraft:font-selected", { detail: slug }),
+    new window.CustomEvent("biocraft:font-selected", { detail: slug }),
   );
 }
 

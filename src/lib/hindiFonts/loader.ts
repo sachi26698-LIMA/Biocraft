@@ -138,10 +138,16 @@ export function loadFont(
     registerFace(family, latinFile, weightDescriptor(font, latinFile));
   }
 
+  // `document.fonts` is absent in old browsers and in server-side renderers.
+  // Reporting a failed load (rather than throwing) keeps the preview on its
+  // fallback face, which is exactly what a visitor should see.
+  const fonts = typeof document === "undefined" ? undefined : document.fonts;
   const promise = (
     devanagariFace
       ? devanagariFace.load()
-      : document.fonts.load(`400 16px "${family}"`, "नमस्ते")
+      : fonts
+        ? fonts.load(`400 16px "${family}"`, "नमस्ते")
+        : Promise.reject(new Error("CSS Font Loading API unavailable"))
   )
     .then(() => {
       notify(font.slug, "loaded");

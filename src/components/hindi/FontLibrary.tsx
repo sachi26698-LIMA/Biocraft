@@ -500,7 +500,14 @@ export default function FontLibrary({
       </div>
 
       {compareOpen && compare.length ? (
-        <div className="bc-compare" role="region" aria-label="Font comparison">
+        <div
+          className="bc-compare"
+          role="region"
+          aria-label="Font comparison"
+          // The dock is fixed; scroll-margin keeps a freshly compared card out
+          // from under it so the next card is still clickable.
+          style={{ scrollMarginBottom: 260 } as React.CSSProperties}
+        >
           <div className="bc-compare-head">
             <strong>Compare · {previewText || sampleText}</strong>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>

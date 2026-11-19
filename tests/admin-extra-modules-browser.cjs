@@ -9,7 +9,7 @@ const text = {
   'content-intelligence':'Content Mix', 'data-sources':'Unicode fixture', notifications:'Review completed',
   roles:'Review administrator', permissions:'content.review', 'db-management':'snapshot-fixture',
   'api-management':'API version: v1', 'vercel-status':'Build revision: abcdef012345', 'supabase-health':'Guest catalogue REST: Connected',
-  'ai-configuration':'AI integration not connected', templates:'Template fixture', designs:'Design fixture', symbols:'Symbol fixture', emoji:'Emoji fixture', languages:'Language fixture', imports:'Local validation only',
+  'ai-configuration':'AI integration not connected', templates:'Template fixture', designs:'Design fixture', symbols:'Symbol fixture', emoji:'Emoji fixture', languages:'Language fixture', imports:'Local validation only', 'hindi-fonts':'Verification engine', 'bio-library':'Library status',
 };
 (async()=>{
   const browser=await chromium.launch({executablePath:process.env.BROWSER_EXECUTABLE_PATH,args:['--no-sandbox','--disable-dev-shm-usage']});

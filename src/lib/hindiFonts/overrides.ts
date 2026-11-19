@@ -33,7 +33,7 @@ const listeners = new Set<() => void>();
 function emit() {
   for (const listener of listeners) listener();
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('biocraft:font-overrides-change'));
+    window.dispatchEvent(new window.CustomEvent('biocraft:font-overrides-change'));
   }
 }
 
