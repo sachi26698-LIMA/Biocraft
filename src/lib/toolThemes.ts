@@ -94,4 +94,9 @@ export const TOOL_THEMES: Record<ToolKey, ToolTheme> = {
     accent: '#35719F', accentHover: '#2A5D85', deep: '#1E4A6B',
     soft: 'rgba(53, 113, 159, 0.12)', line: 'rgba(53, 113, 159, 0.38)', glow: 'rgba(53, 113, 159, 0.4)',
   },
+  'text-toolkit': {
+    tileFrom: '#E8F0E4', tileTo: '#CBE0C4',
+    accent: '#4A7C3F', accentHover: '#3C6733', deep: '#2F5228',
+    soft: 'rgba(74, 124, 63, 0.12)', line: 'rgba(74, 124, 63, 0.38)', glow: 'rgba(74, 124, 63, 0.4)',
+  },
 };

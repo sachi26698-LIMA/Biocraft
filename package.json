@@ -2,7 +2,7 @@
   "name": "biocraft",
   "private": true,
   "version": "1.0.0",
-  "description": "BioCraft \u2014 All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
+  "description": "BioCraft — All-in-One Social Media Toolkit for Instagram, Facebook, Threads, TikTok, X and LinkedIn: bios, usernames, stylish text, symbols, hashtags, captions and LinkedIn headline/summary generators. Free, private, rule-based. English & Hindi.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -86,7 +86,11 @@
     "test:admin-extra-modules": "node tests/admin-extra-modules-browser.cjs",
     "test:hybrid": "node tests/local-db-proxy.mjs",
     "test:hybrid:db": "node tests/hybrid-sync-replication.mjs",
-    "test:local-first": "node tests/local-first/content-sources.mjs && node tests/local-first/pages-render.mjs"
+    "test:local-first": "node tests/local-first/content-sources.mjs && node tests/local-first/pages-render.mjs",
+    "test:ecosystem": "node tests/ecosystem-libraries.mjs",
+    "test:text-ops": "node tests/text-ops.mjs",
+    "build:data": "node scripts/build-ecosystem-data.mjs",
+    "test:ecosystem-data": "node scripts/build-ecosystem-data.mjs --check"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

@@ -17,6 +17,7 @@ import {
   GemIcon,
   PaletteIcon,
   ShapesIcon,
+  ListIcon,
 } from './icons';
 import { TOOLS, type ToolKey } from '../tools/registry';
 import { TOOL_THEMES } from '../lib/toolThemes';
@@ -38,6 +39,7 @@ const TOOL_ICONS: Record<ToolKey, (props: { size?: number }) => JSX.Element> = {
   'snapchat-caption': SnapchatIcon,
   palette: PaletteIcon,
   icons: ShapesIcon,
+  'text-toolkit': ListIcon,
 };
 
 /**

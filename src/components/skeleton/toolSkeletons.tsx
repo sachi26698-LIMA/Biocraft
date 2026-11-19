@@ -334,6 +334,22 @@ export function IconSkeleton() {
   );
 }
 
+/** Text toolkit: a tall input plus a stats grid. */
+export function TextToolkitSkeleton() {
+  return (
+    <SkeletonRegion label="Loading text toolkit">
+      <PanelHeadSkeleton />
+      <div className="skel-field">
+        <SkeletonLine width="18%" height={12} />
+        <SkeletonLine width="100%" height={148} />
+      </div>
+      <div className="skel-swatch-grid">
+        {Array.from({ length: 8 }, (_, i) => <span key={i} className="skel-swatch" style={{ height: 58 }} />)}
+      </div>
+    </SkeletonRegion>
+  );
+}
+
 /** Registry: tool key → its own skeleton. No generic fallback exists. */
 export const TOOL_SKELETONS: Record<ToolKey, ComponentType> = {
   bio: BioSkeleton,
@@ -350,6 +366,7 @@ export const TOOL_SKELETONS: Record<ToolKey, ComponentType> = {
   'snapchat-caption': SnapchatCaptionSkeleton,
   palette: PaletteSkeleton,
   icons: IconSkeleton,
+  'text-toolkit': TextToolkitSkeleton,
 };
 
 /* ------------------------------------------------------------------ */

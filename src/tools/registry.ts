@@ -15,6 +15,7 @@ const WhatsappStatusTool = lazy(() => import('./whatsapp-status/WhatsappStatusTo
 const SnapchatCaptionTool = lazy(() => import('./snapchat-caption/SnapchatCaptionTool'));
 const PaletteGenerator = lazy(() => import('./palette/PaletteGenerator'));
 const IconFinder = lazy(() => import('./icons/IconFinder'));
+const TextToolkit = lazy(() => import('./text/TextToolkit'));
 
 export type ToolKey =
   | 'bio'
@@ -30,7 +31,8 @@ export type ToolKey =
   | 'linkedin-headline'
   | 'linkedin-summary'
   | 'palette'
-  | 'icons';
+  | 'icons'
+  | 'text-toolkit';
 
 /** Homepage route — renders the Bio tool view inside the full homepage. */
 export const HOME_PATH = '/';
@@ -248,6 +250,20 @@ export const TOOLS: ToolMeta[] = [
     ogTitle: 'Icon Finder — BioCraft',
     ogDescription: '3,472 CC0 brand icons — copy SVG or download, no sign-up.',
     Component: IconFinder,
+  },
+  {
+    key: 'text-toolkit',
+    path: '/text-toolkit',
+    tabLabel: 'Text Toolkit',
+    heading: 'Text Toolkit',
+    subheading:
+      'Count words and characters, convert case, clean up lists and pull out emails, links, hashtags and numbers. Nothing leaves your browser.',
+    title: 'Text Toolkit — Word Count, Case Converter & Extractor — BioCraft',
+    description:
+      'Free text toolkit: live word and character count, reading time, UPPERCASE, Title Case, Sentence case, camel/Pascal/snake/kebab/CONSTANT case, URL slugs, line de-duplication and sorting, and extraction of emails, links, hashtags, @mentions and numbers. Runs entirely in your browser.',
+    ogTitle: 'Text Toolkit — BioCraft',
+    ogDescription: 'Word count, case conversion, list cleaning and text extraction — offline, private.',
+    Component: TextToolkit,
   },
 ];
 

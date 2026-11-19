@@ -141,6 +141,14 @@ const ROUTES = [
     ogDescription: '3,472 CC0 brand icons — copy SVG or download, no sign-up.',
   },
   {
+    path: '/text-toolkit',
+    title: 'Text Toolkit — Word Count, Case Converter & Text Extractor — BioCraft',
+    description:
+      'Free text toolkit — live word and character count, reading time, UPPERCASE, lowercase, Title Case, Sentence case, camelCase, PascalCase, snake_case, kebab-case, CONSTANT_CASE, URL slugs, line de-duplication, sorting and reversing, plus extraction of emails, links, hashtags, @mentions and numbers. Runs entirely in your browser.',
+    ogTitle: 'Text Toolkit — BioCraft',
+    ogDescription: 'Word count, case conversion, list cleaning and text extraction — private and offline.',
+  },
+  {
     path: '/features',
     title: 'Features — BioCraft Social Media Toolkit',
     description:
