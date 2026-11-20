@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { SearchIcon } from '../components/icons';
 import {
+  DEVANAGARI_CATEGORY,
   FONT_CATEGORIES,
   FONT_CATEGORY_LABELS,
+  FONT_CATEGORY_LABELS_WITH_SCRIPT,
   fetchFontPage,
   type FontRow,
 } from '../lib/libraryApi';
@@ -133,7 +135,29 @@ export default function FontLibraryPage() {
             {FONT_CATEGORY_LABELS[c]}
           </button>
         ))}
+        {/* Script, not style: the 62 Devanagari families are spread across
+            sans-serif, serif and display, so the style chips above scatter
+            them. This chip gathers them. */}
+        <button
+          type="button"
+          className={`fontlib-chip fontlib-chip-script${category === DEVANAGARI_CATEGORY ? ' is-active' : ''}`}
+          onClick={() =>
+            setCategory(category === DEVANAGARI_CATEGORY ? null : DEVANAGARI_CATEGORY)
+          }
+          aria-pressed={category === DEVANAGARI_CATEGORY}
+        >
+          {FONT_CATEGORY_LABELS_WITH_SCRIPT[DEVANAGARI_CATEGORY]}
+        </button>
       </div>
+
+      {category === DEVANAGARI_CATEGORY && (
+        <p className="fontlib-notice" role="status">
+          Showing the families that ship a Devanagari subset. BioCraft also has a
+          dedicated library of 62 self-hosted, HarfBuzz-verified Hindi families with
+          specimen pages and downloadable WOFF2 —{' '}
+          <a href="/hindi-fonts">browse the Hindi font library</a>.
+        </p>
+      )}
 
       {notice && (
         <p className="fontlib-notice" role="status">
