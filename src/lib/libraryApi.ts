@@ -51,6 +51,40 @@ export const FONT_CATEGORY_LABELS: Record<string, string> = {
   monospace: 'Monospace',
 };
 
+/**
+ * Script filter, separate from the style chips.
+ *
+ * The style chips (sans-serif, serif, …) answer "what does it look like". They
+ * cannot answer "which fonts can set Hindi", which is the question a Hindi
+ * visitor actually has: every one of the 62 Devanagari families is a normal
+ * sans-serif, serif or display face, so the style chips scatter them across the
+ * whole catalogue. This chip is the one that gathers them.
+ */
+export const DEVANAGARI_CATEGORY = 'devanagari';
+
+export const FONT_CATEGORY_LABELS_WITH_SCRIPT: Record<string, string> = {
+  ...FONT_CATEGORY_LABELS,
+  [DEVANAGARI_CATEGORY]: 'हिन्दी · Devanagari',
+};
+
+/**
+ * Language words that should find a script. Deliberately small and explicit:
+ * this maps the words a Hindi speaker actually types onto the subset name the
+ * catalogue uses, rather than guessing at transliteration.
+ */
+const SCRIPT_ALIASES: Record<string, string> = {
+  hindi: 'devanagari',
+  हिंदी: 'devanagari',
+  हिन्दी: 'devanagari',
+  devanagari: 'devanagari',
+  देवनागरी: 'devanagari',
+};
+
+/** True when this family ships a Devanagari subset. */
+export function isDevanagari(font: FontRecord): boolean {
+  return font.subsets.includes('devanagari');
+}
+
 /** Adapt the bundled record to the row shape the page consumes. */
 function toRow(font: FontRecord): FontRow {
   return {
@@ -85,8 +119,26 @@ export async function fetchFontPage(options: {
   const needle = (options.search ?? '').trim().toLowerCase();
 
   let rows = FONT_CATALOG as readonly FontRecord[];
-  if (options.category) rows = rows.filter((f) => f.category === options.category);
-  if (needle) rows = rows.filter((f) => f.family.toLowerCase().includes(needle));
+  if (options.category === DEVANAGARI_CATEGORY) {
+    rows = rows.filter(isDevanagari);
+  } else if (options.category) {
+    rows = rows.filter((f) => f.category === options.category);
+  }
+  // Match the family name AND its script subsets. Searching "devanagari" or
+  // "hindi" used to return only the families with that word in the *name* —
+  // 7 and 1 respectively — while all 62 Devanagari families sat in the same
+  // catalogue unreachable by script. Subset matching is what makes the filter
+  // below findable by word as well as by chip.
+  if (needle) {
+    // A visitor searching in Hindi types "हिंदी", not "devanagari". Treat the
+    // language word as a script word so both answer the same question.
+    const script = SCRIPT_ALIASES[needle] ?? needle;
+    rows = rows.filter(
+      (f) =>
+        f.family.toLowerCase().includes(needle) ||
+        f.subsets.some((s) => s.toLowerCase().includes(script)),
+    );
+  }
   if (options.cursor) {
     const after = options.cursor;
     rows = rows.filter((f) => f.slug > after);
