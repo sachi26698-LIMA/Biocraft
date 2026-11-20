@@ -215,6 +215,24 @@ export const INFO_PAGES: InfoPageMeta[] = [
         ),
       },
       {
+        heading: 'Hindi (Devanagari) fonts',
+        body: (
+          <>
+            <p>
+              62 Devanagari families with real WOFF2 files served from this site — not a Google Fonts
+              iframe. Every family is checked with HarfBuzz for matras, conjuncts and nukta before it
+              is published, so the specimens you see are the ones that actually render.
+            </p>
+            <ul>
+              <li><a onClick={handleAnchorClick} href="/hindi-fonts">हिंदी फ़ॉन्ट लाइब्रेरी</a> — browse and filter all 62 verified families</li>
+              <li><a onClick={handleAnchorClick} href="/hindi-font-studio">Hindi Preview &amp; Bio Studio</a> — try a family on your own text, then take it to a bio</li>
+              <li><a onClick={handleAnchorClick} href="/hindi-poster-studio">Hindi Poster Studio</a> — set Hindi text as a shareable poster</li>
+              <li><a onClick={handleAnchorClick} href="/hindi-font-licenses">Hindi Font Licences</a> — every family is OFL-1.1, with attribution and source</li>
+            </ul>
+          </>
+        ),
+      },
+      {
         heading: 'Guides',
         body: (
           <ul>
