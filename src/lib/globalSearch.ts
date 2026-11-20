@@ -18,6 +18,7 @@ import { SYMBOL_CATEGORIES } from '../tools/symbols/data/symbols';
 import { NICHES } from '../tools/hashtags/data/pools';
 import { TEMPLATES } from '../tools/captions/data/pools';
 import { UNICODE_STYLES } from './unicodeStyles';
+import { catalogue as hindiCatalogue } from './hindiFonts/catalogue';
 
 export interface GlobalHit {
   id: string;
@@ -44,6 +45,7 @@ export const DOMAIN_LABELS: Record<string, string> = {
   symbol: 'Symbol',
   font: 'Font',
   emoji: 'Emoji',
+  'hindi-font': 'Hindi Font',
 };
 
 export const DOMAINS = Object.keys(DOMAIN_LABELS);
@@ -167,6 +169,32 @@ function buildIndex(): IndexEntry[] {
     });
   });
 
+  // Hindi (Devanagari) font families. Separate domain from `font`, because
+  // `font` is Unicode look-alike styling of Latin text and links to the fancy
+  // font generator, whereas these are real font files with their own specimen
+  // pages. Searching "मुक्त" or "OFL" has to reach the actual family.
+  hindiCatalogue.fonts.forEach((font) => {
+    add({
+      id: `hindi-font:${font.slug}`,
+      sourceTable: 'hindi_fonts',
+      sourceId: font.slug,
+      domain: 'hindi-font',
+      title: font.family,
+      // Family name, category, tags and the scripts/languages it covers, so a
+      // search for "Devanagari", "Calligraphy" or "Marathi" finds it.
+      body: [
+        font.family,
+        font.category,
+        ...(font.tags ?? []),
+        ...(font.scripts ?? []),
+        ...(font.languageSupport ?? []),
+        font.license?.type,
+      ].filter(Boolean).join(' · '),
+      language: 'Hindi',
+      category: font.category,
+    });
+  });
+
   return out;
 }
 
@@ -238,6 +266,8 @@ export function hrefForHit(hit: GlobalHit): string {
       return '/fancy-font-generator';
     case 'emoji':
       return '/emoji-symbol-generator';
+    case 'hindi-font':
+      return `/hindi-fonts/${hit.source_id}`;
     default:
       return '/categories';
   }

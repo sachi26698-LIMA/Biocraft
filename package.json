@@ -115,6 +115,7 @@
     "fonts:build": "node scripts/fonts/build-catalogue.mjs",
     "fonts:all": "npm run fonts:import && npm run fonts:verify && npm run fonts:build",
     "test:hindi-fonts": "node tests/hindi-fonts-catalogue.mjs && node tests/hindi-fonts-runtime.mjs",
+    "test:hindi-fonts-discovery": "node tests/hindi-fonts-discovery.mjs",
     "test:hindi-fonts-rendering": "node tests/hindi-fonts-rendering.mjs",
     "test:hindi-fonts-browser": "playwright test tests/e2e/hindi-fonts.spec.ts",
     "chromium:prepare": "node scripts/prepare-headless-chromium.mjs"
